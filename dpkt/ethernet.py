@@ -30,6 +30,7 @@ ETH_TYPE_MPLS	= 0x8847		# MPLS
 ETH_TYPE_MPLS_MCAST	= 0x8848	# MPLS Multicast
 ETH_TYPE_PPPoE_DISC	= 0x8863	# PPP Over Ethernet Discovery Stage
 ETH_TYPE_PPPoE		= 0x8864	# PPP Over Ethernet Session Stage
+ETH_TYPE_LLDP       = 0x88CC    # Link Layer Discovery Protocol
 
 # MPLS label stack fields
 MPLS_LABEL_MASK	= 0xfffff000
