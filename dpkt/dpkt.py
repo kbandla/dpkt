@@ -144,7 +144,7 @@ def hexdump(buf, length=16):
     return '\n'.join(res)
 
 try:
-    import dnet
+    import dnet2
     def in_cksum_add(s, buf):
         return dnet.ip_cksum_add(buf, s)
     def in_cksum_done(s):
