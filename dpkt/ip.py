@@ -1,4 +1,4 @@
-# $Id: ip.py 65 2010-03-26 02:53:51Z dugsong $
+# $Id: ip.py 87 2013-03-05 19:41:04Z andrewflnr@gmail.com $
 
 """Internet Protocol."""
 
@@ -55,7 +55,10 @@ class IP(dpkt.Packet):
         if ol < 0:
             raise dpkt.UnpackError, 'invalid header length'
         self.opts = buf[self.__hdr_len__:self.__hdr_len__ + ol]
-        buf = buf[self.__hdr_len__ + ol:self.len]
+        if self.len:
+            buf = buf[self.__hdr_len__ + ol:self.len]
+        else:  # very likely due to TCP segmentation offload
+            buf = buf[self.__hdr_len__ + ol:]
         try:
             self.data = self._protosw[self.p](buf)
             setattr(self, self.data.__class__.__name__.lower(), self.data)
@@ -285,6 +288,14 @@ if __name__ == '__main__':
             s = '\x4f\x00\x00\x50\xae\x08\x00\x00\x40\x06\x17\xfc\xc0\xa8\x0a\x26\xc0\xa8\x0a\x01\x07\x27\x08\x01\x02\x03\x04\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
             ip = IP(s)
             ip.sum = 0
-            self.failUnless(str(ip) == s)
+            self.failUnless(str(ip) == s) 
+
+        def test_zerolen(self):
+            import tcp
+            d = 'X' * 2048
+            s = 'E\x00\x00\x004\xce@\x00\x80\x06\x00\x00\x7f\x00\x00\x01\x7f\x00\x00\x01\xccN\x0c8`\xff\xc6N_\x8a\x12\x98P\x18@):\xa3\x00\x00' + d
+            ip = IP(s)
+            self.failUnless(isinstance(ip.data, tcp.TCP))
+            self.failUnless(ip.tcp.data == d)
 
     unittest.main()

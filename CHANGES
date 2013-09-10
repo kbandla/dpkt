@@ -1,4 +1,9 @@
-
+dpkg-1.8:
+	- fix a typo in vrrp.py
+	- fix IPv4 and IPv6 packet to correctly handle zero payload length
+	- store cipher_suite as int in TLSServerHello to allow app-specific messages
+	- improve SSL parsing
+ 
 dpkt-1.7:
 	- handle dynamic imports from py2exe/freeze.py/zipped egg
 	  packages, from plotnikoff

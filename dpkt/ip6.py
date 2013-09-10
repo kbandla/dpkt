@@ -1,4 +1,4 @@
-# $Id: ip6.py 58 2010-03-06 00:06:14Z dugsong $
+# $Id: ip6.py 87 2013-03-05 19:41:04Z andrewflnr@gmail.com $
 
 """Internet Protocol, version 6."""
 
@@ -13,7 +13,11 @@ class IP6(dpkt.Packet):
         ('src', '16s', ''),
         ('dst', '16s', '')
         )
-    _protosw = {}		# XXX - shared with IP
+
+    # XXX - to be shared with IP.  We cannot refer to the ip module
+    # right now because ip.__load_protos() expects the IP6 class to be
+    # defined.
+    _protosw = None
     
     def _get_v(self):
         return self.v_fc_flow >> 28
@@ -37,7 +41,10 @@ class IP6(dpkt.Packet):
         dpkt.Packet.unpack(self, buf)
         self.extension_hdrs = dict(((i, None) for i in ext_hdrs))
         
-        buf = self.data[:self.plen]
+        if self.plen:
+            buf = self.data[:self.plen]
+        else:  # due to jumbo payload or TSO
+            buf = self.data
         
         next = self.nxt
         
@@ -91,9 +98,14 @@ class IP6(dpkt.Packet):
         return cls._protosw[p]
     get_proto = classmethod(get_proto)
 
-# XXX - auto-load IP6 dispatch table from IP dispatch table
 import ip
-IP6._protosw.update(ip.IP._protosw)
+# We are most likely still in the middle of ip.__load_protos() which
+# implicitly loads this module through __import__(), so the content of
+# ip.IP._protosw is still incomplete at the moment.  By sharing the
+# same dictionary by reference as opposed to making a copy, when
+# ip.__load_protos() finishes, we will also automatically get the most
+# up-to-date dictionary.
+IP6._protosw = ip.IP._protosw
 
 class IP6ExtensionHeader(dpkt.Packet): 
     """

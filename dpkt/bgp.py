@@ -14,7 +14,6 @@ import struct, socket
 # Cease Subcodes - RFC 4486
 # NOPEER Community - RFC 3765
 # Multiprotocol Extensions - 2858
-# Support for Four-octet AS Number Space - RFC 4893
 
 # Message Types
 OPEN				= 1
@@ -36,8 +35,6 @@ ORIGINATOR_ID			= 9
 CLUSTER_LIST			= 10
 MP_REACH_NLRI			= 14
 MP_UNREACH_NLRI			= 15
-AS4_PATH			= 17
-AS4_AGGREGATOR			= 18
 
 # Origin Types
 ORIGIN_IGP			= 0
@@ -72,13 +69,6 @@ CAPABILITY			= 2
 # Capability Types
 CAP_MULTIPROTOCOL		= 1
 CAP_ROUTE_REFRESH		= 2
-CAP_OUTBOUND_ROUTE_FILTER	= 3
-CAP_MULTI_ROUTE_TO_DEST		= 4
-CAP_GRACEFUL_RESTART		= 64
-CAP_SUPPORT_AS4			= 65
-CAP_SUPPORT_DYN_CAP		= 67
-CAP_MULTISESSION_BGP		= 68
-CAP_ROUTE_REFRESH_OLD		= 128
 
 # NOTIFICATION Error Codes
 MESSAGE_HEADER_ERROR		= 1
@@ -209,15 +199,6 @@ class BGP(dpkt.Packet):
                     dpkt.Packet.unpack(self, buf)
                     self.data = self.data[:self.len]
 
-                    if self.code == CAP_MULTIPROTOCOL:
-                        self.data = self.multiprotocol = self.MultiProtocol(self.data)
-                
-                class MultiProtocol(dpkt.Packet):
-                    __hdr__ = (
-                    ('afi', 'H', 1),
-                    ('res', 'B', 0),
-                    ('safi', 'B', 1)
-                    )
 
     class Update(dpkt.Packet):
         __hdr_defaults__ = {
@@ -316,12 +297,7 @@ class BGP(dpkt.Packet):
                 if self.type == ORIGIN:
                     self.data = self.origin = self.Origin(self.data)
                 elif self.type == AS_PATH:
-                    preserved=self.data
-                    try:
-                        self.data = self.as_path = self.AS4Path(self.data)
-                    except dpkt.UnpackError, (errno):
-                        self.data=preserved
-                        self.data = self.as_path = self.ASPath(self.data)
+                    self.data = self.as_path = self.ASPath(self.data)
                 elif self.type == NEXT_HOP:
                     self.data = self.next_hop = self.NextHop(self.data)
                 elif self.type == MULTI_EXIT_DISC:
@@ -331,12 +307,7 @@ class BGP(dpkt.Packet):
                 elif self.type == ATOMIC_AGGREGATE:
                     self.data = self.atomic_aggregate = self.AtomicAggregate(self.data)
                 elif self.type == AGGREGATOR:
-                    preserved=self.data
-                    try:
-                        self.data = self.as4_aggregator = self.AS4Aggregator(self.data)
-                    except dpkt.UnpackError, (errno):
-                        self.data=preserved
-                        self.data = self.aggregator = self.Aggregator(self.data)
+                    self.data = self.aggregator = self.Aggregator(self.data)
                 elif self.type == COMMUNITIES:
                     self.data = self.communities = self.Communities(self.data)
                 elif self.type == ORIGINATOR_ID:
@@ -347,10 +318,6 @@ class BGP(dpkt.Packet):
                     self.data = self.mp_reach_nlri = self.MPReachNLRI(self.data)
                 elif self.type == MP_UNREACH_NLRI:
                     self.data = self.mp_unreach_nlri = self.MPUnreachNLRI(self.data)
-                elif self.type == AS4_PATH:
-                    self.data = self.as4_path = self.AS4Path(self.data)
-                elif self.type == AS4_AGGREGATOR:
-                    self.data = self.as4_aggregator = self.AS4Aggregator(self.data)
 
             def __len__(self):
                 if self.extended_length:
@@ -376,7 +343,6 @@ class BGP(dpkt.Packet):
                 )
 
             class ASPath(dpkt.Packet):
-                #__hdr__=()
                 __hdr_defaults__ = {
                     'segments': []
                     }
@@ -401,10 +367,6 @@ class BGP(dpkt.Packet):
                         ('type', 'B', 0),
                         ('len', 'B', 0)
                         )
-
-                    __hdr_defaults__ = {
-                    	'path': []
-                    	}
 
                     def unpack(self, buf):
                         dpkt.Packet.unpack(self, buf)
@@ -458,7 +420,6 @@ class BGP(dpkt.Packet):
                 )
 
             class Communities(dpkt.Packet):
-                #__hdr__ = ()
                 __hdr_defaults__ = {
                     'list': []
                     }
@@ -616,59 +577,6 @@ class BGP(dpkt.Packet):
                 def __str__(self):
                     return self.pack_hdr() + \
                            ''.join(map(str, self.data))
-
-            class AS4Path(dpkt.Packet):
-                #__hdr__ = ()
-                __hdr_defaults__ = {
-                    'segments': []
-                    }
-                    
-                def unpack(self, buf):
-                    self.data = buf
-                    l = []
-                    while self.data:
-                        seg = self.AS4PathSegment(self.data)
-                        self.data = self.data[len(seg):]
-                        l.append(seg)
-                    self.data = self.segments = l
-
-                def __len__(self):
-                    return sum(map(len, self.data))
-
-                def __str__(self):
-                    return ''.join(map(str, self.data))
-
-                class AS4PathSegment(dpkt.Packet):
-                    __hdr__ = (
-                        ('type', 'B', 0),
-                        ('len', 'B', 0)
-                        )
-    
-                    def unpack(self, buf):
-                        dpkt.Packet.unpack(self, buf)
-                        l = []
-                        for i in range(self.len):
-                            AS = struct.unpack('>L', self.data[:4])[0]
-                            self.data = self.data[4:]
-                            l.append(AS)
-                        self.data = self.path = l
-    
-                    def __len__(self):
-                        return self.__hdr_len__ + \
-                               4 * len(self.path)
-    
-                    def __str__(self):
-                        as_str = ''
-                        for AS in self.path:
-                            as_str += struct.pack('>L', AS)
-                        return self.pack_hdr() + \
-                               as_str
-
-            class AS4Aggregator(dpkt.Packet):
-                __hdr__ = (
-                    ('asn', 'L', 0),
-                    ('ip', 'I', 0)
-                )
 
 
     class Notification(dpkt.Packet):
