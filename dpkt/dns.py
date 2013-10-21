@@ -23,6 +23,7 @@ DNS_RA = 0x0080	# recursion available
 DNS_RD = 0x0100	# recursion desired
 DNS_TC = 0x0200	# truncated
 DNS_AA = 0x0400	# authoritative answer
+DNS_QR = 0x8000 # response ( query / response )
 
 # Response codes
 DNS_RCODE_NOERR = 0
@@ -112,10 +113,10 @@ class DNS(dpkt.Packet):
         ('ar', 'H', [])
         )
     def get_qr(self):
-        return int((self.op & 0x8000) == 0x8000)
+        return int((self.op & DNS_QR) == DNS_QR)
     def set_qr(self, v):
-        if v: self.op |= 0x8000
-        else: self.op &= ~0x8000
+        if v: self.op |= DNS_QR
+        else: self.op &= ~DNS_QR
     qr = property(get_qr, set_qr)
 
     def get_opcode(self):
@@ -124,12 +125,40 @@ class DNS(dpkt.Packet):
         self.op = (self.op & ~0x7800) | ((v & 0xf) << 11)
     opcode = property(get_opcode, set_opcode)
 
+    def get_aa(self):
+        return int((self.op & DNS_AA) == DNS_AA)
+    def set_aa(self, v):
+        if v: self.op |= DNS_AA
+        else: self.op &= ~DNS_AA
+    aa = property(get_aa, set_aa)
+
+    def get_rd(self):
+        return int((self.op & DNS_RD) == DNS_RD)
+    def set_rd(self,v):
+        if v: self.op |= DNS_RD
+        else: self.op &= ~DNS_RD
+    rd = property(get_rd, set_rd)
+
+    def get_ra(self):
+        return int((self.op & DNS_RA) == DNS_RA)
+    def set_ra(self,v):
+        if v: self.op |= DNS_RA
+        else: self.op &= ~DNS_RA
+    ra = property(get_ra, set_ra)
+
+    def get_zero(self):
+        return int((self.op & DNS_Z) == DNS_Z)
+    def set_zero(self, v):
+        if v: self.op |= DNS_Z
+        else: self.op &= ~DNS_Z
+    zero = property(get_zero, set_zero)
+
     def get_rcode(self):
         return self.op & 0xf
     def set_rcode(self, v):
         self.op = (self.op & ~0xf) | (v & 0xf)
     rcode = property(get_rcode, set_rcode)
-    
+
     class Q(dpkt.Packet):
         """DNS question."""
         __hdr__ = (
