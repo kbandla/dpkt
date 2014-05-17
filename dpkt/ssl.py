@@ -1,4 +1,4 @@
-# $Id: ssl.py 84 2012-08-24 18:44:00Z andrewflnr@gmail.com $
+# $Id: ssl.py 90 2014-04-02 22:06:23Z andrewflnr@gmail.com $
 # Portion Copyright 2012 Google Inc. All rights reserved.
 
 """Secure Sockets Layer / Transport Layer Security."""
@@ -368,21 +368,23 @@ def TLSMultiFactory(buf):
       int, total bytes consumed, != len(buf) if an incomplete record was left at
         the end.
 
-    Raises ...?
+    Raises SSL3Exception.
     '''
-    if not buf:
-        return [], 0
-    v = buf[1:3]
-    if v in SSL3_VERSION_BYTES:
-        try:
-            msg = TLSRecord(buf)
-            parsed_bytes = len(msg)  # len fn includes header length
-        except dpkt.NeedData:
-            return [], 0   # tell caller we parsed nothing
-    else:
-        raise SSL3Exception('Bad TLS version in buf: %r' % buf[:5])
-    later_messages, later_bytes = TLSMultiFactory(buf[len(msg):])
-    return [msg] + later_messages, parsed_bytes + later_bytes
+    i, n = 0, len(buf)
+    msgs = []
+    while i < n:
+        v = buf[i+1:i+3]
+        if v in SSL3_VERSION_BYTES:
+            try:
+                msg = TLSRecord(buf[i:])
+                msgs.append(msg)
+            except dpkt.NeedData:
+                break
+        else:
+            raise SSL3Exception('Bad TLS version in buf: %r' % buf[i:i+5])
+        i += len(msg)
+    return msgs, i
+
 
 import unittest
 
@@ -519,7 +521,9 @@ class ServerHelloTest(unittest.TestCase):
                          _hexdecode('5008220c8ec43c5462315a7c99f5d5b6bff009ad285b51dc18485f352e9fdecd'))
 
     def testCipherSuite(self):
-        self.assertEqual(self.p.data.cipher_suite.name, 'TLS_RSA_WITH_NULL_SHA')
+        self.assertEqual(
+            ssl_ciphersuites.BY_CODE[self.p.data.cipher_suite].name,
+            'TLS_RSA_WITH_NULL_SHA')
 
     def testTotalLength(self):
         self.assertEqual(len(self.p), 81)
