@@ -16,11 +16,12 @@ M_REASSOC_REQ       = 2
 M_REASSOC_RESP      = 3
 M_PROBE_REQ         = 4
 M_PROBE_RESP        = 5
+M_BEACON            = 8
+M_ATIM              = 9
 M_DISASSOC          = 10
 M_AUTH              = 11
 M_DEAUTH            = 12
-M_BEACON            = 8
-M_ATIM              = 9
+M_ACTION            = 13
 C_BLOCK_ACK_REQ     = 8
 C_BLOCK_ACK         = 9
 C_PS_POLL           = 10
@@ -84,6 +85,34 @@ IE_HT_CAPA = 45
 IE_ESR     = 50
 IE_HT_INFO = 61
 
+FCS_LENGTH = 4
+
+FRAMES_WITH_CAPABILITY = [ M_BEACON,
+                           M_ASSOC_RESP,
+                           M_ASSOC_REQ,
+                           M_REASSOC_REQ,
+                         ]
+
+# Block Ack control constants
+_ACK_POLICY_SHIFT = 0
+_MULTI_TID_SHIFT  = 1
+_COMPRESSED_SHIFT = 2
+_TID_SHIFT        = 12
+
+_ACK_POLICY_MASK = 0x0001
+_MULTI_TID_MASK  = 0x0002
+_COMPRESSED_MASK = 0x0004
+_TID_MASK        = 0xf000
+
+_COMPRESSED_BMP_LENGTH = 8
+_BMP_LENGTH = 128
+
+# Action frame categories
+BLOCK_ACK = 3
+
+# Block ack category action codes
+BLOCK_ACK_CODE_REQUEST = 0
+BLOCK_ACK_CODE_RESPONSE = 1
 
 class IEEE80211(dpkt.Packet):
     __hdr__ = (
@@ -141,16 +170,16 @@ class IEEE80211(dpkt.Packet):
            IE_ESR:      ('esr',     self.IE),
            IE_HT_INFO:  ('ht_info', self.IE)
         }
- 
+
         # each IE starts with an ID and a length
-        while len(buf):
+        while len(buf) > FCS_LENGTH:
             ie_id = struct.unpack('B',(buf[0]))[0]
             try:
-               parser = ie_decoder[ie_id][1]
-               name = ie_decoder[ie_id][0] 
+                parser = ie_decoder[ie_id][1]
+                name = ie_decoder[ie_id][0]
             except KeyError:
-               parser = self.IE
-               name = 'ie_' + str(ie_id)
+                parser = self.IE
+                name = 'ie_' + str(ie_id)
             ie = parser(buf)
 
             ie.data = buf[2:2+ie.len]
@@ -176,6 +205,14 @@ class IEEE80211(dpkt.Packet):
             self.delayed_blk_ack = (field >> 14) & 1
             self.imm_blk_ack = (field >> 15) & 1
 
+    def __init__(self, *args, **kwargs):
+        if kwargs and 'fcs' in kwargs:
+            self.fcs_present = kwargs.pop('fcs')
+        else:
+            self.fcs_present = False
+
+        super(IEEE80211, self).__init__(*args, **kwargs)
+
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
         self.data = buf[self.__hdr_len__:]
@@ -189,7 +226,8 @@ class IEEE80211(dpkt.Packet):
             M_REASSOC_RESP: ('reassoc_resp',self.Assoc_Resp),
             M_AUTH:         ('auth',        self.Auth),
             M_PROBE_RESP:   ('probe_resp',  self.Beacon),
-            M_DEAUTH:       ('deauth',      self.Deauth)
+            M_DEAUTH:       ('deauth',      self.Deauth),
+            M_ACTION:       ('action',      self.Action)
         }
 
         c_decoder = {
@@ -197,7 +235,8 @@ class IEEE80211(dpkt.Packet):
             C_CTS:          ('cts',         self.CTS),
             C_ACK:          ('ack',         self.ACK),
             C_BLOCK_ACK_REQ:('bar',         self.BlockAckReq),
-            C_BLOCK_ACK:    ('back',        self.BlockAck)
+            C_BLOCK_ACK:    ('back',        self.BlockAck),
+            C_CF_END:       ('cf_end',      self.CFEnd),
         }
 
         d_dsData = {
@@ -225,6 +264,11 @@ class IEEE80211(dpkt.Packet):
             DATA_TYPE:d_decoder
         }
 
+        # Strip off the FCS field
+        if self.fcs_present:
+            self.fcs = struct.unpack('I', self.data[-1 * FCS_LENGTH:])[0]
+            self.data = self.data[0: -1 * FCS_LENGTH]
+
         if self.type == MGMT_TYPE:
             self.mgmt = self.MGMT_Frame(self.data)
             self.data = self.mgmt.data
@@ -244,39 +288,69 @@ class IEEE80211(dpkt.Packet):
         if self.type == DATA_TYPE:
             # need to grab the ToDS/FromDS info
             parser = parser[self.to_ds*10+self.from_ds]
-        
+
         if self.type == MGMT_TYPE:
             field = parser(self.mgmt.data)
         else:
             field = parser(self.data)
             self.data = field
-    
+
         setattr(self, name, field)
 
         if self.type == MGMT_TYPE:
             self.ies = self.unpack_ies(field.data)
-            if self.subtype == M_BEACON or self.subtype == M_ASSOC_RESP or\
-                self.subtype == M_ASSOC_REQ or self.subtype == M_REASSOC_REQ:
+            if self.subtype in FRAMES_WITH_CAPABILITY:
                 self.capability = self.Capability(socket.ntohs(field.capability))
 
         if self.type == DATA_TYPE and self.subtype == D_QOS_DATA:
             self.qos_data = self.QoS_Data(field.data)
             field.data = self.qos_data.data
-        
+
         self.data = field.data
 
     class BlockAckReq(dpkt.Packet):
         __hdr__ = (
+            ('dst', '6s', '\x00' * 6),
+            ('src', '6s', '\x00' *6),
             ('ctl', 'H', 0),
             ('seq', 'H', 0),
             )
 
     class BlockAck(dpkt.Packet):
         __hdr__ = (
+            ('dst', '6s', '\x00' * 6),
+            ('src', '6s', '\x00' * 6),
             ('ctl', 'H', 0),
             ('seq', 'H', 0),
-            ('bmp', '128s', '\x00' *128)
             )
+
+        def _get_compressed(self): return (self.ctl & _COMPRESSED_MASK) >> _COMPRESSED_SHIFT
+        def _set_compressed(self, val): self.ctl = (val << _COMPRESSED_SHIFT) | (self.ctl & ~_COMPRESSED_MASK)
+
+        def _get_ack_policy(self): return (self.ctl & _ACK_POLICY_MASK) >> _ACK_POLICY_SHIFT
+        def _set_ack_policy(self, val): self.ctl = (val << _ACK_POLICY_SHIFT) | (self.ctl & ~_ACK_POLICY_MASK)
+
+        def _get_multi_tid(self): return (self.ctl & _MULTI_TID_MASK) >> _MULTI_TID_SHIFT
+        def _set_multi_tid(self, val): self.ctl = (val << _MULTI_TID_SHIFT) | (self.ctl & ~_MULTI_TID_MASK)
+
+        def _get_tid(self): return (self.ctl & _TID_MASK) >> _TID_SHIFT
+        def _set_tid(self, val): self.ctl = (val << _TID_SHIFT) | (self.ctl & ~_TID_MASK)
+
+        compressed = property(_get_compressed, _set_compressed)
+        ack_policy = property(_get_ack_policy, _set_ack_policy)
+        multi_tid = property(_get_multi_tid, _set_multi_tid)
+        tid = property(_get_tid, _set_tid)
+
+        def unpack(self, buf):
+            dpkt.Packet.unpack(self, buf)
+            self.data = buf[self.__hdr_len__:]
+            self.ctl = socket.ntohs(self.ctl)
+
+            if self.compressed:
+                self.bmp = struct.unpack('8s', self.data[0:_COMPRESSED_BMP_LENGTH])[0]
+            else:
+                self.bmp = struct.unpack('128s', self.data[0:_BMP_LENGTH])[0]
+            self.data = self.data[len(self.__hdr__) + len(self.bmp):]
 
     class RTS(dpkt.Packet):
         __hdr__ = (
@@ -292,6 +366,12 @@ class IEEE80211(dpkt.Packet):
     class ACK(dpkt.Packet):
         __hdr__ = (
             ('dst', '6s', '\x00' * 6),
+            )
+
+    class CFEnd(dpkt.Packet):
+        __hdr__ = (
+            ('dst', '6s', '\x00' *6),
+            ('src', '6s', '\x00' *6),
             )
 
     class MGMT_Frame(dpkt.Packet):
@@ -313,20 +393,20 @@ class IEEE80211(dpkt.Packet):
         __hdr__ = (
             ('reason', 'H', 0),
             )
-    
+
     class Assoc_Req(dpkt.Packet):
         __hdr__ = (
             ('capability', 'H', 0),
             ('interval', 'H', 0)
             )
-    
+
     class Assoc_Resp(dpkt.Packet):
         __hdr__ = (
             ('capability', 'H', 0),
             ('status', 'H', 0),
             ('aid', 'H', 0)
             )
-    
+
     class Reassoc_Req(dpkt.Packet):
         __hdr__ = (
             ('capability', 'H', 0),
@@ -346,6 +426,43 @@ class IEEE80211(dpkt.Packet):
             ('reason', 'H', 0),
             )
 
+    class Action(dpkt.Packet):
+        __hdr__ = (
+            ('category', 'B', 0),
+            ('code', 'B', 0),
+            )
+
+        def unpack(self, buf):
+            dpkt.Packet.unpack(self, buf)
+
+            action_parser = {
+                BLOCK_ACK: { BLOCK_ACK_CODE_REQUEST: ('block_ack_request', IEEE80211.BlockAckActionRequest),
+                              BLOCK_ACK_CODE_RESPONSE: ('block_ack_response', IEEE80211.BlockAckActionResponse),
+                            },
+            }
+
+            decoder = action_parser[self.category][self.code][1]
+            field_name = action_parser[self.category][self.code][0]
+            field = decoder(self.data)
+            setattr(self, field_name, field)
+            self.data = field.data
+
+    class BlockAckActionRequest(dpkt.Packet):
+        __hdr__ = (
+            ('dialog', 'B', 0),
+            ('parameters', 'H', 0),
+            ('timeout', 'H', 0),
+            ('starting_seq', 'H', 0),
+            )
+
+    class BlockAckActionResponse(dpkt.Packet):
+        __hdr__ = (
+            ('dialog', 'B', 0),
+            ('status_code', 'H', 0),
+            ('parameters', 'H', 0),
+            ('timeout', 'H', 0),
+            )
+
     class Data(dpkt.Packet):
         __hdr__ = (
             ('dst', '6s', '\x00'*6),
@@ -362,7 +479,7 @@ class IEEE80211(dpkt.Packet):
             ('src', '6s', '\x00'*6),
             ('frag_seq', 'H', 0)
             )
-    
+
 
     class DataToDS(dpkt.Packet):
         __hdr__ = (
@@ -391,10 +508,10 @@ class IEEE80211(dpkt.Packet):
             ('id', 'B', 0),
             ('len', 'B', 0)
             )
-        def unpack(self, buf):        
+        def unpack(self, buf):
             dpkt.Packet.unpack(self, buf)
             self.info = buf[2:self.len+ 2]
-  
+
     class FH(dpkt.Packet):
         __hdr__ = (
             ('id', 'B', 0),
@@ -404,7 +521,7 @@ class IEEE80211(dpkt.Packet):
             ('hoppattern', 'B', 0),
             ('hopindex', 'B', 0)
             )
-       
+
     class DS(dpkt.Packet):
         __hdr__ = (
             ('id', 'B', 0),
@@ -421,7 +538,7 @@ class IEEE80211(dpkt.Packet):
             ('max', 'H', 0),
             ('dur', 'H', 0)
             )
-  
+
     class TIM(dpkt.Packet):
        __hdr__ = (
             ('id', 'B', 0),
@@ -430,26 +547,26 @@ class IEEE80211(dpkt.Packet):
             ('period', 'B', 0),
             ('ctrl', 'H', 0)
             )
-       def unpack(self, buf):        
+       def unpack(self, buf):
             dpkt.Packet.unpack(self, buf)
             self.bitmap = buf[5:self.len+ 2]
-   
+
     class IBSS(dpkt.Packet):
        __hdr__ = (
             ('id', 'B', 0),
             ('len', 'B', 0),
-            ('atim', 'H', 0) 
+            ('atim', 'H', 0)
             )
 
 
 
 if __name__ == '__main__':
     import unittest
-    
+
     class IEEE80211TestCase(unittest.TestCase):
-        def test_802211(self):
-            s = '\xd4\x00\x00\x00\x00\x12\xf0\xb6\x1c\xa4'
-            ieee = IEEE80211(s)
+        def test_802211_ack(self):
+            s = '\xd4\x00\x00\x00\x00\x12\xf0\xb6\x1c\xa4\xff\xff\xff\xff'
+            ieee = IEEE80211(s, fcs = True)
             self.failUnless(ieee.version == 0)
             self.failUnless(ieee.type == CTL_TYPE)
             self.failUnless(ieee.subtype == C_ACK)
@@ -460,10 +577,12 @@ if __name__ == '__main__':
             self.failUnless(ieee.wep == 0)
             self.failUnless(ieee.order == 0)
             self.failUnless(ieee.ack.dst == '\x00\x12\xf0\xb6\x1c\xa4')
-        
+            fcs = struct.unpack('I', s[-4:])[0]
+            self.failUnless(ieee.fcs == fcs)
+
         def test_80211_beacon(self):
-            s='\x80\x00\x00\x00\xff\xff\xff\xff\xff\xff\x00\x26\xcb\x18\x6a\x30\x00\x26\xcb\x18\x6a\x30\xa0\xd0\x77\x09\x32\x03\x8f\x00\x00\x00\x66\x00\x31\x04\x00\x04\x43\x41\x45\x4e\x01\x08\x82\x84\x8b\x0c\x12\x96\x18\x24\x03\x01\x01\x05\x04\x00\x01\x00\x00\x07\x06\x55\x53\x20\x01\x0b\x1a\x0b\x05\x00\x00\x6e\x00\x00\x2a\x01\x02\x2d\x1a\x6e\x18\x1b\xff\xff\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x30\x14\x01\x00\x00\x0f\xac\x04\x01\x00\x00\x0f\xac\x04\x01\x00\x00\x0f\xac\x01\x28\x00\x32\x04\x30\x48\x60\x6c\x36\x03\x51\x63\x03\x3d\x16\x01\x00\x05\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x85\x1e\x05\x00\x8f\x00\x0f\x00\xff\x03\x59\x00\x63\x73\x65\x2d\x33\x39\x31\x32\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x36\x96\x06\x00\x40\x96\x00\x14\x00\xdd\x18\x00\x50\xf2\x02\x01\x01\x80\x00\x03\xa4\x00\x00\x27\xa4\x00\x00\x42\x43\x5e\x00\x62\x32\x2f\x00\xdd\x06\x00\x40\x96\x01\x01\x04\xdd\x05\x00\x40\x96\x03\x05\xdd\x05\x00\x40\x96\x0b\x09\xdd\x08\x00\x40\x96\x13\x01\x00\x34\x01\xdd\x05\x00\x40\x96\x14\x05'
-            ieee = IEEE80211(s)
+            s = '\x80\x00\x00\x00\xff\xff\xff\xff\xff\xff\x00\x26\xcb\x18\x6a\x30\x00\x26\xcb\x18\x6a\x30\xa0\xd0\x77\x09\x32\x03\x8f\x00\x00\x00\x66\x00\x31\x04\x00\x04\x43\x41\x45\x4e\x01\x08\x82\x84\x8b\x0c\x12\x96\x18\x24\x03\x01\x01\x05\x04\x00\x01\x00\x00\x07\x06\x55\x53\x20\x01\x0b\x1a\x0b\x05\x00\x00\x6e\x00\x00\x2a\x01\x02\x2d\x1a\x6e\x18\x1b\xff\xff\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x30\x14\x01\x00\x00\x0f\xac\x04\x01\x00\x00\x0f\xac\x04\x01\x00\x00\x0f\xac\x01\x28\x00\x32\x04\x30\x48\x60\x6c\x36\x03\x51\x63\x03\x3d\x16\x01\x00\x05\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x85\x1e\x05\x00\x8f\x00\x0f\x00\xff\x03\x59\x00\x63\x73\x65\x2d\x33\x39\x31\x32\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x36\x96\x06\x00\x40\x96\x00\x14\x00\xdd\x18\x00\x50\xf2\x02\x01\x01\x80\x00\x03\xa4\x00\x00\x27\xa4\x00\x00\x42\x43\x5e\x00\x62\x32\x2f\x00\xdd\x06\x00\x40\x96\x01\x01\x04\xdd\x05\x00\x40\x96\x03\x05\xdd\x05\x00\x40\x96\x0b\x09\xdd\x08\x00\x40\x96\x13\x01\x00\x34\x01\xdd\x05\x00\x40\x96\x14\x05'
+            ieee = IEEE80211(s, fcs = True)
             self.failUnless(ieee.version == 0)
             self.failUnless(ieee.type == MGMT_TYPE)
             self.failUnless(ieee.subtype == M_BEACON)
@@ -481,16 +600,19 @@ if __name__ == '__main__':
             self.failUnless(ieee.rate.data == '\x82\x84\x8b\x0c\x12\x96\x18\x24')
             self.failUnless(ieee.ds.data == '\x01')
             self.failUnless(ieee.tim.data == '\x00\x01\x00\x00')
+            fcs = struct.unpack('I', s[-4:])[0]
+            self.failUnless(ieee.fcs == fcs)
 
         def test_80211_data(self):
             s = '\x08\x09\x20\x00\x00\x26\xcb\x17\x3d\x91\x00\x16\x44\xb0\xae\xc6\x00\x02\xb3\xd6\x26\x3c\x80\x7e\xaa\xaa\x03\x00\x00\x00\x08\x00\x45\x00\x00\x28\x07\x27\x40\x00\x80\x06\x1d\x39\x8d\xd4\x37\x3d\x3f\xf5\xd1\x69\xc0\x5f\x01\xbb\xb2\xd6\xef\x23\x38\x2b\x4f\x08\x50\x10\x42\x04\xac\x17\x00\x00'
-            ieee = IEEE80211(s)
+            ieee = IEEE80211(s, fcs = True)
             self.failUnless(ieee.type == DATA_TYPE)
             self.failUnless(ieee.subtype == D_DATA)
             self.failUnless(ieee.data_frame.dst == '\x00\x02\xb3\xd6\x26\x3c')
             self.failUnless(ieee.data_frame.src == '\x00\x16\x44\xb0\xae\xc6')
             self.failUnless(ieee.data_frame.frag_seq == 0x807e)
-            self.failUnless(ieee.data == '\xaa\xaa\x03\x00\x00\x00\x08\x00\x45\x00\x00\x28\x07\x27\x40\x00\x80\x06\x1d\x39\x8d\xd4\x37\x3d\x3f\xf5\xd1\x69\xc0\x5f\x01\xbb\xb2\xd6\xef\x23\x38\x2b\x4f\x08\x50\x10\x42\x04\xac\x17\x00\x00')
+            self.failUnless(ieee.data == '\xaa\xaa\x03\x00\x00\x00\x08\x00\x45\x00\x00\x28\x07\x27\x40\x00\x80\x06\x1d\x39\x8d\xd4\x37\x3d\x3f\xf5\xd1\x69\xc0\x5f\x01\xbb\xb2\xd6\xef\x23\x38\x2b\x4f\x08\x50\x10\x42\x04')
+            self.failUnless(ieee.fcs == struct.unpack('I', '\xac\x17\x00\x00')[0])
 
             import llc, ip
             llc_pkt = llc.LLC(ieee.data_frame.data)
@@ -498,8 +620,8 @@ if __name__ == '__main__':
             self.failUnless(ip_pkt.dst == '\x3f\xf5\xd1\x69')
 
         def test_80211_data_qos(self):
-            s = '\x88\x01\x3a\x01\x00\x26\xcb\x17\x44\xf0\x00\x23\xdf\xc9\xc0\x93\x00\x26\xcb\x17\x44\xf0\x20\x7b\x00\x00\xaa\xaa\x03\x00\x00\x00\x88\x8e\x01\x00\x00\x74\x02\x02\x00\x74\x19\x80\x00\x00\x00\x6a\x16\x03\x01\x00\x65\x01\x00\x00\x61\x03\x01\x4b\x4c\xa7\x7e\x27\x61\x6f\x02\x7b\x3c\x72\x39\xe3\x7b\xd7\x43\x59\x91\x7f\xaa\x22\x47\x51\xb6\x88\x9f\x85\x90\x87\x5a\xd1\x13\x20\xe0\x07\x00\x00\x68\xbd\xa4\x13\xb0\xd5\x82\x7e\xc7\xfb\xe7\xcc\xab\x6e\x5d\x5a\x51\x50\xd4\x45\xc5\xa1\x65\x53\xad\xb5\x88\x5b\x00\x1a\x00\x2f\x00\x05\x00\x04\x00\x35\x00\x0a\x00\x09\x00\x03\x00\x08\x00\x33\x00\x39\x00\x16\x00\x15\x00\x14\x01\x00'
-            ieee = IEEE80211(s)
+            s = '\x88\x01\x3a\x01\x00\x26\xcb\x17\x44\xf0\x00\x23\xdf\xc9\xc0\x93\x00\x26\xcb\x17\x44\xf0\x20\x7b\x00\x00\xaa\xaa\x03\x00\x00\x00\x88\x8e\x01\x00\x00\x74\x02\x02\x00\x74\x19\x80\x00\x00\x00\x6a\x16\x03\x01\x00\x65\x01\x00\x00\x61\x03\x01\x4b\x4c\xa7\x7e\x27\x61\x6f\x02\x7b\x3c\x72\x39\xe3\x7b\xd7\x43\x59\x91\x7f\xaa\x22\x47\x51\xb6\x88\x9f\x85\x90\x87\x5a\xd1\x13\x20\xe0\x07\x00\x00\x68\xbd\xa4\x13\xb0\xd5\x82\x7e\xc7\xfb\xe7\xcc\xab\x6e\x5d\x5a\x51\x50\xd4\x45\xc5\xa1\x65\x53\xad\xb5\x88\x5b\x00\x1a\x00\x2f\x00\x05\x00\x04\x00\x35\x00\x0a\x00\x09\x00\x03\x00\x08\x00\x33\x00\x39\x00\x16\x00\x15\x00\x14\x01\x00\xff\xff\xff\xff'
+            ieee = IEEE80211(s, fcs = True)
             self.failUnless(ieee.type == DATA_TYPE)
             self.failUnless(ieee.subtype == D_QOS_DATA)
             self.failUnless(ieee.data_frame.dst == '\x00\x26\xcb\x17\x44\xf0')
@@ -507,12 +629,13 @@ if __name__ == '__main__':
             self.failUnless(ieee.data_frame.frag_seq == 0x207b)
             self.failUnless(ieee.data == '\xaa\xaa\x03\x00\x00\x00\x88\x8e\x01\x00\x00\x74\x02\x02\x00\x74\x19\x80\x00\x00\x00\x6a\x16\x03\x01\x00\x65\x01\x00\x00\x61\x03\x01\x4b\x4c\xa7\x7e\x27\x61\x6f\x02\x7b\x3c\x72\x39\xe3\x7b\xd7\x43\x59\x91\x7f\xaa\x22\x47\x51\xb6\x88\x9f\x85\x90\x87\x5a\xd1\x13\x20\xe0\x07\x00\x00\x68\xbd\xa4\x13\xb0\xd5\x82\x7e\xc7\xfb\xe7\xcc\xab\x6e\x5d\x5a\x51\x50\xd4\x45\xc5\xa1\x65\x53\xad\xb5\x88\x5b\x00\x1a\x00\x2f\x00\x05\x00\x04\x00\x35\x00\x0a\x00\x09\x00\x03\x00\x08\x00\x33\x00\x39\x00\x16\x00\x15\x00\x14\x01\x00')
             self.failUnless(ieee.qos_data.control == 0x0)
-        
+            self.failUnless(ieee.fcs == struct.unpack('I', '\xff\xff\xff\xff')[0])
+
         def test_bug(self):
-            s='\x88\x41\x2c\x00\x00\x26\xcb\x17\x44\xf0\x00\x1e\x52\x97\x14\x11\x00\x1f\x6d\xe8\x18\x00\xd0\x07\x00\x00\x6f\x00\x00\x20\x00\x00\x00\x00'
+            s = '\x88\x41\x2c\x00\x00\x26\xcb\x17\x44\xf0\x00\x1e\x52\x97\x14\x11\x00\x1f\x6d\xe8\x18\x00\xd0\x07\x00\x00\x6f\x00\x00\x20\x00\x00\x00\x00'
             ieee = IEEE80211(s)
             self.failUnless(ieee.wep == 1)
-        
+
         def test_data_ds(self):
             # verifying the ToDS and FromDS fields and that we're getting the
             # correct values
@@ -545,5 +668,39 @@ if __name__ == '__main__':
             self.failUnless(ieee.data_frame.src == '\x00\x1f\x33\x39\x75\x44')
             self.failUnless(ieee.data_frame.dst == '\x00\x02\x44\xac\x27\x70')
 
+        def test_compressed_block_ack(self):
+            s = '\x94\x00\x00\x00\x34\xc0\x59\xd6\x3f\x62\xb4\x75\x0e\x46\x83\xc1\x05\x50\x80\xee\x03\x00\x00\x00\x00\x00\x00\x00\xa2\xe4\x98\x45'
+            ieee = IEEE80211(s, fcs = True)
+            self.failUnless(ieee.type == CTL_TYPE)
+            self.failUnless(ieee.subtype == C_BLOCK_ACK)
+            self.failUnless(ieee.back.dst == '\x34\xc0\x59\xd6\x3f\x62')
+            self.failUnless(ieee.back.src == '\xb4\x75\x0e\x46\x83\xc1')
+            self.failUnless(ieee.back.compressed == 1)
+            self.failUnless(len(ieee.back.bmp) == 8)
+            self.failUnless(ieee.back.ack_policy == 1)
+            self.failUnless(ieee.back.tid == 5)
+
+        def test_action_block_ack_request(self):
+            s = '\xd0\x00\x3a\x01\x00\x23\x14\x36\x52\x30\xb4\x75\x0e\x46\x83\xc1\xb4\x75\x0e\x46\x83\xc1\x70\x14\x03\x00\x0d\x02\x10\x00\x00\x40\x29\x06\x50\x33\x9e'
+            ieee = IEEE80211(s, fcs = True)
+            self.failUnless(ieee.type == MGMT_TYPE)
+            self.failUnless(ieee.subtype == M_ACTION)
+            self.failUnless(ieee.action.category == BLOCK_ACK)
+            self.failUnless(ieee.action.code == BLOCK_ACK_CODE_REQUEST)
+            self.failUnless(ieee.action.block_ack_request.timeout == 0)
+            parameters = struct.unpack('H', '\x10\x02')[0]
+            self.failUnless(ieee.action.block_ack_request.parameters == parameters)
+
+        def test_action_block_ack_response(self):
+            s = '\xd0\x00\x3c\x00\xb4\x75\x0e\x46\x83\xc1\x00\x23\x14\x36\x52\x30\xb4\x75\x0e\x46\x83\xc1\xd0\x68\x03\x01\x0d\x00\x00\x02\x10\x88\x13\x9f\xc0\x0b\x75'
+            ieee = IEEE80211(s, fcs = True)
+            self.failUnless(ieee.type == MGMT_TYPE)
+            self.failUnless(ieee.subtype == M_ACTION)
+            self.failUnless(ieee.action.category == BLOCK_ACK)
+            self.failUnless(ieee.action.code == BLOCK_ACK_CODE_RESPONSE)
+            timeout = struct.unpack('H', '\x13\x88')[0]
+            self.failUnless(ieee.action.block_ack_response.timeout == timeout)
+            parameters = struct.unpack('H', '\x10\x02')[0]
+            self.failUnless(ieee.action.block_ack_response.parameters == parameters)
 
     unittest.main()

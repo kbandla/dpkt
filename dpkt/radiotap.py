@@ -1,6 +1,8 @@
 '''Radiotap'''
 
 import dpkt
+import ieee80211
+import socket
 
 # Ref: http://www.radiotap.org
 # Fields Ref: http://www.radiotap.org/defined-fields/all
@@ -68,6 +70,10 @@ _STATIC_TURBO_SHIFT   = 13
 _HALF_RATE_SHIFT      = 14
 _QUARTER_RATE_SHIFT   = 15
 
+# Flags offsets and masks
+_FCS_SHIFT = 4
+_FCS_MASK = 0x10
+
 class Radiotap(dpkt.Packet):
     __hdr__ = (
         ('version', 'B', 0),
@@ -128,11 +134,11 @@ class Radiotap(dpkt.Packet):
     rx_flags_present = property(_get_rx_flags_present, _set_rx_flags_present)
     chanplus_present = property(_get_chanplus_present, _set_chanplus_present)
     ext_present = property(_get_ext_present, _set_ext_present)
-    
+
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
-        self.data = buf[self.length:]
-        
+        self.data = buf[socket.ntohs(self.length):]
+
         self.fields = []
         buf = buf[self.__hdr_len__:]
 
@@ -161,6 +167,12 @@ class Radiotap(dpkt.Packet):
                 setattr(self, name, field)
                 self.fields.append(field)
                 buf = buf[len(field):]
+
+        if len(self.data) > 0:
+            if self.flags_present and self.flags.fcs:
+                self.data = ieee80211.IEEE80211(self.data, fcs = self.flags.fcs)
+            else:
+                self.data = ieee80211.IEEE80211(self.data)
 
     class Antenna(dpkt.Packet):
         __hdr__ = (
@@ -193,6 +205,11 @@ class Radiotap(dpkt.Packet):
         __hdr__ = (
             ('val', 'B', 0),
             )
+
+        def _get_fcs_present(self): return (self.val & _FCS_MASK) >> _FCS_SHIFT
+
+        def _set_fcs_present(self, v): (v << _FCS_SHIFT) | (self.val & ~_FCS_MASK)
+        fcs = property(_get_fcs_present, _set_fcs_present)
 
     class LockQuality(dpkt.Packet):
         __hdr__ = (
@@ -265,4 +282,11 @@ if __name__ == '__main__':
             self.failUnless(rad.channel.freq == 0x6c09)
             self.failUnless(rad.channel.flags == 0xa000)
             self.failUnless(len(rad.fields) == 7)
+
+        def test_fcs(self):
+            s = '\x00\x00\x1a\x00\x2f\x48\x00\x00\x34\x8f\x71\x09\x00\x00\x00\x00\x10\x0c\x85\x09\xc0\x00\xcc\x01\x00\x00'
+            rt = Radiotap(s)
+            self.failUnless(rt.flags_present == 1)
+            self.failUnless(rt.flags.fcs == 1)
+
     unittest.main()
