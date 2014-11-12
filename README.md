@@ -1,7 +1,9 @@
 # dpkt
 "fast, simple packet creation / parsing, with definitions for the basic TCP/IP protocols"
 
-## Deviations from upstream
+### Deviations from upstream
+This code is based on Kiran Bandia's [dpkt fork](https://github.com/kbandla/dpkt) which is of course based on the original [dpkt code](https://code.google.com/p/dpkt/) lead by Dug Song.
+
 At this point, this is not the exact [upstream version](https://code.google.com/p/dpkt/). 
 If you are looking for the latest stock dpkt, please get it from the above link.
 
@@ -12,7 +14,7 @@ Here is a list of the changes:
 * [dpkt/dns.py](https://github.com/kbandla/dpkt/commit/2bf3cde213144391fd90488d12f9ccce51b5fbca) : parse some more DNS flags
 
 ## Examples
-[@jonoberheide's]([https://twitter.com/jonoberheide) old examples still apply:
+[@jonoberheide's](https://twitter.com/jonoberheide) old examples still apply:
 
 * [dpkt Tutorial #1: ICMP Echo](https://jon.oberheide.org/blog/2008/08/25/dpkt-tutorial-1-icmp-echo/)
 * [dpkt Tutorial #2: Parsing a PCAP File](https://jon.oberheide.org/blog/2008/10/15/dpkt-tutorial-2-parsing-a-pcap-file/)
