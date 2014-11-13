@@ -16,5 +16,5 @@ setup(name='dpkt',
       author=dpkt.__author__,
       url=dpkt.__url__,
       description='dumb packet module',
-      long_description = readme
+      long_description = readme,
       packages=[ 'dpkt' ])
