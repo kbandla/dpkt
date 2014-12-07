@@ -10,9 +10,10 @@ Here is a list of the changes:
 
 * [dpkt/dpkt.py](https://github.com/kbandla/dpkt/commit/336fe02b0e2f00b382d91cd42558a69eec16d6c7): decouple dnet from dpkt 
 * [dpkt/dns.py](https://github.com/kbandla/dpkt/commit/2bf3cde213144391fd90488d12f9ccce51b5fbca) : parse some more DNS flags
+* [dpkt/{aoe.py,aoeata.py,aoecfg.py}](https://github.com/kbandla/dpkt/commit/11ce946e2b9fb92dea6efba4a7fb9e9327689d37) : Add initial support for ATA over Ethernet (AoE) protocol
 
 ## Examples
-[@jonoberheide's]([https://twitter.com/jonoberheide) old examples still apply:
+[@jonoberheide's](https://twitter.com/jonoberheide) old examples still apply:
 
 * [dpkt Tutorial #1: ICMP Echo](https://jon.oberheide.org/blog/2008/08/25/dpkt-tutorial-1-icmp-echo/)
 * [dpkt Tutorial #2: Parsing a PCAP File](https://jon.oberheide.org/blog/2008/10/15/dpkt-tutorial-2-parsing-a-pcap-file/)
