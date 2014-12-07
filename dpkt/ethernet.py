@@ -19,6 +19,7 @@ ETH_MIN		= (ETH_LEN_MIN - ETH_HDR_LEN - ETH_CRC_LEN)
 ETH_TYPE_PUP	= 0x0200		# PUP protocol
 ETH_TYPE_IP	= 0x0800		# IP protocol
 ETH_TYPE_ARP	= 0x0806		# address resolution protocol
+ETH_TYPE_AOE	= 0x88a2		# AoE protocol
 ETH_TYPE_CDP	= 0x2000		# Cisco Discovery Protocol
 ETH_TYPE_DTP	= 0x2004		# Cisco Dynamic Trunking Protocol
 ETH_TYPE_REVARP	= 0x8035		# reverse addr resolution protocol
