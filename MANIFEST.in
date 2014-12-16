@@ -1,3 +1,4 @@
 include AUTHORS CHANGES README LICENSE HACKING
+include README.rst
 recursive-include examples *
 recursive-include tests *
