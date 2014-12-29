@@ -1,8 +1,11 @@
 *.py[cod]
 
+<<<<<<< HEAD
 # C extensions
 *.so
 
+=======
+>>>>>>> 80f2aab41c02d9380c288da101dab90e79531c89
 # Packages
 *.egg
 *.egg-info
@@ -17,6 +20,10 @@ develop-eggs
 .installed.cfg
 lib
 lib64
+<<<<<<< HEAD
+=======
+__pycache__
+>>>>>>> 80f2aab41c02d9380c288da101dab90e79531c89
 
 # Installer logs
 pip-log.txt
@@ -24,10 +31,21 @@ pip-log.txt
 # Unit test / coverage reports
 .coverage
 .tox
+<<<<<<< HEAD
 nosetests.xml
+=======
+
+# iPython temp files
+.ipynb_checkpoints
+>>>>>>> 80f2aab41c02d9380c288da101dab90e79531c89
 
 # Mac DS files
 .DS_Store
 
+<<<<<<< HEAD
 # Sphinx
 docs/_build
+=======
+# ReadTheDocs build directory
+_build
+>>>>>>> 80f2aab41c02d9380c288da101dab90e79531c89

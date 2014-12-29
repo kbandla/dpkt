@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 
 ===============================
 dpkt
@@ -63,11 +64,25 @@ To run the all tests run::
 
     tox
 
+=======
+dpkt
+====
+
+"fast, simple packet creation / parsing, with definitions for the basic
+TCP/IP protocols"
+>>>>>>> 80f2aab41c02d9380c288da101dab90e79531c89
 
 Deviations from upstream
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
+<<<<<<< HEAD
 This code is based on `dpkt code <https://code.google.com/p/dpkt/>`__ lead by Dug Song.
+=======
+This code is based on Kiran Bandia's `dpkt
+fork <https://github.com/kbandla/dpkt>`__ which is of course based on
+the original `dpkt code <https://code.google.com/p/dpkt/>`__ lead by Dug
+Song.
+>>>>>>> 80f2aab41c02d9380c288da101dab90e79531c89
 
 At this point, this is not the exact `upstream
 version <https://code.google.com/p/dpkt/>`__. If you are looking for the
