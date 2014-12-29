@@ -1,8 +1,2 @@
-<<<<<<< HEAD
+
 include AUTHORS CHANGES README.rst LICENSE
-=======
-include AUTHORS CHANGES README LICENSE HACKING
-include README.rst
->>>>>>> 80f2aab41c02d9380c288da101dab90e79531c89
-recursive-include examples *
-recursive-include tests *
