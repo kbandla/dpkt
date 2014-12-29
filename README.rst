@@ -1,5 +1,78 @@
+
+===============================
 dpkt
-====
+===============================
+
+fast, simple packet creation / parsing, with definitions for the basic TCP/IP protocols
+
+| |docs| |travis| |appveyor| |coveralls| |landscape| |scrutinizer|
+| |version| |downloads| |wheel| |supported-versions| |supported-implementations|
+
+.. |docs| image:: https://readthedocs.org/projects/dpkt/badge/?style=flat
+    :target: https://readthedocs.org/projects/dpkt
+    :alt: Documentation Status
+
+.. |travis| image:: http://img.shields.io/travis/brifordwylie/dpkt/master.png?style=flat
+    :alt: Travis-CI Build Status
+    :target: https://travis-ci.org/brifordwylie/dpkt
+
+.. |appveyor| image:: https://ci.appveyor.com/api/projects/status/github/brifordwylie/dpkt?branch=master
+    :alt: AppVeyor Build Status
+    :target: https://ci.appveyor.com/project/brifordwylie/dpkt
+
+.. |coveralls| image:: http://img.shields.io/coveralls/brifordwylie/dpkt/master.png?style=flat
+    :alt: Coverage Status
+    :target: https://coveralls.io/r/brifordwylie/dpkt
+
+.. |landscape| image:: https://landscape.io/github/brifordwylie/dpkt/master/landscape.svg?style=flat
+    :target: https://landscape.io/github/brifordwylie/dpkt/master
+    :alt: Code Quality Status
+
+.. |version| image:: http://img.shields.io/pypi/v/dpkt.png?style=flat
+    :alt: PyPI Package latest release
+    :target: https://pypi.python.org/pypi/dpkt
+
+.. |downloads| image:: http://img.shields.io/pypi/dm/dpkt.png?style=flat
+    :alt: PyPI Package monthly downloads
+    :target: https://pypi.python.org/pypi/dpkt
+
+.. |wheel| image:: https://pypip.in/wheel/dpkt/badge.png?style=flat
+    :alt: PyPI Wheel
+    :target: https://pypi.python.org/pypi/dpkt
+
+.. |supported-versions| image:: https://pypip.in/py_versions/dpkt/badge.png?style=flat
+    :alt: Supported versions
+    :target: https://pypi.python.org/pypi/dpkt
+
+.. |supported-implementations| image:: https://pypip.in/implementation/dpkt/badge.png?style=flat
+    :alt: Supported imlementations
+    :target: https://pypi.python.org/pypi/dpkt
+
+.. |scrutinizer| image:: https://img.shields.io/scrutinizer/g/brifordwylie/dpkt/master.png?style=flat
+    :alt: Scrtinizer Status
+    :target: https://scrutinizer-ci.com/g/brifordwylie/dpkt/
+
+* Free software: BSD license
+
+Installation
+============
+
+::
+
+    pip install dpkt
+
+Documentation
+=============
+
+https://dpkt.readthedocs.org/
+
+Development
+===========
+
+To run the all tests run::
+
+    tox
+
 
 "fast, simple packet creation / parsing, with definitions for the basic
 TCP/IP protocols"
