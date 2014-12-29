@@ -15,11 +15,6 @@ requirements = [
 # Pull in the package
 package = __import__(package_name)
 
-# Publish to PyPI
-if sys.argv[-1] == 'publish':
-    os.system('python setup.py sdist upload')
-    sys.exit()
-
 setup(name=package_name,
     version=package.__version__,
     author=package.__author__,
