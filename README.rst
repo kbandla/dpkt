@@ -5,8 +5,8 @@ dpkt
 
 fast, simple packet creation / parsing, with definitions for the basic TCP/IP protocols
 
-| |docs| |travis| |appveyor| |coveralls| |landscape| |scrutinizer|
-| |version| |downloads| |wheel| |supported-versions| |supported-implementations|
+| |docs| |travis| |coveralls| |landscape| |version|
+| |downloads| |wheel| |supported-versions| |supported-implementations|
 
 .. |docs| image:: https://readthedocs.org/projects/dpkt/badge/?style=flat
     :target: https://readthedocs.org/projects/dpkt
@@ -15,10 +15,6 @@ fast, simple packet creation / parsing, with definitions for the basic TCP/IP pr
 .. |travis| image:: http://img.shields.io/travis/brifordwylie/dpkt/master.png?style=flat
     :alt: Travis-CI Build Status
     :target: https://travis-ci.org/brifordwylie/dpkt
-
-.. |appveyor| image:: https://ci.appveyor.com/api/projects/status/github/brifordwylie/dpkt?branch=master
-    :alt: AppVeyor Build Status
-    :target: https://ci.appveyor.com/project/brifordwylie/dpkt
 
 .. |coveralls| image:: http://img.shields.io/coveralls/brifordwylie/dpkt/master.png?style=flat
     :alt: Coverage Status
@@ -45,14 +41,8 @@ fast, simple packet creation / parsing, with definitions for the basic TCP/IP pr
     :target: https://pypi.python.org/pypi/dpkt
 
 .. |supported-implementations| image:: https://pypip.in/implementation/dpkt/badge.png?style=flat
-    :alt: Supported imlementations
+    :alt: Supported implementations
     :target: https://pypi.python.org/pypi/dpkt
-
-.. |scrutinizer| image:: https://img.shields.io/scrutinizer/g/brifordwylie/dpkt/master.png?style=flat
-    :alt: Scrtinizer Status
-    :target: https://scrutinizer-ci.com/g/brifordwylie/dpkt/
-
-* Free software: BSD license
 
 Installation
 ============
@@ -73,9 +63,6 @@ To run the all tests run::
 
     tox
 
-
-"fast, simple packet creation / parsing, with definitions for the basic
-TCP/IP protocols"
 
 Deviations from upstream
 ~~~~~~~~~~~~~~~~~~~~~~~~
