@@ -17,7 +17,7 @@ ETH_MIN		= (ETH_LEN_MIN - ETH_HDR_LEN - ETH_CRC_LEN)
 
 # Ethernet payload types - http://standards.ieee.org/regauth/ethertype
 ETH_TYPE_PUP	= 0x0200		# PUP protocol
-ETH_TYPE_IP	= 0x0800		# IP protocol
+ETH_TYPE_IP	    = 0x0800		# IP protocol
 ETH_TYPE_ARP	= 0x0806		# address resolution protocol
 ETH_TYPE_AOE	= 0x88a2		# AoE protocol
 ETH_TYPE_CDP	= 0x2000		# Cisco Discovery Protocol
@@ -31,6 +31,7 @@ ETH_TYPE_MPLS	= 0x8847		# MPLS
 ETH_TYPE_MPLS_MCAST	= 0x8848	# MPLS Multicast
 ETH_TYPE_PPPoE_DISC	= 0x8863	# PPP Over Ethernet Discovery Stage
 ETH_TYPE_PPPoE		= 0x8864	# PPP Over Ethernet Session Stage
+ETH_TYPE_LLDP   = 0x88CC        #Link Layer Discovery Protocol
 
 # MPLS label stack fields
 MPLS_LABEL_MASK	= 0xfffff000
