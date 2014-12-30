@@ -1,6 +1,6 @@
 doc-warnings: yes
 test-warnings: yes
-strictness: low
+strictness: verylow
 max-line-length: 140
 autodetect: yes
 ignore-paths:
