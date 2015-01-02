@@ -7,7 +7,7 @@ except ImportError:
     from distutils.core import setup, Command
 
 package_name = 'dpkt'
-description = 'dumb packet processing python module'
+description = 'fast, simple packet creation / parsing, with definitions for the basic TCP/IP protocols'
 readme = open('README.rst').read()
 requirements = [ ]
 
