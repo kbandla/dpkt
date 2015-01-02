@@ -25,6 +25,7 @@ setup(name=package_name,
     long_description=long_description,
     packages=['dpkt'],
     install_requires=requirements,
+    license='BSD',
     zip_safe=False,
     classifiers=[
         'Development Status :: 4 - Beta',
