@@ -3,8 +3,6 @@
 dpkt
 ====
 
-fast, simple packet creation / parsing, with definitions for the basic TCP/IP protocols
-
 | |docs| |travis| |coveralls| |landscape| |version|
 | |downloads| |wheel| |supported-versions| |supported-implementations|
 

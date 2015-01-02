@@ -9,8 +9,10 @@ except ImportError:
 package_name = 'dpkt'
 description = 'dumb packet processing python module'
 readme = open('README.rst').read()
-requirements = [ 
-]
+requirements = [ ]
+
+# PyPI Readme
+long_description = open('README.rst').read()
 
 # Pull in the package
 package = __import__(package_name)
@@ -20,6 +22,7 @@ setup(name=package_name,
     author=package.__author__,
     url=package.__url__,
     description=description,
+    long_description=long_description,
     packages=['dpkt'],
     install_requires=requirements,
     zip_safe=False,
