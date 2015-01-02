@@ -4,16 +4,16 @@ dpkt
 fast, simple packet creation / parsing, with definitions for the basic
 TCP/IP protocols
 
-![docs](https://readthedocs.org/projects/dpkt/badge/?style=flat:target:https://readthedocs.org/projects/dpkt)
-![travis](http://img.shields.io/travis/brifordwylie/dpkt/master.png?style=flat:target:https://travis-ci.org/brifordwylie/dpkt)
-![coveralls](http://img.shields.io/coveralls/brifordwylie/dpkt/master.png?style=flat:target:https://coveralls.io/r/brifordwylie/dpkt)
-![landscape](https://landscape.io/github/brifordwylie/dpkt/master/landscape.svg?style=flat:target:https://landscape.io/github/brifordwylie/dpkt/master)
-![version](http://img.shields.io/pypi/v/dpkt.png?style=flat:target:https://pypi.python.org/pypi/dpkt)
+[![docs](https://readthedocs.org/projects/dpkt/badge/?style=flat)](https://readthedocs.org/projects/dpkt)
+[![travis](http://img.shields.io/travis/brifordwylie/dpkt/master.png?style=flat)](https://travis-ci.org/brifordwylie/dpkt)
+[![coveralls](http://img.shields.io/coveralls/brifordwylie/dpkt/master.png?style=flat)](https://coveralls.io/r/brifordwylie/dpkt)
+[![landscape](https://landscape.io/github/brifordwylie/dpkt/master/landscape.svg?style=flat)](https://landscape.io/github/brifordwylie/dpkt/master)
+[![version](http://img.shields.io/pypi/v/dpkt.png?style=flat)](https://pypi.python.org/pypi/dpkt)
 
-![downloads](http://img.shields.io/pypi/dm/dpkt.png?style=flat:target:https://pypi.python.org/pypi/dpkt)
-![wheel](https://pypip.in/wheel/dpkt/badge.png?style=flat:target:https://pypi.python.org/pypi/dpkt)
-![supported-versions](https://pypip.in/py_versions/dpkt/badge.png?style=flat:target:https://pypi.python.org/pypi/dpkt)
-![supported-implementations](https://pypip.in/implementation/dpkt/badge.png?style=flat:target:https://pypi.python.org/pypi/dpkt)
+[![downloads](http://img.shields.io/pypi/dm/dpkt.png?style=flat)](https://pypi.python.org/pypi/dpkt)
+[![wheel](https://pypip.in/wheel/dpkt/badge.png?style=flat)](https://pypi.python.org/pypi/dpkt)
+[![supported-versions](https://pypip.in/py_versions/dpkt/badge.png?style=flat)](https://pypi.python.org/pypi/dpkt)
+[![supported-implementations](https://pypip.in/implementation/dpkt/badge.png?style=flat)](https://pypi.python.org/pypi/dpkt)
 
 
 Installation
