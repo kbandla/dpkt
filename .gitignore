@@ -1,0 +1,29 @@
+# Compiled/intermediate Python files
+*.py[cod]
+
+# C extensions
+*.so
+
+# Packages
+*.egg
+*.egg-info
+dist
+build
+sdist
+__pycache__
+
+# Installer logs
+pip-log.txt
+
+# Unit test / coverage reports
+.coverage
+.tox
+
+# iPython temp files
+.ipynb_checkpoints
+
+# Mac DS files
+.DS_Store
+
+# ReadTheDocs build directory
+_build
