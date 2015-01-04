@@ -5,9 +5,9 @@ fast, simple packet creation / parsing, with definitions for the basic
 TCP/IP protocols
 
 [![docs](https://readthedocs.org/projects/dpkt/badge/?style=flat)](https://readthedocs.org/projects/dpkt)
-[![travis](http://img.shields.io/travis/brifordwylie/dpkt/master.png?style=flat)](https://travis-ci.org/brifordwylie/dpkt)
-[![coveralls](http://img.shields.io/coveralls/brifordwylie/dpkt/master.png?style=flat)](https://coveralls.io/r/brifordwylie/dpkt)
-[![landscape](https://landscape.io/github/brifordwylie/dpkt/master/landscape.svg?style=flat)](https://landscape.io/github/brifordwylie/dpkt/master)
+[![travis](http://img.shields.io/travis/kbandla/dpkt/master.png?style=flat)](https://travis-ci.org/kbandla/dpkt)
+[![coveralls](http://img.shields.io/coveralls/kbandla/dpkt/master.png?style=flat)](https://coveralls.io/r/kbandla/dpkt)
+[![landscape](https://landscape.io/github/kbandla/dpkt/master/landscape.svg?style=flat)](https://landscape.io/github/kbandla/dpkt/master)
 [![version](http://img.shields.io/pypi/v/dpkt.png?style=flat)](https://pypi.python.org/pypi/dpkt)
 
 [![downloads](http://img.shields.io/pypi/dm/dpkt.png?style=flat)](https://pypi.python.org/pypi/dpkt)

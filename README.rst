@@ -10,16 +10,16 @@ dpkt
     :target: https://readthedocs.org/projects/dpkt
     :alt: Documentation Status
 
-.. |travis| image:: http://img.shields.io/travis/brifordwylie/dpkt/master.png?style=flat
+.. |travis| image:: http://img.shields.io/travis/kbandla/dpkt/master.png?style=flat
     :alt: Travis-CI Build Status
-    :target: https://travis-ci.org/brifordwylie/dpkt
+    :target: https://travis-ci.org/kbandla/dpkt
 
-.. |coveralls| image:: http://img.shields.io/coveralls/brifordwylie/dpkt/master.png?style=flat
+.. |coveralls| image:: http://img.shields.io/coveralls/kbandla/dpkt/master.png?style=flat
     :alt: Coverage Status
-    :target: https://coveralls.io/r/brifordwylie/dpkt
+    :target: https://coveralls.io/r/kbandla/dpkt
 
-.. |landscape| image:: https://landscape.io/github/brifordwylie/dpkt/master/landscape.svg?style=flat
-    :target: https://landscape.io/github/brifordwylie/dpkt/master
+.. |landscape| image:: https://landscape.io/github/kbandla/dpkt/master/landscape.svg?style=flat
+    :target: https://landscape.io/github/kbandla/dpkt/master
     :alt: Code Quality Status
 
 .. |version| image:: http://img.shields.io/pypi/v/dpkt.png?style=flat
