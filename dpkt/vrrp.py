@@ -31,6 +31,7 @@ class VRRP(dpkt.Packet):
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
         l = []
+        off = 0
         for off in range(0, 4 * self.count, 4):
             l.append(self.data[off:off+4])
         self.addrs = l
