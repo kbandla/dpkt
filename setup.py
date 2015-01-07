@@ -23,7 +23,6 @@ class BuildDebPackage(Command):
         import stdeb
     except ImportError as exc:
         print 'To build a Debian Package you must install stdeb (pip install stdeb)'
-        sys.exit(-1)
 
     description = "Build a Debian Package out of this Python Package"
     user_options = []

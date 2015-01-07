@@ -15,7 +15,6 @@ before_install:
   - lsb_release -a
 install:
   - pip install tox
-  - pip install stdeb
 script:
   - tox -v
 notifications:
