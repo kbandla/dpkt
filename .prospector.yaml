@@ -1,0 +1,8 @@
+pep8:
+  disable:
+    - E1101
+    - E1103
+pylint:
+  disable:
+     - E1101
+     - E1103
