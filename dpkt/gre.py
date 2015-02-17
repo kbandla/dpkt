@@ -11,6 +11,7 @@ GRE_KP = 0x2000  # Key Present
 GRE_SP = 0x1000  # Sequence Present
 GRE_SS = 0x0800  # Strict Source Route
 GRE_AP = 0x0080  # Acknowledgment Present
+GRE_TRANSPARENT_ETH_BR = 0x6558
 
 GRE_opt_fields = (
     (GRE_CP|GRE_RP, 'sum', 'H'), (GRE_CP|GRE_RP, 'off', 'H'),
@@ -76,7 +77,10 @@ class GRE(dpkt.Packet):
                 if not sre.len:
                     break
             self.sre = l
-        self.data = ethernet.Ethernet._typesw[self.p](self.data)
+        if self.p == GRE_TRANSPARENT_ETH_BR:
+            self.data = ethernet.Ethernet(self.data)
+        else:
+            self.data = ethernet.Ethernet._typesw[self.p](self.data)
         setattr(self, self.data.__class__.__name__.lower(), self.data)
     
     def __len__(self):
