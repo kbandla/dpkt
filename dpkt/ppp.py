@@ -8,26 +8,29 @@ import dpkt
 # XXX - finish later
 
 # http://www.iana.org/assignments/ppp-numbers
-PPP_IP	= 0x21		# Internet Protocol
-PPP_IP6 = 0x57		# Internet Protocol v6
+PPP_IP = 0x21  # Internet Protocol
+PPP_IP6 = 0x57  # Internet Protocol v6
 
 # Protocol field compression
-PFC_BIT	= 0x01
+PFC_BIT = 0x01
+
 
 class PPP(dpkt.Packet):
     __hdr__ = (
         ('p', 'B', PPP_IP),
-        )
+    )
     _protosw = {}
-    
+
     def set_p(cls, p, pktclass):
         cls._protosw[p] = pktclass
+
     set_p = classmethod(set_p)
 
     def get_p(cls, p):
         return cls._protosw[p]
+
     get_p = classmethod(get_p)
-    
+
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
         if self.p & PFC_BIT == 0:
@@ -47,6 +50,7 @@ class PPP(dpkt.Packet):
         except struct.error, e:
             raise dpkt.PackError(str(e))
 
+
 def __load_protos():
     g = globals()
     for k, v in g.iteritems():
@@ -58,6 +62,7 @@ def __load_protos():
             except ImportError:
                 continue
             PPP.set_p(v, getattr(mod, name))
+
 
 if not PPP._protosw:
     __load_protos()

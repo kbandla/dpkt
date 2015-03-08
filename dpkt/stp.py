@@ -4,6 +4,7 @@
 
 import dpkt
 
+
 class STP(dpkt.Packet):
     __hdr__ = (
         ('proto_id', 'H', 0),
@@ -18,4 +19,4 @@ class STP(dpkt.Packet):
         ('max_age', 'H', 0),
         ('hello', 'H', 0),
         ('fd', 'H', 0)
-        )
+    )

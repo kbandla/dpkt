@@ -5,47 +5,51 @@
 import struct
 import dpkt
 
-CDP_DEVID		= 1	# string
-CDP_ADDRESS		= 2
-CDP_PORTID		= 3	# string
-CDP_CAPABILITIES	= 4	# 32-bit bitmask
-CDP_VERSION		= 5	# string
-CDP_PLATFORM		= 6	# string
-CDP_IPPREFIX		= 7	
+CDP_DEVID = 1  # string
+CDP_ADDRESS = 2
+CDP_PORTID = 3  # string
+CDP_CAPABILITIES = 4  # 32-bit bitmask
+CDP_VERSION = 5  # string
+CDP_PLATFORM = 6  # string
+CDP_IPPREFIX = 7
 
-CDP_VTP_MGMT_DOMAIN	= 9	# string
-CDP_NATIVE_VLAN		= 10	# 16-bit integer
-CDP_DUPLEX		= 11	# 8-bit boolean
-CDP_TRUST_BITMAP	= 18	# 8-bit bitmask0x13
-CDP_UNTRUST_COS		= 19	# 8-bit port
-CDP_SYSTEM_NAME		= 20	# string
-CDP_SYSTEM_OID		= 21	# 10-byte binary string
-CDP_MGMT_ADDRESS	= 22	# 32-bit number of addrs, Addresses
-CDP_LOCATION		= 23	# string
+CDP_VTP_MGMT_DOMAIN = 9  # string
+CDP_NATIVE_VLAN = 10  # 16-bit integer
+CDP_DUPLEX = 11  # 8-bit boolean
+CDP_TRUST_BITMAP = 18  # 8-bit bitmask0x13
+CDP_UNTRUST_COS = 19  # 8-bit port
+CDP_SYSTEM_NAME = 20  # string
+CDP_SYSTEM_OID = 21  # 10-byte binary string
+CDP_MGMT_ADDRESS = 22  # 32-bit number of addrs, Addresses
+CDP_LOCATION = 23  # string
+
 
 class CDP(dpkt.Packet):
     __hdr__ = (
         ('version', 'B', 2),
         ('ttl', 'B', 180),
         ('sum', 'H', 0)
-        )
+    )
+
     class Address(dpkt.Packet):
         # XXX - only handle NLPID/IP for now
         __hdr__ = (
-            ('ptype', 'B', 1),	# protocol type (NLPID)
-            ('plen', 'B', 1),	# protocol length
-            ('p', 'B', 0xcc),	# IP
-            ('alen', 'H', 4)	# address length
-            )
+            ('ptype', 'B', 1),  # protocol type (NLPID)
+            ('plen', 'B', 1),  # protocol length
+            ('p', 'B', 0xcc),  # IP
+            ('alen', 'H', 4)  # address length
+        )
+
         def unpack(self, buf):
             dpkt.Packet.unpack(self, buf)
             self.data = self.data[:self.alen]
-            
+
     class TLV(dpkt.Packet):
         __hdr__ = (
             ('type', 'H', 0),
             ('len', 'H', 4)
-            )
+        )
+
         def unpack(self, buf):
             dpkt.Packet.unpack(self, buf)
             self.data = self.data[:self.len - 4]
@@ -65,7 +69,7 @@ class CDP(dpkt.Packet):
             else:
                 n = len(self.data)
             return self.__hdr_len__ + n
-        
+
         def __str__(self):
             self.len = len(self)
             if self.type == CDP_ADDRESS:

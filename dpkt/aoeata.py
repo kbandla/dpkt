@@ -1,22 +1,23 @@
-'''ATA over Ethernet ATA command'''
+"""ATA over Ethernet ATA command"""
 
-import dpkt, aoe
+import dpkt
 
 ATA_DEVICE_IDENTIFY = 0xec
+
 
 class AOEATA(dpkt.Packet):
     __hdr__ = (
         ('aflags', 'B', 0),
         ('errfeat', 'B', 0),
-	('scnt', 'B', 0),
-	('cmdstat', 'B', ATA_DEVICE_IDENTIFY),
-	('lba0', 'B', 0),
-	('lba1', 'B', 0),
-	('lba2', 'B', 0),
-	('lba3', 'B', 0),
-	('lba4', 'B', 0),
-	('lba5', 'B', 0),
-	('res', 'H', 0),
+        ('scnt', 'B', 0),
+        ('cmdstat', 'B', ATA_DEVICE_IDENTIFY),
+        ('lba0', 'B', 0),
+        ('lba1', 'B', 0),
+        ('lba2', 'B', 0),
+        ('lba3', 'B', 0),
+        ('lba4', 'B', 0),
+        ('lba5', 'B', 0),
+        ('res', 'H', 0),
     )
 
     # XXX: in unpack, switch on ATA command like icmp does on type

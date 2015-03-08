@@ -5,28 +5,29 @@
 import dpkt
 
 # Types
-DATA                    = 0x01
-ACK                     = 0x02
-BUSY                    = 0x03
-ABORT                   = 0x04
-ACKALL                  = 0x05
-CHALLENGE               = 0x06
-RESPONSE                = 0x07
-DEBUG                   = 0x08
+DATA = 0x01
+ACK = 0x02
+BUSY = 0x03
+ABORT = 0x04
+ACKALL = 0x05
+CHALLENGE = 0x06
+RESPONSE = 0x07
+DEBUG = 0x08
 
 # Flags
-CLIENT_INITIATED        = 0x01 
-REQUEST_ACK             = 0x02
-LAST_PACKET             = 0x04
-MORE_PACKETS            = 0x08
-SLOW_START_OK           = 0x20
-JUMBO_PACKET            = 0x20
+CLIENT_INITIATED = 0x01
+REQUEST_ACK = 0x02
+LAST_PACKET = 0x04
+MORE_PACKETS = 0x08
+SLOW_START_OK = 0x20
+JUMBO_PACKET = 0x20
 
 # Security
-SEC_NONE                = 0x00
-SEC_BCRYPT              = 0x01
-SEC_RXKAD               = 0x02
-SEC_RXKAD_ENC           = 0x03
+SEC_NONE = 0x00
+SEC_BCRYPT = 0x01
+SEC_RXKAD = 0x02
+SEC_RXKAD_ENC = 0x03
+
 
 class Rx(dpkt.Packet):
     __hdr__ = (
@@ -41,4 +42,4 @@ class Rx(dpkt.Packet):
         ('security', 'B', 0),
         ('sum', 'H', 0),
         ('service', 'H', 0)
-        )
+    )

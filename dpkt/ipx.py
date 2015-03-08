@@ -6,6 +6,7 @@ import dpkt
 
 IPX_HDR_LEN = 30
 
+
 class IPX(dpkt.Packet):
     __hdr__ = (
         ('sum', 'H', 0xffff),
@@ -14,4 +15,4 @@ class IPX(dpkt.Packet):
         ('pt', 'B', 0),
         ('dst', '12s', ''),
         ('src', '12s', '')
-        )
+    )

@@ -2,8 +2,10 @@
 
 """ITU-T H.225.0 Call Signaling."""
 
-import dpkt, tpkt
 import struct
+import dpkt
+import tpkt
+
 
 # H225 Call Signaling
 # 
@@ -13,92 +15,93 @@ import struct
 # The User-to-User IEs of H225 are encoded by PER of ASN.1.
 
 # Call Establishment Messages
-ALERTING				= 1
-CALL_PROCEEDING				= 2
-CONNECT					= 7
-CONNECT_ACKNOWLEDGE			= 15
-PROGRESS				= 3
-SETUP					= 5
-SETUP_ACKNOWLEDGE			= 13
+ALERTING = 1
+CALL_PROCEEDING = 2
+CONNECT = 7
+CONNECT_ACKNOWLEDGE = 15
+PROGRESS = 3
+SETUP = 5
+SETUP_ACKNOWLEDGE = 13
 
 # Call Information Phase Messages
-RESUME					= 38
-RESUME_ACKNOWLEDGE			= 46
-RESUME_REJECT				= 34
-SUSPEND					= 37
-SUSPEND_ACKNOWLEDGE			= 45
-SUSPEND_REJECT				= 33
-USER_INFORMATION			= 32
+RESUME = 38
+RESUME_ACKNOWLEDGE = 46
+RESUME_REJECT = 34
+SUSPEND = 37
+SUSPEND_ACKNOWLEDGE = 45
+SUSPEND_REJECT = 33
+USER_INFORMATION = 32
 
 # Call Clearing Messages
-DISCONNECT				= 69
-RELEASE					= 77
-RELEASE_COMPLETE			= 90
-RESTART					= 70
-RESTART_ACKNOWLEDGE			= 78
+DISCONNECT = 69
+RELEASE = 77
+RELEASE_COMPLETE = 90
+RESTART = 70
+RESTART_ACKNOWLEDGE = 78
 
 # Miscellaneous Messages
-SEGMENT					= 96
-CONGESTION_CONTROL			= 121
-INFORMATION				= 123
-NOTIFY					= 110
-STATUS					= 125
-STATUS_ENQUIRY				= 117
+SEGMENT = 96
+CONGESTION_CONTROL = 121
+INFORMATION = 123
+NOTIFY = 110
+STATUS = 125
+STATUS_ENQUIRY = 117
 
 # Type 1 Single Octet Information Element IDs
-RESERVED				= 128
-SHIFT					= 144
-CONGESTION_LEVEL			= 176
-REPEAT_INDICATOR			= 208
+RESERVED = 128
+SHIFT = 144
+CONGESTION_LEVEL = 176
+REPEAT_INDICATOR = 208
 
 # Type 2 Single Octet Information Element IDs
-MORE_DATA				= 160
-SENDING_COMPLETE			= 161
+MORE_DATA = 160
+SENDING_COMPLETE = 161
 
 # Variable Length Information Element IDs 
-SEGMENTED_MESSAGE			= 0
-BEARER_CAPABILITY			= 4
-CAUSE					= 8
-CALL_IDENTITY				= 16
-CALL_STATE				= 20
-CHANNEL_IDENTIFICATION			= 24
-PROGRESS_INDICATOR			= 30
-NETWORK_SPECIFIC_FACILITIES		= 32
-NOTIFICATION_INDICATOR			= 39
-DISPLAY					= 40
-DATE_TIME				= 41
-KEYPAD_FACILITY				= 44
-SIGNAL					= 52
-INFORMATION_RATE			= 64
-END_TO_END_TRANSIT_DELAY		= 66
-TRANSIT_DELAY_SELECTION_AND_INDICATION	= 67
-PACKET_LAYER_BINARY_PARAMETERS		= 68
-PACKET_LAYER_WINDOW_SIZE		= 69
-PACKET_SIZE				= 70
-CLOSED_USER_GROUP			= 71
-REVERSE_CHARGE_INDICATION		= 74
-CALLING_PARTY_NUMBER			= 108
-CALLING_PARTY_SUBADDRESS		= 109
-CALLED_PARTY_NUMBER			= 112
-CALLED_PARTY_SUBADDRESS			= 113
-REDIRECTING_NUMBER			= 116
-TRANSIT_NETWORK_SELECTION		= 120
-RESTART_INDICATOR			= 121
-LOW_LAYER_COMPATIBILITY			= 124
-HIGH_LAYER_COMPATIBILITY		= 125
-USER_TO_USER				= 126
-ESCAPE_FOR_EXTENSION			= 127
+SEGMENTED_MESSAGE = 0
+BEARER_CAPABILITY = 4
+CAUSE = 8
+CALL_IDENTITY = 16
+CALL_STATE = 20
+CHANNEL_IDENTIFICATION = 24
+PROGRESS_INDICATOR = 30
+NETWORK_SPECIFIC_FACILITIES = 32
+NOTIFICATION_INDICATOR = 39
+DISPLAY = 40
+DATE_TIME = 41
+KEYPAD_FACILITY = 44
+SIGNAL = 52
+INFORMATION_RATE = 64
+END_TO_END_TRANSIT_DELAY = 66
+TRANSIT_DELAY_SELECTION_AND_INDICATION = 67
+PACKET_LAYER_BINARY_PARAMETERS = 68
+PACKET_LAYER_WINDOW_SIZE = 69
+PACKET_SIZE = 70
+CLOSED_USER_GROUP = 71
+REVERSE_CHARGE_INDICATION = 74
+CALLING_PARTY_NUMBER = 108
+CALLING_PARTY_SUBADDRESS = 109
+CALLED_PARTY_NUMBER = 112
+CALLED_PARTY_SUBADDRESS = 113
+REDIRECTING_NUMBER = 116
+TRANSIT_NETWORK_SELECTION = 120
+RESTART_INDICATOR = 121
+LOW_LAYER_COMPATIBILITY = 124
+HIGH_LAYER_COMPATIBILITY = 125
+USER_TO_USER = 126
+ESCAPE_FOR_EXTENSION = 127
+
 
 class H225(dpkt.Packet):
     __hdr__ = (
         ('proto', 'B', 8),
         ('ref_len', 'B', 2)
-        )
+    )
 
     def unpack(self, buf):
         # TPKT header
         self.tpkt = tpkt.TPKT(buf)
-        if self.tpkt.v != 3: 
+        if self.tpkt.v != 3:
             raise dpkt.UnpackError('invalid TPKT version')
         if self.tpkt.rsvd != 0:
             raise dpkt.UnpackError('invalid TPKT reserved value')
@@ -138,7 +141,7 @@ class H225(dpkt.Packet):
     class IE(dpkt.Packet):
         __hdr__ = (
             ('type', 'B', 0),
-            )
+        )
 
         def unpack(self, buf):
             dpkt.Packet.unpack(self, buf)
@@ -168,21 +171,17 @@ class H225(dpkt.Packet):
                     n = 2
                 else:
                     n = 1
-            return self.__hdr_len__ + \
-                   self.len \
-                   + n
+            return self.__hdr_len__ + self.len + n
 
         def __str__(self):
             if self.type & 0x80:
                 length_str = None
             else:
                 if self.type == USER_TO_USER:
-                    length_str = struct.pack('>H', self.len) 
+                    length_str = struct.pack('>H', self.len)
                 else:
                     length_str = struct.pack('B', self.len)
-            return struct.pack('B', self.type) + \
-                   length_str + \
-                   self.data
+            return struct.pack('B', self.type) + length_str + self.data
 
 
 if __name__ == '__main__':

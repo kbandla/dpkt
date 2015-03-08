@@ -5,6 +5,7 @@
 import cStringIO
 import dpkt
 
+
 def parse_headers(f):
     """Return dict of HTTP headers parsed from a file object."""
     d = {}
@@ -27,6 +28,7 @@ def parse_headers(f):
         else:
             d[k] = v
     return d
+
 
 def parse_body(f, headers):
     """Return HTTP body parsed from a file object, given HTTP header dict."""
@@ -63,13 +65,14 @@ def parse_body(f, headers):
         body = ''
     return body
 
+
 class Message(dpkt.Packet):
     """Hypertext Transfer Protocol headers + body."""
     __metaclass__ = type
     __hdr_defaults__ = {}
     headers = None
     body = None
-    
+
     def __init__(self, *args, **kwargs):
         if args:
             self.unpack(args[0])
@@ -80,7 +83,7 @@ class Message(dpkt.Packet):
                 setattr(self, k, v)
             for k, v in kwargs.iteritems():
                 setattr(self, k, v)
-    
+
     def unpack(self, buf):
         f = cStringIO.StringIO(buf)
         # Parse headers
@@ -91,21 +94,22 @@ class Message(dpkt.Packet):
         self.data = f.read()
 
     def pack_hdr(self):
-        return ''.join([ '%s: %s\r\n' % t for t in self.headers.iteritems() ])
-    
+        return ''.join(['%s: %s\r\n' % t for t in self.headers.iteritems()])
+
     def __len__(self):
         return len(str(self))
-    
+
     def __str__(self):
         return '%s\r\n%s' % (self.pack_hdr(), self.body)
+
 
 class Request(Message):
     """Hypertext Transfer Protocol Request."""
     __hdr_defaults__ = {
-        'method':'GET',
-        'uri':'/',
-        'version':'1.0',
-        }
+        'method': 'GET',
+        'uri': '/',
+        'version': '1.0',
+    }
     __methods = dict.fromkeys((
         'GET', 'PUT', 'ICY',
         'COPY', 'HEAD', 'LOCK', 'MOVE', 'POLL', 'POST',
@@ -118,7 +122,7 @@ class Request(Message):
         'MKWORKSPACE', 'UNSUBSCRIBE', 'RPC_CONNECT',
         'VERSION-CONTROL',
         'BASELINE-CONTROL'
-        ))
+    ))
     __proto = 'HTTP'
 
     def unpack(self, buf):
@@ -135,7 +139,7 @@ class Request(Message):
         else:
             if not l[2].startswith(self.__proto):
                 raise dpkt.UnpackError('invalid http version: %r' % l[2])
-            self.version = l[2][len(self.__proto)+1:]
+            self.version = l[2][len(self.__proto) + 1:]
         self.method = l[0]
         self.uri = l[1]
         Message.unpack(self, f.read())
@@ -144,22 +148,23 @@ class Request(Message):
         return '%s %s %s/%s\r\n' % (self.method, self.uri, self.__proto,
                                     self.version) + Message.__str__(self)
 
+
 class Response(Message):
     """Hypertext Transfer Protocol Response."""
     __hdr_defaults__ = {
-        'version':'1.0',
-        'status':'200',
-        'reason':'OK'
-        }
+        'version': '1.0',
+        'status': '200',
+        'reason': 'OK'
+    }
     __proto = 'HTTP'
-    
+
     def unpack(self, buf):
         f = cStringIO.StringIO(buf)
         line = f.readline()
         l = line.strip().split(None, 2)
         if len(l) < 2 or not l[0].startswith(self.__proto) or not l[1].isdigit():
             raise dpkt.UnpackError('invalid response: %r' % line)
-        self.version = l[0][len(self.__proto)+1:]
+        self.version = l[0][len(self.__proto) + 1:]
         self.status = l[1]
         self.reason = l[2]
         Message.unpack(self, f.read())
@@ -167,6 +172,7 @@ class Response(Message):
     def __str__(self):
         return '%s/%s %s %s\r\n' % (self.__proto, self.version, self.status,
                                     self.reason) + Message.__str__(self)
+
 
 if __name__ == '__main__':
     import unittest
@@ -180,7 +186,7 @@ if __name__ == '__main__':
             assert r.body == 'sn=em&mn=dtest4&pw=this+is+atest&fr=true&login=Sign+in&od=www'
             assert r.headers['content-type'] == 'application/x-www-form-urlencoded'
             try:
-                r = Request(s[:60])
+                Request(s[:60])
                 assert 'invalid headers parsed!'
             except dpkt.UnpackError:
                 pass
@@ -229,7 +235,7 @@ if __name__ == '__main__':
 
             s = """GET / CHEESE/1.0\r\n\r\n"""
             try:
-                r = Request(s)
+                Request(s)
                 assert "invalid protocol version parsed!"
             except:
                 pass

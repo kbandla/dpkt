@@ -1,8 +1,6 @@
 """ATA over Ethernet Protocol."""
 
 import struct
-
-
 import dpkt
 
 
@@ -14,23 +12,29 @@ class AOE(dpkt.Packet):
         ('min', 'B', 0),
         ('cmd', 'B', 0),
         ('tag', 'I', 0),
-        )
+    )
     _cmdsw = {}
-    
+
     def _get_ver(self): return self.ver_fl >> 4
+
     def _set_ver(self, ver): self.ver_fl = (ver << 4) | (self.ver_fl & 0xf)
+
     ver = property(_get_ver, _set_ver)
 
     def _get_fl(self): return self.ver_fl & 0xf
+
     def _set_fl(self, fl): self.ver_fl = (self.ver_fl & 0xf0) | fl
+
     fl = property(_get_fl, _set_fl)
 
     def set_cmd(cls, cmd, pktclass):
         cls._cmdsw[cmd] = pktclass
+
     set_cmd = classmethod(set_cmd)
 
     def get_cmd(cls, cmd):
         return cls._cmdsw[cmd]
+
     get_cmd = classmethod(get_cmd)
 
     def unpack(self, buf):
