@@ -83,125 +83,141 @@ class Radiotap(dpkt.Packet):
         ('present_flags', 'I', 0)
     )
 
-    def _get_tsft_present(self):
+    @property
+    def tsft_present(self):
         return (self.present_flags & _TSFT_MASK) >> _TSFT_SHIFT
 
-    def _set_tsft_present(self, val):
+    @tsft_present.setter
+    def tsft_present(self, val):
         self.present_flags |= val << _TSFT_SHIFT
 
-    def _get_flags_present(self):
+    @property
+    def flags_present(self):
         return (self.present_flags & _FLAGS_MASK) >> _FLAGS_SHIFT
 
-    def _set_flags_present(self, val):
+    @flags_present.setter
+    def flags_present(self, val):
         self.present_flags |= val << _FLAGS_SHIFT
 
-    def _get_rate_present(self):
+    @property
+    def rate_present(self):
         return (self.present_flags & _RATE_MASK) >> _RATE_SHIFT
 
-    def _set_rate_present(self, val):
+    @rate_present.setter
+    def rate_present(self, val):
         self.present_flags |= val << _RATE_SHIFT
 
-    def _get_channel_present(self):
+    @property
+    def channel_present(self):
         return (self.present_flags & _CHANNEL_MASK) >> _CHANNEL_SHIFT
 
-    def _set_channel_present(self, val):
+    @channel_present.setter
+    def channel_present(self, val):
         self.present_flags |= val << _CHANNEL_SHIFT
 
-    def _get_fhss_present(self):
+    @property
+    def fhss_present(self):
         return (self.present_flags & _FHSS_MASK) >> _FHSS_SHIFT
 
-    def _set_fhss_present(self, val):
+    @fhss_present.setter
+    def fhss_present(self, val):
         self.present_flags |= val << _FHSS_SHIFT
 
-    def _get_ant_sig_present(self):
+    @property
+    def ant_sig_present(self):
         return (self.present_flags & _ANT_SIG_MASK) >> _ANT_SIG_SHIFT
 
-    def _set_ant_sig_present(self, val):
+    @ant_sig_present.setter
+    def ant_sig_present(self, val):
         self.present_flags |= val << _ANT_SIG_SHIFT
 
-    def _get_ant_noise_present(self):
+    @property
+    def ant_noise_present(self):
         return (self.present_flags & _ANT_NOISE_MASK) >> _ANT_NOISE_SHIFT
 
-    def _set_ant_noise_present(self, val):
+    @ant_noise_present.setter
+    def ant_noise_present(self, val):
         self.present_flags |= val << _ANT_NOISE_SHIFT
 
-    def _get_lock_qual_present(self):
+    @property
+    def lock_qual_present(self):
         return (self.present_flags & _LOCK_QUAL_MASK) >> _LOCK_QUAL_SHIFT
 
-    def _set_lock_qual_present(self, val):
+    @lock_qual_present.setter
+    def lock_qual_present(self, val):
         self.present_flags |= val << _LOCK_QUAL_SHIFT
 
-    def _get_tx_attn_present(self):
+    @property
+    def tx_attn_present(self):
         return (self.present_flags & _TX_ATTN_MASK) >> _TX_ATTN_SHIFT
 
-    def _set_tx_attn_present(self, val):
+    @tx_attn_present.setter
+    def tx_attn_present(self, val):
         self.present_flags |= val << _TX_ATTN_SHIFT
 
-    def _get_db_tx_attn_present(self):
+    @property
+    def db_tx_attn_present(self):
         return (self.present_flags & _DB_TX_ATTN_MASK) >> _DB_TX_ATTN_SHIFT
 
-    def _set_db_tx_attn_present(self, val):
+    @db_tx_attn_present.setter
+    def db_tx_attn_present(self, val):
         self.present_flags |= val << _DB_TX_ATTN_SHIFT
 
-    def _get_dbm_power_present(self):
+    @property
+    def dbm_tx_power_present(self):
         return (self.present_flags & _DBM_TX_POWER_MASK) >> _DBM_TX_POWER_SHIFT
 
-    def _set_dbm_power_present(self, val):
+    @dbm_tx_power_present.setter
+    def dbm_tx_power_present(self, val):
         self.present_flags |= val << _DBM_TX_POWER_SHIFT
 
-    def _get_ant_present(self):
+    @property
+    def ant_present(self):
         return (self.present_flags & _ANTENNA_MASK) >> _ANTENNA_SHIFT
 
-    def _set_ant_present(self, val):
+    @ant_present.setter
+    def ant_present(self, val):
         self.present_flags |= val << _ANTENNA_SHIFT
 
-    def _get_db_ant_sig_present(self):
+    @property
+    def db_ant_sig_present(self):
         return (self.present_flags & _DB_ANT_SIG_MASK) >> _DB_ANT_SIG_SHIFT
 
-    def _set_db_ant_sig_present(self, val):
+    @db_ant_sig_present.setter
+    def db_ant_sig_present(self, val):
         self.present_flags |= val << _DB_ANT_SIG_SHIFT
 
-    def _get_db_ant_noise_present(self):
+    @property
+    def db_ant_noise_present(self):
         return (self.present_flags & _DB_ANT_NOISE_MASK) >> _DB_ANT_NOISE_SHIFT
 
-    def _set_db_ant_noise_present(self, val):
+    @db_ant_noise_present.setter
+    def db_ant_noise_present(self, val):
         self.present_flags |= val << _DB_ANT_NOISE_SHIFT
 
-    def _get_rx_flags_present(self):
+    @property
+    def rx_flags_present(self):
         return (self.present_flags & _RX_FLAGS_MASK) >> _RX_FLAGS_SHIFT
 
-    def _set_rx_flags_present(self, val):
+    @rx_flags_present.setter
+    def rx_flags_present(self, val):
         self.present_flags |= val << _RX_FLAGS_SHIFT
 
-    def _get_chanplus_present(self):
+    @property
+    def chanplus_present(self):
         return (self.present_flags & _CHANNELPLUS_MASK) >> _CHANNELPLUS_SHIFT
 
-    def _set_chanplus_present(self, val):
+    @chanplus_present.setter
+    def chanplus_present(self, val):
         self.present_flags |= val << _CHANNELPLUS_SHIFT
 
-    def _get_ext_present(self):
+    @property
+    def ext_present(self):
         return (self.present_flags & _EXT_MASK) >> _EXT_SHIFT
 
-    def _set_ext_present(self, val):
+    @ext_present.setter
+    def ext_present(self, val):
         self.present_flags |= val << _EXT_SHIFT
-
-    tsft_present = property(_get_tsft_present, _set_tsft_present)
-    flags_present = property(_get_flags_present, _set_flags_present)
-    rate_present = property(_get_rate_present, _set_rate_present)
-    channel_present = property(_get_channel_present, _set_channel_present)
-    fhss_present = property(_get_fhss_present, _set_fhss_present)
-    ant_sig_present = property(_get_ant_sig_present, _set_ant_sig_present)
-    ant_noise_present = property(_get_ant_noise_present, _set_ant_noise_present)
-    lock_qual_present = property(_get_lock_qual_present, _set_lock_qual_present)
-    tx_attn_present = property(_get_tx_attn_present, _set_tx_attn_present)
-    db_tx_attn_present = property(_get_db_tx_attn_present, _set_db_tx_attn_present)
-    dbm_tx_power_present = property(_get_dbm_power_present, _set_dbm_power_present)
-    ant_present = property(_get_ant_present, _set_ant_present)
-    db_ant_sig_present = property(_get_db_ant_sig_present, _set_db_ant_sig_present)
-    db_ant_noise_present = property(_get_db_ant_noise_present, _set_db_ant_noise_present)
-    rx_flags_present = property(_get_rx_flags_present, _set_rx_flags_present)
-    chanplus_present = property(_get_chanplus_present, _set_chanplus_present)
-    ext_present = property(_get_ext_present, _set_ext_present)
 
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
@@ -274,12 +290,12 @@ class Radiotap(dpkt.Packet):
             ('val', 'B', 0),
         )
 
-        def _get_fcs_present(self): return (self.val & _FCS_MASK) >> _FCS_SHIFT
+        @property
+        def fcs(self): return (self.val & _FCS_MASK) >> _FCS_SHIFT
 
         # TODO statement seems to have no effect
-        def _set_fcs_present(self, v): (v << _FCS_SHIFT) | (self.val & ~_FCS_MASK)
-
-        fcs = property(_get_fcs_present, _set_fcs_present)
+        @fcs.setter
+        def fcs(self, v): (v << _FCS_SHIFT) | (self.val & ~_FCS_MASK)
 
     class LockQuality(dpkt.Packet):
         __hdr__ = (

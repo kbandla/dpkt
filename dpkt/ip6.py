@@ -20,29 +20,29 @@ class IP6(dpkt.Packet):
     # defined.
     _protosw = None
 
-    def _get_v(self):
+    @property
+    def v(self):
         return self.v_fc_flow >> 28
 
-    def _set_v(self, v):
+    @v.setter
+    def v(self, v):
         self.v_fc_flow = (self.v_fc_flow & ~0xf0000000L) | (v << 28)
 
-    v = property(_get_v, _set_v)
-
-    def _get_fc(self):
+    @property
+    def fc(self):
         return (self.v_fc_flow >> 20) & 0xff
 
-    def _set_fc(self, v):
+    @fc.setter
+    def fc(self, v):
         self.v_fc_flow = (self.v_fc_flow & ~0xff00000L) | (v << 20)
 
-    fc = property(_get_fc, _set_fc)
-
-    def _get_flow(self):
+    @property
+    def flow(self):
         return self.v_fc_flow & 0xfffff
 
-    def _set_flow(self, v):
+    @flow.setter
+    def flow(self, v):
         self.v_fc_flow = (self.v_fc_flow & ~0xfffff) | (v & 0xfffff)
-
-    flow = property(_get_flow, _set_flow)
 
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
@@ -95,15 +95,13 @@ class IP6(dpkt.Packet):
                 pass
         return self.pack_hdr() + self.headers_str() + str(self.data)
 
+    @classmethod
     def set_proto(cls, p, pktclass):
         cls._protosw[p] = pktclass
 
-    set_proto = classmethod(set_proto)
-
+    @classmethod
     def get_proto(cls, p):
         return cls._protosw[p]
-
-    get_proto = classmethod(get_proto)
 
 
 import ip
@@ -176,13 +174,13 @@ class IP6RoutingHeader(IP6ExtensionHeader):
         ('rsvd_sl_bits', 'I', 0),  # reserved (1 byte), strict/loose bitmap for addresses
     )
 
-    def _get_sl_bits(self):
+    @property
+    def sl_bits(self):
         return self.rsvd_sl_bits & 0xffffff
 
-    def _set_sl_bits(self, v):
+    @sl_bits.setter
+    def sl_bits(self, v):
         self.rsvd_sl_bits = (self.rsvd_sl_bits & ~0xfffff) | (v & 0xfffff)
-
-    sl_bits = property(_get_sl_bits, _set_sl_bits)
 
     def unpack(self, buf):
         hdr_size = 8
@@ -214,21 +212,21 @@ class IP6FragmentHeader(IP6ExtensionHeader):
         dpkt.Packet.unpack(self, buf)
         setattr(self, 'length', self.__hdr_len__)
 
-    def _get_frag_off(self):
+    @property
+    def frag_off(self):
         return self.frag_off_resv_m >> 3
 
-    def _set_frag_off(self, v):
+    @frag_off.setter
+    def frag_off(self, v):
         self.frag_off_resv_m = (self.frag_off_resv_m & ~0xfff8) | (v << 3)
 
-    frag_off = property(_get_frag_off, _set_frag_off)
-
-    def _get_m_flag(self):
+    @property
+    def m_flag(self):
         return self.frag_off_resv_m & 1
 
-    def _set_m_flag(self, v):
+    @m_flag.setter
+    def m_flag(self, v):
         self.frag_off_resv_m = (self.frag_off_resv_m & ~0xfffe) | v
-
-    m_flag = property(_get_m_flag, _set_m_flag)
 
 
 class IP6AHHeader(IP6ExtensionHeader):

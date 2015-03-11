@@ -107,15 +107,13 @@ class Ethernet(dpkt.Packet):
                 elif dsap == 0x42:  # SAP_STP
                     self.data = self.stp = stp.STP(self.data[3:])
 
+    @classmethod
     def set_type(cls, t, pktclass):
         cls._typesw[t] = pktclass
 
-    set_type = classmethod(set_type)
-
+    @classmethod
     def get_type(cls, t):
         return cls._typesw[t]
-
-    get_type = classmethod(get_type)
 
 
 # XXX - auto-load Ethernet dispatch table from ETH_TYPE_* definitions

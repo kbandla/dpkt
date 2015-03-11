@@ -123,83 +123,93 @@ class IEEE80211(dpkt.Packet):
         ('duration', 'H', 0)
     )
 
-    def _get_version(self):
+    @property
+    def version(self):
         return (self.framectl & _VERSION_MASK) >> _VERSION_SHIFT
 
-    def _set_version(self, val):
+    @version.setter
+    def version(self, val):
         self.framectl = (val << _VERSION_SHIFT) | (self.framectl & ~_VERSION_MASK)
 
-    def _get_type(self):
+    @property
+    def type(self):
         return (self.framectl & _TYPE_MASK) >> _TYPE_SHIFT
 
-    def _set_type(self, val):
+    @type.setter
+    def type(self, val):
         self.framectl = (val << _TYPE_SHIFT) | (self.framectl & ~_TYPE_MASK)
 
-    def _get_subtype(self):
+    @property
+    def subtype(self):
         return (self.framectl & _SUBTYPE_MASK) >> _SUBTYPE_SHIFT
 
-    def _set_subtype(self, val):
+    @subtype.setter
+    def subtype(self, val):
         self.framectl = (val << _SUBTYPE_SHIFT) | (self.framectl & ~_SUBTYPE_MASK)
 
-    def _get_to_ds(self):
+    @property
+    def to_ds(self):
         return (self.framectl & _TO_DS_MASK) >> _TO_DS_SHIFT
 
-    def _set_to_ds(self, val):
+    @to_ds.setter
+    def to_ds(self, val):
         self.framectl = (val << _TO_DS_SHIFT) | (self.framectl & ~_TO_DS_MASK)
 
-    def _get_from_ds(self):
+    @property
+    def from_ds(self):
         return (self.framectl & _FROM_DS_MASK) >> _FROM_DS_SHIFT
 
-    def _set_from_ds(self, val):
+    @from_ds.setter
+    def from_ds(self, val):
         self.framectl = (val << _FROM_DS_SHIFT) | (self.framectl & ~_FROM_DS_MASK)
 
-    def _get_more_frag(self):
+    @property
+    def more_frag(self):
         return (self.framectl & _MORE_FRAG_MASK) >> _MORE_FRAG_SHIFT
 
-    def _set_more_frag(self, val):
+    @more_frag.setter
+    def more_frag(self, val):
         self.framectl = (val << _MORE_FRAG_SHIFT) | (self.framectl & ~_MORE_FRAG_MASK)
 
-    def _get_retry(self):
+    @property
+    def retry(self):
         return (self.framectl & _RETRY_MASK) >> _RETRY_SHIFT
 
-    def _set_retry(self, val):
+    @retry.setter
+    def retry(self, val):
         self.framectl = (val << _RETRY_SHIFT) | (self.framectl & ~_RETRY_MASK)
 
-    def _get_pwr_mgt(self):
+    @property
+    def pwr_mgt(self):
         return (self.framectl & _PWR_MGT_MASK) >> _PWR_MGT_SHIFT
 
-    def _set_pwr_mgt(self, val):
+    @pwr_mgt.setter
+    def pwr_mgt(self, val):
         self.framectl = (val << _PWR_MGT_SHIFT) | (self.framectl & ~_PWR_MGT_MASK)
 
-    def _get_more_data(self):
+    @property
+    def more_data(self):
         return (self.framectl & _MORE_DATA_MASK) >> _MORE_DATA_SHIFT
 
-    def _set_more_data(self, val):
+    @more_data.setter
+    def more_data(self, val):
         self.framectl = (val << _MORE_DATA_SHIFT) | (self.framectl & ~_MORE_DATA_MASK)
 
-    def _get_wep(self):
+    @property
+    def wep(self):
         return (self.framectl & _WEP_MASK) >> _WEP_SHIFT
 
-    def _set_wep(self, val):
+    @wep.setter
+    def wep(self, val):
         self.framectl = (val << _WEP_SHIFT) | (self.framectl & ~_WEP_MASK)
 
-    def _get_order(self):
+    @property
+    def order(self):
         return (self.framectl & _ORDER_MASK) >> _ORDER_SHIFT
 
-    def _set_order(self, val):
+    @order.setter
+    def order(self, val):
         self.framectl = (val << _ORDER_SHIFT) | (self.framectl & ~_ORDER_MASK)
-
-    version = property(_get_version, _set_version)
-    type = property(_get_type, _set_type)
-    subtype = property(_get_subtype, _set_subtype)
-    to_ds = property(_get_to_ds, _set_to_ds)
-    from_ds = property(_get_from_ds, _set_from_ds)
-    more_frag = property(_get_more_frag, _set_more_frag)
-    retry = property(_get_retry, _set_retry)
-    pwr_mgt = property(_get_pwr_mgt, _set_pwr_mgt)
-    more_data = property(_get_more_data, _set_more_data)
-    wep = property(_get_wep, _set_wep)
-    order = property(_get_order, _set_order)
 
     def unpack_ies(self, buf):
         self.ies = []
@@ -369,34 +379,37 @@ class IEEE80211(dpkt.Packet):
             ('seq', 'H', 0),
         )
 
-        def _get_compressed(self):
+        @property
+        def compressed(self):
             return (self.ctl & _COMPRESSED_MASK) >> _COMPRESSED_SHIFT
 
-        def _set_compressed(self, val):
+        @compressed.setter
+        def compressed(self, val):
             self.ctl = (val << _COMPRESSED_SHIFT) | (self.ctl & ~_COMPRESSED_MASK)
 
-        def _get_ack_policy(self):
+        @property
+        def ack_policy(self):
             return (self.ctl & _ACK_POLICY_MASK) >> _ACK_POLICY_SHIFT
 
-        def _set_ack_policy(self, val):
+        @ack_policy.setter
+        def ack_policy(self, val):
             self.ctl = (val << _ACK_POLICY_SHIFT) | (self.ctl & ~_ACK_POLICY_MASK)
 
-        def _get_multi_tid(self):
+        @property
+        def multi_tid(self):
             return (self.ctl & _MULTI_TID_MASK) >> _MULTI_TID_SHIFT
 
-        def _set_multi_tid(self, val):
+        @multi_tid.setter
+        def multi_tid(self, val):
             self.ctl = (val << _MULTI_TID_SHIFT) | (self.ctl & ~_MULTI_TID_MASK)
 
-        def _get_tid(self):
+        @property
+        def tid(self):
             return (self.ctl & _TID_MASK) >> _TID_SHIFT
 
-        def _set_tid(self, val):
+        @tid.setter
+        def tid(self, val):
             self.ctl = (val << _TID_SHIFT) | (self.ctl & ~_TID_MASK)
-
-        compressed = property(_get_compressed, _set_compressed)
-        ack_policy = property(_get_ack_policy, _set_ack_policy)
-        multi_tid = property(_get_multi_tid, _set_multi_tid)
-        tid = property(_get_tid, _set_tid)
 
         def unpack(self, buf):
             dpkt.Packet.unpack(self, buf)
@@ -495,7 +508,7 @@ class IEEE80211(dpkt.Packet):
             action_parser = {
                 BLOCK_ACK: {BLOCK_ACK_CODE_REQUEST: ('block_ack_request', IEEE80211.BlockAckActionRequest),
                             BLOCK_ACK_CODE_RESPONSE: ('block_ack_response', IEEE80211.BlockAckActionResponse),
-                },
+                            },
             }
 
             decoder = action_parser[self.category][self.code][1]

@@ -258,37 +258,37 @@ class BGP(dpkt.Packet):
                 ('type', 'B', 0)
             )
 
-            def _get_o(self):
+            @property
+            def optional(self):
                 return (self.flags >> 7) & 0x1
 
-            def _set_o(self, o):
+            @optional.setter
+            def optional(self, o):
                 self.flags = (self.flags & ~0x80) | ((o & 0x1) << 7)
 
-            optional = property(_get_o, _set_o)
-
-            def _get_t(self):
+            @property
+            def transitive(self):
                 return (self.flags >> 6) & 0x1
 
-            def _set_t(self, t):
+            @transitive.setter
+            def transitive(self, t):
                 self.flags = (self.flags & ~0x40) | ((t & 0x1) << 6)
 
-            transitive = property(_get_t, _set_t)
-
-            def _get_p(self):
+            @property
+            def partial(self):
                 return (self.flags >> 5) & 0x1
 
-            def _set_p(self, p):
+            @partial.setter
+            def partial(self, p):
                 self.flags = (self.flags & ~0x20) | ((p & 0x1) << 5)
 
-            partial = property(_get_p, _set_p)
-
-            def _get_e(self):
+            @property
+            def extended_length(self):
                 return (self.flags >> 4) & 0x1
 
-            def _set_e(self, e):
+            @extended_length.setter
+            def extended_length(self, e):
                 self.flags = (self.flags & ~0x10) | ((e & 0x1) << 4)
-
-            extended_length = property(_get_e, _set_e)
 
             def unpack(self, buf):
                 dpkt.Packet.unpack(self, buf)

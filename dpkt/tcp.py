@@ -32,11 +32,11 @@ class TCP(dpkt.Packet):
     )
     opts = ''
 
-    def _get_off(self): return self.off_x2 >> 4
+    @property
+    def off(self): return self.off_x2 >> 4
 
-    def _set_off(self, off): self.off_x2 = (off << 4) | (self.off_x2 & 0xf)
-
-    off = property(_get_off, _set_off)
+    @off.setter
+    def off(self, off): self.off_x2 = (off << 4) | (self.off_x2 & 0xf)
 
     def __len__(self):
         return self.__hdr_len__ + len(self.opts) + len(self.data)

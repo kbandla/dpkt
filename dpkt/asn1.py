@@ -34,7 +34,7 @@ UTC_TIME = 23
 def utctime(buf):
     """Convert ASN.1 UTCTime string to UTC float."""
     yy = int(buf[:2])
-    mm = int(buf[2:4])
+    mn = int(buf[2:4])
     dd = int(buf[4:6])
     hh = int(buf[6:8])
     mm = int(buf[8:10])
@@ -50,7 +50,7 @@ def utctime(buf):
     elif buf[0] == '-':
         hh += int(buf[1:3])
         mm += int(buf[3:5])
-    return time.mktime((2000 + yy, mm, dd, hh, mm, ss, 0, 0, 0))
+    return time.mktime((2000 + yy, mn, dd, hh, mm, ss, 0, 0, 0))
 
 
 def decode(buf):
@@ -66,7 +66,7 @@ def decode(buf):
         c = 0
         if constructed and l == 128:
             # XXX - constructed, indefinite length
-            msg.append(t, decode(buf[2:]))
+            msg.append((t, decode(buf[2:])))
         elif l >= 128:
             c = l & 127
             if c == 1:

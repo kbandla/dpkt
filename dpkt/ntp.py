@@ -38,29 +38,29 @@ class NTP(dpkt.Packet):
         ('transmit_time', '8s', 0)
     )
 
-    def _get_v(self):
+    @property
+    def v(self):
         return (self.flags >> 3) & 0x7
 
-    def _set_v(self, v):
+    @v.setter
+    def v(self, v):
         self.flags = (self.flags & ~0x38) | ((v & 0x7) << 3)
 
-    v = property(_get_v, _set_v)
-
-    def _get_li(self):
+    @property
+    def li(self):
         return (self.flags >> 6) & 0x3
 
-    def _set_li(self, li):
+    @li.setter
+    def li(self, li):
         self.flags = (self.flags & ~0xc0) | ((li & 0x3) << 6)
 
-    li = property(_get_li, _set_li)
-
-    def _get_mode(self):
+    @property
+    def mode(self):
         return self.flags & 0x7
 
-    def _set_mode(self, mode):
+    @mode.setter
+    def mode(self, mode):
         self.flags = (self.flags & ~0x7) | (mode & 0x7)
-
-    mode = property(_get_mode, _set_mode)
 
 
 if __name__ == '__main__':

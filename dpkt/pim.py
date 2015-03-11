@@ -12,17 +12,17 @@ class PIM(dpkt.Packet):
         ('sum', 'H', 0)
     )
 
-    def _get_v(self): return self.v_type >> 4
+    @property
+    def v(self): return self.v_type >> 4
 
-    def _set_v(self, v): self.v_type = (v << 4) | (self.v_type & 0xf)
+    @v.setter
+    def v(self, v): self.v_type = (v << 4) | (self.v_type & 0xf)
 
-    v = property(_get_v, _set_v)
+    @property
+    def type(self): return self.v_type & 0xf
 
-    def _get_type(self): return self.v_type & 0xf
-
-    def _set_type(self, type): self.v_type = (self.v_type & 0xf0) | type
-
-    type = property(_get_type, _set_type)
+    @type.setter
+    def type(self, type): self.v_type = (self.v_type & 0xf0) | type
 
     def __str__(self):
         if not self.sum:

@@ -15,27 +15,25 @@ class AOE(dpkt.Packet):
     )
     _cmdsw = {}
 
-    def _get_ver(self): return self.ver_fl >> 4
+    @property
+    def ver(self): return self.ver_fl >> 4
 
-    def _set_ver(self, ver): self.ver_fl = (ver << 4) | (self.ver_fl & 0xf)
+    @ver.setter
+    def ver(self, ver): self.ver_fl = (ver << 4) | (self.ver_fl & 0xf)
 
-    ver = property(_get_ver, _set_ver)
+    @property
+    def fl(self): return self.ver_fl & 0xf
 
-    def _get_fl(self): return self.ver_fl & 0xf
+    @fl.setter
+    def fl(self, fl): self.ver_fl = (self.ver_fl & 0xf0) | fl
 
-    def _set_fl(self, fl): self.ver_fl = (self.ver_fl & 0xf0) | fl
-
-    fl = property(_get_fl, _set_fl)
-
+    @classmethod
     def set_cmd(cls, cmd, pktclass):
         cls._cmdsw[cmd] = pktclass
 
-    set_cmd = classmethod(set_cmd)
-
+    @classmethod
     def get_cmd(cls, cmd):
         return cls._cmdsw[cmd]
-
-    get_cmd = classmethod(get_cmd)
 
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)

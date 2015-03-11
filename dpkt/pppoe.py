@@ -2,7 +2,8 @@
 
 """PPP-over-Ethernet."""
 
-import dpkt, ppp
+import dpkt
+import ppp
 
 # RFC 2516 codes
 PPPoE_PADI = 0x09
@@ -21,17 +22,17 @@ class PPPoE(dpkt.Packet):
         ('len', 'H', 0)  # payload length
     )
 
-    def _get_v(self): return self.v_type >> 4
+    @property
+    def v(self): return self.v_type >> 4
 
-    def _set_v(self, v): self.v_type = (v << 4) | (self.v_type & 0xf)
+    @v.setter
+    def v(self, v): self.v_type = (v << 4) | (self.v_type & 0xf)
 
-    v = property(_get_v, _set_v)
+    @property
+    def type(self): return self.v_type & 0xf
 
-    def _get_type(self): return self.v_type & 0xf
-
-    def _set_type(self, t): self.v_type = (self.v_type & 0xf0) | t
-
-    type = property(_get_type, _set_type)
+    @type.setter
+    def type(self, t): self.v_type = (self.v_type & 0xf0) | t
 
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)

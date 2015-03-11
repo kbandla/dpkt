@@ -21,15 +21,13 @@ class PPP(dpkt.Packet):
     )
     _protosw = {}
 
+    @classmethod
     def set_p(cls, p, pktclass):
         cls._protosw[p] = pktclass
 
-    set_p = classmethod(set_p)
-
+    @classmethod
     def get_p(cls, p):
         return cls._protosw[p]
-
-    get_p = classmethod(get_p)
 
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)

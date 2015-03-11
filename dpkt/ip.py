@@ -21,17 +21,17 @@ class IP(dpkt.Packet):
     _protosw = {}
     opts = ''
 
-    def _get_v(self): return self.v_hl >> 4
+    @property
+    def v(self): return self.v_hl >> 4
 
-    def _set_v(self, v): self.v_hl = (v << 4) | (self.v_hl & 0xf)
+    @v.setter
+    def v(self, v): self.v_hl = (v << 4) | (self.v_hl & 0xf)
 
-    v = property(_get_v, _set_v)
+    @property
+    def hl(self): return self.v_hl & 0xf
 
-    def _get_hl(self): return self.v_hl & 0xf
-
-    def _set_hl(self, hl): self.v_hl = (self.v_hl & 0xf0) | hl
-
-    hl = property(_get_hl, _set_hl)
+    @hl.setter
+    def hl(self, hl): self.v_hl = (self.v_hl & 0xf0) | hl
 
     def __len__(self): return self.__hdr_len__ + len(self.opts) + len(self.data)
 
@@ -68,15 +68,13 @@ class IP(dpkt.Packet):
         except (KeyError, dpkt.UnpackError):
             self.data = buf
 
+    @classmethod
     def set_proto(cls, p, pktclass):
         cls._protosw[p] = pktclass
 
-    set_proto = classmethod(set_proto)
-
+    @classmethod
     def get_proto(cls, p):
         return cls._protosw[p]
-
-    get_proto = classmethod(get_proto)
 
 # Type of service (ip_tos), RFC 1349 ("obsoleted by RFC 2474")
 IP_TOS_DEFAULT = 0x00  # default

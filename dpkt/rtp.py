@@ -37,37 +37,42 @@ class RTP(Packet):
     )
     csrc = ''
 
-    def _get_version(self): return (self._type & _VERSION_MASK) >> _VERSION_SHIFT
+    @property
+    def version(self): return (self._type & _VERSION_MASK) >> _VERSION_SHIFT
 
-    def _set_version(self, ver):
+    @version.setter
+    def version(self, ver):
         self._type = (ver << _VERSION_SHIFT) | (self._type & ~_VERSION_MASK)
 
-    def _get_p(self): return (self._type & _P_MASK) >> _P_SHIFT
+    @property
+    def p(self): return (self._type & _P_MASK) >> _P_SHIFT
 
-    def _set_p(self, p): self._type = (p << _P_SHIFT) | (self._type & ~_P_MASK)
+    @p.setter
+    def p(self, p): self._type = (p << _P_SHIFT) | (self._type & ~_P_MASK)
 
-    def _get_x(self): return (self._type & _X_MASK) >> _X_SHIFT
+    @property
+    def x(self): return (self._type & _X_MASK) >> _X_SHIFT
 
-    def _set_x(self, x): self._type = (x << _X_SHIFT) | (self._type & ~_X_MASK)
+    @x.setter
+    def x(self, x): self._type = (x << _X_SHIFT) | (self._type & ~_X_MASK)
 
-    def _get_cc(self): return (self._type & _CC_MASK) >> _CC_SHIFT
+    @property
+    def cc(self): return (self._type & _CC_MASK) >> _CC_SHIFT
 
-    def _set_cc(self, cc): self._type = (cc << _CC_SHIFT) | (self._type & ~_CC_MASK)
+    @cc.setter
+    def cc(self, cc): self._type = (cc << _CC_SHIFT) | (self._type & ~_CC_MASK)
 
-    def _get_m(self): return (self._type & _M_MASK) >> _M_SHIFT
+    @property
+    def m(self): return (self._type & _M_MASK) >> _M_SHIFT
 
-    def _set_m(self, m): self._type = (m << _M_SHIFT) | (self._type & ~_M_MASK)
+    @m.setter
+    def m(self, m): self._type = (m << _M_SHIFT) | (self._type & ~_M_MASK)
 
-    def _get_pt(self): return (self._type & _PT_MASK) >> _PT_SHIFT
+    @property
+    def pt(self): return (self._type & _PT_MASK) >> _PT_SHIFT
 
-    def _set_pt(self, m): self._type = (m << _PT_SHIFT) | (self._type & ~_PT_MASK)
-
-    version = property(_get_version, _set_version)
-    p = property(_get_p, _set_p)
-    x = property(_get_x, _set_x)
-    cc = property(_get_cc, _set_cc)
-    m = property(_get_m, _set_m)
-    pt = property(_get_pt, _set_pt)
+    @pt.setter
+    def pt(self, m): self._type = (m << _PT_SHIFT) | (self._type & ~_PT_MASK)
 
     def __len__(self):
         return self.__hdr_len__ + len(self.csrc) + len(self.data)

@@ -29,37 +29,37 @@ class Diameter(dpkt.Packet):
         ('end_id', 'I', 0)
     )
 
-    def _get_r(self):
+    @property
+    def request_flag(self):
         return (self.flags >> 7) & 0x1
 
-    def _set_r(self, r):
+    @request_flag.setter
+    def request_flag(self, r):
         self.flags = (self.flags & ~0x80) | ((r & 0x1) << 7)
 
-    request_flag = property(_get_r, _set_r)
-
-    def _get_p(self):
+    @property
+    def proxiable_flag(self):
         return (self.flags >> 6) & 0x1
 
-    def _set_p(self, p):
+    @proxiable_flag.setter
+    def proxiable_flag(self, p):
         self.flags = (self.flags & ~0x40) | ((p & 0x1) << 6)
 
-    proxiable_flag = property(_get_p, _set_p)
-
-    def _get_e(self):
+    @property
+    def error_flag(self):
         return (self.flags >> 5) & 0x1
 
-    def _set_e(self, e):
+    @error_flag.setter
+    def error_flag(self, e):
         self.flags = (self.flags & ~0x20) | ((e & 0x1) << 5)
 
-    error_flag = property(_get_e, _set_e)
-
-    def _get_t(self):
+    @property
+    def retransmit_flag(self):
         return (self.flags >> 4) & 0x1
 
-    def _set_t(self, t):
+    @retransmit_flag.setter
+    def retransmit_flag(self, t):
         self.flags = (self.flags & ~0x10) | ((t & 0x1) << 4)
-
-    retransmit_flag = property(_get_t, _set_t)
 
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
@@ -93,29 +93,29 @@ class AVP(dpkt.Packet):
         ('len', '3s', 0),
     )
 
-    def _get_v(self):
+    @property
+    def vendor_flag(self):
         return (self.flags >> 7) & 0x1
 
-    def _set_v(self, v):
+    @vendor_flag.setter
+    def vendor_flag(self, v):
         self.flags = (self.flags & ~0x80) | ((v & 0x1) << 7)
 
-    vendor_flag = property(_get_v, _set_v)
-
-    def _get_m(self):
+    @property
+    def mandatory_flag(self):
         return (self.flags >> 6) & 0x1
 
-    def _set_m(self, m):
+    @mandatory_flag.setter
+    def mandatory_flag(self, m):
         self.flags = (self.flags & ~0x40) | ((m & 0x1) << 6)
 
-    mandatory_flag = property(_get_m, _set_m)
-
-    def _get_p(self):
+    @property
+    def protected_flag(self):
         return (self.flags >> 5) & 0x1
 
-    def _set_p(self, p):
+    @protected_flag.setter
+    def protected_flag(self, p):
         self.flags = (self.flags & ~0x20) | ((p & 0x1) << 5)
-
-    protected_flag = property(_get_p, _set_p)
 
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)

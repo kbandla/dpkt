@@ -26,21 +26,21 @@ class GRE(dpkt.Packet):
     _protosw = {}
     sre = ()
 
-    def get_v(self):
+    @property
+    def v(self):
         return self.flags & 0x7
 
-    def set_v(self, v):
+    @v.setter
+    def v(self, v):
         self.flags = (self.flags & ~0x7) | (v & 0x7)
 
-    v = property(get_v, set_v)
-
-    def get_recur(self):
+    @property
+    def recur(self):
         return (self.flags >> 5) & 0x7
 
-    def set_recur(self, v):
+    @recur.setter
+    def recur(self, v):
         self.flags = (self.flags & ~0xe0) | ((v & 0x7) << 5)
-
-    recur = property(get_recur, set_recur)
 
     class SRE(dpkt.Packet):
         __hdr__ = [

@@ -138,7 +138,6 @@ _SIZE_FORMATS = ['!B', '!H', '!I', '!I']
 def parse_variable_array(buf, lenbytes):
     """
     Parse an array described using the 'Type name<x..y>' syntax from the spec
-
     Read a length at the start of buf, and returns that many bytes
     after, in a tuple with the TOTAL bytes consumed (including the size). This
     does not check that the array is the right length for any given datatype.
