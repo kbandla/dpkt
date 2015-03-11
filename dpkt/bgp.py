@@ -538,7 +538,7 @@ class BGP(dpkt.Packet):
                            ''.join(map(str, self.snpas)) + \
                            ''.join(map(str, self.announced))
 
-                class SNPA:
+                class SNPA(object):
                     __hdr__ = (
                         ('len', 'B', 0),
                     )

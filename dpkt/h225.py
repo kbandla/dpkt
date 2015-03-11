@@ -127,16 +127,11 @@ class H225(dpkt.Packet):
         self.data = l
 
     def __len__(self):
-        return self.tpkt.__hdr_len__ + \
-               self.__hdr_len__ + \
-               sum(map(len, self.data))
+        return self.tpkt.__hdr_len__ + self.__hdr_len__ + sum(map(len, self.data))
 
     def __str__(self):
-        return self.tpkt.pack_hdr() + \
-               self.pack_hdr() + \
-               self.ref_val + \
-               struct.pack('B', self.type) + \
-               ''.join(map(str, self.data))
+        return self.tpkt.pack_hdr() + self.pack_hdr() + self.ref_val + \
+               struct.pack('B', self.type) + ''.join(map(str, self.data))
 
     class IE(dpkt.Packet):
         __hdr__ = (

@@ -3,6 +3,7 @@
 import math, optparse, random, socket, sys, time
 import dpkt
 
+
 class Ping(object):
     def __init__(self):
         usage = '%prog [OPTIONS] <host>'
@@ -12,14 +13,13 @@ class Ping(object):
         self.op.add_option('-i', dest='wait', type='float', default=1,
                            help='Specify packet interval timeout in seconds')
 
-    def gen_ping(self, opts):
-        pass
-    def open_sock(self, opts):
-        pass
-    def print_header(self, opts):
-        pass
-    def print_reply(self, opts, buf):
-        pass
+    def gen_ping(self, opts): pass
+
+    def open_sock(self, opts): pass
+
+    def print_header(self, opts): pass
+
+    def print_reply(self, opts, buf, rtt): pass
     
     def main(self, argv=None):
         if not argv:
@@ -68,6 +68,7 @@ class Ping(object):
         print 'round-trip min/avg/max/std-dev = %.3f/%.3f/%.3f/%.3f ms' % \
               (rtt_min * 1000, rtt_avg * 1000, rtt_max * 1000,
                math.sqrt((rtt_sumsq / sent) - (rtt_avg * rtt_avg)) * 1000)
+
 
 class ICMPPing(Ping):
     def __init__(self):

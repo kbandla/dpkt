@@ -63,12 +63,8 @@ class Diameter(dpkt.Packet):
 
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
-        self.cmd = (ord(self.cmd[0]) << 16) | \
-                   (ord(self.cmd[1]) << 8) | \
-                   ord(self.cmd[2])
-        self.len = (ord(self.len[0]) << 16) | \
-                   (ord(self.len[1]) << 8) | \
-                   ord(self.len[2])
+        self.cmd = (ord(self.cmd[0]) << 16) | (ord(self.cmd[1]) << 8) | (ord(self.cmd[2]))
+        self.len = (ord(self.len[0]) << 16) | (ord(self.len[1]) << 8) | (ord(self.len[2]))
         self.data = self.data[:self.len - self.__hdr_len__]
 
         l = []
@@ -79,21 +75,15 @@ class Diameter(dpkt.Packet):
         self.data = self.avps = l
 
     def pack_hdr(self):
-        self.len = chr((self.len >> 16) & 0xff) + \
-                   chr((self.len >> 8) & 0xff) + \
-                   chr(self.len & 0xff)
-        self.cmd = chr((self.cmd >> 16) & 0xff) + \
-                   chr((self.cmd >> 8) & 0xff) + \
-                   chr(self.cmd & 0xff)
+        self.len = chr((self.len >> 16) & 0xff) + chr((self.len >> 8) & 0xff) + chr(self.len & 0xff)
+        self.cmd = chr((self.cmd >> 16) & 0xff) + chr((self.cmd >> 8) & 0xff) + chr(self.cmd & 0xff)
         return dpkt.Packet.pack_hdr(self)
 
     def __len__(self):
-        return self.__hdr_len__ + \
-               sum(map(len, self.data))
+        return self.__hdr_len__ + sum(map(len, self.data))
 
     def __str__(self):
-        return self.pack_hdr() + \
-               ''.join(map(str, self.data))
+        return self.pack_hdr() + ''.join(map(str, self.data))
 
 
 class AVP(dpkt.Packet):
@@ -129,9 +119,7 @@ class AVP(dpkt.Packet):
 
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
-        self.len = (ord(self.len[0]) << 16) | \
-                   (ord(self.len[1]) << 8) | \
-                   ord(self.len[2])
+        self.len = (ord(self.len[0]) << 16) | (ord(self.len[1]) << 8) | (ord(self.len[2]))
 
         if self.vendor_flag:
             self.vendor = struct.unpack('>I', self.data[:4])[0]
@@ -140,17 +128,14 @@ class AVP(dpkt.Packet):
             self.data = self.data[:self.len - self.__hdr_len__]
 
     def pack_hdr(self):
-        self.len = chr((self.len >> 16) & 0xff) + \
-                   chr((self.len >> 8) & 0xff) + \
-                   chr(self.len & 0xff)
+        self.len = chr((self.len >> 16) & 0xff) + chr((self.len >> 8) & 0xff) + chr(self.len & 0xff)
         data = dpkt.Packet.pack_hdr(self)
         if self.vendor_flag:
             data += struct.pack('>I', self.vendor)
         return data
 
     def __len__(self):
-        length = self.__hdr_len__ + \
-                 sum(map(len, self.data))
+        length = self.__hdr_len__ + sum(map(len, self.data))
         if self.vendor_flag:
             length += 4
         return length

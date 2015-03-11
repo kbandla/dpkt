@@ -184,6 +184,7 @@ class DNS(dpkt.Packet):
             ('type', 'H', DNS_A),
             ('cls', 'H', DNS_IN)
         )
+
         # XXX - suk
         def __len__(self):
             raise NotImplementedError
@@ -262,14 +263,12 @@ class DNS(dpkt.Packet):
             elif self.type == DNS_AAAA:
                 self.ip6 = self.rdata
             elif self.type == DNS_SRV:
-                self.priority, self.weight, self.port = \
-                    struct.unpack('>HHH', self.rdata[:6])
+                self.priority, self.weight, self.port = struct.unpack('>HHH', self.rdata[:6])
                 self.srvname, off = unpack_name(buf, off + 6)
 
     def pack_q(self, buf, q):
         """Append packed DNS question and return buf."""
-        return buf + pack_name(q.name, len(buf), self.label_ptrs) + \
-               struct.pack('>HH', q.type, q.cls)
+        return buf + pack_name(q.name, len(buf), self.label_ptrs) + struct.pack('>HH', q.type, q.cls)
 
     def unpack_q(self, buf, off):
         """Return DNS question and new offset."""
@@ -283,8 +282,7 @@ class DNS(dpkt.Packet):
         """Append packed DNS RR and return buf."""
         name = pack_name(rr.name, len(buf), self.label_ptrs)
         rdata = rr.pack_rdata(len(buf) + len(name) + 10, self.label_ptrs)
-        return buf + name + struct.pack('>HHIH', rr.type, rr.cls, rr.ttl,
-                                        len(rdata)) + rdata
+        return buf + name + struct.pack('>HHIH', rr.type, rr.cls, rr.ttl, len(rdata)) + rdata
 
     def unpack_rr(self, buf, off):
         """Return DNS RR and new offset."""

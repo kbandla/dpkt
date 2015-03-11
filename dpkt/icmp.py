@@ -92,8 +92,7 @@ class ICMP(dpkt.Packet):
     class Unreach(Quote):
         __hdr__ = (('pad', 'H', 0), ('mtu', 'H', 0))
 
-    class Quench(Quote):
-        pass
+    class Quench(Quote): pass
 
     class Redirect(Quote):
         __hdr__ = (('gw', 'I', 0),)
@@ -101,8 +100,7 @@ class ICMP(dpkt.Packet):
     class ParamProbe(Quote):
         __hdr__ = (('ptr', 'B', 0), ('pad1', 'B', 0), ('pad2', 'H', 0))
 
-    class TimeExceed(Quote):
-        pass
+    class TimeExceed(Quote): pass
 
     _typesw = {0: Echo, 3: Unreach, 4: Quench, 5: Redirect, 8: Echo, 11: TimeExceed}
 

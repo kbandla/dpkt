@@ -3,6 +3,7 @@
 import time, sys
 
 import dnet
+
 sys.path.insert(0, '.')
 import dpkt
 from impacket import ImpactDecoder, ImpactPacket
@@ -21,14 +22,15 @@ xip = xstruct.structdef('>', [
     ('sum', ('H', 1), 0),
     ('src', ('s', dnet.IP_ADDR_LEN), dnet.IP_ADDR_ANY),
     ('dst', ('s', dnet.IP_ADDR_LEN), dnet.IP_ADDR_ANY)
-    ])
+])
 
 xudp = xstruct.structdef('>', [
     ('sport', ('B', 1), 0),
     ('dport', ('B', 1), 0),
     ('ulen', ('H', 1), dnet.UDP_HDR_LEN),
     ('sum', ('H', 1), 0)
-    ])
+])
+
 
 def compare_create(cnt):
     """
@@ -47,22 +49,22 @@ xstruct: 88314.8953732 pps
     for i in xrange(cnt):
         dnet.ip_checksum(
             str(dpkt.ip.IP(src=src, dst=dst, p=dnet.IP_PROTO_UDP,
-                         len = dnet.IP_HDR_LEN + dnet.UDP_HDR_LEN + len(data),
-                         data=dpkt.udp.UDP(sport=111, dport=222,
-                                       ulen=dnet.UDP_HDR_LEN + len(data),
-                                       data=data))))
+                           len=dnet.IP_HDR_LEN + dnet.UDP_HDR_LEN + len(data),
+                           data=dpkt.udp.UDP(sport=111, dport=222,
+                                             ulen=dnet.UDP_HDR_LEN + len(data),
+                                             data=data))))
     print 'dpkt:', cnt / (time.time() - start), 'pps'
-    
+
     start = time.time()
     for i in xrange(cnt):
         dnet.ip_checksum(str(dpkt.ip.IP(src=src, dst=dst, p=dnet.IP_PROTO_UDP,
-                                     len=dnet.IP_HDR_LEN + dnet.UDP_HDR_LEN +
-                                     len(data))) +
+                                        len=dnet.IP_HDR_LEN + dnet.UDP_HDR_LEN +
+                                            len(data))) +
                          str(dpkt.udp.UDP(sport=111, dport=222,
-                                      ulen=dnet.UDP_HDR_LEN + len(data))) +
+                                          ulen=dnet.UDP_HDR_LEN + len(data))) +
                          data)
     print 'dpkt (manual):', cnt / (time.time() - start), 'pps'
-    
+
     start = time.time()
     for i in xrange(cnt):
         ip = ImpactPacket.IP()
@@ -87,14 +89,14 @@ xstruct: 88314.8953732 pps
         p.finalise()
         p.getRaw()
     print 'openbsd.packet:', cnt / (time.time() - start), 'pps'
-    
+
     start = time.time()
     for i in xrange(cnt):
         ip = scapy.IP(src='1.2.3.4', dst='5.6.7.8') / \
              scapy.UDP(sport=111, dport=222) / data
         ip.build()
     print 'scapy:', cnt / (time.time() - start), 'pps'
-    
+
     start = time.time()
     for i in xrange(cnt):
         udp = xudp()
@@ -108,7 +110,8 @@ xstruct: 88314.8953732 pps
         ip.len = dnet.IP_HDR_LEN + udp.ulen
         dnet.ip_checksum(str(ip) + str(udp) + data)
     print 'xstruct:', cnt / (time.time() - start), 'pps'
-    
+
+
 def compare_parse(cnt):
     """
 dpkt: 23347.462887 pps
@@ -123,7 +126,7 @@ xstruct: 206100.202449 pps
     for i in xrange(cnt):
         dpkt.ip.IP(s)
     print 'dpkt:', cnt / (time.time() - start), 'pps'
-    
+
     decoder = ImpactDecoder.IPDecoder()
     start = time.time()
     for i in xrange(cnt):
@@ -147,24 +150,27 @@ xstruct: 206100.202449 pps
         data = s[dnet.IP_HDR_LEN + dnet.UDP_HDR_LEN:]
     print 'xstruct:', cnt / (time.time() - start), 'pps'
 
+
 def compare_checksum(cnt):
     s = 'A' * 80
     start = time.time()
     for i in range(cnt):
         dpkt.in_cksum(s)
     print 'dpkt.in_cksum:', cnt / (time.time() - start), 'pps'
-    
+
     start = time.time()
     for i in range(cnt):
         dnet.ip_cksum_carry(dnet.ip_cksum_add(s, 0))
     print 'dnet.ip_cksum_add/carry:', cnt / (time.time() - start), 'pps'
 
+
 def main():
     import psyco
+
     psyco.full()
 
-    ITER=10000
-    
+    ITER = 10000
+
     print 'checksum:'
     compare_checksum(100000)
 
@@ -173,16 +179,15 @@ def main():
 
     print 'parse:'
     compare_parse(ITER)
-    
+
+
 if __name__ == '__main__':
     main()
-    """
-    import hotshot, hotshot.stats
-    prof = hotshot.Profile('/var/tmp/dpkt.prof')
-    prof.runcall(main)
-    prof.close()
-    stats = hotshot.stats.load('/var/tmp/dpkt.prof')
-    stats.strip_dirs()
-    stats.sort_stats('time', 'calls')
-    stats.print_stats(20)
-    """
+    # import hotshot, hotshot.stats
+    # prof = hotshot.Profile('/var/tmp/dpkt.prof')
+    # prof.runcall(main)
+    # prof.close()
+    # stats = hotshot.stats.load('/var/tmp/dpkt.prof')
+    # stats.strip_dirs()
+    # stats.sort_stats('time', 'calls')
+    # stats.print_stats(20)

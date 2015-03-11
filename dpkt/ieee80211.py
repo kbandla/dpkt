@@ -233,7 +233,7 @@ class IEEE80211(dpkt.Packet):
             self.ies.append(ie)
             buf = buf[2 + ie.len:]
 
-    class Capability:
+    class Capability(object):
         def __init__(self, field):
             self.ess = field & 1
             self.ibss = (field >> 1) & 1

@@ -11,7 +11,7 @@ class IGMP(dpkt.Packet):
         ('maxresp', 'B', 0),
         ('sum', 'H', 0),
         ('group', 'I', 0)
-        )
+    )
 
     def __str__(self):
         if not self.sum:
