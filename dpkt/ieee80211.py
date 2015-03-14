@@ -5,6 +5,7 @@
 import socket
 import struct
 import dpkt
+from configs.decorators import deprecated_method_decorator
 
 # Frame Types
 MGMT_TYPE = 0
@@ -89,11 +90,7 @@ IE_HT_INFO = 61
 
 FCS_LENGTH = 4
 
-FRAMES_WITH_CAPABILITY = [M_BEACON,
-                          M_ASSOC_RESP,
-                          M_ASSOC_REQ,
-                          M_REASSOC_REQ,
-                          ]
+FRAMES_WITH_CAPABILITY = [M_BEACON, M_ASSOC_RESP, M_ASSOC_REQ, M_REASSOC_REQ, ]
 
 # Block Ack control constants
 _ACK_POLICY_SHIFT = 0
@@ -210,6 +207,75 @@ class IEEE80211(dpkt.Packet):
     @order.setter
     def order(self, val):
         self.framectl = (val << _ORDER_SHIFT) | (self.framectl & ~_ORDER_MASK)
+
+    # Deprecated methods, will be removed in the future
+    # =================================================
+    @deprecated_method_decorator
+    def _get_version(self): return self.version
+
+    @deprecated_method_decorator
+    def _set_version(self, val): self.version = val
+
+    @deprecated_method_decorator
+    def _get_type(self): return self.type
+
+    @deprecated_method_decorator
+    def _set_type(self, val): self.type = val
+
+    @deprecated_method_decorator
+    def _get_subtype(self): return self.subtype
+
+    @deprecated_method_decorator
+    def _set_subtype(self, val): self.subtype = val
+
+    @deprecated_method_decorator
+    def _get_to_ds(self): return self.to_ds
+
+    @deprecated_method_decorator
+    def _set_to_ds(self, val): self.to_ds = val
+
+    @deprecated_method_decorator
+    def _get_from_ds(self): return self.from_ds
+
+    @deprecated_method_decorator
+    def _set_from_ds(self, val): self.from_ds = val
+
+    @deprecated_method_decorator
+    def _get_more_frag(self): return self.more_frag
+
+    @deprecated_method_decorator
+    def _set_more_frag(self, val): self.more_frag = val
+
+    @deprecated_method_decorator
+    def _get_retry(self): return self.retry
+
+    @deprecated_method_decorator
+    def _set_retry(self, val): self.retry = val
+
+    @deprecated_method_decorator
+    def _get_pwr_mgt(self): return self.pwr_mgt
+
+    @deprecated_method_decorator
+    def _set_pwr_mgt(self, val): self.pwr_mgt = val
+
+    @deprecated_method_decorator
+    def _get_more_data(self): return self.more_data
+
+    @deprecated_method_decorator
+    def _set_more_data(self, val): self.more_data = val
+
+    @deprecated_method_decorator
+    def _get_wep(self): return self.wep
+
+    @deprecated_method_decorator
+    def _set_wep(self, val): self.wep = val
+
+    @deprecated_method_decorator
+    def _get_order(self): return self.order
+
+    @deprecated_method_decorator
+    def _set_order(self, val): self.order = val
+    # =================================================
 
     def unpack_ies(self, buf):
         self.ies = []
@@ -410,6 +476,33 @@ class IEEE80211(dpkt.Packet):
         @tid.setter
         def tid(self, val):
             self.ctl = (val << _TID_SHIFT) | (self.ctl & ~_TID_MASK)
+
+        # Deprecated methods, will be removed in the future
+        # =================================================
+        @deprecated_method_decorator
+        def _get_compressed(self): return self.compressed
+
+        @deprecated_method_decorator
+        def _set_compressed(self, val): self.compressed = val
+
+        @deprecated_method_decorator
+        def _get_ack_policy(self): return self.ack_policy
+
+        @deprecated_method_decorator
+        def _set_ack_policy(self, val): self.ack_policy = val
+
+        @deprecated_method_decorator
+        def _get_multi_tid(self): return self.multi_tid
+
+        @deprecated_method_decorator
+        def _set_multi_tid(self, val): self.multi_tid = val
+
+        @deprecated_method_decorator
+        def _get_tid(self): return self.tid
+
+        @deprecated_method_decorator
+        def _set_tid(self, val): self.tid = val
+        # =================================================
 
         def unpack(self, buf):
             dpkt.Packet.unpack(self, buf)

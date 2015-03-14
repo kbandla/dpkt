@@ -2,6 +2,7 @@
 
 import struct
 import dpkt
+from configs.decorators import deprecated_method_decorator
 
 
 class AOE(dpkt.Packet):
@@ -48,6 +49,22 @@ class AOE(dpkt.Packet):
             return dpkt.Packet.pack_hdr(self)
         except struct.error, e:
             raise dpkt.PackError(str(e))
+
+    # Deprecated methods, will be removed in the future
+    # =================================================
+    @deprecated_method_decorator
+    def _get_ver(self): return self.ver
+
+    @deprecated_method_decorator
+    def _set_ver(self, ver): self.ver = ver
+
+    @deprecated_method_decorator
+    def _get_fl(self): return self.fl
+
+    @deprecated_method_decorator
+    def _set_fl(self, fl): self.fl = fl
+    # =================================================
+
 
 
 AOE_CMD_ATA = 0

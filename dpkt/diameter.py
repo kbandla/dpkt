@@ -4,6 +4,7 @@
 
 import struct
 import dpkt
+from configs.decorators import deprecated_method_decorator
 
 # Diameter Base Protocol - RFC 3588
 # http://tools.ietf.org/html/rfc3588
@@ -61,6 +62,32 @@ class Diameter(dpkt.Packet):
     def retransmit_flag(self, t):
         self.flags = (self.flags & ~0x10) | ((t & 0x1) << 4)
 
+    # Deprecated methods, will be removed in the future
+    # ======================================================
+    @deprecated_method_decorator
+    def _get_r(self): return self.request_flag
+
+    @deprecated_method_decorator
+    def _set_r(self, r): self.request_flag = r
+    @deprecated_method_decorator
+    def _get_p(self): return self.proxiable_flag
+
+    @deprecated_method_decorator
+    def _set_p(self, p): self.proxiable_flag = p
+
+    @deprecated_method_decorator
+    def _get_e(self): return self.error_flag
+
+    @deprecated_method_decorator
+    def _set_e(self, e): self.error_flag = e
+
+    @deprecated_method_decorator
+    def _get_t(self): return self.request_flag
+
+    @deprecated_method_decorator
+    def _set_t(self, t): self.request_flag = t
+    # ======================================================
+
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
         self.cmd = (ord(self.cmd[0]) << 16) | (ord(self.cmd[1]) << 8) | (ord(self.cmd[2]))
@@ -116,6 +143,27 @@ class AVP(dpkt.Packet):
     @protected_flag.setter
     def protected_flag(self, p):
         self.flags = (self.flags & ~0x20) | ((p & 0x1) << 5)
+
+    # Deprecated methods, will be removed in the future
+    # ======================================================
+    @deprecated_method_decorator
+    def _get_v(self): return self.vendor_flag
+
+    @deprecated_method_decorator
+    def _set_v(self, v): self.vendor_flag = v
+
+    @deprecated_method_decorator
+    def _get_m(self): return self.mandatory_flag
+
+    @deprecated_method_decorator
+    def _set_m(self, m): self.mandatory_flag = m
+
+    @deprecated_method_decorator
+    def _get_p(self): return self.protected_flag
+
+    @deprecated_method_decorator
+    def _set_p(self, p): self.protected_flag = p
+    # ======================================================
 
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)

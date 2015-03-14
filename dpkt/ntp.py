@@ -3,6 +3,7 @@
 """Network Time Protocol."""
 
 import dpkt
+from configs.decorators import deprecated_method_decorator
 
 # NTP v4
 
@@ -61,6 +62,27 @@ class NTP(dpkt.Packet):
     @mode.setter
     def mode(self, mode):
         self.flags = (self.flags & ~0x7) | (mode & 0x7)
+
+    # Deprecated methods, will be removed in the future
+    # =================================================
+    @deprecated_method_decorator
+    def _get_v(self): return self.v
+
+    @deprecated_method_decorator
+    def _set_v(self, v): self.v = v
+
+    @deprecated_method_decorator
+    def _get_li(self): return self.li
+
+    @deprecated_method_decorator
+    def _set_li(self, li): self.li = li
+
+    @deprecated_method_decorator
+    def _get_mode(self): return self.mode
+
+    @deprecated_method_decorator
+    def _set_mode(self, mode): self.mode = mode
+    # =================================================
 
 
 if __name__ == '__main__':

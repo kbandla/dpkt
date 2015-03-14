@@ -3,6 +3,7 @@
 """Internet Protocol."""
 
 import dpkt
+from configs.decorators import deprecated_method_decorator
 
 
 class IP(dpkt.Packet):
@@ -32,6 +33,21 @@ class IP(dpkt.Packet):
 
     @hl.setter
     def hl(self, hl): self.v_hl = (self.v_hl & 0xf0) | hl
+
+    # Deprecated methods, will be removed in the future
+    # =================================================
+    @deprecated_method_decorator
+    def _get_v(self): return self.v
+
+    @deprecated_method_decorator
+    def _set_v(self, v): self.v = v
+
+    @deprecated_method_decorator
+    def _get_hl(self): return self.hl
+
+    @deprecated_method_decorator
+    def _set_hl(self, hl): self.hl = hl
+    # =================================================
 
     def __len__(self): return self.__hdr_len__ + len(self.opts) + len(self.data)
 

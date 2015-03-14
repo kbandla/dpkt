@@ -3,6 +3,7 @@
 """Virtual Router Redundancy Protocol."""
 
 import dpkt
+from configs.decorators import deprecated_method_decorator
 
 
 class VRRP(dpkt.Packet):
@@ -33,6 +34,21 @@ class VRRP(dpkt.Packet):
     @type.setter
     def type(self, v):
         self.vtype = (self.vtype & ~0xf0) | (v & 0xf)
+
+    # Deprecated methods, will be removed in the future
+    # =================================================
+    @deprecated_method_decorator
+    def _get_v(self): return self.v
+
+    @deprecated_method_decorator
+    def _set_v(self, v): self.v = v
+
+    @deprecated_method_decorator
+    def _get_type(self): return self.type
+
+    @deprecated_method_decorator
+    def _set_type(self, v): self.type = v
+    # =================================================
 
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)

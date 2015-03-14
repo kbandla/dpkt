@@ -3,6 +3,7 @@
 """Transmission Control Protocol."""
 
 import dpkt
+from configs.decorators import deprecated_method_decorator
 
 # TCP control flags
 TH_FIN = 0x01  # end of data
@@ -37,6 +38,15 @@ class TCP(dpkt.Packet):
 
     @off.setter
     def off(self, off): self.off_x2 = (off << 4) | (self.off_x2 & 0xf)
+
+    # Deprecated methods, will be removed in the future
+    # =================================================
+    @deprecated_method_decorator
+    def _get_off(self): return self.off
+
+    @deprecated_method_decorator
+    def _set_off(self, off): self.off = off
+    # =================================================
 
     def __len__(self):
         return self.__hdr_len__ + len(self.opts) + len(self.data)

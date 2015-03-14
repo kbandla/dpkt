@@ -3,6 +3,7 @@
 """Internet Protocol, version 6."""
 
 import dpkt
+from configs.decorators import deprecated_method_decorator
 
 
 class IP6(dpkt.Packet):
@@ -44,6 +45,28 @@ class IP6(dpkt.Packet):
     def flow(self, v):
         self.v_fc_flow = (self.v_fc_flow & ~0xfffff) | (v & 0xfffff)
 
+
+    # Deprecated methods, will be removed in the future
+    # =================================================
+    @deprecated_method_decorator
+    def _get_v(self): return self.v
+
+    @deprecated_method_decorator
+    def _set_v(self, v): self.v = v
+
+    @deprecated_method_decorator
+    def _get_fc(self): return self.fc
+
+    @deprecated_method_decorator
+    def _set_fc(self, v): self.rc = v
+
+    @deprecated_method_decorator
+    def _get_flow(self): return self.flow
+
+    @deprecated_method_decorator
+    def _set_flow(self, v): self.flow = v
+    # =================================================
+
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
         self.extension_hdrs = dict(((i, None) for i in ext_hdrs))
@@ -71,9 +94,7 @@ class IP6(dpkt.Packet):
             self.data = buf
 
     def headers_str(self):
-        """
-        Output extension headers in order defined in RFC1883 (except dest opts)
-        """
+        """ Output extension headers in order defined in RFC1883 (except dest opts) """
 
         header_str = ""
 
@@ -182,6 +203,12 @@ class IP6RoutingHeader(IP6ExtensionHeader):
     def sl_bits(self, v):
         self.rsvd_sl_bits = (self.rsvd_sl_bits & ~0xfffff) | (v & 0xfffff)
 
+    # Deprecated methods, will be removed in the future
+    # =================================================
+    def _get_sl_bits(self): return self.sl_bits
+    def _set_sl_bits(self, v): self.sl_bits = v
+    # =================================================
+
     def unpack(self, buf):
         hdr_size = 8
         addr_size = 16
@@ -227,6 +254,21 @@ class IP6FragmentHeader(IP6ExtensionHeader):
     @m_flag.setter
     def m_flag(self, v):
         self.frag_off_resv_m = (self.frag_off_resv_m & ~0xfffe) | v
+
+    # Deprecated methods, will be removed in the future
+    # =================================================
+    @deprecated_method_decorator
+    def _get_frag_off(self): return self.flag_off
+
+    @deprecated_method_decorator
+    def _set_frag_off(self, v): self.flag_off = v
+
+    @deprecated_method_decorator
+    def _get_m_flag(self): return self.m_flag
+
+    @deprecated_method_decorator
+    def _set_m_flag(self, v): self.m_flag = v
+    # =================================================
 
 
 class IP6AHHeader(IP6ExtensionHeader):

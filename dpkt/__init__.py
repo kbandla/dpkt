@@ -9,6 +9,7 @@ __version__ = '1.8.6'
 from dpkt import *
 
 import ah
+import aoe
 import aim
 import arp
 import asn1

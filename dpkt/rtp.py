@@ -3,6 +3,7 @@
 """Real-Time Transport Protocol"""
 
 from dpkt import Packet
+from configs.decorators import deprecated_method_decorator
 
 # version 1100 0000 0000 0000 ! 0xC000  14
 # p       0010 0000 0000 0000 ! 0x2000  13
@@ -73,6 +74,45 @@ class RTP(Packet):
 
     @pt.setter
     def pt(self, m): self._type = (m << _PT_SHIFT) | (self._type & ~_PT_MASK)
+
+    # Deprecated methods, will be removed in the future
+    # =================================================
+    @deprecated_method_decorator
+    def _get_version(self): return self.version
+
+    @deprecated_method_decorator
+    def _set_version(self, ver): self.version = ver
+
+    @deprecated_method_decorator
+    def _get_p(self): return self.p
+
+    @deprecated_method_decorator
+    def _set_p(self, p): self.p = p
+
+    @deprecated_method_decorator
+    def _get_x(self): return self.x
+
+    @deprecated_method_decorator
+    def _set_x(self, x): self.x = x
+
+    @deprecated_method_decorator
+    def _get_cc(self): return self.cc
+
+    @deprecated_method_decorator
+    def _set_cc(self, cc): self.cc = cc
+
+    @deprecated_method_decorator
+    def _get_m(self): return self.m
+
+    @deprecated_method_decorator
+    def _set_m(self, m): self.m = m
+
+    @deprecated_method_decorator
+    def _get_pt(self): return self.pt
+
+    @deprecated_method_decorator
+    def _set_pt(self, pt): self.pt = pt
+    # =================================================
 
     def __len__(self):
         return self.__hdr_len__ + len(self.csrc) + len(self.data)

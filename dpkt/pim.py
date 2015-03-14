@@ -3,6 +3,7 @@
 """Protocol Independent Multicast."""
 
 import dpkt
+from configs.decorators import deprecated_method_decorator
 
 
 class PIM(dpkt.Packet):
@@ -23,6 +24,21 @@ class PIM(dpkt.Packet):
 
     @type.setter
     def type(self, type): self.v_type = (self.v_type & 0xf0) | type
+
+    # Deprecated methods, will be removed in the future
+    # =================================================
+    @deprecated_method_decorator
+    def _get_v(self): return self.v
+
+    @deprecated_method_decorator
+    def _set_v(self, v): self.v = v
+
+    @deprecated_method_decorator
+    def _get_type(self): return self.type
+
+    @deprecated_method_decorator
+    def _set_type(self, type): self.type = type
+    # =================================================
 
     def __str__(self):
         if not self.sum:

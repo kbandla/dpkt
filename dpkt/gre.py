@@ -4,6 +4,7 @@
 
 import struct
 import dpkt
+from configs.decorators import deprecated_method_decorator
 
 GRE_CP = 0x8000  # Checksum Present
 GRE_RP = 0x4000  # Routing Present
@@ -41,6 +42,22 @@ class GRE(dpkt.Packet):
     @recur.setter
     def recur(self, v):
         self.flags = (self.flags & ~0xe0) | ((v & 0x7) << 5)
+
+    # Deprecated methods, will be removed in the future
+    # =================================================
+    @deprecated_method_decorator
+    def get_v(self): return self.v
+
+    @deprecated_method_decorator
+    def set_v(self, v): self.v = v
+
+    @deprecated_method_decorator
+    def get_recur(self): return self.recur
+
+    @deprecated_method_decorator
+    def set_recur(self, v): self.recur = v
+    # =================================================
+
 
     class SRE(dpkt.Packet):
         __hdr__ = [

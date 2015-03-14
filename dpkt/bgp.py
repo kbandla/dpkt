@@ -5,6 +5,7 @@
 import struct
 import socket
 import dpkt
+from configs.decorators import deprecated_method_decorator
 
 
 # Border Gateway Protocol 4 - RFC 4271
@@ -289,6 +290,33 @@ class BGP(dpkt.Packet):
             @extended_length.setter
             def extended_length(self, e):
                 self.flags = (self.flags & ~0x10) | ((e & 0x1) << 4)
+
+            # Deprecated methods, will be removed in the future
+            # ======================================================
+            @deprecated_method_decorator
+            def _get_o(self): return self.optional
+
+            @deprecated_method_decorator
+            def _set_o(self, o): self.optional = o
+
+            @deprecated_method_decorator
+            def _get_t(self): return self.transitive
+
+            @deprecated_method_decorator
+            def _set_t(self, t): self.transitive = t
+
+            @deprecated_method_decorator
+            def _get_p(self): return self.partial
+
+            @deprecated_method_decorator
+            def _set_p(self, p): self.partial = p
+
+            @deprecated_method_decorator
+            def _get_e(self): return self.extended_length
+
+            @deprecated_method_decorator
+            def _set_e(self, e): self.extended_length = e
+            # ======================================================
 
             def unpack(self, buf):
                 dpkt.Packet.unpack(self, buf)

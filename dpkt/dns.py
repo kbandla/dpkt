@@ -4,6 +4,7 @@
 
 import struct
 import dpkt
+from configs.decorators import deprecated_method_decorator
 
 DNS_Q = 0
 DNS_R = 1
@@ -176,6 +177,51 @@ class DNS(dpkt.Packet):
     @rcode.setter
     def rcode(self, v):
         self.op = (self.op & ~0xf) | (v & 0xf)
+
+    # Deprecated methods, will be removed in the future
+    # ======================================================
+    @deprecated_method_decorator
+    def get_qr(self): return self.qr
+
+    @deprecated_method_decorator
+    def set_qr(self, v): self.qr = v
+
+    @deprecated_method_decorator
+    def get_opcode(self): return self.opcode
+
+    @deprecated_method_decorator
+    def set_opcode(self, v): self.opcode = v
+
+    @deprecated_method_decorator
+    def get_aa(self): return self.aa
+
+    @deprecated_method_decorator
+    def set_aa(self, v): self.aa = v
+
+    @deprecated_method_decorator
+    def get_rd(self): return self.rd
+
+    @deprecated_method_decorator
+    def set_rd(self, v): self.rd = v
+
+    @deprecated_method_decorator
+    def get_ra(self): return self.ra
+
+    @deprecated_method_decorator
+    def set_ra(self, v): self.ra = v
+
+    @deprecated_method_decorator
+    def get_zero(self): return self.zero
+
+    @deprecated_method_decorator
+    def set_zero(self, v): self.zero = v
+
+    @deprecated_method_decorator
+    def get_rcode(self): return self.rcode
+
+    @deprecated_method_decorator
+    def set_rcode(self, v): self.rcode = v
+    # ======================================================
 
     class Q(dpkt.Packet):
         """DNS question."""
