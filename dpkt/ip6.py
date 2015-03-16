@@ -3,7 +3,7 @@
 """Internet Protocol, version 6."""
 
 import dpkt
-from configs.decorators import deprecated_method_decorator
+from decorators import deprecated_method_decorator
 
 
 class IP6(dpkt.Packet):

@@ -4,7 +4,7 @@
 
 import dpkt
 import ppp
-from configs.decorators import deprecated_method_decorator
+from decorators import deprecated_method_decorator
 
 # RFC 2516 codes
 PPPoE_PADI = 0x09

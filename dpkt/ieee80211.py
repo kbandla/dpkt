@@ -5,7 +5,7 @@
 import socket
 import struct
 import dpkt
-from configs.decorators import deprecated_method_decorator
+from decorators import deprecated_method_decorator
 
 # Frame Types
 MGMT_TYPE = 0

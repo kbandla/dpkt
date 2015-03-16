@@ -3,7 +3,7 @@
 """Real-Time Transport Protocol"""
 
 from dpkt import Packet
-from configs.decorators import deprecated_method_decorator
+from decorators import deprecated_method_decorator
 
 # version 1100 0000 0000 0000 ! 0xC000  14
 # p       0010 0000 0000 0000 ! 0x2000  13

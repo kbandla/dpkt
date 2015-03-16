@@ -3,7 +3,7 @@
 import dpkt
 import ieee80211
 import socket
-from configs.decorators import deprecated_method_decorator
+from decorators import deprecated_method_decorator
 
 # Ref: http://www.radiotap.org
 # Fields Ref: http://www.radiotap.org/defined-fields/all

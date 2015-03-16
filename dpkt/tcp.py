@@ -3,7 +3,7 @@
 """Transmission Control Protocol."""
 
 import dpkt
-from configs.decorators import deprecated_method_decorator
+from decorators import deprecated_method_decorator
 
 # TCP control flags
 TH_FIN = 0x01  # end of data

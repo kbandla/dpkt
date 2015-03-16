@@ -3,7 +3,7 @@
 """Virtual Router Redundancy Protocol."""
 
 import dpkt
-from configs.decorators import deprecated_method_decorator
+from decorators import deprecated_method_decorator
 
 
 class VRRP(dpkt.Packet):

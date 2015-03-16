@@ -4,7 +4,7 @@
 
 import struct
 import dpkt
-from configs.decorators import deprecated_method_decorator
+from decorators import deprecated_method_decorator
 
 GRE_CP = 0x8000  # Checksum Present
 GRE_RP = 0x4000  # Routing Present

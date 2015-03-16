@@ -4,7 +4,7 @@
 
 import struct
 import dpkt
-from configs.decorators import deprecated_method_decorator
+from decorators import deprecated_method_decorator
 
 # Diameter Base Protocol - RFC 3588
 # http://tools.ietf.org/html/rfc3588

@@ -4,7 +4,7 @@
 
 import struct
 import dpkt
-from configs.decorators import deprecated_method_decorator
+from decorators import deprecated_method_decorator
 
 DNS_Q = 0
 DNS_R = 1
