@@ -3,20 +3,42 @@
 """Protocol Independent Multicast."""
 
 import dpkt
+from decorators import deprecated_method_decorator
+
 
 class PIM(dpkt.Packet):
     __hdr__ = (
         ('v_type', 'B', 0x20),
         ('rsvd', 'B', 0),
         ('sum', 'H', 0)
-        )
-    def _get_v(self): return self.v_type >> 4
-    def _set_v(self, v): self.v_type = (v << 4) | (self.v_type & 0xf)
-    v = property(_get_v, _set_v)
-    
-    def _get_type(self): return self.v_type & 0xf
-    def _set_type(self, type): self.v_type = (self.v_type & 0xf0) | type
-    type = property(_get_type, _set_type)
+    )
+
+    @property
+    def v(self): return self.v_type >> 4
+
+    @v.setter
+    def v(self, v): self.v_type = (v << 4) | (self.v_type & 0xf)
+
+    @property
+    def type(self): return self.v_type & 0xf
+
+    @type.setter
+    def type(self, type): self.v_type = (self.v_type & 0xf0) | type
+
+    # Deprecated methods, will be removed in the future
+    # =================================================
+    @deprecated_method_decorator
+    def _get_v(self): return self.v
+
+    @deprecated_method_decorator
+    def _set_v(self, v): self.v = v
+
+    @deprecated_method_decorator
+    def _get_type(self): return self.type
+
+    @deprecated_method_decorator
+    def _set_type(self, type): self.type = type
+    # =================================================
 
     def __str__(self):
         if not self.sum:

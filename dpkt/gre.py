@@ -4,6 +4,7 @@
 
 import struct
 import dpkt
+from decorators import deprecated_method_decorator
 
 GRE_CP = 0x8000  # Checksum Present
 GRE_RP = 0x4000  # Routing Present
@@ -13,34 +14,58 @@ GRE_SS = 0x0800  # Strict Source Route
 GRE_AP = 0x0080  # Acknowledgment Present
 
 GRE_opt_fields = (
-    (GRE_CP|GRE_RP, 'sum', 'H'), (GRE_CP|GRE_RP, 'off', 'H'),
+    (GRE_CP | GRE_RP, 'sum', 'H'), (GRE_CP | GRE_RP, 'off', 'H'),
     (GRE_KP, 'key', 'I'), (GRE_SP, 'seq', 'I'), (GRE_AP, 'ack', 'I')
-    )
+)
+
+
 class GRE(dpkt.Packet):
     __hdr__ = (
         ('flags', 'H', 0),
-        ('p', 'H', 0x0800), # ETH_TYPE_IP
-        )
+        ('p', 'H', 0x0800),  # ETH_TYPE_IP
+    )
     _protosw = {}
     sre = ()
-    def get_v(self):
-        return self.flags & 0x7
-    def set_v(self, v):
-        self.flags = (self.flags & ~0x7) | (v & 0x7)
-    v = property(get_v, set_v)
 
-    def get_recur(self):
+    @property
+    def v(self):
+        return self.flags & 0x7
+
+    @v.setter
+    def v(self, v):
+        self.flags = (self.flags & ~0x7) | (v & 0x7)
+
+    @property
+    def recur(self):
         return (self.flags >> 5) & 0x7
-    def set_recur(self, v):
+
+    @recur.setter
+    def recur(self, v):
         self.flags = (self.flags & ~0xe0) | ((v & 0x7) << 5)
-    recur = property(get_recur, set_recur)
-    
+
+    # Deprecated methods, will be removed in the future
+    # =================================================
+    @deprecated_method_decorator
+    def get_v(self): return self.v
+
+    @deprecated_method_decorator
+    def set_v(self, v): self.v = v
+
+    @deprecated_method_decorator
+    def get_recur(self): return self.recur
+
+    @deprecated_method_decorator
+    def set_recur(self, v): self.recur = v
+    # =================================================
+
+
     class SRE(dpkt.Packet):
         __hdr__ = [
             ('family', 'H', 0),
             ('off', 'B', 0),
             ('len', 'B', 0)
-            ]
+        ]
+
         def unpack(self, buf):
             dpkt.Packet.unpack(self, buf)
             self.data = self.data[:self.len]
@@ -50,14 +75,14 @@ class GRE(dpkt.Packet):
             fields, fmts = [], []
             opt_fields = GRE_opt_fields
         else:
-            fields, fmts = [ 'len', 'callid' ], [ 'H', 'H' ]
+            fields, fmts = ['len', 'callid'], ['H', 'H']
             opt_fields = GRE_opt_fields[-2:]
         for flags, field, fmt in opt_fields:
             if self.flags & flags:
                 fields.append(field)
                 fmts.append(fmt)
         return fields, fmts
-    
+
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
         fields, fmts = self.opt_fields_fmts()
@@ -78,14 +103,13 @@ class GRE(dpkt.Packet):
             self.sre = l
         self.data = ethernet.Ethernet._typesw[self.p](self.data)
         setattr(self, self.data.__class__.__name__.lower(), self.data)
-    
+
     def __len__(self):
         opt_fmtlen = struct.calcsize(''.join(self.opt_fields_fmts()[1]))
-        return self.__hdr_len__ + opt_fmtlen + \
-               sum(map(len, self.sre)) + len(self.data)
+        return self.__hdr_len__ + opt_fmtlen + sum(map(len, self.sre)) + len(self.data)
 
     # XXX - need to fix up repr to display optional fields...
-    
+
     def __str__(self):
         fields, fmts = self.opt_fields_fmts()
         if fields:
@@ -95,9 +119,9 @@ class GRE(dpkt.Packet):
             opt_s = struct.pack(''.join(fmts), *vals)
         else:
             opt_s = ''
-        return self.pack_hdr() + opt_s + ''.join(map(str, self.sre)) + \
-               str(self.data)
+        return self.pack_hdr() + opt_s + ''.join(map(str, self.sre)) + str(self.data)
 
 # XXX - auto-load GRE dispatch table from Ethernet dispatch table
 import ethernet
+
 GRE._protosw.update(ethernet.Ethernet._typesw)

@@ -2,11 +2,16 @@
 
 """Platform-dependent loopback header."""
 
-import dpkt, ethernet, ip, ip6
+import dpkt
+import ethernet
+import ip
+import ip6
+
 
 class Loopback(dpkt.Packet):
     __hdr__ = (('family', 'I', 0), )
     __byte_order__ = '@'
+
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
         if self.family == 2:

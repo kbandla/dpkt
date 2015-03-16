@@ -4,6 +4,7 @@
 
 import struct
 import dpkt
+from decorators import deprecated_method_decorator
 
 DNS_Q = 0
 DNS_R = 1
@@ -16,14 +17,14 @@ DNS_NOTIFY = 4
 DNS_UPDATE = 5
 
 # Flags
-DNS_CD = 0x0010	# checking disabled
-DNS_AD = 0x0020	# authenticated data
-DNS_Z =  0x0040	# unused
-DNS_RA = 0x0080	# recursion available
-DNS_RD = 0x0100	# recursion desired
-DNS_TC = 0x0200	# truncated
-DNS_AA = 0x0400	# authoritative answer
-DNS_QR = 0x8000 # response ( query / response )
+DNS_CD = 0x0010  # checking disabled
+DNS_AD = 0x0020  # authenticated data
+DNS_Z = 0x0040  # unused
+DNS_RA = 0x0080  # recursion available
+DNS_RD = 0x0100  # recursion desired
+DNS_TC = 0x0200  # truncated
+DNS_AA = 0x0400  # authoritative answer
+DNS_QR = 0x8000  # response ( query / response )
 
 # Response codes
 DNS_RCODE_NOERR = 0
@@ -56,6 +57,7 @@ DNS_CHAOS = 3
 DNS_HESIOD = 4
 DNS_ANY = 255
 
+
 def pack_name(name, off, label_ptrs):
     if name:
         labels = name.split('.')
@@ -78,16 +80,17 @@ def pack_name(name, off, label_ptrs):
             break
     return buf
 
+
 def unpack_name(buf, off):
     name = ''
     saved_off = 0
-    for i in range(100): # XXX
+    for i in range(100):  # XXX
         n = ord(buf[off])
         if n == 0:
             off += 1
             break
         elif (n & 0xc0) == 0xc0:
-            ptr = struct.unpack('>H', buf[off:off+2])[0] & 0x3fff
+            ptr = struct.unpack('>H', buf[off:off + 2])[0] & 0x3fff
             off += 2
             if not saved_off:
                 saved_off = off
@@ -96,68 +99,129 @@ def unpack_name(buf, off):
             break
         else:
             off += 1
-            name = name + buf[off:off+n] + '.'
+            name = name + buf[off:off + n] + '.'
             if len(name) > 255:
                 raise dpkt.UnpackError('name longer than 255 bytes')
             off += n
     return name.strip('.'), off
 
+
 class DNS(dpkt.Packet):
     __hdr__ = (
         ('id', 'H', 0),
-        ('op', 'H', DNS_RD),	# recursive query
+        ('op', 'H', DNS_RD),  # recursive query
         # XXX - lists of query, RR objects
         ('qd', 'H', []),
         ('an', 'H', []),
         ('ns', 'H', []),
         ('ar', 'H', [])
-        )
-    def get_qr(self):
+    )
+
+    @property
+    def qr(self):
         return int((self.op & DNS_QR) == DNS_QR)
-    def set_qr(self, v):
+
+    @qr.setter
+    def qr(self, v):
         if v: self.op |= DNS_QR
         else: self.op &= ~DNS_QR
-    qr = property(get_qr, set_qr)
 
-    def get_opcode(self):
+    @property
+    def opcode(self):
         return (self.op >> 11) & 0xf
-    def set_opcode(self, v):
-        self.op = (self.op & ~0x7800) | ((v & 0xf) << 11)
-    opcode = property(get_opcode, set_opcode)
 
-    def get_aa(self):
+    @opcode.setter
+    def opcode(self, v):
+        self.op = (self.op & ~0x7800) | ((v & 0xf) << 11)
+
+    @property
+    def aa(self):
         return int((self.op & DNS_AA) == DNS_AA)
-    def set_aa(self, v):
+
+    @aa.setter
+    def aa(self, v):
         if v: self.op |= DNS_AA
         else: self.op &= ~DNS_AA
-    aa = property(get_aa, set_aa)
 
-    def get_rd(self):
+    @property
+    def rd(self):
         return int((self.op & DNS_RD) == DNS_RD)
-    def set_rd(self,v):
+
+    @rd.setter
+    def rd(self, v):
         if v: self.op |= DNS_RD
         else: self.op &= ~DNS_RD
-    rd = property(get_rd, set_rd)
 
-    def get_ra(self):
+    @property
+    def ra(self):
         return int((self.op & DNS_RA) == DNS_RA)
-    def set_ra(self,v):
+
+    @ra.setter
+    def ra(self, v):
         if v: self.op |= DNS_RA
         else: self.op &= ~DNS_RA
-    ra = property(get_ra, set_ra)
 
-    def get_zero(self):
+    @property
+    def zero(self):
         return int((self.op & DNS_Z) == DNS_Z)
-    def set_zero(self, v):
+
+    @zero.setter
+    def zero(self, v):
         if v: self.op |= DNS_Z
         else: self.op &= ~DNS_Z
-    zero = property(get_zero, set_zero)
 
-    def get_rcode(self):
+    @property
+    def rcode(self):
         return self.op & 0xf
-    def set_rcode(self, v):
+
+    @rcode.setter
+    def rcode(self, v):
         self.op = (self.op & ~0xf) | (v & 0xf)
-    rcode = property(get_rcode, set_rcode)
+
+    # Deprecated methods, will be removed in the future
+    # ======================================================
+    @deprecated_method_decorator
+    def get_qr(self): return self.qr
+
+    @deprecated_method_decorator
+    def set_qr(self, v): self.qr = v
+
+    @deprecated_method_decorator
+    def get_opcode(self): return self.opcode
+
+    @deprecated_method_decorator
+    def set_opcode(self, v): self.opcode = v
+
+    @deprecated_method_decorator
+    def get_aa(self): return self.aa
+
+    @deprecated_method_decorator
+    def set_aa(self, v): self.aa = v
+
+    @deprecated_method_decorator
+    def get_rd(self): return self.rd
+
+    @deprecated_method_decorator
+    def set_rd(self, v): self.rd = v
+
+    @deprecated_method_decorator
+    def get_ra(self): return self.ra
+
+    @deprecated_method_decorator
+    def set_ra(self, v): self.ra = v
+
+    @deprecated_method_decorator
+    def get_zero(self): return self.zero
+
+    @deprecated_method_decorator
+    def set_zero(self, v): self.zero = v
+
+    @deprecated_method_decorator
+    def get_rcode(self): return self.rcode
+
+    @deprecated_method_decorator
+    def set_rcode(self, v): self.rcode = v
+    # ======================================================
 
     class Q(dpkt.Packet):
         """DNS question."""
@@ -165,11 +229,14 @@ class DNS(dpkt.Packet):
             ('name', '1025s', ''),
             ('type', 'H', DNS_A),
             ('cls', 'H', DNS_IN)
-            )
+        )
+
         # XXX - suk
         def __len__(self):
             raise NotImplementedError
+
         __str__ = __len__
+
         def unpack(self, buf):
             raise NotImplementedError
 
@@ -182,7 +249,8 @@ class DNS(dpkt.Packet):
             ('ttl', 'I', 0),
             ('rlen', 'H', 4),
             ('rdata', 's', '')
-            )
+        )
+
         def pack_rdata(self, off, label_ptrs):
             # XXX - yeah, this sux
             if self.rdata:
@@ -206,14 +274,14 @@ class DNS(dpkt.Packet):
                 return struct.pack('>H', self.preference) + \
                        pack_name(self.mxname, off + 2, label_ptrs)
             elif self.type == DNS_TXT or self.type == DNS_HINFO:
-                return ''.join([ '%s%s' % (chr(len(x)), x)
-                                 for x in self.text ])
+                return ''.join(['%s%s' % (chr(len(x)), x)
+                                for x in self.text])
             elif self.type == DNS_AAAA:
                 return self.ip6
             elif self.type == DNS_SRV:
                 return struct.pack('>HHH', self.priority, self.weight, self.port) + \
                        pack_name(self.srvname, off + 6, label_ptrs)
-        
+
         def unpack_rdata(self, buf, off):
             if self.type == DNS_A:
                 self.ip = self.rdata
@@ -227,34 +295,32 @@ class DNS(dpkt.Packet):
                 self.mname, off = unpack_name(buf, off)
                 self.rname, off = unpack_name(buf, off)
                 self.serial, self.refresh, self.retry, self.expire, \
-                    self.minimum = struct.unpack('>IIIII', buf[off:off+20])
+                self.minimum = struct.unpack('>IIIII', buf[off:off + 20])
             elif self.type == DNS_MX:
                 self.preference = struct.unpack('>H', self.rdata[:2])
-                self.mxname, off = unpack_name(buf, off+2)
+                self.mxname, off = unpack_name(buf, off + 2)
             elif self.type == DNS_TXT or self.type == DNS_HINFO:
                 self.text = []
                 buf = self.rdata
                 while buf:
                     n = ord(buf[0])
-                    self.text.append(buf[1:1+n])
-                    buf = buf[1+n:]
+                    self.text.append(buf[1:1 + n])
+                    buf = buf[1 + n:]
             elif self.type == DNS_AAAA:
                 self.ip6 = self.rdata
             elif self.type == DNS_SRV:
-                self.priority, self.weight, self.port = \
-                    struct.unpack('>HHH', self.rdata[:6])
-                self.srvname, off = unpack_name(buf, off+6)
-    
+                self.priority, self.weight, self.port = struct.unpack('>HHH', self.rdata[:6])
+                self.srvname, off = unpack_name(buf, off + 6)
+
     def pack_q(self, buf, q):
         """Append packed DNS question and return buf."""
-        return buf + pack_name(q.name, len(buf), self.label_ptrs) + \
-               struct.pack('>HH', q.type, q.cls)
-    
+        return buf + pack_name(q.name, len(buf), self.label_ptrs) + struct.pack('>HH', q.type, q.cls)
+
     def unpack_q(self, buf, off):
         """Return DNS question and new offset."""
         q = self.Q()
         q.name, off = unpack_name(buf, off)
-        q.type, q.cls = struct.unpack('>HH', buf[off:off+4])
+        q.type, q.cls = struct.unpack('>HH', buf[off:off + 4])
         off += 4
         return q, off
 
@@ -262,20 +328,19 @@ class DNS(dpkt.Packet):
         """Append packed DNS RR and return buf."""
         name = pack_name(rr.name, len(buf), self.label_ptrs)
         rdata = rr.pack_rdata(len(buf) + len(name) + 10, self.label_ptrs)
-        return buf + name + struct.pack('>HHIH', rr.type, rr.cls, rr.ttl,
-                                        len(rdata)) + rdata
-    
+        return buf + name + struct.pack('>HHIH', rr.type, rr.cls, rr.ttl, len(rdata)) + rdata
+
     def unpack_rr(self, buf, off):
         """Return DNS RR and new offset."""
         rr = self.RR()
         rr.name, off = unpack_name(buf, off)
-        rr.type, rr.cls, rr.ttl, rdlen = struct.unpack('>HHIH', buf[off:off+10])
+        rr.type, rr.cls, rr.ttl, rdlen = struct.unpack('>HHIH', buf[off:off + 10])
         off += 10
-        rr.rdata = buf[off:off+rdlen]
+        rr.rdata = buf[off:off + rdlen]
         rr.unpack_rdata(buf, off)
         off += rdlen
         return rr, off
-    
+
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
         off = self.__hdr_len__
@@ -309,6 +374,7 @@ class DNS(dpkt.Packet):
         del self.label_ptrs
         return buf
 
+
 if __name__ == '__main__':
     import unittest
     from ip import IP
@@ -333,7 +399,7 @@ if __name__ == '__main__':
                             dns.ns[1].ttl == 3382L and
                             dns.ns[2].nsname == 'dns2.itd.umich.edu')
             self.failUnless(s == str(dns))
-    
+
         def test_pack_name(self):
             # Empty name is \0
             x = pack_name('', 0, {})

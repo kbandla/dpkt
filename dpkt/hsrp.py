@@ -17,6 +17,7 @@ SPEAK = 0x04
 STANDBY = 0x08
 ACTIVE = 0x10
 
+
 class HSRP(dpkt.Packet):
     __hdr__ = (
         ('version', 'B', 0),

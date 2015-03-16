@@ -2,8 +2,11 @@
 
 """Border Gateway Protocol."""
 
+import struct
+import socket
 import dpkt
-import struct, socket
+from decorators import deprecated_method_decorator
+
 
 # Border Gateway Protocol 4 - RFC 4271
 # Communities Attribute - RFC 1997
@@ -16,104 +19,104 @@ import struct, socket
 # Multiprotocol Extensions - 2858
 
 # Message Types
-OPEN				= 1
-UPDATE				= 2
-NOTIFICATION			= 3
-KEEPALIVE			= 4
-ROUTE_REFRESH			= 5
+OPEN = 1
+UPDATE = 2
+NOTIFICATION = 3
+KEEPALIVE = 4
+ROUTE_REFRESH = 5
 
 # Attribute Types
-ORIGIN				= 1
-AS_PATH				= 2
-NEXT_HOP			= 3
-MULTI_EXIT_DISC			= 4
-LOCAL_PREF			= 5
-ATOMIC_AGGREGATE		= 6
-AGGREGATOR			= 7
-COMMUNITIES			= 8
-ORIGINATOR_ID			= 9
-CLUSTER_LIST			= 10
-MP_REACH_NLRI			= 14
-MP_UNREACH_NLRI			= 15
+ORIGIN = 1
+AS_PATH = 2
+NEXT_HOP = 3
+MULTI_EXIT_DISC = 4
+LOCAL_PREF = 5
+ATOMIC_AGGREGATE = 6
+AGGREGATOR = 7
+COMMUNITIES = 8
+ORIGINATOR_ID = 9
+CLUSTER_LIST = 10
+MP_REACH_NLRI = 14
+MP_UNREACH_NLRI = 15
 
 # Origin Types
-ORIGIN_IGP			= 0
-ORIGIN_EGP			= 1
-INCOMPLETE			= 2
+ORIGIN_IGP = 0
+ORIGIN_EGP = 1
+INCOMPLETE = 2
 
 # AS Path Types
-AS_SET				= 1
-AS_SEQUENCE			= 2
-AS_CONFED_SEQUENCE		= 3
-AS_CONFED_SET			= 4
+AS_SET = 1
+AS_SEQUENCE = 2
+AS_CONFED_SEQUENCE = 3
+AS_CONFED_SET = 4
 
 # Reserved Communities Types
-NO_EXPORT			= 0xffffff01L
-NO_ADVERTISE			= 0xffffff02L
-NO_EXPORT_SUBCONFED		= 0xffffff03L
-NO_PEER				= 0xffffff04L
+NO_EXPORT = 0xffffff01L
+NO_ADVERTISE = 0xffffff02L
+NO_EXPORT_SUBCONFED = 0xffffff03L
+NO_PEER = 0xffffff04L
 
 # Common AFI types
-AFI_IPV4			= 1
-AFI_IPV6			= 2
+AFI_IPV4 = 1
+AFI_IPV6 = 2
 
 # Multiprotocol SAFI types
-SAFI_UNICAST			= 1
-SAFI_MULTICAST			= 2
-SAFI_UNICAST_MULTICAST		= 3
+SAFI_UNICAST = 1
+SAFI_MULTICAST = 2
+SAFI_UNICAST_MULTICAST = 3
 
 # OPEN Message Optional Parameters
-AUTHENTICATION			= 1
-CAPABILITY			= 2
+AUTHENTICATION = 1
+CAPABILITY = 2
 
 # Capability Types
-CAP_MULTIPROTOCOL		= 1
-CAP_ROUTE_REFRESH		= 2
+CAP_MULTIPROTOCOL = 1
+CAP_ROUTE_REFRESH = 2
 
 # NOTIFICATION Error Codes
-MESSAGE_HEADER_ERROR		= 1
-OPEN_MESSAGE_ERROR		= 2
-UPDATE_MESSAGE_ERROR		= 3
-HOLD_TIMER_EXPIRED		= 4
-FSM_ERROR			= 5
-CEASE				= 6
+MESSAGE_HEADER_ERROR = 1
+OPEN_MESSAGE_ERROR = 2
+UPDATE_MESSAGE_ERROR = 3
+HOLD_TIMER_EXPIRED = 4
+FSM_ERROR = 5
+CEASE = 6
 
 # Message Header Error Subcodes
-CONNECTION_NOT_SYNCHRONIZED	= 1
-BAD_MESSAGE_LENGTH		= 2
-BAD_MESSAGE_TYPE		= 3
+CONNECTION_NOT_SYNCHRONIZED = 1
+BAD_MESSAGE_LENGTH = 2
+BAD_MESSAGE_TYPE = 3
 
 # OPEN Message Error Subcodes
-UNSUPPORTED_VERSION_NUMBER	= 1
-BAD_PEER_AS			= 2
-BAD_BGP_IDENTIFIER		= 3
-UNSUPPORTED_OPTIONAL_PARAMETER	= 4
-AUTHENTICATION_FAILURE		= 5
-UNACCEPTABLE_HOLD_TIME		= 6
-UNSUPPORTED_CAPABILITY		= 7
+UNSUPPORTED_VERSION_NUMBER = 1
+BAD_PEER_AS = 2
+BAD_BGP_IDENTIFIER = 3
+UNSUPPORTED_OPTIONAL_PARAMETER = 4
+AUTHENTICATION_FAILURE = 5
+UNACCEPTABLE_HOLD_TIME = 6
+UNSUPPORTED_CAPABILITY = 7
 
 # UPDATE Message Error Subcodes
-MALFORMED_ATTRIBUTE_LIST	= 1
-UNRECOGNIZED_ATTRIBUTE		= 2
-MISSING_ATTRIBUTE		= 3
-ATTRIBUTE_FLAGS_ERROR		= 4
-ATTRIBUTE_LENGTH_ERROR		= 5
-INVALID_ORIGIN_ATTRIBUTE	= 6
-AS_ROUTING_LOOP			= 7
-INVALID_NEXT_HOP_ATTRIBUTE	= 8
-OPTIONAL_ATTRIBUTE_ERROR	= 9
-INVALID_NETWORK_FIELD		= 10
-MALFORMED_AS_PATH		= 11
+MALFORMED_ATTRIBUTE_LIST = 1
+UNRECOGNIZED_ATTRIBUTE = 2
+MISSING_ATTRIBUTE = 3
+ATTRIBUTE_FLAGS_ERROR = 4
+ATTRIBUTE_LENGTH_ERROR = 5
+INVALID_ORIGIN_ATTRIBUTE = 6
+AS_ROUTING_LOOP = 7
+INVALID_NEXT_HOP_ATTRIBUTE = 8
+OPTIONAL_ATTRIBUTE_ERROR = 9
+INVALID_NETWORK_FIELD = 10
+MALFORMED_AS_PATH = 11
 
 # Cease Error Subcodes
-MAX_NUMBER_OF_PREFIXES_REACHED	= 1
-ADMINISTRATIVE_SHUTDOWN		= 2
-PEER_DECONFIGURED		= 3
-ADMINISTRATIVE_RESET		= 4
-CONNECTION_REJECTED		= 5
-OTHER_CONFIGURATION_CHANGE	= 6
-CONNECTION_COLLISION_RESOLUTION	= 7
-OUT_OF_RESOURCES		= 8
+MAX_NUMBER_OF_PREFIXES_REACHED = 1
+ADMINISTRATIVE_SHUTDOWN = 2
+PEER_DECONFIGURED = 3
+ADMINISTRATIVE_RESET = 4
+CONNECTION_REJECTED = 5
+OTHER_CONFIGURATION_CHANGE = 6
+CONNECTION_COLLISION_RESOLUTION = 7
+OUT_OF_RESOURCES = 8
 
 
 class BGP(dpkt.Packet):
@@ -121,7 +124,7 @@ class BGP(dpkt.Packet):
         ('marker', '16s', '\xff' * 16),
         ('len', 'H', 0),
         ('type', 'B', OPEN)
-        )
+    )
 
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
@@ -144,10 +147,10 @@ class BGP(dpkt.Packet):
             ('holdtime', 'H', 0),
             ('identifier', 'I', 0),
             ('param_len', 'B', 0)
-            )
+        )
         __hdr_defaults__ = {
             'parameters': []
-            }
+        }
 
         def unpack(self, buf):
             dpkt.Packet.unpack(self, buf)
@@ -161,8 +164,7 @@ class BGP(dpkt.Packet):
             self.data = self.parameters = l
 
         def __len__(self):
-            return self.__hdr_len__ + \
-                   sum(map(len, self.parameters))
+            return self.__hdr_len__ + sum(map(len, self.parameters))
 
         def __str__(self):
             params = ''.join(map(str, self.parameters))
@@ -173,7 +175,7 @@ class BGP(dpkt.Packet):
             __hdr__ = (
                 ('type', 'B', 0),
                 ('len', 'B', 0)
-                )
+            )
 
             def unpack(self, buf):
                 dpkt.Packet.unpack(self, buf)
@@ -187,25 +189,24 @@ class BGP(dpkt.Packet):
             class Authentication(dpkt.Packet):
                 __hdr__ = (
                     ('code', 'B', 0),
-                    )
+                )
 
             class Capability(dpkt.Packet):
                 __hdr__ = (
                     ('code', 'B', 0),
                     ('len', 'B', 0)
-                    )
+                )
 
                 def unpack(self, buf):
                     dpkt.Packet.unpack(self, buf)
                     self.data = self.data[:self.len]
-
 
     class Update(dpkt.Packet):
         __hdr_defaults__ = {
             'withdrawn': [],
             'attributes': [],
             'announced': []
-            }
+        }
 
         def unpack(self, buf):
             self.data = buf
@@ -220,7 +221,7 @@ class BGP(dpkt.Packet):
                 wlen -= len(route)
                 l.append(route)
             self.withdrawn = l
-            
+
             # Path Attributes
             plen = struct.unpack('>H', self.data[:2])[0]
             self.data = self.data[2:]
@@ -256,31 +257,66 @@ class BGP(dpkt.Packet):
             __hdr__ = (
                 ('flags', 'B', 0),
                 ('type', 'B', 0)
-                )
+            )
 
-            def _get_o(self):
+            @property
+            def optional(self):
                 return (self.flags >> 7) & 0x1
-            def _set_o(self, o):
+
+            @optional.setter
+            def optional(self, o):
                 self.flags = (self.flags & ~0x80) | ((o & 0x1) << 7)
-            optional = property(_get_o, _set_o)
 
-            def _get_t(self):
+            @property
+            def transitive(self):
                 return (self.flags >> 6) & 0x1
-            def _set_t(self, t):
+
+            @transitive.setter
+            def transitive(self, t):
                 self.flags = (self.flags & ~0x40) | ((t & 0x1) << 6)
-            transitive = property(_get_t, _set_t)
 
-            def _get_p(self):
+            @property
+            def partial(self):
                 return (self.flags >> 5) & 0x1
-            def _set_p(self, p):
-                self.flags = (self.flags & ~0x20) | ((p & 0x1) << 5)
-            partial = property(_get_p, _set_p)
 
-            def _get_e(self):
+            @partial.setter
+            def partial(self, p):
+                self.flags = (self.flags & ~0x20) | ((p & 0x1) << 5)
+
+            @property
+            def extended_length(self):
                 return (self.flags >> 4) & 0x1
-            def _set_e(self, e):
+
+            @extended_length.setter
+            def extended_length(self, e):
                 self.flags = (self.flags & ~0x10) | ((e & 0x1) << 4)
-            extended_length = property(_get_e, _set_e)
+
+            # Deprecated methods, will be removed in the future
+            # ======================================================
+            @deprecated_method_decorator
+            def _get_o(self): return self.optional
+
+            @deprecated_method_decorator
+            def _set_o(self, o): self.optional = o
+
+            @deprecated_method_decorator
+            def _get_t(self): return self.transitive
+
+            @deprecated_method_decorator
+            def _set_t(self, t): self.transitive = t
+
+            @deprecated_method_decorator
+            def _get_p(self): return self.partial
+
+            @deprecated_method_decorator
+            def _set_p(self, p): self.partial = p
+
+            @deprecated_method_decorator
+            def _get_e(self): return self.extended_length
+
+            @deprecated_method_decorator
+            def _set_e(self, e): self.extended_length = e
+            # ======================================================
 
             def unpack(self, buf):
                 dpkt.Packet.unpack(self, buf)
@@ -291,7 +327,7 @@ class BGP(dpkt.Packet):
                 else:
                     self.len = struct.unpack('B', self.data[:1])[0]
                     self.data = self.data[1:]
-                
+
                 self.data = self.data[:self.len]
 
                 if self.type == ORIGIN:
@@ -324,18 +360,14 @@ class BGP(dpkt.Packet):
                     attr_len = 2
                 else:
                     attr_len = 1
-                return self.__hdr_len__ + \
-                       attr_len + \
-                       len(self.data)
+                return self.__hdr_len__ + attr_len + len(self.data)
 
             def __str__(self):
                 if self.extended_length:
                     attr_len_str = struct.pack('>H', self.len)
                 else:
                     attr_len_str = struct.pack('B', self.len)
-                return self.pack_hdr() + \
-                       attr_len_str + \
-                       str(self.data)
+                return self.pack_hdr() + attr_len_str + str(self.data)
 
             class Origin(dpkt.Packet):
                 __hdr__ = (
@@ -345,7 +377,7 @@ class BGP(dpkt.Packet):
             class ASPath(dpkt.Packet):
                 __hdr_defaults__ = {
                     'segments': []
-                    }
+                }
 
                 def unpack(self, buf):
                     self.data = buf
@@ -361,12 +393,12 @@ class BGP(dpkt.Packet):
 
                 def __str__(self):
                     return ''.join(map(str, self.data))
- 
+
                 class ASPathSegment(dpkt.Packet):
                     __hdr__ = (
                         ('type', 'B', 0),
                         ('len', 'B', 0)
-                        )
+                    )
 
                     def unpack(self, buf):
                         dpkt.Packet.unpack(self, buf)
@@ -378,15 +410,13 @@ class BGP(dpkt.Packet):
                         self.data = self.path = l
 
                     def __len__(self):
-                        return self.__hdr_len__ + \
-                               2 * len(self.path)
+                        return self.__hdr_len__ + 2 * len(self.path)
 
                     def __str__(self):
                         as_str = ''
                         for AS in self.path:
                             as_str += struct.pack('>H', AS)
-                        return self.pack_hdr() + \
-                               as_str
+                        return self.pack_hdr() + as_str
 
             class NextHop(dpkt.Packet):
                 __hdr__ = (
@@ -422,15 +452,14 @@ class BGP(dpkt.Packet):
             class Communities(dpkt.Packet):
                 __hdr_defaults__ = {
                     'list': []
-                    }
+                }
 
                 def unpack(self, buf):
                     self.data = buf
                     l = []
                     while self.data:
                         val = struct.unpack('>I', self.data[:4])[0]
-                        if (val >= 0x00000000L and val <= 0x0000ffffL) or \
-                           (val >= 0xffff0000L and val <= 0xffffffffL):
+                        if (0x00000000L <= val <= 0x0000ffffL) or (0xffff0000L <= val <= 0xffffffffL):
                             comm = self.ReservedCommunity(self.data[:4])
                         else:
                             comm = self.Community(self.data[:4])
@@ -463,7 +492,7 @@ class BGP(dpkt.Packet):
             class ClusterList(dpkt.Packet):
                 __hdr_defaults__ = {
                     'list': []
-                    }
+                }
 
                 def unpack(self, buf):
                     self.data = buf
@@ -480,7 +509,7 @@ class BGP(dpkt.Packet):
                 def __str__(self):
                     cluster_str = ''
                     for val in self.list:
-                            cluster_str += struct.pack('>I', val)
+                        cluster_str += struct.pack('>I', val)
                     return cluster_str
 
             class MPReachNLRI(dpkt.Packet):
@@ -537,10 +566,10 @@ class BGP(dpkt.Packet):
                            ''.join(map(str, self.snpas)) + \
                            ''.join(map(str, self.announced))
 
-                class SNPA:
+                class SNPA(object):
                     __hdr__ = (
                         ('len', 'B', 0),
-                        )
+                    )
 
                     def unpack(self, buf):
                         dpkt.Packet.unpack(self, buf)
@@ -571,24 +600,20 @@ class BGP(dpkt.Packet):
                     self.data = self.withdrawn = l
 
                 def __len__(self):
-                    return self.__hdr_len__ + \
-                           sum(map(len, self.data))
+                    return self.__hdr_len__ + sum(map(len, self.data))
 
                 def __str__(self):
-                    return self.pack_hdr() + \
-                           ''.join(map(str, self.data))
-
+                    return self.pack_hdr() + ''.join(map(str, self.data))
 
     class Notification(dpkt.Packet):
         __hdr__ = (
             ('code', 'B', 0),
             ('subcode', 'B', 0),
-            )
+        )
 
         def unpack(self, buf):
             dpkt.Packet.unpack(self, buf)
             self.error = self.data
-
 
     class Keepalive(dpkt.Packet):
         def unpack(self, buf):
@@ -600,28 +625,28 @@ class BGP(dpkt.Packet):
         def __str__(self):
             return ''
 
-
     class RouteRefresh(dpkt.Packet):
         __hdr__ = (
             ('afi', 'H', AFI_IPV4),
             ('rsvd', 'B', 0),
             ('safi', 'B', SAFI_UNICAST)
-            ) 
+        )
 
 
 class RouteGeneric(dpkt.Packet):
     __hdr__ = (
         ('len', 'B', 0),
-        )
+    )
 
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
         self.data = self.prefix = self.data[:(self.len + 7) / 8]
 
+
 class RouteIPV4(dpkt.Packet):
     __hdr__ = (
         ('len', 'B', 0),
-        )
+    )
 
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
@@ -634,17 +659,16 @@ class RouteIPV4(dpkt.Packet):
         return '%s(%s)' % (self.__class__.__name__, cidr)
 
     def __len__(self):
-        return self.__hdr_len__ + \
-               (self.len + 7) / 8
+        return self.__hdr_len__ + (self.len + 7) / 8
 
     def __str__(self):
-        return self.pack_hdr() + \
-               self.prefix[:(self.len + 7) / 8]
+        return self.pack_hdr() + self.prefix[:(self.len + 7) / 8]
+
 
 class RouteIPV6(dpkt.Packet):
     __hdr__ = (
         ('len', 'B', 0),
-        )
+    )
 
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
@@ -653,12 +677,10 @@ class RouteIPV6(dpkt.Packet):
         self.data = self.prefix = tmp
 
     def __len__(self):
-        return self.__hdr_len__ + \
-               (self.len + 7) / 8
+        return self.__hdr_len__ + (self.len + 7) / 8
 
     def __str__(self):
-        return self.pack_hdr() + \
-               self.prefix[:(self.len + 7) / 8]
+        return self.pack_hdr() + self.prefix[:(self.len + 7) / 8]
 
 
 if __name__ == '__main__':
@@ -680,7 +702,7 @@ if __name__ == '__main__':
             self.failUnless(b1.len == 19)
             self.failUnless(b1.type == KEEPALIVE)
             self.failUnless(b1.keepalive is not None)
-            
+
             b2 = BGP(self.bgp2)
             self.failUnless(b2.type == UPDATE)
             self.failUnless(len(b2.update.withdrawn) == 0)
@@ -713,19 +735,19 @@ if __name__ == '__main__':
             self.failUnless(len(b3.update.announced) == 0)
             self.failUnless(len(b3.update.attributes) == 6)
             a = b3.update.attributes[0]
-            self.failUnless(a.optional == False)
-            self.failUnless(a.transitive == True)
-            self.failUnless(a.partial == False)
-            self.failUnless(a.extended_length == False)
+            self.failUnless(a.optional is False)
+            self.failUnless(a.transitive is True)
+            self.failUnless(a.partial is False)
+            self.failUnless(a.extended_length is False)
             self.failUnless(a.type == ORIGIN)
             self.failUnless(a.len == 1)
             o = a.origin
             self.failUnless(o.type == ORIGIN_IGP)
             a = b3.update.attributes[5]
-            self.failUnless(a.optional == True)
-            self.failUnless(a.transitive == False)
-            self.failUnless(a.partial == False)
-            self.failUnless(a.extended_length == True)
+            self.failUnless(a.optional is True)
+            self.failUnless(a.transitive is False)
+            self.failUnless(a.partial is False)
+            self.failUnless(a.extended_length is True)
             self.failUnless(a.type == MP_REACH_NLRI)
             self.failUnless(a.len == 30)
             m = a.mp_reach_nlri

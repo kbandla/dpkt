@@ -3,6 +3,8 @@
 """Virtual Router Redundancy Protocol."""
 
 import dpkt
+from decorators import deprecated_method_decorator
+
 
 class VRRP(dpkt.Packet):
     __hdr__ = (
@@ -13,29 +15,49 @@ class VRRP(dpkt.Packet):
         ('atype', 'B', 0),
         ('advtime', 'B', 0),
         ('sum', 'H', 0),
-        )
+    )
     addrs = ()
     auth = ''
-    def _get_v(self):
-        return self.vtype >> 4
-    def _set_v(self, v):
-        self.vtype = (self.vtype & ~0xf) | (v << 4)
-    v = property(_get_v, _set_v)
 
-    def _get_type(self):
+    @property
+    def v(self):
+        return self.vtype >> 4
+
+    @v.setter
+    def v(self, v):
+        self.vtype = (self.vtype & ~0xf) | (v << 4)
+
+    @property
+    def type(self):
         return self.vtype & 0xf
-    def _set_type(self, v):
+
+    @type.setter
+    def type(self, v):
         self.vtype = (self.vtype & ~0xf0) | (v & 0xf)
-    type = property(_get_type, _set_type)
-    
+
+    # Deprecated methods, will be removed in the future
+    # =================================================
+    @deprecated_method_decorator
+    def _get_v(self): return self.v
+
+    @deprecated_method_decorator
+    def _set_v(self, v): self.v = v
+
+    @deprecated_method_decorator
+    def _get_type(self): return self.type
+
+    @deprecated_method_decorator
+    def _set_type(self, v): self.type = v
+    # =================================================
+
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
         l = []
         off = 0
         for off in range(0, 4 * self.count, 4):
-            l.append(self.data[off:off+4])
+            l.append(self.data[off:off + 4])
         self.addrs = l
-        self.auth = self.data[off+4:]
+        self.auth = self.data[off + 4:]
         self.data = ''
 
     def __len__(self):

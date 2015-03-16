@@ -1,9 +1,8 @@
 """ATA over Ethernet Protocol."""
 
 import struct
-
-
 import dpkt
+from decorators import deprecated_method_decorator
 
 
 class AOE(dpkt.Packet):
@@ -14,24 +13,28 @@ class AOE(dpkt.Packet):
         ('min', 'B', 0),
         ('cmd', 'B', 0),
         ('tag', 'I', 0),
-        )
+    )
     _cmdsw = {}
-    
-    def _get_ver(self): return self.ver_fl >> 4
-    def _set_ver(self, ver): self.ver_fl = (ver << 4) | (self.ver_fl & 0xf)
-    ver = property(_get_ver, _set_ver)
 
-    def _get_fl(self): return self.ver_fl & 0xf
-    def _set_fl(self, fl): self.ver_fl = (self.ver_fl & 0xf0) | fl
-    fl = property(_get_fl, _set_fl)
+    @property
+    def ver(self): return self.ver_fl >> 4
 
+    @ver.setter
+    def ver(self, ver): self.ver_fl = (ver << 4) | (self.ver_fl & 0xf)
+
+    @property
+    def fl(self): return self.ver_fl & 0xf
+
+    @fl.setter
+    def fl(self, fl): self.ver_fl = (self.ver_fl & 0xf0) | fl
+
+    @classmethod
     def set_cmd(cls, cmd, pktclass):
         cls._cmdsw[cmd] = pktclass
-    set_cmd = classmethod(set_cmd)
 
+    @classmethod
     def get_cmd(cls, cmd):
         return cls._cmdsw[cmd]
-    get_cmd = classmethod(get_cmd)
 
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
@@ -46,6 +49,22 @@ class AOE(dpkt.Packet):
             return dpkt.Packet.pack_hdr(self)
         except struct.error, e:
             raise dpkt.PackError(str(e))
+
+    # Deprecated methods, will be removed in the future
+    # =================================================
+    @deprecated_method_decorator
+    def _get_ver(self): return self.ver
+
+    @deprecated_method_decorator
+    def _set_ver(self, ver): self.ver = ver
+
+    @deprecated_method_decorator
+    def _get_fl(self): return self.fl
+
+    @deprecated_method_decorator
+    def _set_fl(self, fl): self.fl = fl
+    # =================================================
+
 
 
 AOE_CMD_ATA = 0

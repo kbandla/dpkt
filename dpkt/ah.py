@@ -4,20 +4,23 @@
 
 import dpkt
 
+
 class AH(dpkt.Packet):
     __hdr__ = (
         ('nxt', 'B', 0),
-        ('len', 'B', 0),	# payload length
+        ('len', 'B', 0),  # payload length
         ('rsvd', 'H', 0),
         ('spi', 'I', 0),
         ('seq', 'I', 0)
-        )
+    )
     auth = ''
+
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
         self.auth = self.data[:self.len]
         buf = self.data[self.len:]
         import ip
+
         try:
             self.data = ip.IP.get_proto(self.nxt)(buf)
             setattr(self, self.data.__class__.__name__.lower(), self.data)

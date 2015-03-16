@@ -6,25 +6,26 @@ import struct
 import dpkt
 
 # Opcodes
-OP_RRQ     = 1    # read request
-OP_WRQ     = 2    # write request
-OP_DATA    = 3    # data packet
-OP_ACK     = 4    # acknowledgment
-OP_ERR     = 5    # error code
+OP_RRQ = 1  # read request
+OP_WRQ = 2  # write request
+OP_DATA = 3  # data packet
+OP_ACK = 4  # acknowledgment
+OP_ERR = 5  # error code
 
 # Error codes
-EUNDEF     = 0    # not defined
-ENOTFOUND  = 1    # file not found
-EACCESS    = 2    # access violation
-ENOSPACE   = 3    # disk full or allocation exceeded
-EBADOP     = 4    # illegal TFTP operation
-EBADID     = 5    # unknown transfer ID
-EEXISTS    = 6    # file already exists
-ENOUSER    = 7    # no such user
+EUNDEF = 0  # not defined
+ENOTFOUND = 1  # file not found
+EACCESS = 2  # access violation
+ENOSPACE = 3  # disk full or allocation exceeded
+EBADOP = 4  # illegal TFTP operation
+EBADID = 5  # unknown transfer ID
+EEXISTS = 6  # file already exists
+ENOUSER = 7  # no such user
+
 
 class TFTP(dpkt.Packet):
     __hdr__ = (('opcode', 'H', 1), )
-    
+
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
         if self.opcode in (OP_RRQ, OP_WRQ):
