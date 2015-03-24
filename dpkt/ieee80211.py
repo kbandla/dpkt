@@ -862,7 +862,7 @@ def test_action_block_ack_response():
     assert ieee.action.block_ack_response.parameters == parameters
 
 if __name__ == '__main__':
-    """Runs all the test associated with this class/file"""
+    # Runs all the test associated with this class/file
     test_802211_ack()
     test_80211_beacon()
     test_80211_data()

@@ -84,7 +84,7 @@ def pack_name(name, off, label_ptrs):
 def unpack_name(buf, off):
     name = ''
     saved_off = 0
-    for i in range(100):  # XXX
+    for _ in range(100):  # XXX
         n = ord(buf[off])
         if n == 0:
             off += 1
@@ -344,15 +344,15 @@ class DNS(dpkt.Packet):
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
         off = self.__hdr_len__
-        cnt = self.qd
         self.qd = []
-        for i in range(cnt):
+        cnt = self.qd
+        for _ in range(cnt):
             q, off = self.unpack_q(buf, off)
             self.qd.append(q)
         for x in ('an', 'ns', 'ar'):
             cnt = getattr(self, x, 0)
             setattr(self, x, [])
-            for i in range(cnt):
+            for _ in range(cnt):
                 rr, off = self.unpack_rr(buf, off)
                 getattr(self, x).append(rr)
         self.data = ''
@@ -421,7 +421,7 @@ def test_deprecated_method_performance():
     print 'Performance of dns.aa vs. dns.get_aa(): %f %f' % (t1, t2)   
     
 if __name__ == '__main__':
-    """Runs all the test associated with this class/file"""
+    # Runs all the test associated with this class/file
     test_basic()
     test_PTR()
     test_pack_name()

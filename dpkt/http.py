@@ -237,7 +237,7 @@ def test_request_version():
         pass
     
 if __name__ == '__main__':
-    """Runs all the test associated with this class/file"""
+    # Runs all the test associated with this class/file
     test_parse_request()
     test_format_request()
     test_chunked_response()
