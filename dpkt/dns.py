@@ -344,8 +344,8 @@ class DNS(dpkt.Packet):
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
         off = self.__hdr_len__
+        cnt = self.qd  # FIXME: This relies on this being properly set somewhere else
         self.qd = []
-        cnt = self.qd
         for _ in range(cnt):
             q, off = self.unpack_q(buf, off)
             self.qd.append(q)
