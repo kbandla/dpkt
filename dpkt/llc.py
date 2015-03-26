@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import struct
 import dpkt
 import stp
@@ -41,18 +43,14 @@ class LLC(dpkt.Packet):
                 self.data = self.stp = stp.STP(self.data[3:])
 
 
+def test_llc():
+    s = '\xaa\xaa\x03\x00\x00\x00\x08\x00\x45\x00\x00\x28\x07\x27\x40\x00\x80\x06\x1d\x39\x8d\xd4\x37\x3d\x3f\xf5\xd1\x69\xc0\x5f\x01\xbb\xb2\xd6\xef\x23\x38\x2b\x4f\x08\x50\x10\x42\x04\xac\x17\x00\x00'
+    import ip
+    llc_pkt = LLC(s)
+    ip_pkt = ip.IP(llc_pkt.data)
+    assert (llc_pkt.type == ethernet.ETH_TYPE_IP)
+    assert (ip_pkt.dst == '\x3f\xf5\xd1\x69')
+
 if __name__ == '__main__':
-    import unittest
-
-    class LLCTestCase(unittest.TestCase):
-        def test_llc(self):
-            s = '\xaa\xaa\x03\x00\x00\x00\x08\x00\x45\x00\x00\x28\x07\x27\x40\x00\x80\x06\x1d\x39\x8d\xd4\x37\x3d\x3f\xf5\xd1\x69\xc0\x5f\x01\xbb\xb2\xd6\xef\x23\x38\x2b\x4f\x08\x50\x10\x42\x04\xac\x17\x00\x00'
-
-            import ip
-
-            llc_pkt = LLC(s)
-            ip_pkt = ip.IP(llc_pkt.data)
-            self.failUnless(llc_pkt.type == ethernet.ETH_TYPE_IP)
-            self.failUnless(ip_pkt.dst == '\x3f\xf5\xd1\x69')
-
-    unittest.main()
+    test_llc()
+    print 'Tests Successful...'

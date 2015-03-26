@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Radiotap"""
 
 import dpkt
@@ -223,106 +224,141 @@ class Radiotap(dpkt.Packet):
     # Deprecated methods, will be removed in the future
     # =================================================
     @deprecated_method_decorator
-    def _get_tsft_present(self): return self.tsft_present
+    def _get_tsft_present(self):
+        return self.tsft_present
 
     @deprecated_method_decorator
-    def _set_tsft_present(self, val): self.tsft_present = val
+    def _set_tsft_present(self, val):
+        self.tsft_present = val
 
     @deprecated_method_decorator
-    def _get_flags_present(self): return self.flags_present
+    def _get_flags_present(self):
+        return self.flags_present
 
     @deprecated_method_decorator
-    def _set_flags_present(self, val): self.flags_present = val
+    def _set_flags_present(self, val):
+        self.flags_present = val
 
     @deprecated_method_decorator
-    def _get_rate_present(self): return self.rate_present
+    def _get_rate_present(self):
+        return self.rate_present
 
     @deprecated_method_decorator
-    def _set_rate_present(self, val): self.rate_present = val
+    def _set_rate_present(self, val):
+        self.rate_present = val
 
     @deprecated_method_decorator
-    def _get_channel_present(self): return self.channel_present
+    def _get_channel_present(self):
+        return self.channel_present
 
     @deprecated_method_decorator
-    def _set_channel_present(self, val): self.channel_present = val
+    def _set_channel_present(self, val):
+        self.channel_present = val
 
     @deprecated_method_decorator
-    def _get_fhss_present(self): return self.fhss_present
+    def _get_fhss_present(self):
+        return self.fhss_present
 
     @deprecated_method_decorator
-    def _set_fhss_present(self, val): self.fhss_present = val
+    def _set_fhss_present(self, val):
+        self.fhss_present = val
 
     @deprecated_method_decorator
-    def _get_ant_sig_present(self): return self.ant_sig_present
+    def _get_ant_sig_present(self):
+        return self.ant_sig_present
 
     @deprecated_method_decorator
-    def _set_ant_sig_present(self, val): self.ant_sig_present = val
+    def _set_ant_sig_present(self, val):
+        self.ant_sig_present = val
 
     @deprecated_method_decorator
-    def _get_ant_noise_present(self): return self.ant_noise_present
+    def _get_ant_noise_present(self):
+        return self.ant_noise_present
 
     @deprecated_method_decorator
-    def _set_ant_noise_present(self, val): self.ant_noise_present = val
+    def _set_ant_noise_present(self, val):
+        self.ant_noise_present = val
 
     @deprecated_method_decorator
-    def _get_lock_qual_present(self): return self.lock_qual_present
+    def _get_lock_qual_present(self):
+        return self.lock_qual_present
 
     @deprecated_method_decorator
-    def _set_lock_qual_present(self, val): self.lock_qual_present = val
+    def _set_lock_qual_present(self, val):
+        self.lock_qual_present = val
 
     @deprecated_method_decorator
-    def _get_tx_attn_present(self): return self.tx_attn_present
+    def _get_tx_attn_present(self):
+        return self.tx_attn_present
 
     @deprecated_method_decorator
-    def _set_tx_attn_present(self, val): self.tx_attn_present = val
+    def _set_tx_attn_present(self, val):
+        self.tx_attn_present = val
 
     @deprecated_method_decorator
-    def _get_db_tx_attn_present(self): return self.db_tx_attn_present
+    def _get_db_tx_attn_present(self):
+        return self.db_tx_attn_present
 
     @deprecated_method_decorator
-    def _set_db_tx_attn_present(self, val): self.db_tx_attn_present = val
+    def _set_db_tx_attn_present(self, val):
+        self.db_tx_attn_present = val
 
     @deprecated_method_decorator
-    def _get_dbm_power_present(self): return self.dbm_tx_power_present
+    def _get_dbm_power_present(self):
+        return self.dbm_tx_power_present
 
     @deprecated_method_decorator
-    def _set_dbm_power_present(self, val): self.dbm_tx_power_present = val
+    def _set_dbm_power_present(self, val):
+        self.dbm_tx_power_present = val
 
     @deprecated_method_decorator
-    def _get_ant_present(self): return self.ant_present
+    def _get_ant_present(self):
+        return self.ant_present
 
     @deprecated_method_decorator
-    def _set_ant_present(self, val): self.ant_present = val
+    def _set_ant_present(self, val):
+        self.ant_present = val
 
     @deprecated_method_decorator
-    def _get_db_ant_sig_present(self): return self.db_ant_sig_present
+    def _get_db_ant_sig_present(self):
+        return self.db_ant_sig_present
 
     @deprecated_method_decorator
-    def _set_db_ant_sig_present(self, val): self.db_ant_sig_present = val
+    def _set_db_ant_sig_present(self, val):
+        self.db_ant_sig_present = val
 
     @deprecated_method_decorator
-    def _get_db_ant_noise_present(self): return self.db_ant_noise_present
+    def _get_db_ant_noise_present(self):
+        return self.db_ant_noise_present
 
     @deprecated_method_decorator
-    def _set_db_ant_noise_present(self, val): self.db_ant_noise_present = val
+    def _set_db_ant_noise_present(self, val):
+        self.db_ant_noise_present = val
 
     @deprecated_method_decorator
-    def _get_rx_flags_present(self): return self.rx_flags_present
+    def _get_rx_flags_present(self):
+        return self.rx_flags_present
 
     @deprecated_method_decorator
-    def _set_rx_flags_present(self, val): self.rx_flags_present = val
+    def _set_rx_flags_present(self, val):
+        self.rx_flags_present = val
 
     @deprecated_method_decorator
-    def _get_chanplus_present(self): return self.chanplus_present
+    def _get_chanplus_present(self):
+        return self.chanplus_present
 
     @deprecated_method_decorator
-    def _set_chanplus_present(self, val): self.chanplus_present = val
+    def _set_chanplus_present(self, val):
+        self.chanplus_present = val
 
     @deprecated_method_decorator
-    def _get_ext_present(self): return self.ext_present
+    def _get_ext_present(self):
+        return self.ext_present
 
     @deprecated_method_decorator
-    def _set_ext_present(self, val): self.ext_present = val
+    def _set_ext_present(self, val):
+        self.ext_present = val
+
     # =================================================
 
     def unpack(self, buf):
@@ -410,6 +446,7 @@ class Radiotap(dpkt.Packet):
 
         @deprecated_method_decorator
         def _set_fcs_present(self, v): self.fcs = v
+
         # =================================================
 
     class LockQuality(dpkt.Packet):
@@ -458,37 +495,38 @@ class Radiotap(dpkt.Packet):
         )
 
 
+def test_Radiotap():
+    s = '\x00\x00\x00\x18\x6e\x48\x00\x00\x00\x02\x6c\x09\xa0\x00\xa8\x81\x02\x00\x00\x00\x00\x00\x00\x00'
+    rad = Radiotap(s)
+    assert(rad.version == 0)
+    assert(rad.present_flags == 0x6e480000)
+    assert(rad.tsft_present == 0)
+    assert(rad.flags_present == 1)
+    assert(rad.rate_present == 1)
+    assert(rad.channel_present == 1)
+    assert(rad.fhss_present == 0)
+    assert(rad.ant_sig_present == 1)
+    assert(rad.ant_noise_present == 1)
+    assert(rad.lock_qual_present == 0)
+    assert(rad.db_tx_attn_present == 0)
+    assert(rad.dbm_tx_power_present == 0)
+    assert(rad.ant_present == 1)
+    assert(rad.db_ant_sig_present == 0)
+    assert(rad.db_ant_noise_present == 0)
+    assert(rad.rx_flags_present == 1)
+    assert(rad.channel.freq == 0x6c09)
+    assert(rad.channel.flags == 0xa000)
+    assert(len(rad.fields) == 7)
+
+
+def test_fcs():
+    s = '\x00\x00\x1a\x00\x2f\x48\x00\x00\x34\x8f\x71\x09\x00\x00\x00\x00\x10\x0c\x85\x09\xc0\x00\xcc\x01\x00\x00'
+    rt = Radiotap(s)
+    assert(rt.flags_present == 1)
+    assert(rt.flags.fcs == 1)
+
+
 if __name__ == '__main__':
-    import unittest
-
-    class RadiotapTestCase(unittest.TestCase):
-        def test_Radiotap(self):
-            s = '\x00\x00\x00\x18\x6e\x48\x00\x00\x00\x02\x6c\x09\xa0\x00\xa8\x81\x02\x00\x00\x00\x00\x00\x00\x00'
-            rad = Radiotap(s)
-            self.failUnless(rad.version == 0)
-            self.failUnless(rad.present_flags == 0x6e480000)
-            self.failUnless(rad.tsft_present == 0)
-            self.failUnless(rad.flags_present == 1)
-            self.failUnless(rad.rate_present == 1)
-            self.failUnless(rad.channel_present == 1)
-            self.failUnless(rad.fhss_present == 0)
-            self.failUnless(rad.ant_sig_present == 1)
-            self.failUnless(rad.ant_noise_present == 1)
-            self.failUnless(rad.lock_qual_present == 0)
-            self.failUnless(rad.db_tx_attn_present == 0)
-            self.failUnless(rad.dbm_tx_power_present == 0)
-            self.failUnless(rad.ant_present == 1)
-            self.failUnless(rad.db_ant_sig_present == 0)
-            self.failUnless(rad.db_ant_noise_present == 0)
-            self.failUnless(rad.rx_flags_present == 1)
-            self.failUnless(rad.channel.freq == 0x6c09)
-            self.failUnless(rad.channel.flags == 0xa000)
-            self.failUnless(len(rad.fields) == 7)
-
-        def test_fcs(self):
-            s = '\x00\x00\x1a\x00\x2f\x48\x00\x00\x34\x8f\x71\x09\x00\x00\x00\x00\x10\x0c\x85\x09\xc0\x00\xcc\x01\x00\x00'
-            rt = Radiotap(s)
-            self.failUnless(rt.flags_present == 1)
-            self.failUnless(rt.flags.fcs == 1)
-
-    unittest.main()
+    test_Radiotap()
+    test_fcs()
+    print 'Tests Successful...'

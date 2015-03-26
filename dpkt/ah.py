@@ -1,4 +1,5 @@
 # $Id: ah.py 34 2007-01-28 07:54:20Z dugsong $
+# -*- coding: utf-8 -*-
 
 """Authentication Header."""
 

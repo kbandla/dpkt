@@ -1,5 +1,5 @@
 # $Id: ip6.py 87 2013-03-05 19:41:04Z andrewflnr@gmail.com $
-
+# -*- coding: utf-8 -*-
 """Internet Protocol, version 6."""
 
 import dpkt
@@ -49,22 +49,29 @@ class IP6(dpkt.Packet):
     # Deprecated methods, will be removed in the future
     # =================================================
     @deprecated_method_decorator
-    def _get_v(self): return self.v
+    def _get_v(self):
+        return self.v
 
     @deprecated_method_decorator
-    def _set_v(self, v): self.v = v
+    def _set_v(self, v):
+        self.v = v
 
     @deprecated_method_decorator
-    def _get_fc(self): return self.fc
+    def _get_fc(self):
+        return self.fc
 
     @deprecated_method_decorator
-    def _set_fc(self, v): self.rc = v
+    def _set_fc(self, v):
+        self.rc = v
 
     @deprecated_method_decorator
-    def _get_flow(self): return self.flow
+    def _get_flow(self):
+        return self.flow
 
     @deprecated_method_decorator
-    def _set_flow(self, v): self.flow = v
+    def _set_flow(self, v):
+        self.flow = v
+
     # =================================================
 
     def unpack(self, buf):
@@ -206,7 +213,9 @@ class IP6RoutingHeader(IP6ExtensionHeader):
     # Deprecated methods, will be removed in the future
     # =================================================
     def _get_sl_bits(self): return self.sl_bits
+
     def _set_sl_bits(self, v): self.sl_bits = v
+
     # =================================================
 
     def unpack(self, buf):
@@ -268,6 +277,7 @@ class IP6FragmentHeader(IP6ExtensionHeader):
 
     @deprecated_method_decorator
     def _set_m_flag(self, v): self.m_flag = v
+
     # =================================================
 
 
@@ -300,71 +310,74 @@ ext_hdrs_cls = {ip.IP_PROTO_HOPOPTS: IP6HopOptsHeader,
                 ip.IP_PROTO_AH: IP6AHHeader,
                 ip.IP_PROTO_DSTOPTS: IP6DstOptsHeader}
 
+
+def test_ipg():
+    s = '`\x00\x00\x00\x00(\x06@\xfe\x80\x00\x00\x00\x00\x00\x00\x02\x11$\xff\xfe\x8c\x11\xde\xfe\x80\x00\x00\x00\x00\x00\x00\x02\xb0\xd0\xff\xfe\xe1\x80r\xcd\xca\x00\x16\x04\x84F\xd5\x00\x00\x00\x00\xa0\x02\xff\xff\xf8\t\x00\x00\x02\x04\x05\xa0\x01\x03\x03\x00\x01\x01\x08\n}\x185?\x00\x00\x00\x00'
+    _ip = IP6(s)
+    # print `ip`
+    _ip.data.sum = 0
+    s2 = str(_ip)
+    IP6(s)
+    # print `ip2`
+    assert (s == s2)
+
+
+def test_ip6_routing_header():
+    s = '`\x00\x00\x00\x00<+@ H\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xde\xca G\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xca\xfe\x06\x04\x00\x02\x00\x00\x00\x00 \x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xde\xca "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xde\xca\x00\x14\x00P\x00\x00\x00\x00\x00\x00\x00\x00P\x02 \x00\x91\x7f\x00\x00'
+    ip = IP6(s)
+    s2 = str(ip)
+    # 43 is Routing header id
+    assert (len(ip.extension_hdrs[43].addresses) == 2)
+    assert (ip.tcp)
+    assert (s == s2)
+
+
+def test_ip6_fragment_header():
+    s = '\x06\xee\xff\xfb\x00\x00\xff\xff'
+    fh = IP6FragmentHeader(s)
+    # s2 = str(fh) variable 's2' is not used
+    str(fh)
+    assert (fh.nxt == 6)
+    assert (fh.id == 65535)
+    assert (fh.frag_off == 8191)
+    assert (fh.m_flag == 1)
+
+
+def test_ip6_options_header():
+    s = ';\x04\x01\x02\x00\x00\xc9\x10\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\xc2\x04\x00\x00\x00\x00\x05\x02\x00\x00\x01\x02\x00\x00'
+    options = IP6OptsHeader(s).options
+    assert (len(options) == 3)
+
+
+def test_ip6_ah_header():
+    s = ';\x04\x00\x00\x02\x02\x02\x02\x01\x01\x01\x01\x78\x78\x78\x78\x78\x78\x78\x78'
+    ah = IP6AHHeader(s)
+    assert (ah.length == 24)
+    assert (ah.auth_data == 'xxxxxxxx')
+    assert (ah.spi == 0x2020202)
+    assert (ah.seq == 0x1010101)
+
+
+def test_ip6_extension_headers():
+    p = '`\x00\x00\x00\x00<+@ H\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xde\xca G\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xca\xfe\x06\x04\x00\x02\x00\x00\x00\x00 \x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xde\xca "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xde\xca\x00\x14\x00P\x00\x00\x00\x00\x00\x00\x00\x00P\x02 \x00\x91\x7f\x00\x00'
+    ip = IP6(p)
+    o = ';\x04\x01\x02\x00\x00\xc9\x10\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\xc2\x04\x00\x00\x00\x00\x05\x02\x00\x00\x01\x02\x00\x00'
+    options = IP6HopOptsHeader(o)
+    ip.extension_hdrs[0] = options
+    fh = '\x06\xee\xff\xfb\x00\x00\xff\xff'
+    ip.extension_hdrs[44] = IP6FragmentHeader(fh)
+    ah = ';\x04\x00\x00\x02\x02\x02\x02\x01\x01\x01\x01\x78\x78\x78\x78\x78\x78\x78\x78'
+    ip.extension_hdrs[51] = IP6AHHeader(ah)
+    do = ';\x02\x01\x02\x00\x00\xc9\x10\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+    ip.extension_hdrs[60] = IP6DstOptsHeader(do)
+    assert (len([k for k in ip.extension_hdrs if (not ip.extension_hdrs[k] is None)]) == 5)
+
+
 if __name__ == '__main__':
-    import unittest
-
-    class IP6TestCase(unittest.TestCase):
-        def test_IP6(self):
-            s = '`\x00\x00\x00\x00(\x06@\xfe\x80\x00\x00\x00\x00\x00\x00\x02\x11$\xff\xfe\x8c\x11\xde\xfe\x80\x00\x00\x00\x00\x00\x00\x02\xb0\xd0\xff\xfe\xe1\x80r\xcd\xca\x00\x16\x04\x84F\xd5\x00\x00\x00\x00\xa0\x02\xff\xff\xf8\t\x00\x00\x02\x04\x05\xa0\x01\x03\x03\x00\x01\x01\x08\n}\x185?\x00\x00\x00\x00'
-            ip = IP6(s)
-            # print `ip`
-            ip.data.sum = 0
-            s2 = str(ip)
-            # ip2 = IP6(s) variable 'ip2' is not used
-            IP6(s)
-            # print `ip2`
-            assert (s == s2)
-
-        def test_IP6RoutingHeader(self):
-            s = '`\x00\x00\x00\x00<+@ H\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xde\xca G\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xca\xfe\x06\x04\x00\x02\x00\x00\x00\x00 \x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xde\xca "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xde\xca\x00\x14\x00P\x00\x00\x00\x00\x00\x00\x00\x00P\x02 \x00\x91\x7f\x00\x00'
-            ip = IP6(s)
-            s2 = str(ip)
-            # 43 is Routing header id
-            assert (len(ip.extension_hdrs[43].addresses) == 2)
-            assert (ip.tcp)
-            assert (s == s2)
-
-        def test_IP6FragmentHeader(self):
-            s = '\x06\xee\xff\xfb\x00\x00\xff\xff'
-            fh = IP6FragmentHeader(s)
-            # s2 = str(fh) variable 's2' is not used
-            str(fh)
-            assert (fh.nxt == 6)
-            assert (fh.id == 65535)
-            assert (fh.frag_off == 8191)
-            assert (fh.m_flag == 1)
-
-        def test_IP6OptionsHeader(self):
-            s = ';\x04\x01\x02\x00\x00\xc9\x10\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\xc2\x04\x00\x00\x00\x00\x05\x02\x00\x00\x01\x02\x00\x00'
-            options = IP6OptsHeader(s).options
-            assert (len(options) == 3)
-
-        def test_IP6AHHeader(self):
-            s = ';\x04\x00\x00\x02\x02\x02\x02\x01\x01\x01\x01\x78\x78\x78\x78\x78\x78\x78\x78'
-            ah = IP6AHHeader(s)
-            assert (ah.length == 24)
-            assert (ah.auth_data == 'xxxxxxxx')
-            assert (ah.spi == 0x2020202)
-            assert (ah.seq == 0x1010101)
-
-        def test_IP6ExtensionHeaders(self):
-            p = '`\x00\x00\x00\x00<+@ H\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xde\xca G\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xca\xfe\x06\x04\x00\x02\x00\x00\x00\x00 \x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xde\xca "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xde\xca\x00\x14\x00P\x00\x00\x00\x00\x00\x00\x00\x00P\x02 \x00\x91\x7f\x00\x00'
-            ip = IP6(p)
-
-            o = ';\x04\x01\x02\x00\x00\xc9\x10\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\xc2\x04\x00\x00\x00\x00\x05\x02\x00\x00\x01\x02\x00\x00'
-            options = IP6HopOptsHeader(o)
-
-            ip.extension_hdrs[0] = options
-
-            fh = '\x06\xee\xff\xfb\x00\x00\xff\xff'
-            ip.extension_hdrs[44] = IP6FragmentHeader(fh)
-
-            ah = ';\x04\x00\x00\x02\x02\x02\x02\x01\x01\x01\x01\x78\x78\x78\x78\x78\x78\x78\x78'
-            ip.extension_hdrs[51] = IP6AHHeader(ah)
-
-            do = ';\x02\x01\x02\x00\x00\xc9\x10\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-            ip.extension_hdrs[60] = IP6DstOptsHeader(do)
-
-            assert (len([k for k in ip.extension_hdrs if (not ip.extension_hdrs[k] is None)]) == 5)
-
-    unittest.main()
+    test_ipg()
+    test_ip6_routing_header()
+    test_ip6_fragment_header()
+    test_ip6_options_header()
+    test_ip6_ah_header()
+    test_ip6_extension_headers()
+    print 'Tests Successful...'

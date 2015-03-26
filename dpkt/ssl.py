@@ -1,6 +1,6 @@
 # $Id: ssl.py 90 2014-04-02 22:06:23Z andrewflnr@gmail.com $
 # Portion Copyright 2012 Google Inc. All rights reserved.
-
+# -*- coding: utf-8 -*-
 """Secure Sockets Layer / Transport Layer Security."""
 
 import dpkt
@@ -354,7 +354,7 @@ class SSLFactory(object):
         return SSL2(buf)
 
 
-def TLSMultiFactory(buf):
+def tls_multi_factory(buf):
     """
     Attempt to parse one or more TLSRecord's out of buf
 
@@ -384,97 +384,97 @@ def TLSMultiFactory(buf):
         i += len(msg)
     return msgs, i
 
-
-import unittest
-
-
 _hexdecode = binascii.a2b_hex
 
 
-class TLSRecordTest(unittest.TestCase):
+class TestTLSRecord:
     """
     Test basic TLSRecord functionality
 
     For this test, the contents of the record doesn't matter, since we're not
     parsing the next layer.
     """
-
-    def setUp(self):
+    @classmethod
+    def setup_class(cls):
         # add some extra data, to make sure length is parsed correctly
-        self.p = TLSRecord('\x17\x03\x01\x00\x08abcdefghzzzzzzzzzzz')
+        cls.p = TLSRecord('\x17\x03\x01\x00\x08abcdefghzzzzzzzzzzz')
 
-    def testContentType(self):
-        self.assertEqual(self.p.type, 23)
+    def test_content_type(self):
+        assert (self.p.type == 23)
 
-    def testVersion(self):
-        self.assertEqual(self.p.version, 0x0301)
+    def test_version(self):
+        assert (self.p.version == 0x0301)
 
-    def testLength(self):
-        self.assertEqual(self.p.length, 8)
+    def test_length(self):
+        assert (self.p.length == 8)
 
-    def testData(self):
-        self.assertEqual(self.p.data, 'abcdefgh')
+    def test_data(self):
+        assert (self.p.data == 'abcdefgh')
 
-    def testInitialFlags(self):
-        self.assertTrue(self.p.compressed)
-        self.assertTrue(self.p.encrypted)
+    def test_initial_flags(self):
+        assert (self.p.compressed == True)
+        assert (self.p.encrypted == True)
 
-    def testRepack(self):
+    def test_repack(self):
         p2 = TLSRecord(type=23, version=0x0301, data='abcdefgh')
-        self.assertEqual(p2.type, 23)
-        self.assertEqual(p2.version, 0x0301)
-        self.assertEqual(p2.length, 8)
-        self.assertEqual(p2.data, 'abcdefgh')
-        self.assertEqual(p2.pack(), self.p.pack())
+        assert (p2.type == 23)
+        assert (p2.version == 0x0301)
+        assert (p2.length == 8)
+        assert (p2.data == 'abcdefgh')
+        assert (p2.pack() == self.p.pack())
 
-    def testTotalLength(self):
+    def test_total_length(self):
         # that len(p) includes header
-        self.assertEqual(len(self.p), 13)
+        assert (len(self.p) == 13)
 
-    def testRaisesNeedDataWhenBufIsShort(self):
-        self.assertRaises(dpkt.NeedData, TLSRecord, '\x16\x03\x01\x00\x10abc')
+    def test_raises_need_data_when_buf_is_short(self):
+        import pytest
+        pytest.raises(dpkt.NeedData, TLSRecord, '\x16\x03\x01\x00\x10abc')
 
 
-class TLSChangeCipherSpecTest(unittest.TestCase):
+class TestTLSChangeCipherSpec:
     """It's just a byte. This will be quick, I promise"""
+    @classmethod
+    def setup_class(cls):
+        cls.p = TLSChangeCipherSpec('\x01')
 
-    def setUp(self):
-        self.p = TLSChangeCipherSpec('\x01')
+    def test_parses(self):
+        assert (self.p.type == 1)
 
-    def testParses(self):
-        self.assertEqual(self.p.type, 1)
-
-    def testTotalLength(self):
-        self.assertEqual(len(self.p), 1)
+    def test_total_length(self):
+        assert (len(self.p) == 1)
 
 
-class TLSAppDataTest(unittest.TestCase):
+class TestTLSAppData:
     """AppData is basically just a string"""
 
-    def testValue(self):
+    def test_value(self):
         d = TLSAppData('abcdefgh')
-        self.assertEqual(d, 'abcdefgh')
+        assert (d == 'abcdefgh')
 
 
-class TLSHandshakeTest(unittest.TestCase):
-    def setUp(self):
-        self.h = TLSHandshake('\x00\x00\x00\x01\xff')
+class TestTLSHandshake:
+    @classmethod
+    def setup_class(cls):
+        cls.h = TLSHandshake('\x00\x00\x00\x01\xff')
 
-    def testCreatedInsideMessage(self):
-        self.assertTrue(isinstance(self.h.data, TLSHelloRequest))
+    def test_created_inside_message(self):
+        assert (isinstance(self.h.data, TLSHelloRequest) == True)
 
-    def testLength(self):
-        self.assertEqual(self.h.length, 0x01)
+    def test_length(self):
+        assert (self.h.length == 0x01)
 
-    def testRaisesNeedData(self):
-        self.assertRaises(dpkt.NeedData, TLSHandshake, '\x00\x00\x01\x01')
+    def test_raises_need_data(self):
+        import pytest
+        pytest.raises(dpkt.NeedData, TLSHandshake, '\x00\x00\x01\x01')
 
 
-class ClientHelloTest(unittest.TestCase):
+class TestClientHello:
     """This data is extracted from and verified by Wireshark"""
 
-    def setUp(self):
-        self.data = _hexdecode(
+    @classmethod
+    def setup_class(cls):
+        cls.data = _hexdecode(
             "01000199"  # handshake header
             "0301"  # version
             "5008220ce5e0e78b6891afe204498c9363feffbe03235a2d9e05b7d990eb708d"  # rand
@@ -485,89 +485,82 @@ class ClientHelloTest(unittest.TestCase):
             # extensions
             "00fc0000000e000c0000096c6f63616c686f7374000a00080006001700180019000b00020100002300d0a50b2e9f618a9ea9bf493ef49b421835cd2f6b05bbe1179d8edf70d58c33d656e8696d36d7e7e0b9d3ecc0e4de339552fa06c64c0fcb550a334bc43944e2739ca342d15a9ebbe981ac87a0d38160507d47af09bdc16c5f0ee4cdceea551539382333226048a026d3a90a0535f4a64236467db8fee22b041af986ad0f253bc369137cd8d8cd061925461d7f4d7895ca9a4181ab554dad50360ac31860e971483877c9335ac1300c5e78f3e56f3b8e0fc16358fcaceefd5c8d8aaae7b35be116f8832856ca61144fcdd95e071b94d0cf7233740000"
             "FFFFFFFFFFFFFFFF")  # random garbage
-        self.p = TLSHandshake(self.data)
+        cls.p = TLSHandshake(cls.data)
 
-    def testClientHelloConstructed(self):
+    def test_client_hello_constructed(self):
         """Make sure the correct class was constructed"""
         # print self.p
-        self.assertTrue(isinstance(self.p.data, TLSClientHello))
+        assert (isinstance(self.p.data, TLSClientHello) == True)
 
     #   def testClientDateCorrect(self):
     #       self.assertEqual(self.p.random_unixtime, 1342710284)
 
-    def testClientRandomCorrect(self):
-        self.assertEqual(self.p.data.random,
-                         _hexdecode('5008220ce5e0e78b6891afe204498c9363feffbe03235a2d9e05b7d990eb708d'))
+    def test_client_random_correct(self):
+        assert (self.p.data.random == _hexdecode('5008220ce5e0e78b6891afe204498c9363feffbe03235a2d9e05b7d990eb708d'))
 
-    def testCipherSuiteLength(self):
+    def test_cipher_suite_length(self):
         # we won't bother testing the identity of each cipher suite in the list.
-        self.assertEqual(self.p.data.num_ciphersuites, 42)
+        assert (self.p.data.num_ciphersuites == 42)
         # self.assertEqual(len(self.p.ciphersuites), 42)
 
-    def testSessionId(self):
-        self.assertEqual(self.p.data.session_id,
-                         _hexdecode('09bc0192e008e6fa8fe47998fca91311ba30ddde14a9587dc674b11c3d3e5ed1'))
+    def test_session_id(self):
+        assert (self.p.data.session_id == _hexdecode('09bc0192e008e6fa8fe47998fca91311ba30ddde14a9587dc674b11c3d3e5ed1'))
 
-    def testCompressionMethods(self):
-        self.assertEqual(self.p.data.num_compression_methods, 1)
+    def test_compression_methods(self):
+        assert (self.p.data.num_compression_methods == 1)
 
-    def testTotalLength(self):
-        self.assertEqual(len(self.p), 413)
+    def test_total_length(self):
+        assert (len(self.p) == 413)
 
 
-class ServerHelloTest(unittest.TestCase):
+class TestServerHello:
     """Again, from Wireshark"""
-
-    def setUp(self):
-        self.data = _hexdecode(
+    @classmethod
+    def setup_class(cls):
+        cls.data = _hexdecode(
             '0200004d03015008220c8ec43c5462315a7c99f5d5b6bff009ad285b51dc18485f352e9fdecd2009bc0192e008e6fa8fe47998fca91311ba30ddde14a9587dc674b11c3d3e5ed10002000005ff01000100')
-        self.p = TLSHandshake(self.data)
+        cls.p = TLSHandshake(cls.data)
 
-    def testConstructed(self):
-        self.assertTrue(isinstance(self.p.data, TLSServerHello))
+    def test_constructed(self):
+        assert (isinstance(self.p.data, TLSServerHello) == True)
 
     #    def testDateCorrect(self):
     #        self.assertEqual(self.p.random_unixtime, 1342710284)
 
-    def testRandomCorrect(self):
-        self.assertEqual(self.p.data.random,
-                         _hexdecode('5008220c8ec43c5462315a7c99f5d5b6bff009ad285b51dc18485f352e9fdecd'))
+    def test_random_correct(self):
+        assert (self.p.data.random == _hexdecode('5008220c8ec43c5462315a7c99f5d5b6bff009ad285b51dc18485f352e9fdecd'))
 
-    def testCipherSuite(self):
-        self.assertEqual(
-            ssl_ciphersuites.BY_CODE[self.p.data.cipher_suite].name,
-            'TLS_RSA_WITH_NULL_SHA')
+    def test_cipher_suite(self):
+        assert (ssl_ciphersuites.BY_CODE[self.p.data.cipher_suite].name == 'TLS_RSA_WITH_NULL_SHA')
 
-    def testTotalLength(self):
-        self.assertEqual(len(self.p), 81)
+    def test_total_length(self):
+        assert (len(self.p) == 81)
 
 
-class TLSMultiFactoryTest(unittest.TestCase):
+class TestTLSMultiFactory():
     """Made up test data"""
 
-    def setUp(self):
-        self.data = _hexdecode('1703010010'  # header 1
+    @classmethod
+    def setup_class(cls):
+        cls.data = _hexdecode('1703010010'  # header 1
                                'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'  # data 1
                                '1703010010'  # header 2
                                'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB'  # data 2
                                '1703010010'  # header 3
                                'CCCCCCCC')  # data 3 (incomplete)
-        self.msgs, self.bytes_parsed = TLSMultiFactory(self.data)
+        cls.msgs, cls.bytes_parsed = tls_multi_factory(cls.data)
 
-    def testNumMessages(self):
+    def test_num_messages(self):
         # only complete messages should be parsed, incomplete ones left
         # in buffer
-        self.assertEqual(len(self.msgs), 2)
+        assert (len(self.msgs) == 2)
 
-    def testBytesParsed(self):
-        self.assertEqual(self.bytes_parsed, (5 + 16) * 2)
+    def test_bytes_parsed(self):
+        assert (self.bytes_parsed == (5 + 16) * 2)
 
-    def testFirstMsgData(self):
-        self.assertEqual(self.msgs[0].data, _hexdecode('AA' * 16))
+    def test_first_msg_data(self):
+        assert (self.msgs[0].data == _hexdecode('AA' * 16))
 
-    def testSecondMsgData(self):
-        self.assertEqual(self.msgs[1].data, _hexdecode('BB' * 16))
+    def test_second_msg_data(self):
+        assert (self.msgs[1].data == _hexdecode('BB' * 16))
 
-
-if __name__ == '__main__':
-    unittest.main()

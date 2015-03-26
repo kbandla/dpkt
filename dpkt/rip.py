@@ -1,5 +1,5 @@
 # $Id: rip.py 23 2006-11-08 15:45:33Z dugsong $
-
+# -*- coding: utf-8 -*-
 """Routing Information Protocol."""
 
 import dpkt
@@ -64,24 +64,26 @@ class Auth(dpkt.Packet):
     )
 
 
+__s = '\x02\x02\x00\x00\x00\x02\x00\x00\x01\x02\x03\x00\xff\xff\xff\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x02\x00\x00\xc0\xa8\x01\x08\xff\xff\xff\xfc\x00\x00\x00\x00\x00\x00\x00\x01'
+
+
+def test_rtp_pack():
+    r = RIP(__s)
+    assert (__s == str(r))
+
+
+def test_rtp_unpack():
+    r = RIP(__s)
+    assert (r.auth is None)
+    assert (len(r.rtes) == 2)
+
+    rte = r.rtes[1]
+    assert (rte.family == 2)
+    assert (rte.route_tag == 0)
+    assert (rte.metric == 1)
+
+
 if __name__ == '__main__':
-    import unittest
-
-    class RIPTestCase(unittest.TestCase):
-        def testPack(self):
-            r = RIP(self.s)
-            self.failUnless(self.s == str(r))
-
-        def testUnpack(self):
-            r = RIP(self.s)
-            self.failUnless(r.auth == None)
-            self.failUnless(len(r.rtes) == 2)
-
-            rte = r.rtes[1]
-            self.failUnless(rte.family == 2)
-            self.failUnless(rte.route_tag == 0)
-            self.failUnless(rte.metric == 1)
-
-        s = '\x02\x02\x00\x00\x00\x02\x00\x00\x01\x02\x03\x00\xff\xff\xff\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x02\x00\x00\xc0\xa8\x01\x08\xff\xff\xff\xfc\x00\x00\x00\x00\x00\x00\x00\x01'
-
-    unittest.main()
+    test_rtp_pack()
+    test_rtp_unpack()
+    print 'Tests Successful...'

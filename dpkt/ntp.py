@@ -1,5 +1,5 @@
 # $Id: ntp.py 48 2008-05-27 17:31:15Z yardley $
-
+# -*- coding: utf-8 -*-
 """Network Time Protocol."""
 
 import dpkt
@@ -84,31 +84,30 @@ class NTP(dpkt.Packet):
     def _set_mode(self, mode): self.mode = mode
     # =================================================
 
+__s = '\x24\x02\x04\xef\x00\x00\x00\x84\x00\x00\x33\x27\xc1\x02\x04\x02\xc8\x90\xec\x11\x22\xae\x07\xe5\xc8\x90\xf9\xd9\xc0\x7e\x8c\xcd\xc8\x90\xf9\xd9\xda\xc5\xb0\x78\xc8\x90\xf9\xd9\xda\xc6\x8a\x93'
+
+
+def test_ntp_pack():
+    n = NTP(__s)
+    assert (__s == str(n))
+
+
+def test_ntp_unpack():
+    n = NTP(__s)
+    assert (n.li == NO_WARNING)
+    assert (n.v == 4)
+    assert (n.mode == SERVER)
+    assert (n.stratum == 2)
+    assert (n.id == '\xc1\x02\x04\x02')
+    # test get/set functions
+    n.li = ALARM_CONDITION
+    n.v = 3
+    n.mode = CLIENT
+    assert (n.li == ALARM_CONDITION)
+    assert (n.v == 3)
+    assert (n.mode == CLIENT)
 
 if __name__ == '__main__':
-    import unittest
-
-    class NTPTestCase(unittest.TestCase):
-        def testPack(self):
-            n = NTP(self.s)
-            self.failUnless(self.s == str(n))
-
-        def testUnpack(self):
-            n = NTP(self.s)
-            self.failUnless(n.li == NO_WARNING)
-            self.failUnless(n.v == 4)
-            self.failUnless(n.mode == SERVER)
-            self.failUnless(n.stratum == 2)
-            self.failUnless(n.id == '\xc1\x02\x04\x02')
-
-            # test get/set functions
-            n.li = ALARM_CONDITION
-            n.v = 3
-            n.mode = CLIENT
-            self.failUnless(n.li == ALARM_CONDITION)
-            self.failUnless(n.v == 3)
-            self.failUnless(n.mode == CLIENT)
-
-        s = '\x24\x02\x04\xef\x00\x00\x00\x84\x00\x00\x33\x27\xc1\x02\x04\x02\xc8\x90\xec\x11\x22\xae\x07\xe5\xc8\x90\xf9\xd9\xc0\x7e\x8c\xcd\xc8\x90\xf9\xd9\xda\xc5\xb0\x78\xc8\x90\xf9\xd9\xda\xc6\x8a\x93'
-
-    unittest.main()
+    test_ntp_pack()
+    test_ntp_unpack()
+    print 'Tests Successful...'

@@ -1,5 +1,5 @@
 # $Id: bgp.py 76 2011-01-06 15:51:30Z dugsong $
-
+# -*- coding: utf-8 -*-
 """Border Gateway Protocol."""
 
 import struct
@@ -294,28 +294,37 @@ class BGP(dpkt.Packet):
             # Deprecated methods, will be removed in the future
             # ======================================================
             @deprecated_method_decorator
-            def _get_o(self): return self.optional
+            def _get_o(self):
+                return self.optional
 
             @deprecated_method_decorator
-            def _set_o(self, o): self.optional = o
+            def _set_o(self, o):
+                self.optional = o
 
             @deprecated_method_decorator
-            def _get_t(self): return self.transitive
+            def _get_t(self):
+                return self.transitive
 
             @deprecated_method_decorator
-            def _set_t(self, t): self.transitive = t
+            def _set_t(self, t):
+                self.transitive = t
 
             @deprecated_method_decorator
-            def _get_p(self): return self.partial
+            def _get_p(self):
+                return self.partial
 
             @deprecated_method_decorator
-            def _set_p(self, p): self.partial = p
+            def _set_p(self, p):
+                self.partial = p
 
             @deprecated_method_decorator
-            def _get_e(self): return self.extended_length
+            def _get_e(self):
+                return self.extended_length
 
             @deprecated_method_decorator
-            def _set_e(self, e): self.extended_length = e
+            def _set_e(self, e):
+                self.extended_length = e
+
             # ======================================================
 
             def unpack(self, buf):
@@ -683,100 +692,98 @@ class RouteIPV6(dpkt.Packet):
         return self.pack_hdr() + self.prefix[:(self.len + 7) / 8]
 
 
+__bgp1 = '\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x13\x04'
+__bgp2 = '\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x63\x02\x00\x00\x00\x48\x40\x01\x01\x00\x40\x02\x0a\x01\x02\x01\xf4\x01\xf4\x02\x01\xfe\xbb\x40\x03\x04\xc0\xa8\x00\x0f\x40\x05\x04\x00\x00\x00\x64\x40\x06\x00\xc0\x07\x06\xfe\xba\xc0\xa8\x00\x0a\xc0\x08\x0c\xfe\xbf\x00\x01\x03\x16\x00\x04\x01\x54\x00\xfa\x80\x09\x04\xc0\xa8\x00\x0f\x80\x0a\x04\xc0\xa8\x00\xfa\x16\xc0\xa8\x04'
+__bgp3 = '\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x79\x02\x00\x00\x00\x62\x40\x01\x01\x00\x40\x02\x00\x40\x05\x04\x00\x00\x00\x64\xc0\x10\x08\x00\x02\x01\x2c\x00\x00\x01\x2c\xc0\x80\x24\x00\x00\xfd\xe9\x40\x01\x01\x00\x40\x02\x04\x02\x01\x15\xb3\x40\x05\x04\x00\x00\x00\x2c\x80\x09\x04\x16\x05\x05\x05\x80\x0a\x04\x16\x05\x05\x05\x90\x0e\x00\x1e\x00\x01\x80\x0c\x00\x00\x00\x00\x00\x00\x00\x00\x0c\x04\x04\x04\x00\x60\x18\x77\x01\x00\x00\x01\xf4\x00\x00\x01\xf4\x85'
+__bgp4 = '\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x2d\x01\x04\x00\xed\x00\x5a\xc6\x6e\x83\x7d\x10\x02\x06\x01\x04\x00\x01\x00\x01\x02\x02\x80\x00\x02\x02\x02\x00'
+
+
+def test_pack():
+    assert (__bgp1 == str(BGP(__bgp1)))
+    assert (__bgp2 == str(BGP(__bgp2)))
+    assert (__bgp3 == str(BGP(__bgp3)))
+    assert (__bgp4 == str(BGP(__bgp4)))
+
+
+def test_unpack():
+    b1 = BGP(__bgp1)
+    assert (b1.len == 19)
+    assert (b1.type == KEEPALIVE)
+    assert (b1.keepalive is not None)
+
+    b2 = BGP(__bgp2)
+    assert (b2.type == UPDATE)
+    assert (len(b2.update.withdrawn) == 0)
+    assert (len(b2.update.announced) == 1)
+    assert (len(b2.update.attributes) == 9)
+    a = b2.update.attributes[1]
+    assert (a.type == AS_PATH)
+    assert (a.len == 10)
+    assert (len(a.as_path.segments) == 2)
+    s = a.as_path.segments[0]
+    assert (s.type == AS_SET)
+    assert (s.len == 2)
+    assert (len(s.path) == 2)
+    assert (s.path[0] == 500)
+
+    a = b2.update.attributes[6]
+    assert (a.type == COMMUNITIES)
+    assert (a.len == 12)
+    assert (len(a.communities.list) == 3)
+    c = a.communities.list[0]
+    assert (c.asn == 65215)
+    assert (c.value == 1)
+    r = b2.update.announced[0]
+    assert (r.len == 22)
+    assert (r.prefix == '\xc0\xa8\x04\x00')
+
+    b3 = BGP(__bgp3)
+    assert (b3.type == UPDATE)
+    assert (len(b3.update.withdrawn) == 0)
+    assert (len(b3.update.announced) == 0)
+    assert (len(b3.update.attributes) == 6)
+    a = b3.update.attributes[0]
+    assert (a.optional == False)
+    assert (a.transitive == True)
+    assert (a.partial == False)
+    assert (a.extended_length == False)
+    assert (a.type == ORIGIN)
+    assert (a.len == 1)
+    o = a.origin
+    assert (o.type == ORIGIN_IGP)
+    a = b3.update.attributes[5]
+    assert (a.optional == True)
+    assert (a.transitive == False)
+    assert (a.partial == False)
+    assert (a.extended_length == True)
+    assert (a.type == MP_REACH_NLRI)
+    assert (a.len == 30)
+    m = a.mp_reach_nlri
+    assert (m.afi == AFI_IPV4)
+    assert (len(m.snpas) == 0)
+    assert (len(m.announced) == 1)
+    p = m.announced[0]
+    assert (p.len == 96)
+
+    b4 = BGP(__bgp4)
+    assert (b4.len == 45)
+    assert (b4.type == OPEN)
+    assert (b4.open.asn == 237)
+    assert (b4.open.param_len == 16)
+    assert (len(b4.open.parameters) == 3)
+    p = b4.open.parameters[0]
+    assert (p.type == CAPABILITY)
+    assert (p.len == 6)
+    c = p.capability
+    assert (c.code == CAP_MULTIPROTOCOL)
+    assert (c.len == 4)
+    assert (c.data == '\x00\x01\x00\x01')
+    c = b4.open.parameters[2].capability
+    assert (c.code == CAP_ROUTE_REFRESH)
+    assert (c.len == 0)
+
+
 if __name__ == '__main__':
-    import unittest
-
-    class BGPTestCase(unittest.TestCase):
-        def testPack(self):
-            b1 = BGP(self.bgp1)
-            self.failUnless(self.bgp1 == str(b1))
-            b2 = BGP(self.bgp2)
-            self.failUnless(self.bgp2 == str(b2))
-            b3 = BGP(self.bgp3)
-            self.failUnless(self.bgp3 == str(b3))
-            b4 = BGP(self.bgp4)
-            self.failUnless(self.bgp4 == str(b4))
-
-        def testUnpack(self):
-            b1 = BGP(self.bgp1)
-            self.failUnless(b1.len == 19)
-            self.failUnless(b1.type == KEEPALIVE)
-            self.failUnless(b1.keepalive is not None)
-
-            b2 = BGP(self.bgp2)
-            self.failUnless(b2.type == UPDATE)
-            self.failUnless(len(b2.update.withdrawn) == 0)
-            self.failUnless(len(b2.update.announced) == 1)
-            self.failUnless(len(b2.update.attributes) == 9)
-            a = b2.update.attributes[1]
-            self.failUnless(a.type == AS_PATH)
-            self.failUnless(a.len == 10)
-            self.failUnless(len(a.as_path.segments) == 2)
-            s = a.as_path.segments[0]
-            self.failUnless(s.type == AS_SET)
-            self.failUnless(s.len == 2)
-            self.failUnless(len(s.path) == 2)
-            self.failUnless(s.path[0] == 500)
-
-            a = b2.update.attributes[6]
-            self.failUnless(a.type == COMMUNITIES)
-            self.failUnless(a.len == 12)
-            self.failUnless(len(a.communities.list) == 3)
-            c = a.communities.list[0]
-            self.failUnless(c.asn == 65215)
-            self.failUnless(c.value == 1)
-            r = b2.update.announced[0]
-            self.failUnless(r.len == 22)
-            self.failUnless(r.prefix == '\xc0\xa8\x04\x00')
-
-            b3 = BGP(self.bgp3)
-            self.failUnless(b3.type == UPDATE)
-            self.failUnless(len(b3.update.withdrawn) == 0)
-            self.failUnless(len(b3.update.announced) == 0)
-            self.failUnless(len(b3.update.attributes) == 6)
-            a = b3.update.attributes[0]
-            self.failUnless(a.optional is False)
-            self.failUnless(a.transitive is True)
-            self.failUnless(a.partial is False)
-            self.failUnless(a.extended_length is False)
-            self.failUnless(a.type == ORIGIN)
-            self.failUnless(a.len == 1)
-            o = a.origin
-            self.failUnless(o.type == ORIGIN_IGP)
-            a = b3.update.attributes[5]
-            self.failUnless(a.optional is True)
-            self.failUnless(a.transitive is False)
-            self.failUnless(a.partial is False)
-            self.failUnless(a.extended_length is True)
-            self.failUnless(a.type == MP_REACH_NLRI)
-            self.failUnless(a.len == 30)
-            m = a.mp_reach_nlri
-            self.failUnless(m.afi == AFI_IPV4)
-            self.failUnless(len(m.snpas) == 0)
-            self.failUnless(len(m.announced) == 1)
-            p = m.announced[0]
-            self.failUnless(p.len == 96)
-
-            b4 = BGP(self.bgp4)
-            self.failUnless(b4.len == 45)
-            self.failUnless(b4.type == OPEN)
-            self.failUnless(b4.open.asn == 237)
-            self.failUnless(b4.open.param_len == 16)
-            self.failUnless(len(b4.open.parameters) == 3)
-            p = b4.open.parameters[0]
-            self.failUnless(p.type == CAPABILITY)
-            self.failUnless(p.len == 6)
-            c = p.capability
-            self.failUnless(c.code == CAP_MULTIPROTOCOL)
-            self.failUnless(c.len == 4)
-            self.failUnless(c.data == '\x00\x01\x00\x01')
-            c = b4.open.parameters[2].capability
-            self.failUnless(c.code == CAP_ROUTE_REFRESH)
-            self.failUnless(c.len == 0)
-
-        bgp1 = '\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x13\x04'
-        bgp2 = '\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x63\x02\x00\x00\x00\x48\x40\x01\x01\x00\x40\x02\x0a\x01\x02\x01\xf4\x01\xf4\x02\x01\xfe\xbb\x40\x03\x04\xc0\xa8\x00\x0f\x40\x05\x04\x00\x00\x00\x64\x40\x06\x00\xc0\x07\x06\xfe\xba\xc0\xa8\x00\x0a\xc0\x08\x0c\xfe\xbf\x00\x01\x03\x16\x00\x04\x01\x54\x00\xfa\x80\x09\x04\xc0\xa8\x00\x0f\x80\x0a\x04\xc0\xa8\x00\xfa\x16\xc0\xa8\x04'
-        bgp3 = '\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x79\x02\x00\x00\x00\x62\x40\x01\x01\x00\x40\x02\x00\x40\x05\x04\x00\x00\x00\x64\xc0\x10\x08\x00\x02\x01\x2c\x00\x00\x01\x2c\xc0\x80\x24\x00\x00\xfd\xe9\x40\x01\x01\x00\x40\x02\x04\x02\x01\x15\xb3\x40\x05\x04\x00\x00\x00\x2c\x80\x09\x04\x16\x05\x05\x05\x80\x0a\x04\x16\x05\x05\x05\x90\x0e\x00\x1e\x00\x01\x80\x0c\x00\x00\x00\x00\x00\x00\x00\x00\x0c\x04\x04\x04\x00\x60\x18\x77\x01\x00\x00\x01\xf4\x00\x00\x01\xf4\x85'
-        bgp4 = '\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x2d\x01\x04\x00\xed\x00\x5a\xc6\x6e\x83\x7d\x10\x02\x06\x01\x04\x00\x01\x00\x01\x02\x02\x80\x00\x02\x02\x02\x00'
-
-    unittest.main()
+    test_pack()
+    test_unpack()
+    print 'Tests Successful...'

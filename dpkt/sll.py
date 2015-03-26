@@ -1,5 +1,5 @@
 # $Id: sll.py 23 2006-11-08 15:45:33Z dugsong $
-
+# -*- coding: utf-8 -*-
 """Linux libpcap "cooked" capture encapsulation."""
 
 import arp

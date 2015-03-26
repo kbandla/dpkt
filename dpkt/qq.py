@@ -1,5 +1,5 @@
 # $Id: qq.py 48 2008-05-27 17:31:15Z yardley $
-
+# -*- coding: utf-8 -*-
 from dpkt import Packet
 
 # header_type

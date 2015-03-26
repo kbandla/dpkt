@@ -1,5 +1,5 @@
 # $Id: vrrp.py 88 2013-03-05 19:43:17Z andrewflnr@gmail.com $
-
+# -*- coding: utf-8 -*-
 """Virtual Router Redundancy Protocol."""
 
 import dpkt

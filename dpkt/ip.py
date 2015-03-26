@@ -1,5 +1,5 @@
 # $Id: ip.py 87 2013-03-05 19:41:04Z andrewflnr@gmail.com $
-
+# -*- coding: utf-8 -*-
 """Internet Protocol."""
 
 import dpkt
@@ -23,33 +23,43 @@ class IP(dpkt.Packet):
     opts = ''
 
     @property
-    def v(self): return self.v_hl >> 4
+    def v(self):
+        return self.v_hl >> 4
 
     @v.setter
-    def v(self, v): self.v_hl = (v << 4) | (self.v_hl & 0xf)
+    def v(self, v):
+        self.v_hl = (v << 4) | (self.v_hl & 0xf)
 
     @property
-    def hl(self): return self.v_hl & 0xf
+    def hl(self):
+        return self.v_hl & 0xf
 
     @hl.setter
-    def hl(self, hl): self.v_hl = (self.v_hl & 0xf0) | hl
+    def hl(self, hl):
+        self.v_hl = (self.v_hl & 0xf0) | hl
 
     # Deprecated methods, will be removed in the future
     # =================================================
     @deprecated_method_decorator
-    def _get_v(self): return self.v
+    def _get_v(self):
+        return self.v
 
     @deprecated_method_decorator
-    def _set_v(self, v): self.v = v
+    def _set_v(self, v):
+        self.v = v
 
     @deprecated_method_decorator
-    def _get_hl(self): return self.hl
+    def _get_hl(self):
+        return self.hl
 
     @deprecated_method_decorator
-    def _set_hl(self, hl): self.hl = hl
+    def _set_hl(self, hl):
+        self.hl = hl
+
     # =================================================
 
-    def __len__(self): return self.__hdr_len__ + len(self.opts) + len(self.data)
+    def __len__(self):
+        return self.__hdr_len__ + len(self.opts) + len(self.data)
 
     def __str__(self):
         if self.sum == 0:
@@ -279,48 +289,52 @@ def __load_protos():
 if not IP._protosw:
     __load_protos()
 
+
+def test_ip():
+    import udp
+
+    s = 'E\x00\x00"\x00\x00\x00\x00@\x11r\xc0\x01\x02\x03\x04\x01\x02\x03\x04\x00o\x00\xde\x00\x0e\xbf5foobar'
+    ip = IP(id=0, src='\x01\x02\x03\x04', dst='\x01\x02\x03\x04', p=17)
+    u = udp.UDP(sport=111, dport=222)
+    u.data = 'foobar'
+    u.ulen += len(u.data)
+    ip.data = u
+    ip.len += len(u)
+    assert (str(ip) == s)
+
+    ip = IP(s)
+    assert (str(ip) == s)
+    assert (ip.udp.sport == 111)
+    assert (ip.udp.data == 'foobar')
+
+
+def test_hl():  # Todo chack this test method
+    s = 'BB\x03\x00\x00\x00\x00\x00\x00\x00\xd0\x00\xec\xbc\xa5\x00\x00\x00\x03\x80\x00\x00\xd0\x01\xf2\xac\xa5"0\x01\x00\x14\x00\x02\x00\x0f\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+    try:
+        IP(s)
+    except dpkt.UnpackError:
+        pass
+
+
+def test_opt():
+    s = '\x4f\x00\x00\x50\xae\x08\x00\x00\x40\x06\x17\xfc\xc0\xa8\x0a\x26\xc0\xa8\x0a\x01\x07\x27\x08\x01\x02\x03\x04\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+    ip = IP(s)
+    ip.sum = 0
+    assert (str(ip) == s)
+
+
+def test_zerolen():
+    import tcp
+    d = 'X' * 2048
+    s = 'E\x00\x00\x004\xce@\x00\x80\x06\x00\x00\x7f\x00\x00\x01\x7f\x00\x00\x01\xccN\x0c8`\xff\xc6N_\x8a\x12\x98P\x18@):\xa3\x00\x00' + d
+    ip = IP(s)
+    assert (isinstance(ip.data, tcp.TCP))
+    assert (ip.tcp.data == d)
+
+
 if __name__ == '__main__':
-    import unittest
-
-    class IPTestCase(unittest.TestCase):
-        def test_IP(self):
-            import udp
-
-            s = 'E\x00\x00"\x00\x00\x00\x00@\x11r\xc0\x01\x02\x03\x04\x01\x02\x03\x04\x00o\x00\xde\x00\x0e\xbf5foobar'
-            ip = IP(id=0, src='\x01\x02\x03\x04', dst='\x01\x02\x03\x04', p=17)
-            u = udp.UDP(sport=111, dport=222)
-            u.data = 'foobar'
-            u.ulen += len(u.data)
-            ip.data = u
-            ip.len += len(u)
-            self.failUnless(str(ip) == s)
-
-            ip = IP(s)
-            self.failUnless(str(ip) == s)
-            self.failUnless(ip.udp.sport == 111)
-            self.failUnless(ip.udp.data == 'foobar')
-
-        def test_hl(self):
-            s = 'BB\x03\x00\x00\x00\x00\x00\x00\x00\xd0\x00\xec\xbc\xa5\x00\x00\x00\x03\x80\x00\x00\xd0\x01\xf2\xac\xa5"0\x01\x00\x14\x00\x02\x00\x0f\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-            try:
-                # ip = IP(s)  # variable 'ip' not used
-                IP(s)
-            except dpkt.UnpackError:
-                pass
-
-        def test_opt(self):
-            s = '\x4f\x00\x00\x50\xae\x08\x00\x00\x40\x06\x17\xfc\xc0\xa8\x0a\x26\xc0\xa8\x0a\x01\x07\x27\x08\x01\x02\x03\x04\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-            ip = IP(s)
-            ip.sum = 0
-            self.failUnless(str(ip) == s)
-
-        def test_zerolen(self):
-            import tcp
-
-            d = 'X' * 2048
-            s = 'E\x00\x00\x004\xce@\x00\x80\x06\x00\x00\x7f\x00\x00\x01\x7f\x00\x00\x01\xccN\x0c8`\xff\xc6N_\x8a\x12\x98P\x18@):\xa3\x00\x00' + d
-            ip = IP(s)
-            self.failUnless(isinstance(ip.data, tcp.TCP))
-            self.failUnless(ip.tcp.data == d)
-
-    unittest.main()
+    test_ip()
+    test_hl()
+    test_opt()
+    test_zerolen()
+    print 'Tests Successful...'
