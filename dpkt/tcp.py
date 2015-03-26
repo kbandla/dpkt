@@ -1,5 +1,5 @@
 # $Id: tcp.py 42 2007-08-02 22:38:47Z jon.oberheide $
-
+# -*- coding: utf-8 -*-
 """Transmission Control Protocol."""
 
 import dpkt

@@ -1,5 +1,5 @@
 # $Id: tftp.py 23 2006-11-08 15:45:33Z dugsong $
-
+# -*- coding: utf-8 -*-
 """Trivial File Transfer Protocol."""
 
 import struct

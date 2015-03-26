@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """ATA over Ethernet Protocol."""
 
 import struct

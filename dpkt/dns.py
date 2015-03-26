@@ -1,5 +1,5 @@
 # $Id: dns.py 27 2006-11-21 01:22:52Z dahelder $
-
+# -*- coding: utf-8 -*-
 """Domain Name System."""
 
 import struct
@@ -123,8 +123,10 @@ class DNS(dpkt.Packet):
 
     @qr.setter
     def qr(self, v):
-        if v: self.op |= DNS_QR
-        else: self.op &= ~DNS_QR
+        if v:
+            self.op |= DNS_QR
+        else:
+            self.op &= ~DNS_QR
 
     @property
     def opcode(self):
@@ -140,8 +142,10 @@ class DNS(dpkt.Packet):
 
     @aa.setter
     def aa(self, v):
-        if v: self.op |= DNS_AA
-        else: self.op &= ~DNS_AA
+        if v:
+            self.op |= DNS_AA
+        else:
+            self.op &= ~DNS_AA
 
     @property
     def rd(self):
@@ -149,8 +153,10 @@ class DNS(dpkt.Packet):
 
     @rd.setter
     def rd(self, v):
-        if v: self.op |= DNS_RD
-        else: self.op &= ~DNS_RD
+        if v:
+            self.op |= DNS_RD
+        else:
+            self.op &= ~DNS_RD
 
     @property
     def ra(self):
@@ -158,8 +164,10 @@ class DNS(dpkt.Packet):
 
     @ra.setter
     def ra(self, v):
-        if v: self.op |= DNS_RA
-        else: self.op &= ~DNS_RA
+        if v:
+            self.op |= DNS_RA
+        else:
+            self.op &= ~DNS_RA
 
     @property
     def zero(self):
@@ -167,8 +175,10 @@ class DNS(dpkt.Packet):
 
     @zero.setter
     def zero(self, v):
-        if v: self.op |= DNS_Z
-        else: self.op &= ~DNS_Z
+        if v:
+            self.op |= DNS_Z
+        else:
+            self.op &= ~DNS_Z
 
     @property
     def rcode(self):
@@ -181,46 +191,61 @@ class DNS(dpkt.Packet):
     # Deprecated methods, will be removed in the future
     # ======================================================
     @deprecated_method_decorator
-    def get_qr(self): return self.qr
+    def get_qr(self):
+        return self.qr
 
     @deprecated_method_decorator
-    def set_qr(self, v): self.qr = v
+    def set_qr(self, v):
+        self.qr = v
 
     @deprecated_method_decorator
-    def get_opcode(self): return self.opcode
+    def get_opcode(self):
+        return self.opcode
 
     @deprecated_method_decorator
-    def set_opcode(self, v): self.opcode = v
+    def set_opcode(self, v):
+        self.opcode = v
 
     @deprecated_method_decorator
-    def get_aa(self): return self.aa
+    def get_aa(self):
+        return self.aa
 
     @deprecated_method_decorator
-    def set_aa(self, v): self.aa = v
+    def set_aa(self, v):
+        self.aa = v
 
     @deprecated_method_decorator
-    def get_rd(self): return self.rd
+    def get_rd(self):
+        return self.rd
 
     @deprecated_method_decorator
-    def set_rd(self, v): self.rd = v
+    def set_rd(self, v):
+        self.rd = v
 
     @deprecated_method_decorator
-    def get_ra(self): return self.ra
+    def get_ra(self):
+        return self.ra
 
     @deprecated_method_decorator
-    def set_ra(self, v): self.ra = v
+    def set_ra(self, v):
+        self.ra = v
 
     @deprecated_method_decorator
-    def get_zero(self): return self.zero
+    def get_zero(self):
+        return self.zero
 
     @deprecated_method_decorator
-    def set_zero(self, v): self.zero = v
+    def set_zero(self, v):
+        self.zero = v
 
     @deprecated_method_decorator
-    def get_rcode(self): return self.rcode
+    def get_rcode(self):
+        return self.rcode
 
     @deprecated_method_decorator
-    def set_rcode(self, v): self.rcode = v
+    def set_rcode(self, v):
+        self.rcode = v
+
     # ======================================================
 
     class Q(dpkt.Packet):
@@ -374,8 +399,10 @@ class DNS(dpkt.Packet):
         del self.label_ptrs
         return buf
 
+
 def test_basic():
     from ip import IP
+
     s = 'E\x00\x02\x08\xc15\x00\x00\x80\x11\x92aBk0\x01Bk0w\x005\xc07\x01\xf4\xda\xc2d\xd2\x81\x80\x00\x01\x00\x03\x00\x0b\x00\x0b\x03www\x06google\x03com\x00\x00\x01\x00\x01\xc0\x0c\x00\x05\x00\x01\x00\x00\x03V\x00\x17\x03www\x06google\x06akadns\x03net\x00\xc0,\x00\x01\x00\x01\x00\x00\x01\xa3\x00\x04@\xe9\xabh\xc0,\x00\x01\x00\x01\x00\x00\x01\xa3\x00\x04@\xe9\xabc\xc07\x00\x02\x00\x01\x00\x00KG\x00\x0c\x04usw5\x04akam\xc0>\xc07\x00\x02\x00\x01\x00\x00KG\x00\x07\x04usw6\xc0t\xc07\x00\x02\x00\x01\x00\x00KG\x00\x07\x04usw7\xc0t\xc07\x00\x02\x00\x01\x00\x00KG\x00\x08\x05asia3\xc0t\xc07\x00\x02\x00\x01\x00\x00KG\x00\x05\x02za\xc07\xc07\x00\x02\x00\x01\x00\x00KG\x00\x0f\x02zc\x06akadns\x03org\x00\xc07\x00\x02\x00\x01\x00\x00KG\x00\x05\x02zf\xc07\xc07\x00\x02\x00\x01\x00\x00KG\x00\x05\x02zh\xc0\xd5\xc07\x00\x02\x00\x01\x00\x00KG\x00\x07\x04eur3\xc0t\xc07\x00\x02\x00\x01\x00\x00KG\x00\x07\x04use2\xc0t\xc07\x00\x02\x00\x01\x00\x00KG\x00\x07\x04use4\xc0t\xc0\xc1\x00\x01\x00\x01\x00\x00\xfb4\x00\x04\xd0\xb9\x84\xb0\xc0\xd2\x00\x01\x00\x01\x00\x001\x0c\x00\x04?\xf1\xc76\xc0\xed\x00\x01\x00\x01\x00\x00\xfb4\x00\x04?\xd7\xc6S\xc0\xfe\x00\x01\x00\x01\x00\x001\x0c\x00\x04?\xd00.\xc1\x0f\x00\x01\x00\x01\x00\x00\n\xdf\x00\x04\xc1-\x01g\xc1"\x00\x01\x00\x01\x00\x00\x101\x00\x04?\xd1\xaa\x88\xc15\x00\x01\x00\x01\x00\x00\r\x1a\x00\x04PCC\xb6\xc0o\x00\x01\x00\x01\x00\x00\x10\x7f\x00\x04?\xf1I\xd6\xc0\x87\x00\x01\x00\x01\x00\x00\n\xdf\x00\x04\xce\x84dl\xc0\x9a\x00\x01\x00\x01\x00\x00\n\xdf\x00\x04A\xcb\xea\x1b\xc0\xad\x00\x01\x00\x01\x00\x00\x0b)\x00\x04\xc1l\x9a\t'
     ip = IP(s)
     my_dns = DNS(ip.udp.data)
@@ -383,7 +410,8 @@ def test_basic():
     s = '\x05\xf5\x01\x00\x00\x01\x00\x00\x00\x00\x00\x00\x03www\x03cnn\x03com\x00\x00\x01\x00\x01'
     my_dns = DNS(s)
     assert s == str(my_dns)
-   
+
+
 def test_PTR():
     s = 'g\x02\x81\x80\x00\x01\x00\x01\x00\x03\x00\x00\x011\x011\x03211\x03141\x07in-addr\x04arpa\x00\x00\x0c\x00\x01\xc0\x0c\x00\x0c\x00\x01\x00\x00\r6\x00$\x07default\nv-umce-ifs\x05umnet\x05umich\x03edu\x00\xc0\x0e\x00\x02\x00\x01\x00\x00\r6\x00\r\x06shabby\x03ifs\xc0O\xc0\x0e\x00\x02\x00\x01\x00\x00\r6\x00\x0f\x0cfish-license\xc0m\xc0\x0e\x00\x02\x00\x01\x00\x00\r6\x00\x0b\x04dns2\x03itd\xc0O'
     my_dns = DNS(s)
@@ -394,10 +422,12 @@ def test_PTR():
            my_dns.ns[2].nsname == 'dns2.itd.umich.edu'
     assert s == str(my_dns)
 
+
 def test_pack_name():
     # Empty name is \0
     x = pack_name('', 0, {})
     assert x == '\0'
+
 
 def test_deprecated_methods():
     """Test deprecated methods. Note: when they are removed so should this test"""
@@ -410,16 +440,18 @@ def test_deprecated_methods():
     qr2 = my_dns.get_qr()
     assert qr == qr2
 
+
 def test_deprecated_method_performance():
     """Test the performance hit for the deprecation decorator"""
     from timeit import Timer
 
     s = 'g\x02\x81\x80\x00\x01\x00\x01\x00\x03\x00\x00\x011\x011\x03211\x03141\x07in-addr\x04arpa\x00\x00\x0c\x00\x01\xc0\x0c\x00\x0c\x00\x01\x00\x00\r6\x00$\x07default\nv-umce-ifs\x05umnet\x05umich\x03edu\x00\xc0\x0e\x00\x02\x00\x01\x00\x00\r6\x00\r\x06shabby\x03ifs\xc0O\xc0\x0e\x00\x02\x00\x01\x00\x00\r6\x00\x0f\x0cfish-license\xc0m\xc0\x0e\x00\x02\x00\x01\x00\x00\r6\x00\x0b\x04dns2\x03itd\xc0O'
     my_dns = DNS(s)
-    t1 = Timer(lambda: my_dns.aa).timeit(10000)  
+    t1 = Timer(lambda: my_dns.aa).timeit(10000)
     t2 = Timer(my_dns.get_aa).timeit(10000)
-    print 'Performance of dns.aa vs. dns.get_aa(): %f %f' % (t1, t2)   
-    
+    print 'Performance of dns.aa vs. dns.get_aa(): %f %f' % (t1, t2)
+
+
 if __name__ == '__main__':
     # Runs all the test associated with this class/file
     test_basic()

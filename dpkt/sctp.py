@@ -1,5 +1,5 @@
 # $Id: sctp.py 23 2006-11-08 15:45:33Z dugsong $
-
+# -*- coding: utf-8 -*-
 """Stream Control Transmission Protocol."""
 
 import dpkt
@@ -68,27 +68,28 @@ class Chunk(dpkt.Packet):
         self.data = self.data[:self.len - self.__hdr_len__]
 
 
+__s = '\x80\x44\x00\x50\x00\x00\x00\x00\x30\xba\xef\x54\x01\x00\x00\x3c\x3b\xb9\x9c\x46\x00\x01\xa0\x00\x00\x0a\xff\xff\x2b\x2d\x7e\xb2\x00\x05\x00\x08\x9b\xe6\x18\x9b\x00\x05\x00\x08\x9b\xe6\x18\x9c\x00\x0c\x00\x06\x00\x05\x00\x00\x80\x00\x00\x04\xc0\x00\x00\x04\xc0\x06\x00\x08\x00\x00\x00\x00'
+
+
+def test_sctp_pack():
+    sctp = SCTP(__s)
+    assert (__s == str(sctp))
+    sctp.sum = 0
+    assert (__s == str(sctp))
+
+
+def test_sctp_unpack():
+    sctp = SCTP(__s)
+    assert (sctp.sport == 32836)
+    assert (sctp.dport == 80)
+    assert (len(sctp.chunks) == 1)
+    assert (len(sctp) == 72)
+    chunk = sctp.chunks[0]
+    assert (chunk.type == INIT)
+    assert (chunk.len == 60)
+
+
 if __name__ == '__main__':
-    import unittest
-
-    class SCTPTestCase(unittest.TestCase):
-        def testPack(self):
-            sctp = SCTP(self.s)
-            self.failUnless(self.s == str(sctp))
-            sctp.sum = 0
-            self.failUnless(self.s == str(sctp))
-
-        def testUnpack(self):
-            sctp = SCTP(self.s)
-            self.failUnless(sctp.sport == 32836)
-            self.failUnless(sctp.dport == 80)
-            self.failUnless(len(sctp.chunks) == 1)
-            self.failUnless(len(sctp) == 72)
-
-            chunk = sctp.chunks[0]
-            self.failUnless(chunk.type == INIT)
-            self.failUnless(chunk.len == 60)
-
-        s = '\x80\x44\x00\x50\x00\x00\x00\x00\x30\xba\xef\x54\x01\x00\x00\x3c\x3b\xb9\x9c\x46\x00\x01\xa0\x00\x00\x0a\xff\xff\x2b\x2d\x7e\xb2\x00\x05\x00\x08\x9b\xe6\x18\x9b\x00\x05\x00\x08\x9b\xe6\x18\x9c\x00\x0c\x00\x06\x00\x05\x00\x00\x80\x00\x00\x04\xc0\x00\x00\x04\xc0\x06\x00\x08\x00\x00\x00\x00'
-
-    unittest.main()
+    test_sctp_pack()
+    test_sctp_unpack()
+    print 'Tests Successful...'

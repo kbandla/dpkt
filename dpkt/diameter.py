@@ -1,5 +1,5 @@
 # $Id: diameter.py 23 2006-11-08 15:45:33Z dugsong $
-
+# -*- coding: utf-8 -*-
 """Diameter."""
 
 import struct
@@ -69,6 +69,7 @@ class Diameter(dpkt.Packet):
 
     @deprecated_method_decorator
     def _set_r(self, r): self.request_flag = r
+
     @deprecated_method_decorator
     def _get_p(self): return self.proxiable_flag
 
@@ -86,6 +87,7 @@ class Diameter(dpkt.Packet):
 
     @deprecated_method_decorator
     def _set_t(self, t): self.request_flag = t
+
     # ======================================================
 
     def unpack(self, buf):
@@ -147,22 +149,29 @@ class AVP(dpkt.Packet):
     # Deprecated methods, will be removed in the future
     # ======================================================
     @deprecated_method_decorator
-    def _get_v(self): return self.vendor_flag
+    def _get_v(self):
+        return self.vendor_flag
 
     @deprecated_method_decorator
-    def _set_v(self, v): self.vendor_flag = v
+    def _set_v(self, v):
+        self.vendor_flag = v
 
     @deprecated_method_decorator
-    def _get_m(self): return self.mandatory_flag
+    def _get_m(self):
+        return self.mandatory_flag
 
     @deprecated_method_decorator
-    def _set_m(self, m): self.mandatory_flag = m
+    def _set_m(self, m):
+        self.mandatory_flag = m
 
     @deprecated_method_decorator
-    def _get_p(self): return self.protected_flag
+    def _get_p(self):
+        return self.protected_flag
 
     @deprecated_method_decorator
-    def _set_p(self, p): self.protected_flag = p
+    def _set_p(self, p):
+        self.protected_flag = p
+
     # ======================================================
 
     def unpack(self, buf):
@@ -189,43 +198,46 @@ class AVP(dpkt.Packet):
         return length
 
 
+__s = '\x01\x00\x00\x28\x80\x00\x01\x18\x00\x00\x00\x00\x00\x00\x41\xc8\x00\x00\x00\x0c\x00\x00\x01\x08\x40\x00\x00\x0c\x68\x30\x30\x32\x00\x00\x01\x28\x40\x00\x00\x08'
+__t = '\x01\x00\x00\x2c\x80\x00\x01\x18\x00\x00\x00\x00\x00\x00\x41\xc8\x00\x00\x00\x0c\x00\x00\x01\x08\xc0\x00\x00\x10\xde\xad\xbe\xef\x68\x30\x30\x32\x00\x00\x01\x28\x40\x00\x00\x08'
+
+
+def test_pack():
+    d = Diameter(__s)
+    assert (__s == str(d))
+    d = Diameter(__t)
+    assert (__t == str(d))
+
+
+def test_unpack():
+    d = Diameter(__s)
+    assert (d.len == 40)
+    # assert (d.cmd == DEVICE_WATCHDOG_REQUEST)
+    assert (d.request_flag == 1)
+    assert (d.error_flag == 0)
+    assert (len(d.avps) == 2)
+
+    avp = d.avps[0]
+    # assert (avp.code == ORIGIN_HOST)
+    assert (avp.mandatory_flag == 1)
+    assert (avp.vendor_flag == 0)
+    assert (avp.len == 12)
+    assert (len(avp) == 12)
+    assert (avp.data == '\x68\x30\x30\x32')
+
+    # also test the optional vendor id support
+    d = Diameter(__t)
+    assert (d.len == 44)
+    avp = d.avps[0]
+    assert (avp.vendor_flag == 1)
+    assert (avp.len == 16)
+    assert (len(avp) == 16)
+    assert (avp.vendor == 3735928559)
+    assert (avp.data == '\x68\x30\x30\x32')
+
+
 if __name__ == '__main__':
-    import unittest
+    test_pack()
+    test_unpack()
+    print 'Tests Successful...'
 
-    class DiameterTestCase(unittest.TestCase):
-        def testPack(self):
-            d = Diameter(self.s)
-            self.failUnless(self.s == str(d))
-            d = Diameter(self.t)
-            self.failUnless(self.t == str(d))
-
-        def testUnpack(self):
-            d = Diameter(self.s)
-            self.failUnless(d.len == 40)
-            # self.failUnless(d.cmd == DEVICE_WATCHDOG_REQUEST)
-            self.failUnless(d.request_flag == 1)
-            self.failUnless(d.error_flag == 0)
-            self.failUnless(len(d.avps) == 2)
-
-            avp = d.avps[0]
-            # self.failUnless(avp.code == ORIGIN_HOST)
-            self.failUnless(avp.mandatory_flag == 1)
-            self.failUnless(avp.vendor_flag == 0)
-            self.failUnless(avp.len == 12)
-            self.failUnless(len(avp) == 12)
-            self.failUnless(avp.data == '\x68\x30\x30\x32')
-
-            # also test the optional vendor id support
-            d = Diameter(self.t)
-            self.failUnless(d.len == 44)
-            avp = d.avps[0]
-            self.failUnless(avp.vendor_flag == 1)
-            self.failUnless(avp.len == 16)
-            self.failUnless(len(avp) == 16)
-            self.failUnless(avp.vendor == 3735928559)
-            self.failUnless(avp.data == '\x68\x30\x30\x32')
-
-        s = '\x01\x00\x00\x28\x80\x00\x01\x18\x00\x00\x00\x00\x00\x00\x41\xc8\x00\x00\x00\x0c\x00\x00\x01\x08\x40\x00\x00\x0c\x68\x30\x30\x32\x00\x00\x01\x28\x40\x00\x00\x08'
-        t = '\x01\x00\x00\x2c\x80\x00\x01\x18\x00\x00\x00\x00\x00\x00\x41\xc8\x00\x00\x00\x0c\x00\x00\x01\x08\xc0\x00\x00\x10\xde\xad\xbe\xef\x68\x30\x30\x32\x00\x00\x01\x28\x40\x00\x00\x08'
-
-    unittest.main()

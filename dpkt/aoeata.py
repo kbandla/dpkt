@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """ATA over Ethernet ATA command"""
 
 import dpkt
@@ -23,13 +24,12 @@ class AOEATA(dpkt.Packet):
     # XXX: in unpack, switch on ATA command like icmp does on type
 
 
+def test_aoeata():
+    s = '\x03\x0a\x6b\x19\x00\x00\x00\x00\x45\x00\x00\x28\x94\x1f\x00\x00\xe3\x06\x99\xb4\x23\x2b\x24\x00\xde\x8e\x84\x42\xab\xd1\x00\x50\x00\x35\xe1\x29\x20\xd9\x00\x00\x00\x22\x9b\xf0\xe2\x04\x65\x6b'
+    aoeata = AOEATA(s)
+    assert (str(aoeata) == s)
+
+
 if __name__ == '__main__':
-    import unittest
-
-    class AOEATATestCase(unittest.TestCase):
-        def test_AOEATA(self):
-            s = '\x03\x0a\x6b\x19\x00\x00\x00\x00\x45\x00\x00\x28\x94\x1f\x00\x00\xe3\x06\x99\xb4\x23\x2b\x24\x00\xde\x8e\x84\x42\xab\xd1\x00\x50\x00\x35\xe1\x29\x20\xd9\x00\x00\x00\x22\x9b\xf0\xe2\x04\x65\x6b'
-            aoeata = AOEATA(s)
-            self.failUnless(str(aoeata) == s)
-
-    unittest.main()
+    test_aoeata()
+    print 'Tests Successful...'

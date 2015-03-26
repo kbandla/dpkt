@@ -1,5 +1,5 @@
 # $Id: loopback.py 38 2007-03-17 03:33:16Z dugsong $
-
+# -*- coding: utf-8 -*-
 """Platform-dependent loopback header."""
 
 import dpkt

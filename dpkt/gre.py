@@ -1,5 +1,5 @@
 # $Id: gre.py 75 2010-08-03 14:42:19Z jon.oberheide $
-
+# -*- coding: utf-8 -*-
 """Generic Routing Encapsulation."""
 
 import struct

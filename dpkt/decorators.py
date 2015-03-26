@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import warnings
-import unittest
 
 
 def deprecated_method_decorator(deprecated_method):
@@ -15,10 +14,9 @@ def deprecated_method_decorator(deprecated_method):
     return wrapper
 
 
-class DeprecatedMethodDecoratorTestCase(unittest.TestCase):
+class TestDeprecatedMethodDecorator:
     @deprecated_method_decorator
-    def deprecated_method_decorator(self):
-        return
+    def deprecated_method_decorator(self): return
 
     def test_deprecated_method_decorator(self):
         import sys
@@ -29,11 +27,13 @@ class DeprecatedMethodDecoratorTestCase(unittest.TestCase):
             out = StringIO()
             sys.stderr = out
             self.deprecated_method_decorator()
-            self.assertTrue('DeprecationWarning: Call to deprecated method deprecated_method_decorator' in
-                            out.getvalue())  # 'in' because message contains the filename, line, etc
+            assert('DeprecationWarning: Call to deprecated method deprecated_method_decorator' in out.getvalue())
+            # 'in' because message contains the filename, line, etc
         finally:
             sys.stderr = saved_stderr
 
 
 if __name__ == '__main__':
-    unittest.main()
+    a = TestDeprecatedMethodDecorator()
+    a.test_deprecated_method_decorator()
+    print 'Tests Successful...'

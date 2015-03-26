@@ -1,5 +1,5 @@
 # $Id: rfb.py 47 2008-05-27 02:10:00Z jon.oberheide $
-
+# -*- coding: utf-8 -*-
 """Remote Framebuffer Protocol."""
 
 import dpkt

@@ -1,5 +1,5 @@
 # $Id: asn1.py 23 2006-11-08 15:45:33Z dugsong $
-
+# -*- coding: utf-8 -*-
 """Abstract Syntax Notation #1."""
 
 import struct
@@ -112,12 +112,10 @@ def decode(buf):
     return msg
 
 
+def test_asn1():
+    s = '0\x82\x02Q\x02\x01\x0bc\x82\x02J\x04xcn=Douglas J Song 1, ou=Information Technology Division, ou=Faculty and Staff, ou=People, o=University of Michigan, c=US\n\x01\x00\n\x01\x03\x02\x01\x00\x02\x01\x00\x01\x01\x00\x87\x0bobjectclass0\x82\x01\xb0\x04\rmemberOfGroup\x04\x03acl\x04\x02cn\x04\x05title\x04\rpostalAddress\x04\x0ftelephoneNumber\x04\x04mail\x04\x06member\x04\thomePhone\x04\x11homePostalAddress\x04\x0bobjectClass\x04\x0bdescription\x04\x18facsimileTelephoneNumber\x04\x05pager\x04\x03uid\x04\x0cuserPassword\x04\x08joinable\x04\x10associatedDomain\x04\x05owner\x04\x0erfc822ErrorsTo\x04\x08ErrorsTo\x04\x10rfc822RequestsTo\x04\nRequestsTo\x04\tmoderator\x04\nlabeledURL\x04\nonVacation\x04\x0fvacationMessage\x04\x05drink\x04\x0elastModifiedBy\x04\x10lastModifiedTime\x04\rmodifiersname\x04\x0fmodifytimestamp\x04\x0ccreatorsname\x04\x0fcreatetimestamp'
+    assert (decode(s) == [(48, [(2, 11), (99, [(4, 'cn=Douglas J Song 1, ou=Information Technology Division, ou=Faculty and Staff, ou=People, o=University of Michigan, c=US'), (10, '\x00'), (10, '\x03'), (2, 0), (2, 0), (1, '\x00'), (135, 'objectclass'), (48, [(4, 'memberOfGroup'), (4, 'acl'), (4, 'cn'), (4, 'title'), (4, 'postalAddress'), (4, 'telephoneNumber'), (4, 'mail'), (4, 'member'), (4, 'homePhone'), (4, 'homePostalAddress'), (4, 'objectClass'), (4, 'description'), (4, 'facsimileTelephoneNumber'), (4, 'pager'), (4, 'uid'), (4, 'userPassword'), (4, 'joinable'), (4, 'associatedDomain'), (4, 'owner'), (4, 'rfc822ErrorsTo'), (4, 'ErrorsTo'), (4, 'rfc822RequestsTo'), (4, 'RequestsTo'), (4, 'moderator'), (4, 'labeledURL'), (4, 'onVacation'), (4, 'vacationMessage'), (4, 'drink'), (4, 'lastModifiedBy'), (4, 'lastModifiedTime'), (4, 'modifiersname'), (4, 'modifytimestamp'), (4, 'creatorsname'), (4, 'createtimestamp')])])])])
+
 if __name__ == '__main__':
-    import unittest
-
-    class ASN1TestCase(unittest.TestCase):
-        def test_asn1(self):
-            s = '0\x82\x02Q\x02\x01\x0bc\x82\x02J\x04xcn=Douglas J Song 1, ou=Information Technology Division, ou=Faculty and Staff, ou=People, o=University of Michigan, c=US\n\x01\x00\n\x01\x03\x02\x01\x00\x02\x01\x00\x01\x01\x00\x87\x0bobjectclass0\x82\x01\xb0\x04\rmemberOfGroup\x04\x03acl\x04\x02cn\x04\x05title\x04\rpostalAddress\x04\x0ftelephoneNumber\x04\x04mail\x04\x06member\x04\thomePhone\x04\x11homePostalAddress\x04\x0bobjectClass\x04\x0bdescription\x04\x18facsimileTelephoneNumber\x04\x05pager\x04\x03uid\x04\x0cuserPassword\x04\x08joinable\x04\x10associatedDomain\x04\x05owner\x04\x0erfc822ErrorsTo\x04\x08ErrorsTo\x04\x10rfc822RequestsTo\x04\nRequestsTo\x04\tmoderator\x04\nlabeledURL\x04\nonVacation\x04\x0fvacationMessage\x04\x05drink\x04\x0elastModifiedBy\x04\x10lastModifiedTime\x04\rmodifiersname\x04\x0fmodifytimestamp\x04\x0ccreatorsname\x04\x0fcreatetimestamp'
-            self.failUnless(decode(s) == [(48, [(2, 11), (99, [(4, 'cn=Douglas J Song 1, ou=Information Technology Division, ou=Faculty and Staff, ou=People, o=University of Michigan, c=US'), (10, '\x00'), (10, '\x03'), (2, 0), (2, 0), (1, '\x00'), (135, 'objectclass'), (48, [(4, 'memberOfGroup'), (4, 'acl'), (4, 'cn'), (4, 'title'), (4, 'postalAddress'), (4, 'telephoneNumber'), (4, 'mail'), (4, 'member'), (4, 'homePhone'), (4, 'homePostalAddress'), (4, 'objectClass'), (4, 'description'), (4, 'facsimileTelephoneNumber'), (4, 'pager'), (4, 'uid'), (4, 'userPassword'), (4, 'joinable'), (4, 'associatedDomain'), (4, 'owner'), (4, 'rfc822ErrorsTo'), (4, 'ErrorsTo'), (4, 'rfc822RequestsTo'), (4, 'RequestsTo'), (4, 'moderator'), (4, 'labeledURL'), (4, 'onVacation'), (4, 'vacationMessage'), (4, 'drink'), (4, 'lastModifiedBy'), (4, 'lastModifiedTime'), (4, 'modifiersname'), (4, 'modifytimestamp'), (4, 'creatorsname'), (4, 'createtimestamp')])])])])
-
-    unittest.main()
+    test_asn1()
+    print 'Tests Successful...'

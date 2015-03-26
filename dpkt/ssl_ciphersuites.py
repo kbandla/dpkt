@@ -1,5 +1,5 @@
 # Copyright 2012 Google Inc. All rights reserved.
-
+# -*- coding: utf-8 -*-
 """
 Nicely formatted cipher suite definitions for TLS
 

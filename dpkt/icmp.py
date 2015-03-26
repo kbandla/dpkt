@@ -1,5 +1,5 @@
 # $Id: icmp.py 45 2007-08-03 00:05:22Z jon.oberheide $
-
+# -*- coding: utf-8 -*-
 """Internet Control Message Protocol."""
 
 import dpkt
@@ -118,13 +118,10 @@ class ICMP(dpkt.Packet):
         return dpkt.Packet.__str__(self)
 
 
+def test_icmp():
+    s = '\x03\x0a\x6b\x19\x00\x00\x00\x00\x45\x00\x00\x28\x94\x1f\x00\x00\xe3\x06\x99\xb4\x23\x2b\x24\x00\xde\x8e\x84\x42\xab\xd1\x00\x50\x00\x35\xe1\x29\x20\xd9\x00\x00\x00\x22\x9b\xf0\xe2\x04\x65\x6b'
+    assert (str(ICMP(s)) == s)
+
 if __name__ == '__main__':
-    import unittest
-
-    class ICMPTestCase(unittest.TestCase):
-        def test_ICMP(self):
-            s = '\x03\x0a\x6b\x19\x00\x00\x00\x00\x45\x00\x00\x28\x94\x1f\x00\x00\xe3\x06\x99\xb4\x23\x2b\x24\x00\xde\x8e\x84\x42\xab\xd1\x00\x50\x00\x35\xe1\x29\x20\xd9\x00\x00\x00\x22\x9b\xf0\xe2\x04\x65\x6b'
-            icmp = ICMP(s)
-            self.failUnless(str(icmp) == s)
-
-    unittest.main()
+    test_icmp()
+    print 'Tests Successful...'

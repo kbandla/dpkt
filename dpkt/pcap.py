@@ -1,5 +1,5 @@
 # $Id: pcap.py 77 2011-01-06 15:59:38Z dugsong $
-
+# -*- coding: utf-8 -*-
 """Libpcap file format."""
 
 import sys
@@ -160,15 +160,13 @@ class Reader(object):
             yield (hdr.tv_sec + (hdr.tv_usec / 1000000.0), buf)
 
 
+def test_pcap_endian():
+    be = '\xa1\xb2\xc3\xd4\x00\x02\x00\x04\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x60\x00\x00\x00\x01'
+    le = '\xd4\xc3\xb2\xa1\x02\x00\x04\x00\x00\x00\x00\x00\x00\x00\x00\x00\x60\x00\x00\x00\x01\x00\x00\x00'
+    befh = FileHdr(be)
+    lefh = LEFileHdr(le)
+    assert (befh.linktype == lefh.linktype)
+
 if __name__ == '__main__':
-    import unittest
-
-    class PcapTestCase(unittest.TestCase):
-        def test_endian(self):
-            be = '\xa1\xb2\xc3\xd4\x00\x02\x00\x04\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x60\x00\x00\x00\x01'
-            le = '\xd4\xc3\xb2\xa1\x02\x00\x04\x00\x00\x00\x00\x00\x00\x00\x00\x00\x60\x00\x00\x00\x01\x00\x00\x00'
-            befh = FileHdr(be)
-            lefh = LEFileHdr(le)
-            self.failUnless(befh.linktype == lefh.linktype)
-
-    unittest.main()
+    test_pcap_endian()
+    print 'Tests Successful...'
