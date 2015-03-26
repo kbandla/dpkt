@@ -136,12 +136,14 @@ _SIZE_FORMATS = ['!B', '!H', '!I', '!I']
 
 
 def parse_variable_array(buf, lenbytes):
+
     """
     Parse an array described using the 'Type name<x..y>' syntax from the spec
     Read a length at the start of buf, and returns that many bytes
     after, in a tuple with the TOTAL bytes consumed (including the size). This
     does not check that the array is the right length for any given datatype.
     """
+
     # first have to figure out how to parse length
     assert lenbytes <= 4  # pretty sure 4 is impossible, too
     size_format = _SIZE_FORMATS[lenbytes - 1]
@@ -159,6 +161,7 @@ class SSL3Exception(Exception):
 
 
 class TLSRecord(dpkt.Packet):
+
     """
     SSLv3 or TLSv1+ packet.
 
@@ -198,16 +201,20 @@ class TLSRecord(dpkt.Packet):
 
 
 class TLSChangeCipherSpec(dpkt.Packet):
+
     """
     ChangeCipherSpec message is just a single byte with value 1
     """
+
     __hdr__ = (('type', 'B', 1),)
 
 
 class TLSAppData(str):
+
     """
     As far as TLSRecord is concerned, AppData is just an opaque blob.
     """
+
     pass
 
 
@@ -299,6 +306,7 @@ HANDSHAKE_TYPES = {
 
 
 class TLSHandshake(dpkt.Packet):
+
     """
     A TLS Handshake message
 
@@ -355,6 +363,7 @@ class SSLFactory(object):
 
 
 def tls_multi_factory(buf):
+
     """
     Attempt to parse one or more TLSRecord's out of buf
 
@@ -369,6 +378,7 @@ def tls_multi_factory(buf):
 
     Raises SSL3Exception.
     """
+
     i, n = 0, len(buf)
     msgs = []
     while i < n:
@@ -387,13 +397,13 @@ def tls_multi_factory(buf):
 _hexdecode = binascii.a2b_hex
 
 
-class TestTLSRecord:
+class TestTLSRecord(object):
+
     """
     Test basic TLSRecord functionality
-
-    For this test, the contents of the record doesn't matter, since we're not
-    parsing the next layer.
+    For this test, the contents of the record doesn't matter, since we're not parsing the next layer.
     """
+
     @classmethod
     def setup_class(cls):
         # add some extra data, to make sure length is parsed correctly
@@ -432,8 +442,10 @@ class TestTLSRecord:
         pytest.raises(dpkt.NeedData, TLSRecord, '\x16\x03\x01\x00\x10abc')
 
 
-class TestTLSChangeCipherSpec:
+class TestTLSChangeCipherSpec(object):
+
     """It's just a byte. This will be quick, I promise"""
+
     @classmethod
     def setup_class(cls):
         cls.p = TLSChangeCipherSpec('\x01')
@@ -445,7 +457,8 @@ class TestTLSChangeCipherSpec:
         assert (len(self.p) == 1)
 
 
-class TestTLSAppData:
+class TestTLSAppData(object):
+
     """AppData is basically just a string"""
 
     def test_value(self):
@@ -453,7 +466,7 @@ class TestTLSAppData:
         assert (d == 'abcdefgh')
 
 
-class TestTLSHandshake:
+class TestTLSHandshake(object):
     @classmethod
     def setup_class(cls):
         cls.h = TLSHandshake('\x00\x00\x00\x01\xff')
@@ -469,7 +482,8 @@ class TestTLSHandshake:
         pytest.raises(dpkt.NeedData, TLSHandshake, '\x00\x00\x01\x01')
 
 
-class TestClientHello:
+class TestClientHello(object):
+
     """This data is extracted from and verified by Wireshark"""
 
     @classmethod
@@ -488,7 +502,9 @@ class TestClientHello:
         cls.p = TLSHandshake(cls.data)
 
     def test_client_hello_constructed(self):
+
         """Make sure the correct class was constructed"""
+
         # print self.p
         assert (isinstance(self.p.data, TLSClientHello) == True)
 
@@ -513,8 +529,10 @@ class TestClientHello:
         assert (len(self.p) == 413)
 
 
-class TestServerHello:
+class TestServerHello(object):
+
     """Again, from Wireshark"""
+
     @classmethod
     def setup_class(cls):
         cls.data = _hexdecode(
@@ -537,7 +555,8 @@ class TestServerHello:
         assert (len(self.p) == 81)
 
 
-class TestTLSMultiFactory():
+class TestTLSMultiFactory(object):
+
     """Made up test data"""
 
     @classmethod
