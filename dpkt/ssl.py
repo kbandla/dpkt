@@ -498,9 +498,7 @@ class TestClientHello(object):
         cls.p = TLSHandshake(cls.data)
 
     def test_client_hello_constructed(self):
-
         """Make sure the correct class was constructed"""
-
         # print self.p
         assert (isinstance(self.p.data, TLSClientHello) == True)
 
