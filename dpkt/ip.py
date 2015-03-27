@@ -102,6 +102,25 @@ class IP(dpkt.Packet):
     def get_proto(cls, p):
         return cls._protosw[p]
 
+# IP Headers
+IP_ADDR_LEN = 0x04
+IP_ADDR_BITS = 0x20
+
+IP_HDR_LEN = 0x14
+IP_OPT_LEN = 0x02
+IP_OPT_LEN_MAX = 0x28
+IP_HDR_LEN_MAX = IP_HDR_LEN + IP_OPT_LEN_MAX
+
+IP_LEN_MAX = 0xffff
+IP_LEN_MIN = IP_HDR_LEN
+
+# Reserved Addresses
+IP_ADDR_ANY = "\x00\x00\x00\x00"    # 0.0.0.0
+IP_ADDR_BROADCAST = "\xff\xff\xff\xff"    # 255.255.255.255
+IP_ADDR_LOOPBACK = "\x7f\x00\x00\x01"    # 127.0.0.1
+IP_ADDR_MCAST_ALL = "\xe0\x00\x00\x01"    # 224.0.0.1
+IP_ADDR_MCAST_LOCAL = "\xe0\x00\x00\xff"    # 224.0.0.255
+
 # Type of service (ip_tos), RFC 1349 ("obsoleted by RFC 2474")
 IP_TOS_DEFAULT = 0x00  # default
 IP_TOS_LOWDELAY = 0x10  # low delay

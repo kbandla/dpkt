@@ -4,6 +4,7 @@
 
 import dpkt
 
+UDP_HDR_LEN = 8
 UDP_PORT_MAX = 65535
 
 

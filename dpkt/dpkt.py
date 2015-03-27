@@ -6,6 +6,7 @@ import copy
 import itertools
 import socket
 import struct
+import array
 
 
 class Error(Exception): pass
@@ -157,31 +158,18 @@ def hexdump(buf, length=16):
         n += length
     return '\n'.join(res)
 
+def in_cksum_add(s, buf):
+    n = len(buf)
+    cnt = (n / 2) * 2
+    a = array.array('H', buf[:cnt])
+    if cnt != n:
+        a.append(struct.unpack('H', buf[-1] + '\x00')[0])
+    return s + sum(a)
 
-try:
-    import dnet2
-
-    def in_cksum_add(s, buf):
-        return dnet.ip_cksum_add(buf, s)  # TODO dnet unresolved ref
-
-    def in_cksum_done(s):
-        return socket.ntohs(dnet.ip_cksum_carry(s))  # TODO dnet unresolved ref
-except ImportError:
-    import array
-
-    def in_cksum_add(s, buf):
-        n = len(buf)
-        cnt = (n / 2) * 2
-        a = array.array('H', buf[:cnt])
-        if cnt != n:
-            a.append(struct.unpack('H', buf[-1] + '\x00')[0])
-        return s + sum(a)
-
-    def in_cksum_done(s):
-        s = (s >> 16) + (s & 0xffff)
-        s += (s >> 16)
-        return socket.ntohs(~s & 0xffff)
-
+def in_cksum_done(s):
+    s = (s >> 16) + (s & 0xffff)
+    s += (s >> 16)
+    return socket.ntohs(~s & 0xffff)
 
 def in_cksum(buf):
     """Return computed Internet checksum."""
