@@ -5,3 +5,6 @@ max-line-length: 140
 autodetect: yes
 ignore-paths:
     - docs
+pep8:
+    disable:
+        - E704
