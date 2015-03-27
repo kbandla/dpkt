@@ -4,7 +4,7 @@
 
 import dpkt
 import ppp
-from decorators import deprecated_method_decorator
+from decorators import deprecated
 
 # RFC 2516 codes
 PPPoE_PADI = 0x09
@@ -37,16 +37,16 @@ class PPPoE(dpkt.Packet):
 
     # Deprecated methods, will be removed in the future
     # =================================================
-    @deprecated_method_decorator
+    @deprecated
     def _get_v(self): return self.v
 
-    @deprecated_method_decorator
+    @deprecated
     def _set_v(self, v): self.v = v
 
-    @deprecated_method_decorator
+    @deprecated
     def _get_type(self): return self.type
 
-    @deprecated_method_decorator
+    @deprecated
     def _set_type(self, t): self.type = t
     # =================================================
 

@@ -136,14 +136,12 @@ _SIZE_FORMATS = ['!B', '!H', '!I', '!I']
 
 
 def parse_variable_array(buf, lenbytes):
-
     """
     Parse an array described using the 'Type name<x..y>' syntax from the spec
     Read a length at the start of buf, and returns that many bytes
     after, in a tuple with the TOTAL bytes consumed (including the size). This
     does not check that the array is the right length for any given datatype.
     """
-
     # first have to figure out how to parse length
     assert lenbytes <= 4  # pretty sure 4 is impossible, too
     size_format = _SIZE_FORMATS[lenbytes - 1]
@@ -363,7 +361,6 @@ class SSLFactory(object):
 
 
 def tls_multi_factory(buf):
-
     """
     Attempt to parse one or more TLSRecord's out of buf
 
@@ -378,7 +375,6 @@ def tls_multi_factory(buf):
 
     Raises SSL3Exception.
     """
-
     i, n = 0, len(buf)
     msgs = []
     while i < n:

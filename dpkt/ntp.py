@@ -3,7 +3,7 @@
 """Network Time Protocol."""
 
 import dpkt
-from decorators import deprecated_method_decorator
+from decorators import deprecated
 
 # NTP v4
 
@@ -65,22 +65,22 @@ class NTP(dpkt.Packet):
 
     # Deprecated methods, will be removed in the future
     # =================================================
-    @deprecated_method_decorator
+    @deprecated
     def _get_v(self): return self.v
 
-    @deprecated_method_decorator
+    @deprecated
     def _set_v(self, v): self.v = v
 
-    @deprecated_method_decorator
+    @deprecated
     def _get_li(self): return self.li
 
-    @deprecated_method_decorator
+    @deprecated
     def _set_li(self, li): self.li = li
 
-    @deprecated_method_decorator
+    @deprecated
     def _get_mode(self): return self.mode
 
-    @deprecated_method_decorator
+    @deprecated
     def _set_mode(self, mode): self.mode = mode
     # =================================================
 
