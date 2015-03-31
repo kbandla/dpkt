@@ -1,9 +1,23 @@
 # -*- coding: utf-8 -*-
 import warnings
+from timeit import Timer
+from test import pystone
+from time import sleep
 
 
-def deprecated_method_decorator(deprecated_method):
-    def wrapper(*args, **kwargs):
+def decorator_with_args(decorator_to_enhance):
+    """
+    This is decorator for decorator. It allows any decorator to get additional arguments
+    """
+    def decorator_maker(*args, **kwargs):
+        def decorator_wrapper(func):
+            return decorator_to_enhance(func, *args, **kwargs)
+        return decorator_wrapper
+    return decorator_maker
+
+
+def deprecated(deprecated_method):
+    def _deprecated(*args, **kwargs):
         # Print only the first occurrence of the DeprecationWarning, regardless of location
         warnings.simplefilter('once', DeprecationWarning)
         # Display the deprecation warning message
@@ -11,14 +25,30 @@ def deprecated_method_decorator(deprecated_method):
                       category=DeprecationWarning, stacklevel=2)
         return deprecated_method(*args, **kwargs)  # actually call the method
 
-    return wrapper
+    return _deprecated
 
 
-class TestDeprecatedMethodDecorator:
-    @deprecated_method_decorator
-    def deprecated_method_decorator(self): return
+@decorator_with_args
+def duration(function, repeat=10000):
+    def _duration(*args, **kwargs):
+        time = 0
+        try:
+            time = Timer(lambda: function(*args, **kwargs)).timeit(repeat)
+        finally:
+            benchtime, pystones = pystone.pystones()
+            kstones = (pystones * time) / 1000
+            print '%s : time = %f kstones = %f' % (function.__name__, time, kstones)
+        return function(*args, **kwargs)
 
-    def test_deprecated_method_decorator(self):
+    return _duration
+
+
+class TestDeprecatedDecorator(object):
+    @deprecated
+    def deprecated_decorator(self):
+        return
+
+    def test_deprecated_decorator(self):
         import sys
         from StringIO import StringIO
 
@@ -26,14 +56,35 @@ class TestDeprecatedMethodDecorator:
         try:
             out = StringIO()
             sys.stderr = out
-            self.deprecated_method_decorator()
-            assert('DeprecationWarning: Call to deprecated method deprecated_method_decorator' in out.getvalue())
+            self.deprecated_decorator()
+            assert ('DeprecationWarning: Call to deprecated method deprecated_decorator' in out.getvalue())
             # 'in' because message contains the filename, line, etc
         finally:
             sys.stderr = saved_stderr
 
 
+class TestDurationDecorator(object):
+    @duration(1)
+    def duration_decorator(self):
+        sleep(0.05)
+        return
+
+    def test_duration_decorator(self):
+        import sys
+        from StringIO import StringIO
+
+        saved_stdout = sys.stdout
+        try:
+            out = StringIO()
+            sys.stdout = out
+            self.duration_decorator()
+            assert ('duration_decorator : ' in out.getvalue())
+        finally:
+            sys.stdout = saved_stdout
+
 if __name__ == '__main__':
-    a = TestDeprecatedMethodDecorator()
-    a.test_deprecated_method_decorator()
+    a = TestDeprecatedDecorator()
+    a.test_deprecated_decorator()
+    a = TestDurationDecorator()
+    a.test_duration_decorator()
     print 'Tests Successful...'

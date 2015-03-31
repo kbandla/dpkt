@@ -3,7 +3,7 @@
 """Internet Protocol, version 6."""
 
 import dpkt
-from decorators import deprecated_method_decorator
+from decorators import deprecated
 
 
 class IP6(dpkt.Packet):
@@ -48,27 +48,27 @@ class IP6(dpkt.Packet):
 
     # Deprecated methods, will be removed in the future
     # =================================================
-    @deprecated_method_decorator
+    @deprecated
     def _get_v(self):
         return self.v
 
-    @deprecated_method_decorator
+    @deprecated
     def _set_v(self, v):
         self.v = v
 
-    @deprecated_method_decorator
+    @deprecated
     def _get_fc(self):
         return self.fc
 
-    @deprecated_method_decorator
+    @deprecated
     def _set_fc(self, v):
         self.rc = v
 
-    @deprecated_method_decorator
+    @deprecated
     def _get_flow(self):
         return self.flow
 
-    @deprecated_method_decorator
+    @deprecated
     def _set_flow(self, v):
         self.flow = v
 
@@ -266,16 +266,16 @@ class IP6FragmentHeader(IP6ExtensionHeader):
 
     # Deprecated methods, will be removed in the future
     # =================================================
-    @deprecated_method_decorator
+    @deprecated
     def _get_frag_off(self): return self.flag_off
 
-    @deprecated_method_decorator
+    @deprecated
     def _set_frag_off(self, v): self.flag_off = v
 
-    @deprecated_method_decorator
+    @deprecated
     def _get_m_flag(self): return self.m_flag
 
-    @deprecated_method_decorator
+    @deprecated
     def _set_m_flag(self, v): self.m_flag = v
 
     # =================================================

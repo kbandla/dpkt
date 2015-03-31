@@ -3,7 +3,7 @@
 
 import struct
 import dpkt
-from decorators import deprecated_method_decorator
+from decorators import deprecated
 
 
 class AOE(dpkt.Packet):
@@ -53,16 +53,16 @@ class AOE(dpkt.Packet):
 
     # Deprecated methods, will be removed in the future
     # =================================================
-    @deprecated_method_decorator
+    @deprecated
     def _get_ver(self): return self.ver
 
-    @deprecated_method_decorator
+    @deprecated
     def _set_ver(self, ver): self.ver = ver
 
-    @deprecated_method_decorator
+    @deprecated
     def _get_fl(self): return self.fl
 
-    @deprecated_method_decorator
+    @deprecated
     def _set_fl(self, fl): self.fl = fl
     # =================================================
 
