@@ -16,7 +16,11 @@ User's guide
 
 Examples
 ========
-.. include:: examples.rst
+
+.. toctree::
+    :maxdepth: 2
+
+    examples
 
 API reference
 =============
