@@ -6,10 +6,6 @@ The dpkt API reference section is current a large work in progress, please have 
 **Sections**
 
 .. toctree::
-    :maxdepth: 1
+    :maxdepth: 4
 
-    ethernet
-    ip
-    udp
-    tcp
-    http
+    api_auto
