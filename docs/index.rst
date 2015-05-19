@@ -13,6 +13,13 @@ Getting Started
     quickstart
     examples
 
+API Reference
+=============
+.. toctree::
+    :maxdepth: 1
+
+    api/index
+
 About dpkt
 ==========
 .. toctree::
@@ -24,9 +31,3 @@ About dpkt
     contributing
     license
 
-API Reference
-=============
-.. toctree::
-    :maxdepth: 2
-
-    api/index

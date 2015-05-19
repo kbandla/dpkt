@@ -1,9 +1,9 @@
 
 API Reference
 =============
-The dpkt API reference section is current a large work in progress, please have patience as we fill in the documentation.
+The dpkt API reference section is currently a work in progress, please have patience as we fill in and improve the documentation.
 
-**Sections**
+**dpkt Modules**
 
 .. toctree::
     :maxdepth: 4
