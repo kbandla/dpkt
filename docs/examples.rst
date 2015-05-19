@@ -1,6 +1,8 @@
 
+Examples
+========
 Current DPKG Examples
-=====================
+---------------------
 [@jonoberheide's](https://twitter.com/jonoberheide) old examples still
 apply:
 
@@ -14,7 +16,7 @@ apply:
    MRT/BGP <https://jon.oberheide.org/blog/2009/03/25/dpkt-tutorial-4-as-paths-from-mrt-bgp/>`__
 
 Jeff Silverman Docs/Code
-========================
+------------------------
 `Jeff Silverman <https://github.com/jeffsilverm>`__ has some
 `code <https://github.com/jeffsilverm/dpkt_doc>`__ and
 `documentation <http://www.commercialventvac.com/dpkt.html>`__.
