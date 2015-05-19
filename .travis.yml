@@ -7,6 +7,7 @@ env:
     - TOXENV=py26,coveralls
     - TOXENV=py27,coveralls
     - TOXENV=pypy,coveralls
+    - TOXENV=docs
 before_install:
   - python --version
   - virtualenv --version
