@@ -1,8 +1,5 @@
-************
+============
 Installation
-************
-
-
-Installing dpkt
-=====================
+============
+How to install dpkt
 

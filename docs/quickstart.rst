@@ -1,9 +1,9 @@
-**********
+==========
 Quickstart
-**********
+==========
 
 Grab some packets
-=================
+-----------------
 Lets first grab some packets::
 
     import dpkt
@@ -12,7 +12,7 @@ Lets first grab some packets::
 
 
 Looking at Protocols
-====================
+--------------------
 Next lets look at some protocols::
 
     import dpkt

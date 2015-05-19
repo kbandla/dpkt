@@ -35,6 +35,7 @@ extensions = [
     'sphinx.ext.extlinks',
     'sphinx.ext.intersphinx',
     'sphinx.ext.viewcode',
+    'sphinxcontrib.napoleon'
 ]
 
 templates_path = ['_templates']
