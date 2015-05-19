@@ -353,8 +353,8 @@ RECORD_TYPES = {
 class SSLFactory(object):
     def __new__(cls, buf):
         v = buf[1:3]
-        if v in ['\x03\x00', '\x03\x01', '\x03\x02']:
-            return SSL3(buf)  # TODO recheck unresolved ref to SSL3
+        if v in SSL3_VERSION_BYTES:
+            return TLSRecord(buf)
         # SSL2 has no characteristic header or magic bytes, so we just assume
         # that the msg is an SSL2 msg if it is not detected as SSL3+
         return SSL2(buf)
