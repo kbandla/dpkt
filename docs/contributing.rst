@@ -7,7 +7,7 @@ Report a Bug or Make a Feature Request
 Please go to the GitHub Issues page: https://github.com/kbandla/dpkt/issues.
 
 Checkout the Code
-----------------
+-----------------
 
 ::
 
