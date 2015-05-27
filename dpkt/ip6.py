@@ -101,7 +101,7 @@ class IP6(dpkt.Packet):
             self.data = buf
 
     def headers_str(self):
-        """ Output extension headers in order defined in RFC1883 (except dest opts) """
+        """Output extension headers in order defined in RFC1883 (except dest opts)"""
 
         header_str = ""
 

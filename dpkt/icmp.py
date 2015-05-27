@@ -113,7 +113,7 @@ class ICMP(dpkt.Packet):
             pass
 
     def __str__(self):
-        if not self.sum:
+        if not self.sum:  # FIXME: This relies on this being properly set somewhere else
             self.sum = dpkt.in_cksum(dpkt.Packet.__str__(self))
         return dpkt.Packet.__str__(self)
 

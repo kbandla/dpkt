@@ -24,7 +24,7 @@ class SSL2(dpkt.Packet):
 
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
-        if self.len & 0x8000:
+        if self.len & 0x8000:  # FIXME: This relies on this being properly set somewhere else
             n = self.len = self.len & 0x7FFF
             self.msg, self.data = self.data[:n], self.data[n:]
         else:

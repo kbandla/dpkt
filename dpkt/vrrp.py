@@ -65,6 +65,6 @@ class VRRP(dpkt.Packet):
 
     def __str__(self):
         data = ''.join(self.addrs) + self.auth
-        if not self.sum:
+        if not self.sum:  # FIXME: This relies on this being properly set somewhere else
             self.sum = dpkt.in_cksum(self.pack_hdr() + data)
         return self.pack_hdr() + data

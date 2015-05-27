@@ -14,7 +14,7 @@ class Loopback(dpkt.Packet):
 
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
-        if self.family == 2:
+        if self.family == 2:  # FIXME: This relies on this being properly set somewhere else (Please recheck further)
             self.data = ip.IP(self.data)
         elif self.family == 0x02000000:
             self.family = 2
