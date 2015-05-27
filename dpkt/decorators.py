@@ -71,6 +71,7 @@ class TestDurationDecorator(object):
 
     def test_duration_decorator(self):
         import sys
+        import re
         from StringIO import StringIO
 
         saved_stdout = sys.stdout
@@ -78,7 +79,7 @@ class TestDurationDecorator(object):
             out = StringIO()
             sys.stdout = out
             self.duration_decorator()
-            assert ('duration_decorator : ' in out.getvalue())
+            assert (re.match('((.+?[0-9]+\.[0-9]+)\s?){2}', out.getvalue()))
         finally:
             sys.stdout = saved_stdout
 
