@@ -84,7 +84,7 @@ class Reader(object):
         self.__fh = FileHdr(buf)
         self.__ph = PktHdr
         if self.__fh.magic != SNOOP_MAGIC:
-            raise ValueError, 'invalid snoop header'
+            raise ValueError('invalid snoop header')
         self.dloff = dltoff[self.__fh.linktype]
         self.filter = ''
 

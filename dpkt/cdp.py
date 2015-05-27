@@ -94,6 +94,6 @@ class CDP(dpkt.Packet):
 
     def __str__(self):
         data = ''.join(map(str, self.data))
-        if not self.sum:
+        if not self.sum:  # FIXME: This relies on this being properly set somewhere else
             self.sum = dpkt.in_cksum(self.pack_hdr() + data)
         return self.pack_hdr() + data

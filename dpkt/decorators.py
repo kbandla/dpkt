@@ -64,7 +64,7 @@ class TestDeprecatedDecorator(object):
 
 
 class TestDurationDecorator(object):
-    @duration(1)
+    @duration(1)  # 1 - run only once
     def duration_decorator(self):
         sleep(0.05)
         return
@@ -78,7 +78,8 @@ class TestDurationDecorator(object):
             out = StringIO()
             sys.stdout = out
             self.duration_decorator()
-            assert ('duration_decorator : ' in out.getvalue())
+            import re
+            assert (len(re.findall('[0-9]+\.[0-9]+', out.getvalue())) == 2)
         finally:
             sys.stdout = saved_stdout
 

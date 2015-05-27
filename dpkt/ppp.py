@@ -31,7 +31,7 @@ class PPP(dpkt.Packet):
 
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
-        if self.p & PFC_BIT == 0:
+        if self.p & PFC_BIT == 0:  # FIXME: This relies on this being properly set somewhere else
             self.p = struct.unpack('>H', buf[:2])[0]
             self.data = self.data[1:]
         try:
