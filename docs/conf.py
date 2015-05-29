@@ -55,7 +55,7 @@ pygments_style = 'sphinx'
 
 modindex_common_prefix = ['dpkt.']
 
-autodoc_default_flags = ['members', 'undoc-members', 'inherited-members']
+autodoc_default_flags = ['members', 'undoc-members', 'show-inheritance']
 autodoc_member_order = 'bysource'
 
 
