@@ -293,38 +293,37 @@ class BGP(dpkt.Packet):
 
             # Deprecated methods, will be removed in the future
             # ======================================================
-            @deprecated()
+            @deprecated('optional')
             def _get_o(self):
                 return self.optional
 
-            @deprecated()
+            @deprecated('optional')
             def _set_o(self, o):
                 self.optional = o
 
-            @deprecated()
+            @deprecated('transitive')
             def _get_t(self):
                 return self.transitive
 
-            @deprecated()
+            @deprecated('transitive')
             def _set_t(self, t):
                 self.transitive = t
 
-            @deprecated()
+            @deprecated('partial')
             def _get_p(self):
                 return self.partial
 
-            @deprecated()
+            @deprecated('partial')
             def _set_p(self, p):
                 self.partial = p
 
-            @deprecated()
+            @deprecated('extended_length')
             def _get_e(self):
                 return self.extended_length
 
-            @deprecated()
+            @deprecated('extended_length')
             def _set_e(self, e):
                 self.extended_length = e
-
             # ======================================================
 
             def unpack(self, buf):

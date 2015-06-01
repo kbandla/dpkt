@@ -9,7 +9,6 @@ def decorator_with_args(decorator_to_enhance):
     """
     This is decorator for decorator. It allows any decorator to get additional arguments
     """
-
     def decorator_maker(*args, **kwargs):
         def decorator_wrapper(func):
             return decorator_to_enhance(func, *args, **kwargs)
@@ -20,13 +19,13 @@ def decorator_with_args(decorator_to_enhance):
 
 
 @decorator_with_args
-def deprecated(deprecated_method, func=None):
+def deprecated(deprecated_method, func_name=None):
     def _deprecated(*args, **kwargs):
         # Print only the first occurrence of the DeprecationWarning, regardless of location
         warnings.simplefilter('once', DeprecationWarning)
         # Display the deprecation warning message
-        if func:  # If the function, should be used instead, is received
-            warnings.warn("Call to deprecated method %s; use %s instead" % (deprecated_method.__name__, func.__name__),
+        if func_name:  # If the function, should be used instead, is received
+            warnings.warn("Call to deprecated method %s; use %s instead" % (deprecated_method.__name__, func_name),
                           category=DeprecationWarning, stacklevel=2)
         else:
             warnings.warn("Call to deprecated method %s" % deprecated_method.__name__,
@@ -55,7 +54,7 @@ class TestDeprecatedDecorator(object):
     def new_method(self):
         return
 
-    @deprecated(new_method)
+    @deprecated('new_method')
     def old_method(self):
         return
 

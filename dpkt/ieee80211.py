@@ -210,70 +210,70 @@ class IEEE80211(dpkt.Packet):
 
     # Deprecated methods, will be removed in the future
     # =================================================
-    @deprecated()
+    @deprecated('version')
     def _get_version(self): return self.version
 
-    @deprecated()
+    @deprecated('version')
     def _set_version(self, val): self.version = val
 
-    @deprecated()
+    @deprecated('type')
     def _get_type(self): return self.type
 
-    @deprecated()
+    @deprecated('type')
     def _set_type(self, val): self.type = val
 
-    @deprecated()
+    @deprecated('subtype')
     def _get_subtype(self): return self.subtype
 
-    @deprecated()
+    @deprecated('subtype')
     def _set_subtype(self, val): self.subtype = val
 
-    @deprecated()
+    @deprecated('to_ds')
     def _get_to_ds(self): return self.to_ds
 
-    @deprecated()
+    @deprecated('to_ds')
     def _set_to_ds(self, val): self.to_ds = val
 
-    @deprecated()
+    @deprecated('from_ds')
     def _get_from_ds(self): return self.from_ds
 
-    @deprecated()
+    @deprecated('from_ds')
     def _set_from_ds(self, val): self.from_ds = val
 
-    @deprecated()
+    @deprecated('more_frag')
     def _get_more_frag(self): return self.more_frag
 
-    @deprecated()
+    @deprecated('more_frag')
     def _set_more_frag(self, val): self.more_frag = val
 
-    @deprecated()
+    @deprecated('retry')
     def _get_retry(self): return self.retry
 
-    @deprecated()
+    @deprecated('retry')
     def _set_retry(self, val): self.retry = val
 
-    @deprecated()
+    @deprecated('pwr_mgt')
     def _get_pwr_mgt(self): return self.pwr_mgt
 
-    @deprecated()
+    @deprecated('pwr_mgt')
     def _set_pwr_mgt(self, val): self.pwr_mgt = val
 
-    @deprecated()
+    @deprecated('more_data')
     def _get_more_data(self): return self.more_data
 
-    @deprecated()
+    @deprecated('more_data')
     def _set_more_data(self, val): self.more_data = val
 
-    @deprecated()
+    @deprecated('wep')
     def _get_wep(self): return self.wep
 
-    @deprecated()
+    @deprecated('wep')
     def _set_wep(self, val): self.wep = val
 
-    @deprecated()
+    @deprecated('order')
     def _get_order(self): return self.order
 
-    @deprecated()
+    @deprecated('order')
     def _set_order(self, val): self.order = val
     # =================================================
 
@@ -479,28 +479,28 @@ class IEEE80211(dpkt.Packet):
 
         # Deprecated methods, will be removed in the future
         # =================================================
-        @deprecated()
+        @deprecated('compressed')
         def _get_compressed(self): return self.compressed
 
-        @deprecated()
+        @deprecated('compressed')
         def _set_compressed(self, val): self.compressed = val
 
-        @deprecated()
+        @deprecated('ack_policy')
         def _get_ack_policy(self): return self.ack_policy
 
-        @deprecated()
+        @deprecated('ack_policy')
         def _set_ack_policy(self, val): self.ack_policy = val
 
-        @deprecated()
+        @deprecated('multi_tid')
         def _get_multi_tid(self): return self.multi_tid
 
-        @deprecated()
+        @deprecated('multi_tid')
         def _set_multi_tid(self, val): self.multi_tid = val
 
-        @deprecated()
+        @deprecated('tid')
         def _get_tid(self): return self.tid
 
-        @deprecated()
+        @deprecated('tid')
         def _set_tid(self, val): self.tid = val
         # =================================================
 

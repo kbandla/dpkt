@@ -65,22 +65,22 @@ class NTP(dpkt.Packet):
 
     # Deprecated methods, will be removed in the future
     # =================================================
-    @deprecated()
+    @deprecated('v')
     def _get_v(self): return self.v
 
-    @deprecated()
+    @deprecated('v')
     def _set_v(self, v): self.v = v
 
-    @deprecated()
+    @deprecated('li')
     def _get_li(self): return self.li
 
-    @deprecated()
+    @deprecated('li')
     def _set_li(self, li): self.li = li
 
-    @deprecated()
+    @deprecated('mode')
     def _get_mode(self): return self.mode
 
-    @deprecated()
+    @deprecated('mode')
     def _set_mode(self, mode): self.mode = mode
     # =================================================
 

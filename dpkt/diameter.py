@@ -64,30 +64,29 @@ class Diameter(dpkt.Packet):
 
     # Deprecated methods, will be removed in the future
     # ======================================================
-    @deprecated()
+    @deprecated('request_flag')
     def _get_r(self): return self.request_flag
 
-    @deprecated()
+    @deprecated('request_flag')
     def _set_r(self, r): self.request_flag = r
 
-    @deprecated()
+    @deprecated('proxiable_flag')
     def _get_p(self): return self.proxiable_flag
 
-    @deprecated()
+    @deprecated('proxiable_flag')
     def _set_p(self, p): self.proxiable_flag = p
 
-    @deprecated()
+    @deprecated('error_flag')
     def _get_e(self): return self.error_flag
 
-    @deprecated()
+    @deprecated('error_flag')
     def _set_e(self, e): self.error_flag = e
 
-    @deprecated()
+    @deprecated('request_flag')
     def _get_t(self): return self.request_flag
 
-    @deprecated()
+    @deprecated('request_flag')
     def _set_t(self, t): self.request_flag = t
-
     # ======================================================
 
     def unpack(self, buf):
@@ -148,30 +147,29 @@ class AVP(dpkt.Packet):
 
     # Deprecated methods, will be removed in the future
     # ======================================================
-    @deprecated()
+    @deprecated('vendor_flag')
     def _get_v(self):
         return self.vendor_flag
 
-    @deprecated()
+    @deprecated('vendor_flag')
     def _set_v(self, v):
         self.vendor_flag = v
 
-    @deprecated()
+    @deprecated('mandatory_flag')
     def _get_m(self):
         return self.mandatory_flag
 
-    @deprecated()
+    @deprecated('mandatory_flag')
     def _set_m(self, m):
         self.mandatory_flag = m
 
-    @deprecated()
+    @deprecated('protected_flag')
     def _get_p(self):
         return self.protected_flag
 
-    @deprecated()
+    @deprecated('protected_flag')
     def _set_p(self, p):
         self.protected_flag = p
-
     # ======================================================
 
     def unpack(self, buf):
