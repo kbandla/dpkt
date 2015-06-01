@@ -190,59 +190,59 @@ class DNS(dpkt.Packet):
 
     # Deprecated methods, will be removed in the future
     # ======================================================
-    @deprecated
+    @deprecated()
     def get_qr(self):
         return self.qr
 
-    @deprecated
+    @deprecated()
     def set_qr(self, v):
         self.qr = v
 
-    @deprecated
+    @deprecated()
     def get_opcode(self):
         return self.opcode
 
-    @deprecated
+    @deprecated()
     def set_opcode(self, v):
         self.opcode = v
 
-    @deprecated
+    @deprecated()
     def get_aa(self):
         return self.aa
 
-    @deprecated
+    @deprecated()
     def set_aa(self, v):
         self.aa = v
 
-    @deprecated
+    @deprecated()
     def get_rd(self):
         return self.rd
 
-    @deprecated
+    @deprecated()
     def set_rd(self, v):
         self.rd = v
 
-    @deprecated
+    @deprecated()
     def get_ra(self):
         return self.ra
 
-    @deprecated
+    @deprecated()
     def set_ra(self, v):
         self.ra = v
 
-    @deprecated
+    @deprecated()
     def get_zero(self):
         return self.zero
 
-    @deprecated
+    @deprecated()
     def set_zero(self, v):
         self.zero = v
 
-    @deprecated
+    @deprecated()
     def get_rcode(self):
         return self.rcode
 
-    @deprecated
+    @deprecated()
     def set_rcode(self, v):
         self.rcode = v
 

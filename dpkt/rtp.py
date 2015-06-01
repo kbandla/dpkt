@@ -77,40 +77,40 @@ class RTP(Packet):
 
     # Deprecated methods, will be removed in the future
     # =================================================
-    @deprecated
+    @deprecated()
     def _get_version(self): return self.version
 
-    @deprecated
+    @deprecated()
     def _set_version(self, ver): self.version = ver
 
-    @deprecated
+    @deprecated()
     def _get_p(self): return self.p
 
-    @deprecated
+    @deprecated()
     def _set_p(self, p): self.p = p
 
-    @deprecated
+    @deprecated()
     def _get_x(self): return self.x
 
-    @deprecated
+    @deprecated()
     def _set_x(self, x): self.x = x
 
-    @deprecated
+    @deprecated()
     def _get_cc(self): return self.cc
 
-    @deprecated
+    @deprecated()
     def _set_cc(self, cc): self.cc = cc
 
-    @deprecated
+    @deprecated()
     def _get_m(self): return self.m
 
-    @deprecated
+    @deprecated()
     def _set_m(self, m): self.m = m
 
-    @deprecated
+    @deprecated()
     def _get_pt(self): return self.pt
 
-    @deprecated
+    @deprecated()
     def _set_pt(self, pt): self.pt = pt
     # =================================================
 

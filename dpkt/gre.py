@@ -45,16 +45,16 @@ class GRE(dpkt.Packet):
 
     # Deprecated methods, will be removed in the future
     # =================================================
-    @deprecated
+    @deprecated()
     def get_v(self): return self.v
 
-    @deprecated
+    @deprecated()
     def set_v(self, v): self.v = v
 
-    @deprecated
+    @deprecated()
     def get_recur(self): return self.recur
 
-    @deprecated
+    @deprecated()
     def set_recur(self, v): self.recur = v
     # =================================================
 

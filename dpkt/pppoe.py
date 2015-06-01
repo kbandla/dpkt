@@ -37,16 +37,16 @@ class PPPoE(dpkt.Packet):
 
     # Deprecated methods, will be removed in the future
     # =================================================
-    @deprecated
+    @deprecated()
     def _get_v(self): return self.v
 
-    @deprecated
+    @deprecated()
     def _set_v(self, v): self.v = v
 
-    @deprecated
+    @deprecated()
     def _get_type(self): return self.type
 
-    @deprecated
+    @deprecated()
     def _set_type(self, t): self.type = t
     # =================================================
 

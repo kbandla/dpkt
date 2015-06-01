@@ -40,19 +40,19 @@ class IP(dpkt.Packet):
 
     # Deprecated methods, will be removed in the future
     # =================================================
-    @deprecated
+    @deprecated()
     def _get_v(self):
         return self.v
 
-    @deprecated
+    @deprecated()
     def _set_v(self, v):
         self.v = v
 
-    @deprecated
+    @deprecated()
     def _get_hl(self):
         return self.hl
 
-    @deprecated
+    @deprecated()
     def _set_hl(self, hl):
         self.hl = hl
 

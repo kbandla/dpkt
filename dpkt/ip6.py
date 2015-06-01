@@ -48,27 +48,27 @@ class IP6(dpkt.Packet):
 
     # Deprecated methods, will be removed in the future
     # =================================================
-    @deprecated
+    @deprecated()
     def _get_v(self):
         return self.v
 
-    @deprecated
+    @deprecated()
     def _set_v(self, v):
         self.v = v
 
-    @deprecated
+    @deprecated()
     def _get_fc(self):
         return self.fc
 
-    @deprecated
+    @deprecated()
     def _set_fc(self, v):
         self.rc = v
 
-    @deprecated
+    @deprecated()
     def _get_flow(self):
         return self.flow
 
-    @deprecated
+    @deprecated()
     def _set_flow(self, v):
         self.flow = v
 
@@ -266,16 +266,16 @@ class IP6FragmentHeader(IP6ExtensionHeader):
 
     # Deprecated methods, will be removed in the future
     # =================================================
-    @deprecated
+    @deprecated()
     def _get_frag_off(self): return self.flag_off
 
-    @deprecated
+    @deprecated()
     def _set_frag_off(self, v): self.flag_off = v
 
-    @deprecated
+    @deprecated()
     def _get_m_flag(self): return self.m_flag
 
-    @deprecated
+    @deprecated()
     def _set_m_flag(self, v): self.m_flag = v
 
     # =================================================
