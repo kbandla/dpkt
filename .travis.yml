@@ -4,7 +4,6 @@ env:
   global:
     LD_PRELOAD=/lib/x86_64-linux-gnu/libSegFault.so
   matrix:
-    - TOXENV=py25,coveralls
     - TOXENV=py26,coveralls
     - TOXENV=py27,coveralls
     - TOXENV=pypy,coveralls
