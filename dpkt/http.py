@@ -166,7 +166,7 @@ class Response(Message):
             raise dpkt.UnpackError('invalid response: %r' % line)
         self.version = l[0][len(self.__proto) + 1:]
         self.status = l[1]
-        self.reason = l[2]
+        self.reason = l[2] if len(l) > 2 else ''
         Message.unpack(self, f.read())
 
     def __str__(self):
@@ -220,6 +220,13 @@ def test_multicookie_response():
     assert len(r.headers['set-cookie']) == 2
 
 
+def test_noreason_response():
+    s = """HTTP/1.1 200 \r\n\r\n"""
+    r = Response(s)
+    assert r.reason == ''
+    assert str(r) == s
+
+
 def test_request_version():
     s = """GET / HTTP/1.0\r\n\r\n"""
     r = Request(s)
@@ -247,5 +254,6 @@ if __name__ == '__main__':
     test_format_request()
     test_chunked_response()
     test_multicookie_response()
+    test_noreason_response()
     test_request_version()
     print 'Tests Successful...'
