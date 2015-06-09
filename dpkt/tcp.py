@@ -41,10 +41,10 @@ class TCP(dpkt.Packet):
 
     # Deprecated methods, will be removed in the future
     # =================================================
-    @deprecated
+    @deprecated('off')
     def _get_off(self): return self.off
 
-    @deprecated
+    @deprecated('off')
     def _set_off(self, off): self.off = off
     # =================================================
 

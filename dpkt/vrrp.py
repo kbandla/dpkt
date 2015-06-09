@@ -37,16 +37,16 @@ class VRRP(dpkt.Packet):
 
     # Deprecated methods, will be removed in the future
     # =================================================
-    @deprecated
+    @deprecated('v')
     def _get_v(self): return self.v
 
-    @deprecated
+    @deprecated('v')
     def _set_v(self, v): self.v = v
 
-    @deprecated
+    @deprecated('type')
     def _get_type(self): return self.type
 
-    @deprecated
+    @deprecated('type')
     def _set_type(self, v): self.type = v
     # =================================================
 
