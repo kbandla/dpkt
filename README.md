@@ -10,10 +10,10 @@ TCP/IP protocols
 [![landscape](https://landscape.io/github/kbandla/dpkt/master/landscape.svg?style=flat)](https://landscape.io/github/kbandla/dpkt/master)
 [![version](http://img.shields.io/pypi/v/dpkt.png?style=flat)](https://pypi.python.org/pypi/dpkt)
 
-[![downloads](http://img.shields.io/pypi/dm/dpkt.png?style=flat)](https://pypi.python.org/pypi/dpkt)
-[![wheel](https://pypip.in/wheel/dpkt/badge.png?style=flat)](https://pypi.python.org/pypi/dpkt)
-[![supported-versions](https://pypip.in/py_versions/dpkt/badge.png?style=flat)](https://pypi.python.org/pypi/dpkt)
-[![supported-implementations](https://pypip.in/implementation/dpkt/badge.png?style=flat)](https://pypi.python.org/pypi/dpkt)
+[![downloads](https://img.shields.io/pypi/dm/dpkt.png)](https://pypi.python.org/pypi/dpkt)
+[![wheel](https://img.shields.io/pypi/wheel/dpkt.svg)](https://pypi.python.org/pypi/dpkt)
+[![supported-versions](https://img.shields.io/pypi/pyversions/dpkt.svg)](https://pypi.python.org/pypi/dpkt)
+[![supported-implementations](https://img.shields.io/pypi/implementation/dpkt.svg)](https://pypi.python.org/pypi/dpkt)
 
 
 Installation

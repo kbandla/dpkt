@@ -19,23 +19,23 @@
     :target: https://landscape.io/github/kbandla/dpkt/master
     :alt: Code Quality Status
 
-.. |version| image:: http://img.shields.io/pypi/v/dpkt.png?style=flat
+.. |version| image:: http://img.shields.io/pypi/v/dpkt.svg
     :alt: PyPI Package latest release
     :target: https://pypi.python.org/pypi/dpkt
 
-.. |downloads| image:: http://img.shields.io/pypi/dm/dpkt.png?style=flat
+.. |downloads| image:: http://img.shields.io/pypi/dm/dpkt.svg
     :alt: PyPI Package monthly downloads
     :target: https://pypi.python.org/pypi/dpkt
 
-.. |wheel| image:: https://pypip.in/wheel/dpkt/badge.png?style=flat
+.. |wheel| image:: https://img.shields.io/pypi/wheel/dpkt.svg
     :alt: PyPI Wheel
     :target: https://pypi.python.org/pypi/dpkt
 
-.. |supported-versions| image:: https://pypip.in/py_versions/dpkt/badge.png?style=flat
+.. |supported-versions| image:: https://img.shields.io/pypi/pyversions/dpkt.svg
     :alt: Supported versions
     :target: https://pypi.python.org/pypi/dpkt
 
-.. |supported-implementations| image:: https://pypip.in/implementation/dpkt/badge.png?style=flat
+.. |supported-implementations| image:: https://img.shields.io/pypi/implementation/dpkt.svg 
     :alt: Supported implementations
     :target: https://pypi.python.org/pypi/dpkt
 
