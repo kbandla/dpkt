@@ -45,6 +45,7 @@ class BuildDebPackage(Command):
 setup(name=package_name,
       version=package.__version__,
       author=package.__author__,
+      author_email=package.__author_email__,
       url=package.__url__,
       description=description,
       long_description=long_description,
