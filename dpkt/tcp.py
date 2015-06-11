@@ -41,10 +41,10 @@ class TCP(dpkt.Packet):
 
     # Deprecated methods, will be removed in the future
     # =================================================
-    @deprecated
+    @deprecated('off')
     def _get_off(self): return self.off
 
-    @deprecated
+    @deprecated('off')
     def _set_off(self, off): self.off = off
     # =================================================
 
@@ -52,7 +52,7 @@ class TCP(dpkt.Packet):
         return self.__hdr_len__ + len(self.opts) + len(self.data)
 
     def __str__(self):
-        return self.pack_hdr() + self.opts + str(self.data)
+        return self.pack_hdr() + str(self.opts) + str(self.data)
 
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)

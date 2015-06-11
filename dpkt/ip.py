@@ -40,22 +40,21 @@ class IP(dpkt.Packet):
 
     # Deprecated methods, will be removed in the future
     # =================================================
-    @deprecated
+    @deprecated('v')
     def _get_v(self):
         return self.v
 
-    @deprecated
+    @deprecated('v')
     def _set_v(self, v):
         self.v = v
 
-    @deprecated
+    @deprecated('hl')
     def _get_hl(self):
         return self.hl
 
-    @deprecated
+    @deprecated('hl')
     def _set_hl(self, hl):
         self.hl = hl
-
     # =================================================
 
     def __len__(self):
@@ -63,7 +62,7 @@ class IP(dpkt.Packet):
 
     def __str__(self):
         if self.sum == 0:
-            self.sum = dpkt.in_cksum(self.pack_hdr() + self.opts)
+            self.sum = dpkt.in_cksum(self.pack_hdr() + str(self.opts))
             if (self.p == 6 or self.p == 17) and (self.off & (IP_MF | IP_OFFMASK)) == 0 and \
                     isinstance(self.data, dpkt.Packet) and self.data.sum == 0:
                 # Set zeroed TCP and UDP checksums for non-fragments.
@@ -76,7 +75,7 @@ class IP(dpkt.Packet):
                 if self.p == 17 and self.data.sum == 0:
                     self.data.sum = 0xffff  # RFC 768
                     # XXX - skip transports which don't need the pseudoheader
-        return self.pack_hdr() + self.opts + str(self.data)
+        return self.pack_hdr() + str(self.opts) + str(self.data)
 
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)

@@ -53,16 +53,16 @@ class AOE(dpkt.Packet):
 
     # Deprecated methods, will be removed in the future
     # =================================================
-    @deprecated
+    @deprecated('ver')
     def _get_ver(self): return self.ver
 
-    @deprecated
+    @deprecated('ver')
     def _set_ver(self, ver): self.ver = ver
 
-    @deprecated
+    @deprecated('fl')
     def _get_fl(self): return self.fl
 
-    @deprecated
+    @deprecated('fl')
     def _set_fl(self, fl): self.fl = fl
     # =================================================
 

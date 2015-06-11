@@ -1,5 +1,4 @@
-dpkt
-====
+# dpkt
 
 **A fast, simple packet creation/parsing python module with definitions for the basic TCP/IP protocols.**
 
@@ -15,25 +14,17 @@ dpkt
 [![On Deck](https://badge.waffle.io/kbandla/dpkt.svg?label=on%20deck&title=On%20Deck)](http://waffle.io/kbandla/dpkt)
 [![In Progress](https://badge.waffle.io/kbandla/dpkt.svg?label=in%20progress&title=In%20Progress)](http://waffle.io/kbandla/dpkt)
 
-Installation
-------------
+## Installation
 
     pip install dpkt
 
-Documentation
--------------
+## Documentation
 
 **[dpkt.readthedocs.org](https://dpkt.readthedocs.org/)**
 
+## About
+This is based on [dpkt](https://code.google.com/p/dpkt/) (Google Code) lead
+by Dug Song and is now being maintained and improved by an extended set of [contributors](https://dpkt.readthedocs.org/en/latest/authors.html) and [developers](https://github.com/kbandla/dpkt/graphs/contributors).
 
-About
------
-
-This code is based on [dpkt code](https://code.google.com/p/dpkt/) lead
-by Dug Song and is now being maintained and improved by an extended set of [contributors](https://dpkt.readthedocs.org/en/latest/authors.html)
- and [developers](https://github.com/kbandla/dpkt/graphs/contributors).
-
-
-#### LICENSE
-
+## LICENSE
 BSD 3-Clause

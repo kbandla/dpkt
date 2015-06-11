@@ -45,33 +45,31 @@ class IP6(dpkt.Packet):
     def flow(self, v):
         self.v_fc_flow = (self.v_fc_flow & ~0xfffff) | (v & 0xfffff)
 
-
     # Deprecated methods, will be removed in the future
     # =================================================
-    @deprecated
+    @deprecated('v')
     def _get_v(self):
         return self.v
 
-    @deprecated
+    @deprecated('v')
     def _set_v(self, v):
         self.v = v
 
-    @deprecated
+    @deprecated('fc')
     def _get_fc(self):
         return self.fc
 
-    @deprecated
+    @deprecated('fc')
     def _set_fc(self, v):
         self.rc = v
 
-    @deprecated
+    @deprecated('flow')
     def _get_flow(self):
         return self.flow
 
-    @deprecated
+    @deprecated('flow')
     def _set_flow(self, v):
         self.flow = v
-
     # =================================================
 
     def unpack(self, buf):
@@ -212,10 +210,11 @@ class IP6RoutingHeader(IP6ExtensionHeader):
 
     # Deprecated methods, will be removed in the future
     # =================================================
+    @deprecated('sl_bits')
     def _get_sl_bits(self): return self.sl_bits
 
+    @deprecated('sl_bits')
     def _set_sl_bits(self, v): self.sl_bits = v
-
     # =================================================
 
     def unpack(self, buf):
@@ -266,18 +265,17 @@ class IP6FragmentHeader(IP6ExtensionHeader):
 
     # Deprecated methods, will be removed in the future
     # =================================================
-    @deprecated
-    def _get_frag_off(self): return self.flag_off
+    @deprecated('frag_off')
+    def _get_frag_off(self): return self.frag_off
 
-    @deprecated
-    def _set_frag_off(self, v): self.flag_off = v
+    @deprecated('frag_off')
+    def _set_frag_off(self, v): self.frag_off = v
 
-    @deprecated
+    @deprecated('m_flag')
     def _get_m_flag(self): return self.m_flag
 
-    @deprecated
+    @deprecated('m_flag')
     def _set_m_flag(self, v): self.m_flag = v
-
     # =================================================
 
 
@@ -328,7 +326,7 @@ def test_ip6_routing_header():
     s2 = str(ip)
     # 43 is Routing header id
     assert (len(ip.extension_hdrs[43].addresses) == 2)
-    assert (ip.tcp)
+    assert ip.tcp
     assert (s == s2)
 
 
