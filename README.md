@@ -1,5 +1,4 @@
-dpkt
-====
+# dpkt
 
 fast, simple packet creation / parsing, with definitions for the basic
 TCP/IP protocols
@@ -16,41 +15,28 @@ TCP/IP protocols
 [![supported-implementations](https://img.shields.io/pypi/implementation/dpkt.svg)](https://pypi.python.org/pypi/dpkt)
 
 
-Installation
-------------
+## Installation
 
     pip install dpkt
 
-Documentation
--------------
+## Documentation
 
 <https://dpkt.readthedocs.org/>
 
-Development
------------
+## Development
 
 To run the all tests run:
 
     tox
 
-### Deviations from upstream
+## Project moved from Google Code
 
-This code is based on [dpkt code](https://code.google.com/p/dpkt/) lead
-by Dug Song.
+This project, lead by Dug Song, was originally hosted on [dpkt code](https://code.google.com/p/dpkt/).
+It is now maintained here. The Google Code page will be closed soon. 
 
-At this point, this is not the exact [upstream
-version](https://code.google.com/p/dpkt/). If you are looking for the
-latest stock dpkt, please get it from the above link.
+## Examples
 
-Almost all of the upstream changes are pulled. However, some modules are
-not. Here is a list of the changes:
-
--   [dpkt/dpkt.py](https://github.com/kbandla/dpkt/commit/336fe02b0e2f00b382d91cd42558a69eec16d6c7):
-    decouple dnet from dpkt
--   [dpkt/dns.py](https://github.com/kbandla/dpkt/commit/2bf3cde213144391fd90488d12f9ccce51b5fbca)
-    : parse some more DNS flags
-
-#### Examples
+We are currently working on improving documentation for the project. 
 
 [@jonoberheide's](<https://twitter.com/jonoberheide>) old examples still
 apply:
@@ -68,6 +54,6 @@ apply:
 [code](https://github.com/jeffsilverm/dpkt_doc) and
 [documentation](http://www.commercialventvac.com/dpkt.html).
 
-#### LICENSE
+## LICENSE
 
-BSD 3-Clause License, as the upstream project
+BSD 3-Clause License
