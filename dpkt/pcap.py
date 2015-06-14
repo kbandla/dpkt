@@ -108,8 +108,7 @@ class Reader(object):
     """Simple pypcap-compatible pcap file reader."""
 
     def __init__(self, fileobj):
-        self.name = fileobj.name
-        self.fd = fileobj.fileno()
+        self.name = getattr(fileobj, 'name', '<%s>' % fileobj.__class__.__name__)
         self.__f = fileobj
         buf = self.__f.read(FileHdr.__hdr_len__)
         self.__fh = FileHdr(buf)
@@ -125,6 +124,10 @@ class Reader(object):
             self.dloff = 0
         self.snaplen = self.__fh.snaplen
         self.filter = ''
+
+    @property
+    def fd(self):
+        return self.__f.fileno()
 
     def fileno(self):
         return self.fd
@@ -151,10 +154,10 @@ class Reader(object):
         self.dispatch(0, callback, *args)
 
     def __iter__(self):
-        self.__f.seek(FileHdr.__hdr_len__)
         while 1:
             buf = self.__f.read(PktHdr.__hdr_len__)
-            if not buf: break
+            if not buf:
+                break
             hdr = self.__ph(buf)
             buf = self.__f.read(hdr.caplen)
             yield (hdr.tv_sec + (hdr.tv_usec / 1000000.0), buf)
@@ -167,6 +170,33 @@ def test_pcap_endian():
     lefh = LEFileHdr(le)
     assert (befh.linktype == lefh.linktype)
 
+
+def test_reader_stringio():
+    # StringIO
+    import StringIO
+    fobj = StringIO.StringIO(libpcap_data)
+    reader = Reader(fobj)
+    assert reader.name == '<StringIO>'
+    _, buf1 = iter(reader).next()
+    assert buf1 == libpcap_data[FileHdr.__hdr_len__ + PktHdr.__hdr_len__:]
+
+    # cStringIO
+    import cStringIO
+    fobj = cStringIO.StringIO(libpcap_data)
+    reader = Reader(fobj)
+    assert reader.name == '<StringI>'
+    _, buf1 = iter(reader).next()
+    assert buf1 == libpcap_data[FileHdr.__hdr_len__ + PktHdr.__hdr_len__:]
+
+
 if __name__ == '__main__':
+    libpcap_data = (  # full libpcap file with one packet
+        '\xd4\xc3\xb2\xa1\x02\x00\x04\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff\x00\x00\x01\x00\x00\x00'
+        '\xb2\x67\x4a\x42\xae\x91\x07\x00\x46\x00\x00\x00\x46\x00\x00\x00\x00\xc0\x9f\x32\x41\x8c\x00\xe0'
+        '\x18\xb1\x0c\xad\x08\x00\x45\x00\x00\x38\x00\x00\x40\x00\x40\x11\x65\x47\xc0\xa8\xaa\x08\xc0\xa8'
+        '\xaa\x14\x80\x1b\x00\x35\x00\x24\x85\xed'
+    )
     test_pcap_endian()
+    test_reader_stringio()
+
     print 'Tests Successful...'
