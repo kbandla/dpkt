@@ -11,8 +11,6 @@ def parse_headers(f):
     d = {}
     while 1:
         line = f.readline()
-        if not line:
-            raise dpkt.NeedData('premature end of headers')
         line = line.strip()
         if not line:
             break
