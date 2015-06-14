@@ -192,27 +192,27 @@ def test_pcap_endian():
     assert (befh.linktype == lefh.linktype)
 
 
-def test_reader_stringio():
+def test_reader_stringio(data):
     # StringIO
     import StringIO
-    fobj = StringIO.StringIO(libpcap_data)
+    fobj = StringIO.StringIO(data)
     reader = Reader(fobj)
     assert reader.name == '<StringIO>'
     _, buf1 = iter(reader).next()
-    assert buf1 == libpcap_data[FileHdr.__hdr_len__ + PktHdr.__hdr_len__:]
+    assert buf1 == data[FileHdr.__hdr_len__ + PktHdr.__hdr_len__:]
 
     # cStringIO
     import cStringIO
-    fobj = cStringIO.StringIO(libpcap_data)
+    fobj = cStringIO.StringIO(data)
     reader = Reader(fobj)
     assert reader.name == '<StringI>'
     _, buf1 = iter(reader).next()
-    assert buf1 == libpcap_data[FileHdr.__hdr_len__ + PktHdr.__hdr_len__:]
+    assert buf1 == data[FileHdr.__hdr_len__ + PktHdr.__hdr_len__:]
 
 
-def test_reader_dispatch():
+def test_reader_dispatch(data):
     import StringIO
-    fobj = StringIO.StringIO(libpcap_data)
+    fobj = StringIO.StringIO(data)
 
     # test count = 0
     reader = Reader(fobj)
@@ -238,7 +238,7 @@ if __name__ == '__main__':
         '\xaa\x14\x80\x1b\x00\x35\x00\x24\x85\xed'
     )
     test_pcap_endian()
-    test_reader_stringio()
-    test_reader_dispatch()
+    test_reader_stringio(data=libpcap_data)
+    test_reader_dispatch(data=libpcap_data)
 
     print 'Tests Successful...'
