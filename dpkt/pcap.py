@@ -146,8 +146,9 @@ class Reader(object):
         return self.__iter.next()
 
     def dispatch(self, cnt, callback, *args):
-        """Collect and process packets with a user callback,
-        return the number of packets processed, or 0 for a savefile.
+        """Collect and process packets with a user callback.
+
+        Return the number of packets processed, or 0 for a savefile.
 
         Arguments:
 
