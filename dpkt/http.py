@@ -10,9 +10,14 @@ def parse_headers(f):
     """Return dict of HTTP headers parsed from a file object."""
     d = {}
     while 1:
+        # The following logic covers two kinds of loop exit criteria.
+        # 1) If the header is valid, when we reached the end of the header,
+        #    f.readline() would return with '\r\n', then after strip(),
+        #    we can break the loop.
+        # 2) If this is a weird header, which do not ends with '\r\n',
+        #    f.readline() would return with '', then after strip(),
+        #    we still get an empty string, also break the loop.
         line = f.readline()
-        if not line:
-            raise dpkt.NeedData('premature end of headers')
         line = line.strip()
         if not line:
             break
@@ -247,6 +252,40 @@ def test_request_version():
     except:
         pass
 
+def test_invalid_header():
+    # valid header.
+    s = 'POST /main/redirect/ab/1,295,,00.html HTTP/1.0\r\n' \
+    'Referer: http://www.email.com/login/snap/login.jhtml\r\n' \
+    'Connection: Keep-Alive\r\nUser-Agent: Mozilla/4.75 [en] (X11; U; OpenBSD 2.8 i386; Nav)\r\n' \
+    'Host: ltd.snap.com\r\n' \
+    'Accept: image/gif, image/x-xbitmap, image/jpeg, image/pjpeg, image/png, */*\r\n' \
+    'Accept-Encoding: gzip\r\n' \
+    'Accept-Language: en\r\n' \
+    'Accept-Charset: iso-8859-1,*,utf-8\r\n' \
+    'Content-type: application/x-www-form-urlencoded\r\n' \
+    'Content-length: 61\r\n\r\n' \
+    'sn=em&mn=dtest4&pw=this+is+atest&fr=true&login=Sign+in&od=www'
+    r = Request(s)
+    assert r.method == 'POST'
+    assert r.uri == '/main/redirect/ab/1,295,,00.html'
+    assert r.body == 'sn=em&mn=dtest4&pw=this+is+atest&fr=true&login=Sign+in&od=www'
+    assert r.headers['content-type'] == 'application/x-www-form-urlencoded'
+
+    # invalid header.
+    s_weird_end = 'POST /main/redirect/ab/1,295,,00.html HTTP/1.0\r\n' \
+    'Referer: http://www.email.com/login/snap/login.jhtml\r\n' \
+    'Connection: Keep-Alive\r\nUser-Agent: Mozilla/4.75 [en] (X11; U; OpenBSD 2.8 i386; Nav)\r\n' \
+    'Host: ltd.snap.com\r\n' \
+    'Accept: image/gif, image/x-xbitmap, image/jpeg, image/pjpeg, image/png, */*\r\n' \
+    'Accept-Encoding: gzip\r\n' \
+    'Accept-Language: en\r\n' \
+    'Accept-Charset: iso-8859-1,*,utf-8\r\n' \
+    'Content-type: application/x-www-form-urlencoded\r\n' \
+    'Cookie: TrackID=1PWdcr3MO_C611BGW'
+    r = Request(s_weird_end)
+    assert r.method == 'POST'
+    assert r.uri == '/main/redirect/ab/1,295,,00.html'
+    assert r.headers['content-type'] == 'application/x-www-form-urlencoded'
 
 if __name__ == '__main__':
     # Runs all the test associated with this class/file
@@ -256,4 +295,5 @@ if __name__ == '__main__':
     test_multicookie_response()
     test_noreason_response()
     test_request_version()
+    test_invalid_header()
     print 'Tests Successful...'
