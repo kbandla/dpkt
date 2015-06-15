@@ -109,7 +109,7 @@ class IP6(dpkt.Packet):
         return header_str
 
     def __str__(self):
-        if (self.nxt == 6 or self.nxt == 17 or self.nxt == 58) and not self.data.sum:
+        if (self.p == 6 or self.p == 17 or self.p == 58) and not self.data.sum:
             # XXX - set TCP, UDP, and ICMPv6 checksums
             p = str(self.data)
             s = dpkt.struct.pack('>16s16sxBH', self.src, self.dst, self.nxt, len(p))
