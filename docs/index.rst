@@ -30,3 +30,10 @@ About dpkt
     contributing
     license
 
+Administration
+===============
+.. toctree::
+    :maxdepth: 2
+
+    admin_notes
+
