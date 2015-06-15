@@ -108,8 +108,7 @@ class Reader(object):
     """Simple pypcap-compatible pcap file reader."""
 
     def __init__(self, fileobj):
-        self.name = fileobj.name
-        self.fd = fileobj.fileno()
+        self.name = getattr(fileobj, 'name', '<%s>' % fileobj.__class__.__name__)
         self.__f = fileobj
         buf = self.__f.read(FileHdr.__hdr_len__)
         self.__fh = FileHdr(buf)
@@ -125,6 +124,11 @@ class Reader(object):
             self.dloff = 0
         self.snaplen = self.__fh.snaplen
         self.filter = ''
+        self.__iter = iter(self)
+
+    @property
+    def fd(self):
+        return self.__f.fileno()
 
     def fileno(self):
         return self.fd
@@ -138,23 +142,44 @@ class Reader(object):
     def readpkts(self):
         return list(self)
 
+    def next(self):
+        return self.__iter.next()
+
     def dispatch(self, cnt, callback, *args):
+        """Collect and process packets with a user callback.
+
+        Return the number of packets processed, or 0 for a savefile.
+
+        Arguments:
+
+        cnt      -- number of packets to process;
+                    or 0 to process all packets until EOF
+        callback -- function with (timestamp, pkt, *args) prototype
+        *args    -- optional arguments passed to callback on execution
+        """
+        processed = 0
         if cnt > 0:
-            for i in range(cnt):
-                ts, pkt = self.next()
+            for _ in range(cnt):
+                try:
+                    ts, pkt = self.next()
+                except StopIteration:
+                    break
                 callback(ts, pkt, *args)
+                processed += 1
         else:
             for ts, pkt in self:
                 callback(ts, pkt, *args)
+                processed += 1
+        return processed
 
     def loop(self, callback, *args):
         self.dispatch(0, callback, *args)
 
     def __iter__(self):
-        self.__f.seek(FileHdr.__hdr_len__)
         while 1:
             buf = self.__f.read(PktHdr.__hdr_len__)
-            if not buf: break
+            if not buf:
+                break
             hdr = self.__ph(buf)
             buf = self.__f.read(hdr.caplen)
             yield (hdr.tv_sec + (hdr.tv_usec / 1000000.0), buf)
@@ -167,6 +192,54 @@ def test_pcap_endian():
     lefh = LEFileHdr(le)
     assert (befh.linktype == lefh.linktype)
 
+
+def test_reader():
+    data = (  # full libpcap file with one packet
+        '\xd4\xc3\xb2\xa1\x02\x00\x04\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff\x00\x00\x01\x00\x00\x00'
+        '\xb2\x67\x4a\x42\xae\x91\x07\x00\x46\x00\x00\x00\x46\x00\x00\x00\x00\xc0\x9f\x32\x41\x8c\x00\xe0'
+        '\x18\xb1\x0c\xad\x08\x00\x45\x00\x00\x38\x00\x00\x40\x00\x40\x11\x65\x47\xc0\xa8\xaa\x08\xc0\xa8'
+        '\xaa\x14\x80\x1b\x00\x35\x00\x24\x85\xed'
+    )
+
+    # --- StringIO tests ---
+
+    # StringIO
+    import StringIO
+    fobj = StringIO.StringIO(data)
+    reader = Reader(fobj)
+    assert reader.name == '<StringIO>'
+    _, buf1 = iter(reader).next()
+    assert buf1 == data[FileHdr.__hdr_len__ + PktHdr.__hdr_len__:]
+
+    # cStringIO
+    import cStringIO
+    fobj = cStringIO.StringIO(data)
+    reader = Reader(fobj)
+    assert reader.name == '<StringI>'
+    _, buf1 = iter(reader).next()
+    assert buf1 == data[FileHdr.__hdr_len__ + PktHdr.__hdr_len__:]
+
+    # --- dispatch() tests ---
+
+    # test count = 0
+    fobj.seek(0)
+    reader = Reader(fobj)
+    assert reader.dispatch(0, lambda ts, pkt: None) == 1
+
+    # test count > 0
+    fobj.seek(0)
+    reader = Reader(fobj)
+    assert reader.dispatch(4, lambda ts, pkt: None) == 1
+
+    # test iterative dispatch
+    fobj.seek(0)
+    reader = Reader(fobj)
+    assert reader.dispatch(1, lambda ts, pkt: None) == 1
+    assert reader.dispatch(1, lambda ts, pkt: None) == 0
+
+
 if __name__ == '__main__':
     test_pcap_endian()
+    test_reader()
+
     print 'Tests Successful...'
