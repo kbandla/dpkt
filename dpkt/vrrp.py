@@ -20,20 +20,20 @@ class VRRP(dpkt.Packet):
     auth = ''
 
     @property
-    def v(self):
+    def v(self):  # high 4 bits of vtype
         return self.vtype >> 4
 
     @v.setter
     def v(self, v):
-        self.vtype = (self.vtype & ~0xf) | (v << 4)
+        self.vtype = (self.vtype & 0x0f) | (v << 4)
 
     @property
-    def type(self):
-        return self.vtype & 0xf
+    def type(self):  # low 4 bits of vtype
+        return self.vtype & 0x0f
 
     @type.setter
     def type(self, v):
-        self.vtype = (self.vtype & ~0xf0) | (v & 0xf)
+        self.vtype = (self.vtype & 0xf0) | (v & 0x0f)
 
     # Deprecated methods, will be removed in the future
     # =================================================
@@ -83,6 +83,22 @@ def test_vrrp():
     assert v.count == 1
     assert v.addrs == ['\xc0\xa8\x00\x01']  # 192.168.0.1
     assert str(v) == s
+
+    # test checksum generation
+    v.sum = 0
+    assert str(v) == s
+
+    # test length
+    assert len(v) == len(s)
+
+    # test getters
+    assert v.v == 2
+    assert v.type == 1
+
+    # test setters
+    v.v = 3
+    v.type = 2
+    assert str(v)[0] == '\x32'
 
 
 if __name__ == '__main__':
