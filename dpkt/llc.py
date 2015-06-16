@@ -15,7 +15,6 @@ class LLC(dpkt.Packet):
             buf = buf[4:]
         elif self.type == ethernet.ETH_TYPE_MPLS or self.type == ethernet.ETH_TYPE_MPLS_MCAST:
             # XXX - skip labels
-            i = 0
             for i in range(24):
                 if struct.unpack('>I', buf[i:i + 4])[0] & 0x0100:  # MPLS_STACK_BOTTOM
                     break

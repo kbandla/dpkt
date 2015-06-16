@@ -60,7 +60,6 @@ class Ethernet(dpkt.Packet):
         elif self.type == ETH_TYPE_MPLS or self.type == ETH_TYPE_MPLS_MCAST:
             # XXX - skip labels (max # of labels is undefined, just use 24)
             self.labels = []
-            i = 0
             for i in range(24):
                 entry = struct.unpack('>I', buf[i * 4:i * 4 + 4])[0]
                 label = ((entry & MPLS_LABEL_MASK) >> MPLS_LABEL_SHIFT,
