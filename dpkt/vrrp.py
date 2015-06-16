@@ -20,20 +20,20 @@ class VRRP(dpkt.Packet):
     auth = ''
 
     @property
-    def v(self):
+    def v(self):  # high 4 bits of vtype
         return self.vtype >> 4
 
     @v.setter
     def v(self, v):
-        self.vtype = (self.vtype & ~0xf) | (v << 4)
+        self.vtype = (self.vtype & 0x0f) | (v << 4)
 
     @property
-    def type(self):
-        return self.vtype & 0xf
+    def type(self):  # low 4 bits of vtype
+        return self.vtype & 0x0f
 
     @type.setter
     def type(self, v):
-        self.vtype = (self.vtype & ~0xf0) | (v & 0xf)
+        self.vtype = (self.vtype & 0xf0) | (v & 0x0f)
 
     # Deprecated methods, will be removed in the future
     # =================================================
@@ -68,3 +68,40 @@ class VRRP(dpkt.Packet):
         if not self.sum:
             self.sum = dpkt.in_cksum(self.pack_hdr() + data)
         return self.pack_hdr() + data
+
+
+def test_vrrp():
+    # no addresses
+    s = '\x00\x00\x00\x00\x00\x00\xff\xff'
+    v = VRRP(s)
+    assert v.sum == 0xffff
+    assert str(v) == s
+
+    # have address
+    s = '\x21\x01\x64\x01\x00\x01\xba\x52\xc0\xa8\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00'
+    v = VRRP(s)
+    assert v.count == 1
+    assert v.addrs == ['\xc0\xa8\x00\x01']  # 192.168.0.1
+    assert str(v) == s
+
+    # test checksum generation
+    v.sum = 0
+    assert str(v) == s
+
+    # test length
+    assert len(v) == len(s)
+
+    # test getters
+    assert v.v == 2
+    assert v.type == 1
+
+    # test setters
+    v.v = 3
+    v.type = 2
+    assert str(v)[0] == '\x32'
+
+
+if __name__ == '__main__':
+    test_vrrp()
+
+    print 'Tests Successful...'

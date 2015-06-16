@@ -45,3 +45,28 @@ def tlv(buf):
     v = buf[n:n + l]
     buf = buf[n + l:]
     return t, l, v, buf
+
+
+def parse_attrs(buf):
+    """Parse STUN.data buffer into a list of (attribute, data) tuples."""
+    attrs = []
+    while buf:
+        t, _, v, buf = tlv(buf)
+        attrs.append((t, v))
+    return attrs
+
+
+def test_stun_response():
+    s = '\x01\x01\x00\x0c\x21\x12\xa4\x42\x53\x4f\x70\x43\x69\x69\x35\x4a\x66\x63\x31\x7a\x00\x01\x00\x08\x00\x01\x11\x22\x33\x44\x55\x66'
+    m = STUN(s)
+    assert m.type == BINDING_RESPONSE
+    assert m.len == 12
+
+    attrs = parse_attrs(m.data)
+    assert attrs == [(MAPPED_ADDRESS, '\x00\x01\x11\x22\x33\x44\x55\x66'), ]
+
+
+if __name__ == '__main__':
+    test_stun_response()
+
+    print 'Tests Successful...'

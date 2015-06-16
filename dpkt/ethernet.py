@@ -60,6 +60,7 @@ class Ethernet(dpkt.Packet):
         elif self.type == ETH_TYPE_MPLS or self.type == ETH_TYPE_MPLS_MCAST:
             # XXX - skip labels (max # of labels is undefined, just use 24)
             self.labels = []
+            i = 0
             for i in range(24):
                 entry = struct.unpack('>I', buf[i * 4:i * 4 + 4])[0]
                 label = ((entry & MPLS_LABEL_MASK) >> MPLS_LABEL_SHIFT,
@@ -81,8 +82,8 @@ class Ethernet(dpkt.Packet):
         if self.type > 1500:
             # Ethernet II
             self._unpack_data(self.data)
-        elif self.dst.startswith('\x01\x00\x0c\x00\x00') or \
-                self.dst.startswith('\x03\x00\x0c\x00\x00'):
+        elif (self.dst.startswith('\x01\x00\x0c\x00\x00') or
+              self.dst.startswith('\x03\x00\x0c\x00\x00')):
             # Cisco ISL
             self.vlan = struct.unpack('>H', self.data[6:8])[0]
             self.unpack(self.data[12:])
@@ -135,9 +136,13 @@ if not Ethernet._typesw:
 
 
 def test_eth():  # TODO recheck this test
-    s = '\x00\xb0\xd0\xe1\x80r\x00\x11$\x8c\x11\xde\x86\xdd`\x00\x00\x00\x00(\x06@\xfe\x80\x00\x00\x00\x00\x00\x00\x02\x11$\xff\xfe\x8c\x11\xde\xfe\x80\x00\x00\x00\x00\x00\x00\x02\xb0\xd0\xff\xfe\xe1\x80r\xcd\xd3\x00\x16\xffP\xd7\x13\x00\x00\x00\x00\xa0\x02\xff\xffg\xd3\x00\x00\x02\x04\x05\xa0\x01\x03\x03\x00\x01\x01\x08\n}\x18:a\x00\x00\x00\x00'
-    # eth = Ethernet(s) # Variable eth is not used
-    Ethernet(s)
+    s = ('\x00\xb0\xd0\xe1\x80\x72\x00\x11\x24\x8c\x11\xde\x86\xdd\x60\x00\x00\x00'
+         '\x00\x28\x06\x40\xfe\x80\x00\x00\x00\x00\x00\x00\x02\x11\x24\xff\xfe\x8c'
+         '\x11\xde\xfe\x80\x00\x00\x00\x00\x00\x00\x02\xb0\xd0\xff\xfe\xe1\x80\x72'
+         '\xcd\xd3\x00\x16\xff\x50\xd7\x13\x00\x00\x00\x00\xa0\x02\xff\xff\x67\xd3'
+         '\x00\x00\x02\x04\x05\xa0\x01\x03\x03\x00\x01\x01\x08\x0a\x7d\x18\x3a\x61'
+         '\x00\x00\x00\x00')
+    assert Ethernet(s)
 
 
 if __name__ == '__main__':
