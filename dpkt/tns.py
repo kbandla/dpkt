@@ -24,3 +24,21 @@ class TNS(dpkt.Packet):
         self.msg = self.data[:n]
         self.data = self.data[n:]
 
+
+def test_tns():
+    s = ('\x00\x23\x00\x00\x01\x00\x00\x00\x01\x34\x01\x2c\x00\x00\x08\x00\x7f'
+         '\xff\x4f\x98\x00\x00\x00\x01\x00\x01\x00\x22\x00\x00\x00\x00\x01\x01X')
+    t = TNS(s)
+    assert t.msg.startswith('\x01\x34')
+
+    # test a truncated packet
+    try:
+        t = TNS(s[:-10])
+    except dpkt.NeedData:
+        pass
+
+
+if __name__ == '__main__':
+    test_tns()
+
+    print 'Tests Successful...'
