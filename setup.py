@@ -9,7 +9,6 @@ except ImportError:
 package_name = 'dpkt'
 description = 'fast, simple packet creation / parsing, with definitions for the basic TCP/IP protocols'
 readme = open('README.rst').read()
-requirements = []
 
 # PyPI Readme
 long_description = open('README.rst').read()
@@ -40,6 +39,13 @@ class BuildDebPackage(Command):
                                   package_name + '-' + package.__version__ + '.tar.gz')
         print sdist_file
         os.system('py2dsc-deb ' + sdist_file)
+        
+def _get_dependencies():
+    # Python 2.6 and lower versions.
+    if sys.version_info[0] <= 2 and sys.version_info[1] <= 6:
+        return ['ordereddict']
+    else:
+        return []
 
 
 setup(name=package_name,
@@ -50,7 +56,7 @@ setup(name=package_name,
       description=description,
       long_description=long_description,
       packages=['dpkt'],
-      install_requires=requirements,
+      install_requires=_get_dependencies(),
       license='BSD',
       zip_safe=False,
       classifiers=[
