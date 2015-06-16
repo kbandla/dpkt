@@ -68,3 +68,24 @@ class VRRP(dpkt.Packet):
         if not self.sum:
             self.sum = dpkt.in_cksum(self.pack_hdr() + data)
         return self.pack_hdr() + data
+
+
+def test_vrrp():
+    # no addresses
+    s = '\x00\x00\x00\x00\x00\x00\xff\xff'
+    v = VRRP(s)
+    assert v.sum == 0xffff
+    assert str(v) == s
+
+    # have address
+    s = '\x21\x01\x64\x01\x00\x01\xba\x52\xc0\xa8\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00'
+    v = VRRP(s)
+    assert v.count == 1
+    assert v.addrs == ['\xc0\xa8\x00\x01']  # 192.168.0.1
+    assert str(v) == s
+
+
+if __name__ == '__main__':
+    test_vrrp()
+
+    print 'Tests Successful...'
