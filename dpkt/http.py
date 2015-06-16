@@ -4,11 +4,12 @@
 
 import cStringIO
 import dpkt
+import collections
 
 
 def parse_headers(f):
     """Return dict of HTTP headers parsed from a file object."""
-    d = {}
+    d = collections.OrderedDict()  # keep the order of the header.
     while 1:
         # The following logic covers two kinds of loop exit criteria.
         # 1) If the header is valid, when we reached the end of the header,
@@ -286,7 +287,29 @@ def test_invalid_header():
     assert r.method == 'POST'
     assert r.uri == '/main/redirect/ab/1,295,,00.html'
     assert r.headers['content-type'] == 'application/x-www-form-urlencoded'
-
+    
+def test_header_order():
+    s = 'POST /main/redirect/ab/1,295,,00.html HTTP/1.0\r\n' \
+    'Referer: http://www.email.com/login/snap/login.jhtml\r\n' \
+    'Connection: Keep-Alive\r\nUser-Agent: Mozilla/4.75 [en] (X11; U; OpenBSD 2.8 i386; Nav)\r\n' \
+    'Host: ltd.snap.com\r\n' \
+    'Accept: image/gif, image/x-xbitmap, image/jpeg, image/pjpeg, image/png, */*\r\n' \
+    'Accept-Encoding: gzip\r\n' \
+    'Accept-Language: en\r\n' \
+    'Accept-Charset: iso-8859-1,*,utf-8\r\n' \
+    'Content-type: application/x-www-form-urlencoded\r\n' 
+    ordered_header = 'Referer: http://www.email.com/login/snap/login.jhtml\r\n' \
+    'Connection: Keep-Alive\r\nUser-Agent: Mozilla/4.75 [en] (X11; U; OpenBSD 2.8 i386; Nav)\r\n' \
+    'Host: ltd.snap.com\r\n' \
+    'Accept: image/gif, image/x-xbitmap, image/jpeg, image/pjpeg, image/png, */*\r\n' \
+    'Accept-Encoding: gzip\r\n' \
+    'Accept-Language: en\r\n' \
+    'Accept-Charset: iso-8859-1,*,utf-8\r\n' \
+    'Content-type: application/x-www-form-urlencoded\r\n'
+    r = Request(s)
+    header = r.pack_hdr()
+    assert header.lower() == ordered_header.lower()  # compare ignore case.
+    
 if __name__ == '__main__':
     # Runs all the test associated with this class/file
     test_parse_request()
@@ -296,4 +319,5 @@ if __name__ == '__main__':
     test_noreason_response()
     test_request_version()
     test_invalid_header()
+    test_header_order()
     print 'Tests Successful...'
