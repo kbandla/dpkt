@@ -286,6 +286,19 @@ def test_invalid_header():
     assert r.method == 'POST'
     assert r.uri == '/main/redirect/ab/1,295,,00.html'
     assert r.headers['content-type'] == 'application/x-www-form-urlencoded'
+    
+    # messy header.
+    s_messy_header = 'aaaaaaaaa\r\nbbbbbbbbb'
+    try:
+        r = Request(s_messy_header)
+    except dpkt.UnpackError:
+        assert True
+    # If the http request is built successfully or raised exceptions
+    # other than UnpackError, then return a false assertion.
+    except:
+        assert False
+    else:
+        assert False
 
 if __name__ == '__main__':
     # Runs all the test associated with this class/file
