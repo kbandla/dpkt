@@ -110,9 +110,10 @@ class Packet(object):
               for k in self.__hdr_defaults__
               if getattr(self, k) != self.__hdr_defaults__[k]] +
 
-             ['%s=%r' % (k, getattr(self, k))  # dynamically added fields
-              for k in self.__dict__.iterkeys()
-              if k not in self.__hdr_fields__])
+             ['%s=%r' % (k, v)                 # dynamically added fields
+              for k, v in self.__dict__.iteritems()
+              if k[0] != '_' and    # exclude "_private" attributes
+                 k != self.data.__class__.__name__.lower()])  # exclude fields like ip.udp
 
         if self.data:
             l.append('data=%r' % self.data)
