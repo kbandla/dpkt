@@ -9,16 +9,20 @@ import struct
 import array
 
 
-class Error(Exception): pass
+class Error(Exception):
+    pass
 
 
-class UnpackError(Error): pass
+class UnpackError(Error):
+    pass
 
 
-class NeedData(UnpackError): pass
+class NeedData(UnpackError):
+    pass
 
 
-class PackError(Error): pass
+class PackError(Error):
+    pass
 
 
 class _MetaPacket(type):
@@ -30,8 +34,7 @@ class _MetaPacket(type):
             clsdict['__slots__'] = [x[0] for x in st] + ['data']
             t = type.__new__(cls, clsname, clsbases, clsdict)
             t.__hdr_fields__ = [x[0] for x in st]
-            t.__hdr_fmt__ = getattr(t, '__byte_order__', '>') + \
-                            ''.join([x[1] for x in st])
+            t.__hdr_fmt__ = getattr(t, '__byte_order__', '>') + ''.join([x[1] for x in st])
             t.__hdr_len__ = struct.calcsize(t.__hdr_fmt__)
             t.__hdr_defaults__ = dict(zip(
                 t.__hdr_fields__, [x[2] for x in st]))
@@ -103,9 +106,14 @@ class Packet(object):
             raise KeyError
 
     def __repr__(self):
-        l = ['%s=%r' % (k, getattr(self, k))
-             for k in self.__hdr_defaults__
-             if getattr(self, k) != self.__hdr_defaults__[k]]
+        l = (['%s=%r' % (k, getattr(self, k))  # fields defined in __hdr__
+              for k in self.__hdr_defaults__
+              if getattr(self, k) != self.__hdr_defaults__[k]] +
+
+             ['%s=%r' % (k, getattr(self, k))  # dynamically added fields
+              for k in self.__dict__.iterkeys()
+              if k not in self.__hdr_fields__])
+
         if self.data:
             l.append('data=%r' % self.data)
         return '%s(%s)' % (self.__class__.__name__, ', '.join(l))
@@ -158,6 +166,7 @@ def hexdump(buf, length=16):
         n += length
     return '\n'.join(res)
 
+
 def in_cksum_add(s, buf):
     n = len(buf)
     cnt = (n / 2) * 2
@@ -166,10 +175,12 @@ def in_cksum_add(s, buf):
         a.append(struct.unpack('H', buf[-1] + '\x00')[0])
     return s + sum(a)
 
+
 def in_cksum_done(s):
     s = (s >> 16) + (s & 0xffff)
     s += (s >> 16)
     return socket.ntohs(~s & 0xffff)
+
 
 def in_cksum(buf):
     """Return computed Internet checksum."""
