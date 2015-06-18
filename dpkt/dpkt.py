@@ -114,21 +114,22 @@ class Packet(object):
 
         l = []
         # maintain order of fields as defined in __hdr__
-        for k, _, _ in getattr(self, '__hdr__', []):
-            vv = getattr(self, k)
-            if vv != self.__hdr_defaults__[k]:
-                if k[0] != '_':
-                    l.append('%s=%r' % (k, vv))  # (1)
+        for field_name, _, _ in getattr(self, '__hdr__', []):
+            field_value = getattr(self, field_name)
+            if field_value != self.__hdr_defaults__[field_name]:
+                if field_name[0] != '_':
+                    l.append('%s=%r' % (field_name, field_value))  # (1)
                 else:
-                    for pp in k.split('_'):      # (2)
-                        if isinstance(getattr(self.__class__, pp, None), property):
-                            l.append('%s=%r' % (pp, getattr(self, pp)))
+                    # interpret _private fields as name of properties joined by underscores
+                    for prop_name in field_name.split('_'):        # (2)
+                        if isinstance(getattr(self.__class__, prop_name, None), property):
+                            l.append('%s=%r' % (prop_name, getattr(self, prop_name)))
         # (3)
         l.extend(
-            ['%s=%r' % (k, v)
-             for k, v in self.__dict__.iteritems()
-             if k[0] != '_'                   # exclude _private attributes
-             and k != self.data.__class__.__name__.lower()])  # exclude fields like ip.udp
+            ['%s=%r' % (attr_name, attr_value)
+             for attr_name, attr_value in self.__dict__.iteritems()
+             if attr_name[0] != '_'                   # exclude _private attributes
+             and attr_name != self.data.__class__.__name__.lower()])  # exclude fields like ip.udp
         # (4)
         if self.data:
             l.append('data=%r' % self.data)
