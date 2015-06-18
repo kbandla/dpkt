@@ -106,15 +106,30 @@ class Packet(object):
             raise KeyError
 
     def __repr__(self):
-        l = (['%s=%r' % (k, getattr(self, k))  # fields defined in __hdr__
-              for k in self.__hdr_defaults__
-              if getattr(self, k) != self.__hdr_defaults__[k]] +
+        # Collect and display protocol fields in order:
+        # 1. public fields defined in __hdr__, unless their value is default
+        # 2. properties derived from _private fields defined in __hdr__
+        # 3. dynamically added fields from self.__dict__, unless they are _private
+        # 4. self.data when it's present
 
-             ['%s=%r' % (k, v)                 # dynamically added fields
-              for k, v in self.__dict__.iteritems()
-              if k[0] != '_' and    # exclude "_private" attributes
-                 k != self.data.__class__.__name__.lower()])  # exclude fields like ip.udp
-
+        l = []
+        # maintain order of fields as defined in __hdr__
+        for k, _, _ in getattr(self, '__hdr__', []):
+            vv = getattr(self, k)
+            if vv != self.__hdr_defaults__[k]:
+                if k[0] != '_':
+                    l.append('%s=%r' % (k, vv))  # (1)
+                else:
+                    for pp in k.split('_'):      # (2)
+                        if isinstance(getattr(self.__class__, pp, None), property):
+                            l.append('%s=%r' % (pp, getattr(self, pp)))
+        # (3)
+        l.extend(
+            ['%s=%r' % (k, v)
+             for k, v in self.__dict__.iteritems()
+             if k[0] != '_'                   # exclude _private attributes
+             and k != self.data.__class__.__name__.lower()])  # exclude fields like ip.udp
+        # (4)
         if self.data:
             l.append('data=%r' % self.data)
         return '%s(%s)' % (self.__class__.__name__, ', '.join(l))
