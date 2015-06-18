@@ -8,7 +8,7 @@ from decorators import deprecated
 
 class VRRP(dpkt.Packet):
     __hdr__ = (
-        ('vtype', 'B', 0x21),
+        ('_v_type', 'B', 0x21),
         ('vrid', 'B', 0),
         ('priority', 'B', 0),
         ('count', 'B', 0),
@@ -20,20 +20,20 @@ class VRRP(dpkt.Packet):
     auth = ''
 
     @property
-    def v(self):  # high 4 bits of vtype
-        return self.vtype >> 4
+    def v(self):  # high 4 bits of _v_type
+        return self._v_type >> 4
 
     @v.setter
     def v(self, v):
-        self.vtype = (self.vtype & 0x0f) | (v << 4)
+        self._v_type = (self._v_type & 0x0f) | (v << 4)
 
     @property
-    def type(self):  # low 4 bits of vtype
-        return self.vtype & 0x0f
+    def type(self):  # low 4 bits of _v_type
+        return self._v_type & 0x0f
 
     @type.setter
     def type(self, v):
-        self.vtype = (self.vtype & 0xf0) | (v & 0x0f)
+        self._v_type = (self._v_type & 0xf0) | (v & 0x0f)
 
     # Deprecated methods, will be removed in the future
     # =================================================

@@ -25,7 +25,7 @@ class TCP(dpkt.Packet):
         ('dport', 'H', 0),
         ('seq', 'I', 0xdeadbeefL),
         ('ack', 'I', 0),
-        ('off_x2', 'B', ((5 << 4) | 0)),
+        ('_off', 'B', ((5 << 4) | 0)),
         ('flags', 'B', TH_SYN),
         ('win', 'H', TCP_WIN_MAX),
         ('sum', 'H', 0),
@@ -34,10 +34,12 @@ class TCP(dpkt.Packet):
     opts = ''
 
     @property
-    def off(self): return self.off_x2 >> 4
+    def off(self):
+        return self._off >> 4
 
     @off.setter
-    def off(self, off): self.off_x2 = (off << 4) | (self.off_x2 & 0xf)
+    def off(self, off):
+        self._off = (off << 4) | (self._off & 0xf)
 
     # Deprecated methods, will be removed in the future
     # =================================================
@@ -56,7 +58,7 @@ class TCP(dpkt.Packet):
 
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
-        ol = ((self.off_x2 >> 4) << 2) - self.__hdr_len__
+        ol = ((self._off >> 4) << 2) - self.__hdr_len__
         if ol < 0:
             raise dpkt.UnpackError, 'invalid header length'
         self.opts = buf[self.__hdr_len__:self.__hdr_len__ + ol]

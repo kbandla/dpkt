@@ -107,8 +107,6 @@ class GRE(dpkt.Packet):
         opt_fmtlen = struct.calcsize(''.join(self.opt_fields_fmts()[1]))
         return self.__hdr_len__ + opt_fmtlen + sum(map(len, self.sre)) + len(self.data)
 
-    # XXX - need to fix up repr to display optional fields...
-
     def __str__(self):
         fields, fmts = self.opt_fields_fmts()
         if fields:

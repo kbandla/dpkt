@@ -17,23 +17,27 @@ PPPoE_SESSION = 0x00
 
 class PPPoE(dpkt.Packet):
     __hdr__ = (
-        ('v_type', 'B', 0x11),
+        ('_v_type', 'B', 0x11),
         ('code', 'B', 0),
         ('session', 'H', 0),
         ('len', 'H', 0)  # payload length
     )
 
     @property
-    def v(self): return self.v_type >> 4
+    def v(self):
+        return self._v_type >> 4
 
     @v.setter
-    def v(self, v): self.v_type = (v << 4) | (self.v_type & 0xf)
+    def v(self, v):
+        self._v_type = (v << 4) | (self._v_type & 0xf)
 
     @property
-    def type(self): return self.v_type & 0xf
+    def type(self):
+        return self._v_type & 0xf
 
     @type.setter
-    def type(self, t): self.v_type = (self.v_type & 0xf0) | t
+    def type(self, t):
+        self._v_type = (self._v_type & 0xf0) | t
 
     # Deprecated methods, will be removed in the future
     # =================================================
