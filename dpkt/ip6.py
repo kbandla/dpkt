@@ -74,26 +74,27 @@ class IP6(dpkt.Packet):
 
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
-        self.extension_hdrs = dict(((i, None) for i in ext_hdrs))
+        self.extension_hdrs = {}
 
         if self.plen:
             buf = self.data[:self.plen]
         else:  # due to jumbo payload or TSO
             buf = self.data
 
-        next = self.nxt
+        next_ext_hdr = self.nxt
 
-        while next in ext_hdrs:
-            ext = ext_hdrs_cls[next](buf)
-            self.extension_hdrs[next] = ext
+        while next_ext_hdr in ext_hdrs:
+            ext = ext_hdrs_cls[next_ext_hdr](buf)
+            self.extension_hdrs[next_ext_hdr] = ext
             buf = buf[ext.length:]
-            next = ext.nxt
+            next_ext_hdr = getattr(ext, 'nxt', None)
 
         # set the payload protocol id
-        setattr(self, 'p', next)
+        if next_ext_hdr is not None:
+            setattr(self, 'p', next_ext_hdr)
 
         try:
-            self.data = self._protosw[next](buf)
+            self.data = self._protosw[next_ext_hdr](buf)
             setattr(self, self.data.__class__.__name__.lower(), self.data)
         except (KeyError, dpkt.UnpackError):
             self.data = buf
@@ -104,7 +105,7 @@ class IP6(dpkt.Packet):
         header_str = ""
 
         for hdr in ext_hdrs:
-            if not self.extension_hdrs[hdr] is None:
+            if hdr in self.extension_hdrs:
                 header_str += str(self.extension_hdrs[hdr])
         return header_str
 
@@ -297,8 +298,14 @@ class IP6AHHeader(IP6ExtensionHeader):
 
 
 class IP6ESPHeader(IP6ExtensionHeader):
+    __hdr__ = (
+        ('spi', 'I', 0),
+        ('seq', 'I', 0)
+    )
+
     def unpack(self, buf):
-        raise NotImplementedError("ESP extension headers are not supported.")
+        dpkt.Packet.unpack(self, buf)
+        self.length = self.__hdr_len__ + len(self.data)
 
 
 ext_hdrs = [ip.IP_PROTO_HOPOPTS, ip.IP_PROTO_ROUTING, ip.IP_PROTO_FRAGMENT, ip.IP_PROTO_AH, ip.IP_PROTO_ESP,
@@ -330,6 +337,7 @@ def test_ip6_routing_header():
     assert (len(ip.extension_hdrs[43].addresses) == 2)
     assert ip.tcp
     assert (s == s2)
+    assert str(ip) == s
 
 
 def test_ip6_fragment_header():
@@ -341,12 +349,14 @@ def test_ip6_fragment_header():
     assert (fh.id == 65535)
     assert (fh.frag_off == 8191)
     assert (fh.m_flag == 1)
+    assert str(fh) == s
 
 
 def test_ip6_options_header():
     s = ';\x04\x01\x02\x00\x00\xc9\x10\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\xc2\x04\x00\x00\x00\x00\x05\x02\x00\x00\x01\x02\x00\x00'
     options = IP6OptsHeader(s).options
     assert (len(options) == 3)
+    assert str(IP6OptsHeader(s)) == s
 
 
 def test_ip6_ah_header():
@@ -356,6 +366,15 @@ def test_ip6_ah_header():
     assert (ah.auth_data == 'xxxxxxxx')
     assert (ah.spi == 0x2020202)
     assert (ah.seq == 0x1010101)
+    assert str(ah) == s
+
+
+def test_ip6_esp_header():
+    s = '\x00\x00\x01\x00\x00\x00\x00\x44\xe2\x4f\x9e\x68\xf3\xcd\xb1\x5f\x61\x65\x42\x8b\x78\x0b\x4a\xfd\x13\xf0\x15\x98\xf5\x55\x16\xa8\x12\xb3\xb8\x4d\xbc\x16\xb2\x14\xbe\x3d\xf9\x96\xd4\xa0\x39\x1f\x85\x74\x25\x81\x83\xa6\x0d\x99\xb6\xba\xa3\xcc\xb6\xe0\x9a\x78\xee\xf2\xaf\x9a'
+    esp = IP6ESPHeader(s)
+    assert esp.length == 68
+    assert esp.spi == 256
+    assert str(esp) == s
 
 
 def test_ip6_extension_headers():
@@ -370,7 +389,7 @@ def test_ip6_extension_headers():
     ip.extension_hdrs[51] = IP6AHHeader(ah)
     do = ';\x02\x01\x02\x00\x00\xc9\x10\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
     ip.extension_hdrs[60] = IP6DstOptsHeader(do)
-    assert (len([k for k in ip.extension_hdrs if (not ip.extension_hdrs[k] is None)]) == 5)
+    assert (len([k for k in ip.extension_hdrs if (ip.extension_hdrs[k] is not None)]) == 5)
 
 
 if __name__ == '__main__':
@@ -379,5 +398,6 @@ if __name__ == '__main__':
     test_ip6_fragment_header()
     test_ip6_options_header()
     test_ip6_ah_header()
+    test_ip6_esp_header()
     test_ip6_extension_headers()
     print 'Tests Successful...'
