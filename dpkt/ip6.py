@@ -337,6 +337,7 @@ def test_ip6_routing_header():
     assert (len(ip.extension_hdrs[43].addresses) == 2)
     assert ip.tcp
     assert (s == s2)
+    assert str(ip) == s
 
 
 def test_ip6_fragment_header():
@@ -348,12 +349,14 @@ def test_ip6_fragment_header():
     assert (fh.id == 65535)
     assert (fh.frag_off == 8191)
     assert (fh.m_flag == 1)
+    assert str(fh) == s
 
 
 def test_ip6_options_header():
     s = ';\x04\x01\x02\x00\x00\xc9\x10\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\xc2\x04\x00\x00\x00\x00\x05\x02\x00\x00\x01\x02\x00\x00'
     options = IP6OptsHeader(s).options
     assert (len(options) == 3)
+    assert str(IP6OptsHeader(s)) == s
 
 
 def test_ip6_ah_header():
@@ -363,6 +366,7 @@ def test_ip6_ah_header():
     assert (ah.auth_data == 'xxxxxxxx')
     assert (ah.spi == 0x2020202)
     assert (ah.seq == 0x1010101)
+    assert str(ah) == s
 
 
 def test_ip6_esp_header():
@@ -370,6 +374,7 @@ def test_ip6_esp_header():
     esp = IP6ESPHeader(s)
     assert esp.length == 68
     assert esp.spi == 256
+    assert str(esp) == s
 
 
 def test_ip6_extension_headers():
