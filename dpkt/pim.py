@@ -8,22 +8,26 @@ from decorators import deprecated
 
 class PIM(dpkt.Packet):
     __hdr__ = (
-        ('v_type', 'B', 0x20),
+        ('_v_type', 'B', 0x20),
         ('rsvd', 'B', 0),
         ('sum', 'H', 0)
     )
 
     @property
-    def v(self): return self.v_type >> 4
+    def v(self):
+        return self._v_type >> 4
 
     @v.setter
-    def v(self, v): self.v_type = (v << 4) | (self.v_type & 0xf)
+    def v(self, v):
+        self._v_type = (v << 4) | (self._v_type & 0xf)
 
     @property
-    def type(self): return self.v_type & 0xf
+    def type(self):
+        return self._v_type & 0xf
 
     @type.setter
-    def type(self, type): self.v_type = (self.v_type & 0xf0) | type
+    def type(self, type):
+        self._v_type = (self._v_type & 0xf0) | type
 
     # Deprecated methods, will be removed in the future
     # =================================================

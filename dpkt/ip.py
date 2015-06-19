@@ -8,7 +8,7 @@ from decorators import deprecated
 
 class IP(dpkt.Packet):
     __hdr__ = (
-        ('v_hl', 'B', (4 << 4) | (20 >> 2)),
+        ('_v_hl', 'B', (4 << 4) | (20 >> 2)),
         ('tos', 'B', 0),
         ('len', 'H', 20),
         ('id', 'H', 0),
@@ -24,19 +24,19 @@ class IP(dpkt.Packet):
 
     @property
     def v(self):
-        return self.v_hl >> 4
+        return self._v_hl >> 4
 
     @v.setter
     def v(self, v):
-        self.v_hl = (v << 4) | (self.v_hl & 0xf)
+        self._v_hl = (v << 4) | (self._v_hl & 0xf)
 
     @property
     def hl(self):
-        return self.v_hl & 0xf
+        return self._v_hl & 0xf
 
     @hl.setter
     def hl(self, hl):
-        self.v_hl = (self.v_hl & 0xf0) | hl
+        self._v_hl = (self._v_hl & 0xf0) | hl
 
     # Deprecated methods, will be removed in the future
     # =================================================
@@ -79,7 +79,7 @@ class IP(dpkt.Packet):
 
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
-        ol = ((self.v_hl & 0xf) << 2) - self.__hdr_len__
+        ol = ((self._v_hl & 0xf) << 2) - self.__hdr_len__
         if ol < 0:
             raise dpkt.UnpackError, 'invalid header length'
         self.opts = buf[self.__hdr_len__:self.__hdr_len__ + ol]

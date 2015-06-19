@@ -8,7 +8,7 @@ from decorators import deprecated
 
 class IP6(dpkt.Packet):
     __hdr__ = (
-        ('v_fc_flow', 'I', 0x60000000L),
+        ('_v_fc_flow', 'I', 0x60000000L),
         ('plen', 'H', 0),  # payload length (not including header)
         ('nxt', 'B', 0),  # next header protocol
         ('hlim', 'B', 0),  # hop limit
@@ -23,27 +23,27 @@ class IP6(dpkt.Packet):
 
     @property
     def v(self):
-        return self.v_fc_flow >> 28
+        return self._v_fc_flow >> 28
 
     @v.setter
     def v(self, v):
-        self.v_fc_flow = (self.v_fc_flow & ~0xf0000000L) | (v << 28)
+        self._v_fc_flow = (self._v_fc_flow & ~0xf0000000L) | (v << 28)
 
     @property
     def fc(self):
-        return (self.v_fc_flow >> 20) & 0xff
+        return (self._v_fc_flow >> 20) & 0xff
 
     @fc.setter
     def fc(self, v):
-        self.v_fc_flow = (self.v_fc_flow & ~0xff00000L) | (v << 20)
+        self._v_fc_flow = (self._v_fc_flow & ~0xff00000L) | (v << 20)
 
     @property
     def flow(self):
-        return self.v_fc_flow & 0xfffff
+        return self._v_fc_flow & 0xfffff
 
     @flow.setter
     def flow(self, v):
-        self.v_fc_flow = (self.v_fc_flow & ~0xfffff) | (v & 0xfffff)
+        self._v_fc_flow = (self._v_fc_flow & ~0xfffff) | (v & 0xfffff)
 
     # Deprecated methods, will be removed in the future
     # =================================================
@@ -185,10 +185,12 @@ class IP6OptsHeader(IP6ExtensionHeader):
         setattr(self, 'options', options)
 
 
-class IP6HopOptsHeader(IP6OptsHeader): pass
+class IP6HopOptsHeader(IP6OptsHeader):
+    pass
 
 
-class IP6DstOptsHeader(IP6OptsHeader): pass
+class IP6DstOptsHeader(IP6OptsHeader):
+    pass
 
 
 class IP6RoutingHeader(IP6ExtensionHeader):

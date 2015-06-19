@@ -9,16 +9,20 @@ import struct
 import array
 
 
-class Error(Exception): pass
+class Error(Exception):
+    pass
 
 
-class UnpackError(Error): pass
+class UnpackError(Error):
+    pass
 
 
-class NeedData(UnpackError): pass
+class NeedData(UnpackError):
+    pass
 
 
-class PackError(Error): pass
+class PackError(Error):
+    pass
 
 
 class _MetaPacket(type):
@@ -30,8 +34,7 @@ class _MetaPacket(type):
             clsdict['__slots__'] = [x[0] for x in st] + ['data']
             t = type.__new__(cls, clsname, clsbases, clsdict)
             t.__hdr_fields__ = [x[0] for x in st]
-            t.__hdr_fmt__ = getattr(t, '__byte_order__', '>') + \
-                            ''.join([x[1] for x in st])
+            t.__hdr_fmt__ = getattr(t, '__byte_order__', '>') + ''.join([x[1] for x in st])
             t.__hdr_len__ = struct.calcsize(t.__hdr_fmt__)
             t.__hdr_defaults__ = dict(zip(
                 t.__hdr_fields__, [x[2] for x in st]))
@@ -103,9 +106,31 @@ class Packet(object):
             raise KeyError
 
     def __repr__(self):
-        l = ['%s=%r' % (k, getattr(self, k))
-             for k in self.__hdr_defaults__
-             if getattr(self, k) != self.__hdr_defaults__[k]]
+        # Collect and display protocol fields in order:
+        # 1. public fields defined in __hdr__, unless their value is default
+        # 2. properties derived from _private fields defined in __hdr__
+        # 3. dynamically added fields from self.__dict__, unless they are _private
+        # 4. self.data when it's present
+
+        l = []
+        # maintain order of fields as defined in __hdr__
+        for field_name, _, _ in getattr(self, '__hdr__', []):
+            field_value = getattr(self, field_name)
+            if field_value != self.__hdr_defaults__[field_name]:
+                if field_name[0] != '_':
+                    l.append('%s=%r' % (field_name, field_value))  # (1)
+                else:
+                    # interpret _private fields as name of properties joined by underscores
+                    for prop_name in field_name.split('_'):        # (2)
+                        if isinstance(getattr(self.__class__, prop_name, None), property):
+                            l.append('%s=%r' % (prop_name, getattr(self, prop_name)))
+        # (3)
+        l.extend(
+            ['%s=%r' % (attr_name, attr_value)
+             for attr_name, attr_value in self.__dict__.iteritems()
+             if attr_name[0] != '_'                   # exclude _private attributes
+             and attr_name != self.data.__class__.__name__.lower()])  # exclude fields like ip.udp
+        # (4)
         if self.data:
             l.append('data=%r' % self.data)
         return '%s(%s)' % (self.__class__.__name__, ', '.join(l))
@@ -158,6 +183,7 @@ def hexdump(buf, length=16):
         n += length
     return '\n'.join(res)
 
+
 def in_cksum_add(s, buf):
     n = len(buf)
     cnt = (n / 2) * 2
@@ -166,10 +192,12 @@ def in_cksum_add(s, buf):
         a.append(struct.unpack('H', buf[-1] + '\x00')[0])
     return s + sum(a)
 
+
 def in_cksum_done(s):
     s = (s >> 16) + (s & 0xffff)
     s += (s >> 16)
     return socket.ntohs(~s & 0xffff)
+
 
 def in_cksum(buf):
     """Return computed Internet checksum."""
