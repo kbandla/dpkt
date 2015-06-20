@@ -61,7 +61,7 @@ class IP6(dpkt.Packet):
 
     @deprecated('fc')
     def _set_fc(self, v):
-        self.rc = v
+        self.fc = v
 
     @deprecated('flow')
     def _get_flow(self):
