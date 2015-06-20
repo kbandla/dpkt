@@ -249,6 +249,7 @@ class IP6FragmentHeader(IP6ExtensionHeader):
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
         self.length = self.__hdr_len__
+        self.data = ''
 
     @property
     def frag_off(self):
@@ -350,6 +351,11 @@ def test_ip6_fragment_header():
     assert (fh.frag_off == 8191)
     assert (fh.m_flag == 1)
     assert str(fh) == s
+
+    # IP6 with fragment header
+    s = '\x60\x00\x00\x00\x00\x10\x2c\x00\x02\x22\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x03\x33\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x03\x29\x00\x00\x01\x00\x00\x00\x00\x60\x00\x00\x00\x00\x10\x2c\x00'
+    ip = IP6(s)
+    assert str(ip) == s
 
 
 def test_ip6_options_header():
