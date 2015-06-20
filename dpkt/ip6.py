@@ -61,7 +61,7 @@ class IP6(dpkt.Packet):
 
     @deprecated('fc')
     def _set_fc(self, v):
-        self.rc = v
+        self.fc = v
 
     @deprecated('flow')
     def _get_flow(self):
@@ -91,7 +91,7 @@ class IP6(dpkt.Packet):
 
         # set the payload protocol id
         if next_ext_hdr is not None:
-            setattr(self, 'p', next_ext_hdr)
+            self.p = next_ext_hdr
 
         try:
             self.data = self._protosw[next_ext_hdr](buf)
@@ -157,7 +157,7 @@ class IP6OptsHeader(IP6ExtensionHeader):
 
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
-        setattr(self, 'length', (self.len + 1) * 8)
+        self.length = (self.len + 1) * 8
         options = []
 
         index = 0
@@ -183,7 +183,7 @@ class IP6OptsHeader(IP6ExtensionHeader):
             # add the two chars and the option_length, to move to the next option
             index += opt_length + 2
 
-        setattr(self, 'options', options)
+        self.options = options
 
 
 class IP6HopOptsHeader(IP6OptsHeader):
@@ -234,8 +234,8 @@ class IP6RoutingHeader(IP6ExtensionHeader):
             addresses.append(buf[i * addr_size: i * addr_size + addr_size])
 
         self.data = buf
-        setattr(self, 'addresses', addresses)
-        setattr(self, 'length', self.len * 8 + 8)
+        self.addresses = addresses
+        self.length = self.len * 8 + 8
 
 
 class IP6FragmentHeader(IP6ExtensionHeader):
@@ -248,7 +248,8 @@ class IP6FragmentHeader(IP6ExtensionHeader):
 
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
-        setattr(self, 'length', self.__hdr_len__)
+        self.length = self.__hdr_len__
+        self.data = ''
 
     @property
     def frag_off(self):
@@ -293,8 +294,8 @@ class IP6AHHeader(IP6ExtensionHeader):
 
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
-        setattr(self, 'length', (self.len + 2) * 4)
-        setattr(self, 'auth_data', self.data[:(self.len - 1) * 4])
+        self.length = (self.len + 2) * 4
+        self.auth_data = self.data[:(self.len - 1) * 4]
 
 
 class IP6ESPHeader(IP6ExtensionHeader):
@@ -351,6 +352,11 @@ def test_ip6_fragment_header():
     assert (fh.m_flag == 1)
     assert str(fh) == s
 
+    # IP6 with fragment header
+    s = '\x60\x00\x00\x00\x00\x10\x2c\x00\x02\x22\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x03\x33\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x03\x29\x00\x00\x01\x00\x00\x00\x00\x60\x00\x00\x00\x00\x10\x2c\x00'
+    ip = IP6(s)
+    assert str(ip) == s
+
 
 def test_ip6_options_header():
     s = ';\x04\x01\x02\x00\x00\xc9\x10\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\xc2\x04\x00\x00\x00\x00\x05\x02\x00\x00\x01\x02\x00\x00'
@@ -389,7 +395,7 @@ def test_ip6_extension_headers():
     ip.extension_hdrs[51] = IP6AHHeader(ah)
     do = ';\x02\x01\x02\x00\x00\xc9\x10\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
     ip.extension_hdrs[60] = IP6DstOptsHeader(do)
-    assert (len([k for k in ip.extension_hdrs if (ip.extension_hdrs[k] is not None)]) == 5)
+    assert (len(ip.extension_hdrs) == 5)
 
 
 if __name__ == '__main__':
