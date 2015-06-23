@@ -17,8 +17,7 @@ def parse_headers(f):
         # 2) If this is a weird header, which do not ends with '\r\n',
         #    f.readline() would return with '', then after strip(),
         #    we still get an empty string, also break the loop.
-        line = f.readline()
-        line = line.strip()
+        line = f.readline().strip()
         if not line:
             break
         l = line.split(':', 1)
