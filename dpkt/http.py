@@ -88,12 +88,13 @@ class Message(dpkt.Packet):
             for k, v in kwargs.iteritems():
                 setattr(self, k, v)
 
-    def unpack(self, buf):
+    def unpack(self, buf, is_body_allowed = True):
         f = cStringIO.StringIO(buf)
         # Parse headers
         self.headers = parse_headers(f)
         # Parse body
-        self.body = parse_body(f, self.headers)
+        if is_body_allowed:
+            self.body = parse_body(f, self.headers)
         # Save the rest
         self.data = f.read()
 
@@ -171,7 +172,18 @@ class Response(Message):
         self.version = l[0][len(self.__proto) + 1:]
         self.status = l[1]
         self.reason = l[2] if len(l) > 2 else ''
-        Message.unpack(self, f.read())
+        # RFC Sec 4.3.
+        # http://www.w3.org/Protocols/rfc2616/rfc2616-sec4.html#sec4.3.
+        # For response messages, whether or not a message-body is included with
+        # a message is dependent on both the request method and the response
+        # status code (section 6.1.1). All responses to the HEAD request method
+        # MUST NOT include a message-body, even though the presence of entity-
+        # header fields might lead one to believe they do. All 1xx 
+        # (informational), 204 (no content), and 304 (not modified) responses
+        # MUST NOT include a message-body. All other responses do include a
+        # message-body, although it MAY be of zero length.
+        is_body_allowed = int(self.status) >= 200 and 204 != int(self.status) != 304
+        Message.unpack(self, f.read(), is_body_allowed)
 
     def __str__(self):
         return '%s/%s %s %s\r\n' % (self.__proto, self.version, self.status,
@@ -229,7 +241,38 @@ def test_noreason_response():
     r = Response(s)
     assert r.reason == ''
     assert str(r) == s
-
+    
+    
+def test_body_forbidden_response():
+    s = 'HTTP/1.1 304 Not Modified\r\n'\
+        'Content-Type: text/css\r\n'\
+        'Last-Modified: Wed, 14 Jan 2009 16:42:11 GMT\r\n'\
+        'ETag: "3a7-496e15e3"\r\n'\
+        'Cache-Control: private, max-age=414295\r\n'\
+        'Date: Wed, 22 Sep 2010 17:55:54 GMT\r\n'\
+        'Connection: keep-alive\r\n'\
+        'Vary: Accept-Encoding\r\n\r\n'\
+        'HTTP/1.1 200 OK\r\n'\
+        'Server: Sun-ONE-Web-Server/6.1\r\n'\
+        'ntCoent-length: 257\r\n'\
+        'Content-Type: application/x-javascript\r\n'\
+        'Last-Modified: Wed, 06 Jan 2010 19:34:06 GMT\r\n'\
+        'ETag: "101-4b44e5ae"\r\n'\
+        'Accept-Ranges: bytes\r\n'\
+        'Content-Encoding: gzip\r\n'\
+        'Cache-Control: private, max-age=439726\r\n'\
+        'Date: Wed, 22 Sep 2010 17:55:54 GMT\r\n'\
+        'Connection: keep-alive\r\n'\
+        'Vary: Accept-Encoding\r\n'
+    result = []
+    while s:
+        msg = Response(s)
+        s = msg.data
+        result.append(msg)
+        
+    # the second HTTP response should be an standalone message
+    assert len(result) == 2  
+    
 
 def test_request_version():
     s = """GET / HTTP/1.0\r\n\r\n"""
@@ -250,6 +293,7 @@ def test_request_version():
         assert "invalid protocol version parsed!"
     except:
         pass
+
 
 def test_invalid_header():
     # valid header.
@@ -299,6 +343,7 @@ def test_invalid_header():
     else:
         assert False
 
+
 if __name__ == '__main__':
     # Runs all the test associated with this class/file
     test_parse_request()
@@ -308,4 +353,5 @@ if __name__ == '__main__':
     test_noreason_response()
     test_request_version()
     test_invalid_header()
+    test_body_forbidden_response()
     print 'Tests Successful...'
