@@ -80,10 +80,10 @@ def __load_cmds():
         if k.startswith(prefix):
             name = 'aoe' + k[len(prefix):].lower()
             try:
-                mod = __import__(name, g)
-            except ImportError:
+                mod = __import__(name, g, level=1)
+                AOE.set_cmd(v, getattr(mod, name.upper()))
+            except (ImportError, AttributeError):
                 continue
-            AOE.set_cmd(v, getattr(mod, name.upper()))
 
 
 if not AOE._cmdsw:
