@@ -182,7 +182,7 @@ class Response(Message):
         # (informational), 204 (no content), and 304 (not modified) responses
         # MUST NOT include a message-body. All other responses do include a
         # message-body, although it MAY be of zero length.
-        is_body_allowed = int(self.status) >= 200 and 204 != int(status) != 304
+        is_body_allowed = int(self.status) >= 200 and 204 != int(self.status) != 304
         Message.unpack(self, f.read(), is_body_allowed)
 
     def __str__(self):
