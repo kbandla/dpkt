@@ -21,6 +21,14 @@ class IP(dpkt.Packet):
     )
     _protosw = {}
     opts = ''
+    
+    def __init__(self, *args, **kwargs):
+        super(IP, self).__init__(*args, **kwargs)
+        
+        # If IP packet is not initialized by string and the len field has
+        # been rewritten.
+        if not args and 'len' not in kwargs:
+            self.len = self.__len__()
 
     @property
     def v(self):
@@ -349,10 +357,20 @@ def test_zerolen():
     assert (isinstance(ip.data, tcp.TCP))
     assert (ip.tcp.data == d)
 
+def test_constuctor():
+    ip1 = IP(data = "Hello world!")
+    ip2 = IP(data = "Hello world!", len = 0)
+    ip3 = IP(str(ip1))
+    ip4 = IP(str(ip2))
+    assert (str(ip1) == str(ip3))
+    assert (str(ip1) == 'E\x00\x00 \x00\x00\x00\x00@\x00z\xdf\x00\x00\x00\x00\x00\x00\x00\x00Hello world!')
+    assert (str(ip2) == str(ip4))
+    assert (str(ip2) == 'E\x00\x00\x00\x00\x00\x00\x00@\x00z\xff\x00\x00\x00\x00\x00\x00\x00\x00Hello world!')
 
 if __name__ == '__main__':
     test_ip()
     test_hl()
     test_opt()
     test_zerolen()
+    test_constuctor()
     print 'Tests Successful...'
