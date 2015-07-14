@@ -124,7 +124,7 @@ def __load_types():
             name = k[9:]
             modname = name.lower()
             try:
-                mod = __import__(modname, g, level=0)
+                mod = __import__(modname, g, level=1)
                 Ethernet.set_type(v, getattr(mod, name))
             except (ImportError, AttributeError):
                 continue
