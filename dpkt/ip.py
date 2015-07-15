@@ -307,10 +307,10 @@ def __load_protos():
         if k.startswith('IP_PROTO_'):
             name = k[9:].lower()
             try:
-                mod = __import__(name, g)
-            except ImportError:
+                mod = __import__(name, g, level=1)
+                IP.set_proto(v, getattr(mod, name.upper()))
+            except (ImportError, AttributeError):
                 continue
-            IP.set_proto(v, getattr(mod, name.upper()))
 
 
 if not IP._protosw:

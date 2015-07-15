@@ -56,10 +56,10 @@ def __load_protos():
             name = k[4:]
             modname = name.lower()
             try:
-                mod = __import__(modname, g)
-            except ImportError:
+                mod = __import__(modname, g, level=1)
+                PPP.set_p(v, getattr(mod, name))
+            except (ImportError, AttributeError):
                 continue
-            PPP.set_p(v, getattr(mod, name))
 
 
 if not PPP._protosw:
