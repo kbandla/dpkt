@@ -50,6 +50,7 @@ DNS_MX = 15
 DNS_TXT = 16
 DNS_AAAA = 28
 DNS_SRV = 33
+DNS_OPT = 41
 
 # RR classes
 DNS_IN = 1
@@ -305,6 +306,10 @@ class DNS(dpkt.Packet):
             elif self.type == DNS_SRV:
                 return struct.pack('>HHH', self.priority, self.weight, self.port) + \
                        pack_name(self.srvname, off + 6, label_ptrs)
+            elif self.type == DNS_OPT:
+                return ''  # self.rdata
+            else:
+                raise dpkt.PackError('RR type %s is not supported' % self.type)
 
         def unpack_rdata(self, buf, off):
             if self.type == DNS_A:
@@ -335,6 +340,10 @@ class DNS(dpkt.Packet):
             elif self.type == DNS_SRV:
                 self.priority, self.weight, self.port = struct.unpack('>HHH', self.rdata[:6])
                 self.srvname, off = unpack_name(buf, off + 6)
+            elif self.type == DNS_OPT:
+                pass  # RFC-6891: OPT is a pseudo-RR not carrying any DNS data
+            else:
+                raise dpkt.UnpackError('RR type %s is not supported' % self.type)
 
     def pack_q(self, buf, q):
         """Append packed DNS question and return buf."""
@@ -361,6 +370,7 @@ class DNS(dpkt.Packet):
         rr.type, rr.cls, rr.ttl, rdlen = struct.unpack('>HHIH', buf[off:off + 10])
         off += 10
         rr.rdata = buf[off:off + rdlen]
+        rr.rlen = rdlen
         rr.unpack_rdata(buf, off)
         off += rdlen
         return rr, off
@@ -422,6 +432,20 @@ def test_PTR():
     assert s == str(my_dns)
 
 
+def test_OPT():
+    s = '\x8dn\x01\x10\x00\x01\x00\x00\x00\x00\x00\x01\x04x111\x06xxxx11\x06akamai\x03net\x00\x00\x01\x00\x01\x00\x00)\x0f\xa0\x00\x00\x80\x00\x00\x00'
+    my_dns = DNS(s)
+    my_rr = my_dns.ar[0]
+    assert my_rr.type == DNS_OPT
+    assert my_rr.rlen == 0 and my_rr.rdata == ''
+    assert str(my_dns) == s
+
+    my_rr.rdata = '\x00\x00\x00\x02\x00\x00'  # add 1 attribute tlv
+    my_dns2 = DNS(str(my_dns))
+    my_rr2 = my_dns2.ar[0]
+    assert my_rr2.rlen == 6 and my_rr2.rdata == '\x00\x00\x00\x02\x00\x00'
+
+
 def test_pack_name():
     # Empty name is \0
     x = pack_name('', 0, {})
@@ -455,6 +479,7 @@ if __name__ == '__main__':
     # Runs all the test associated with this class/file
     test_basic()
     test_PTR()
+    test_OPT()
     test_pack_name()
     test_deprecated_methods()
     test_deprecated_method_performance()
