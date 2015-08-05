@@ -7,6 +7,15 @@ ATA_DEVICE_IDENTIFY = 0xec
 
 
 class AOEATA(dpkt.Packet):
+    """ATA over Ethernet ATA command.
+
+    See more about the AOEATA on \
+    https://en.wikipedia.org/wiki/ATA_over_Ethernet
+
+    Attributes:
+        __hdr__: Header fields of AOEATA.
+        data: Message data.
+    """
     __hdr__ = (
         ('aflags', 'B', 0),
         ('errfeat', 'B', 0),
