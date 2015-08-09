@@ -42,14 +42,17 @@ class _MetaPacket(type):
 
 
 class Packet(object):
-    """Base packet class, with metaclass magic to generate members from
+    """Simple packet.
+
+    Base packet class, with metaclass magic to generate members from
     self.__hdr__.
 
-    __hdr__ should be defined as a list of (name, structfmt, default) tuples
-    __byte_order__ can be set to override the default ('>')
+    Attributes:
+        __hdr__: Packet header should be defined as a list of 
+                 (name, structfmt, default) tuples.
+        __byte_order__: Byte order, can be set to override the default ('>')
 
-    Example::
-
+    Example:
     >>> class Foo(Packet):
     ...   __hdr__ = (('foo', 'I', 1), ('bar', 'H', 2), ('baz', '4s', 'quux'))
     ...

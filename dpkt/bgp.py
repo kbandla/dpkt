@@ -120,6 +120,17 @@ OUT_OF_RESOURCES = 8
 
 
 class BGP(dpkt.Packet):
+    """Border Gateway Protocol.
+
+    BGP is an inter-AS routing protocol.
+    See more about the BGP on \
+    https://en.wikipedia.org/wiki/Border_Gateway_Protocol
+
+    Attributes:
+        __hdr__: Header fields of BGP.
+        #TODO
+    """
+    
     __hdr__ = (
         ('marker', '16s', '\xff' * 16),
         ('len', 'H', 0),

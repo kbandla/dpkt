@@ -16,6 +16,7 @@ class AOEATA(dpkt.Packet):
         __hdr__: Header fields of AOEATA.
         data: Message data.
     """
+    
     __hdr__ = (
         ('aflags', 'B', 0),
         ('errfeat', 'B', 0),

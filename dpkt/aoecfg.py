@@ -5,6 +5,16 @@ import dpkt
 
 
 class AOECFG(dpkt.Packet):
+    """ATA over Ethernet ATA command.
+
+    See more about the AOE on \
+    https://en.wikipedia.org/wiki/ATA_over_Ethernet
+
+    Attributes:
+        __hdr__: Header fields of AOECFG.
+        data: Message data.
+    """
+    
     __hdr__ = (
         ('bufcnt', 'H', 0),
         ('fwver', 'H', 0),
