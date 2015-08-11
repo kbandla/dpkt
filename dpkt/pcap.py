@@ -91,11 +91,11 @@ class Writer(object):
         n = len(s)
         if sys.byteorder == 'little':
             ph = LEPktHdr(tv_sec=int(ts),
-                          tv_usec=int((float(ts) - int(ts)) * 1000000.0),
+                          tv_usec=int(round((float(ts) - int(ts)), 6) * 1000000.0),
                           caplen=n, len=n)
         else:
             ph = PktHdr(tv_sec=int(ts),
-                        tv_usec=int((float(ts) - int(ts)) * 1000000.0),
+                        tv_usec=int(round((float(ts) - int(ts)), 6) * 1000000.0),
                         caplen=n, len=n)
         self.__f.write(str(ph))
         self.__f.write(s)
