@@ -9,6 +9,15 @@ import ip6
 
 
 class Loopback(dpkt.Packet):
+    """Platform-dependent loopback header.
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of Loopback.
+        TODO.
+    """
+    
     __hdr__ = (('family', 'I', 0), )
     __byte_order__ = '@'
 

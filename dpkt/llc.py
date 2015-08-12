@@ -7,6 +7,15 @@ import ethernet
 
 
 class LLC(dpkt.Packet):
+    """Logical Link Control (LLC) data communication protocol.
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of LLC.
+        TODO.
+    """
+    
     _typesw = {}
 
     def _unpack_data(self, buf):

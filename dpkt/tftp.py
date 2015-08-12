@@ -24,6 +24,15 @@ ENOUSER = 7  # no such user
 
 
 class TFTP(dpkt.Packet):
+    """Trivial File Transfer Protocol.
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of TFTP.
+        TODO.
+    """
+    
     __hdr__ = (('opcode', 'H', 1), )
 
     def unpack(self, buf):

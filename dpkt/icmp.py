@@ -73,6 +73,15 @@ ICMP_TYPE_MAX = 40
 
 
 class ICMP(dpkt.Packet):
+    """Internet Control Message Protocol.
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of ICMP.
+        TODO.
+    """
+    
     __hdr__ = (
         ('type', 'B', 8),
         ('code', 'B', 0),

@@ -43,7 +43,14 @@ dltoff = {DLT_NULL: 4, DLT_EN10MB: 14, DLT_IEEE802: 22, DLT_ARCNET: 6,
 
 
 class PktHdr(dpkt.Packet):
-    """pcap packet header."""
+    """pcap packet header.
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of pcap header.
+        TODO.
+    """
     __hdr__ = (
         ('tv_sec', 'I', 0),
         ('tv_usec', 'I', 0),
@@ -57,7 +64,15 @@ class LEPktHdr(PktHdr):
 
 
 class FileHdr(dpkt.Packet):
-    """pcap file header."""
+    """pcap file header.
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of pcap file header.
+        TODO.
+    """
+    
     __hdr__ = (
         ('magic', 'I', TCPDUMP_MAGIC),
         ('v_major', 'H', PCAP_VERSION_MAJOR),
@@ -74,7 +89,14 @@ class LEFileHdr(FileHdr):
 
 
 class Writer(object):
-    """Simple pcap dumpfile writer."""
+    """Simple pcap dumpfile writer.
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of simple pcap dumpfile writer.
+        TODO.
+    """
 
     def __init__(self, fileobj, snaplen=1500, linktype=DLT_EN10MB):
         self.__f = fileobj
@@ -105,7 +127,14 @@ class Writer(object):
 
 
 class Reader(object):
-    """Simple pypcap-compatible pcap file reader."""
+    """Simple pypcap-compatible pcap file reader.
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of simple pypcap-compatible pcap file reader.
+        TODO.
+    """
 
     def __init__(self, fileobj):
         self.name = getattr(fileobj, 'name', '<%s>' % fileobj.__class__.__name__)

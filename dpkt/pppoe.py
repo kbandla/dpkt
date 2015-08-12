@@ -16,6 +16,15 @@ PPPoE_SESSION = 0x00
 
 
 class PPPoE(dpkt.Packet):
+    """PPP-over-Ethernet.
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of PPPoE.
+        TODO.
+    """
+    
     __hdr__ = (
         ('_v_type', 'B', 0x11),
         ('code', 'B', 0),

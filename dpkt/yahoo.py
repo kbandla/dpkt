@@ -6,6 +6,15 @@ import dpkt
 
 
 class YHOO(dpkt.Packet):
+    """Yahoo Messenger.
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of Yahoo Messenger.
+        TODO.
+    """
+    
     __hdr__ = [
         ('version', '8s', ' ' * 8),
         ('length', 'I', 0),

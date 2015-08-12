@@ -7,6 +7,15 @@ from decorators import deprecated
 
 
 class IP(dpkt.Packet):
+    """Internet Protocol.
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of IP.
+        TODO.
+    """
+    
     __hdr__ = (
         ('_v_hl', 'B', (4 << 4) | (20 >> 2)),
         ('tos', 'B', 0),

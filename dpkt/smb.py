@@ -6,6 +6,15 @@ import dpkt
 
 
 class SMB(dpkt.Packet):
+    """Server Message Block.
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of SMB.
+        TODO.
+    """
+    
     __hdr__ = [
         ('proto', '4s', ''),
         ('cmd', 'B', 0),

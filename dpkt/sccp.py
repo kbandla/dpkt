@@ -177,6 +177,15 @@ class StopMediaTransmission(dpkt.Packet):
 
 
 class SCCP(dpkt.Packet):
+    """Cisco Skinny Client Control Protocol.
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of SCCP.
+        TODO.
+    """
+    
     __byte_order__ = '<'
     __hdr__ = (
         ('len', 'I', 0),

@@ -6,6 +6,15 @@ import dpkt
 
 
 class IGMP(dpkt.Packet):
+    """Internet Group Management Protocol.
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of IGMP.
+        TODO.
+    """
+    
     __hdr__ = (
         ('type', 'B', 0),
         ('maxresp', 'B', 0),
