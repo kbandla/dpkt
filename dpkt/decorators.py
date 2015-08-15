@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import warnings
 from timeit import Timer
-from test import pystone
 from time import sleep
 
 
@@ -33,21 +32,6 @@ def deprecated(deprecated_method, func_name=None):
         return deprecated_method(*args, **kwargs)  # actually call the method
 
     return _deprecated
-
-
-@decorator_with_args
-def duration(function, repeat=10000):
-    def _duration(*args, **kwargs):
-        time = 0
-        try:
-            time = Timer(lambda: function(*args, **kwargs)).timeit(repeat)
-        finally:
-            benchtime, pystones = pystone.pystones()
-            kstones = (pystones * time) / 1000
-            print '%s : time = %f kstones = %f' % (function.__name__, time, kstones)
-        return function(*args, **kwargs)
-
-    return _duration
 
 
 class TestDeprecatedDecorator(object):
@@ -82,30 +66,8 @@ class TestDeprecatedDecorator(object):
             sys.stderr = saved_stderr
 
 
-class TestDurationDecorator(object):
-    @duration(1)
-    def duration_decorator(self):
-        sleep(0.05)
-        return
-
-    def test_duration_decorator(self):
-        import sys
-        import re
-        from StringIO import StringIO
-
-        saved_stdout = sys.stdout
-        try:
-            out = StringIO()
-            sys.stdout = out
-            self.duration_decorator()
-            assert (re.match('((.+?[0-9]+\.[0-9]+)\s?){2}', out.getvalue()))
-        finally:
-            sys.stdout = saved_stdout
-
-
 if __name__ == '__main__':
     a = TestDeprecatedDecorator()
     a.test_deprecated_decorator()
-    a = TestDurationDecorator()
     a.test_duration_decorator()
     print 'Tests Successful...'
