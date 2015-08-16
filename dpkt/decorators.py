@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 import warnings
-from timeit import Timer
-from time import sleep
 
 
 def decorator_with_args(decorator_to_enhance):
