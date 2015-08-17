@@ -521,6 +521,7 @@ if __name__ == '__main__':
     # Runs all the test associated with this class/file
     test_basic()
     test_PTR()
+    test_OPT()
     test_pack_name()
     test_deprecated_methods()
     test_deprecated_method_performance()
