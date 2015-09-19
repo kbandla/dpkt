@@ -10,7 +10,7 @@ class IGMP(dpkt.Packet):
         ('type', 'B', 0),
         ('maxresp', 'B', 0),
         ('sum', 'H', 0),
-        ('group', 'I', 0)
+        ('group', '4s', '\x00' * 4)
     )
 
     def __str__(self):
