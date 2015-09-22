@@ -118,12 +118,13 @@ class Reader(object):
         if self.__fh.magic in (PMUDPCT_MAGIC, PMUDPCT_MAGIC_NANO):
             self.__fh = LEFileHdr(buf)
             self.__ph = LEPktHdr
-        elif self.__fh.magic not in (TCPDUMP_MAGIC, TCPDUMP_MAGIC_NANO):
+        elif self.__fh.magic in (TCPDUMP_MAGIC, TCPDUMP_MAGIC_NANO):
             raise ValueError('invalid tcpdump header')
         if self.__fh.linktype in dltoff:
             self.dloff = dltoff[self.__fh.linktype]
         else:
             self.dloff = 0
+        self._divisor = 1E6 if self.__fh.magic in (TCPDUMP_MAGIC, PMUDPCT_MAGIC) else 1E9
         self.snaplen = self.__fh.snaplen
         self.filter = ''
         self.__iter = iter(self)
@@ -184,7 +185,7 @@ class Reader(object):
                 break
             hdr = self.__ph(buf)
             buf = self.__f.read(hdr.caplen)
-            yield (hdr.tv_sec + (hdr.tv_usec / 1000000.0), buf)
+            yield (hdr.tv_sec + (hdr.tv_usec / self._divisor), buf)
 
 
 def test_pcap_endian():
