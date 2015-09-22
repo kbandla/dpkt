@@ -118,7 +118,7 @@ class Reader(object):
         if self.__fh.magic in (PMUDPCT_MAGIC, PMUDPCT_MAGIC_NANO):
             self.__fh = LEFileHdr(buf)
             self.__ph = LEPktHdr
-        elif self.__fh.magic in (TCPDUMP_MAGIC, TCPDUMP_MAGIC_NANO):
+        elif self.__fh.magic not in (TCPDUMP_MAGIC, TCPDUMP_MAGIC_NANO):
             raise ValueError('invalid tcpdump header')
         if self.__fh.linktype in dltoff:
             self.dloff = dltoff[self.__fh.linktype]
