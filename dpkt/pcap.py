@@ -8,7 +8,9 @@ import dpkt
 
 
 TCPDUMP_MAGIC = 0xa1b2c3d4L
+TCPDUMP_MAGIC_NANO = 0xa1b23c4d
 PMUDPCT_MAGIC = 0xd4c3b2a1L
+PMUDPCT_MAGIC_NANO = 0x4d3cb2a1
 
 PCAP_VERSION_MAJOR = 2
 PCAP_VERSION_MINOR = 4
@@ -113,10 +115,10 @@ class Reader(object):
         buf = self.__f.read(FileHdr.__hdr_len__)
         self.__fh = FileHdr(buf)
         self.__ph = PktHdr
-        if self.__fh.magic == PMUDPCT_MAGIC:
+        if self.__fh.magic in (PMUDPCT_MAGIC, PMUDPCT_MAGIC_NANO):
             self.__fh = LEFileHdr(buf)
             self.__ph = LEPktHdr
-        elif self.__fh.magic != TCPDUMP_MAGIC:
+        elif self.__fh.magic not in (TCPDUMP_MAGIC, TCPDUMP_MAGIC_NANO):
             raise ValueError('invalid tcpdump header')
         if self.__fh.linktype in dltoff:
             self.dloff = dltoff[self.__fh.linktype]
