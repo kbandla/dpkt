@@ -10,38 +10,38 @@ import stp
 ETH_CRC_LEN = 4
 ETH_HDR_LEN = 14
 
-ETH_LEN_MIN = 64		# minimum frame length with CRC
-ETH_LEN_MAX = 1518		# maximum frame length with CRC
+ETH_LEN_MIN = 64  # minimum frame length with CRC
+ETH_LEN_MAX = 1518  # maximum frame length with CRC
 
-ETH_MTU	= (ETH_LEN_MAX - ETH_HDR_LEN - ETH_CRC_LEN)
-ETH_MIN	= (ETH_LEN_MIN - ETH_HDR_LEN - ETH_CRC_LEN)
+ETH_MTU = (ETH_LEN_MAX - ETH_HDR_LEN - ETH_CRC_LEN)
+ETH_MIN = (ETH_LEN_MIN - ETH_HDR_LEN - ETH_CRC_LEN)
 
 # Ethernet payload types - http://standards.ieee.org/regauth/ethertype
-ETH_TYPE_PUP = 0x0200		# PUP protocol
-ETH_TYPE_IP = 0x0800		# IP protocol
-ETH_TYPE_ARP = 0x0806		# address resolution protocol
+ETH_TYPE_PUP = 0x0200  # PUP protocol
+ETH_TYPE_IP = 0x0800  # IP protocol
+ETH_TYPE_ARP = 0x0806  # address resolution protocol
 ETH_TYPE_AOE = 0x88a2  # AoE protocol
-ETH_TYPE_CDP = 0x2000		# Cisco Discovery Protocol
-ETH_TYPE_EDP = 0x00bb                # Extreme Networks Discovery Protocol
-ETH_TYPE_DTP = 0x2004		# Cisco Dynamic Trunking Protocol
-ETH_TYPE_REVARP	= 0x8035		# reverse addr resolution protocol
-ETH_TYPE_DOT1Q = 0x8100		# IEEE 802.1Q VLAN tagging
-ETH_TYPE_IPX = 0x8137		# Internetwork Packet Exchange
-ETH_TYPE_IP6 = 0x86DD		# IPv6 protocol
-ETH_TYPE_PPP = 0x880B		# PPP
-ETH_TYPE_MPLS = 0x8847		# MPLS
-ETH_TYPE_MPLS_MCAST = 0x8848	# MPLS Multicast
-ETH_TYPE_PPPoE_DISC = 0x8863	# PPP Over Ethernet Discovery Stage
-ETH_TYPE_PPPoE = 0x8864	# PPP Over Ethernet Session Stage
+ETH_TYPE_CDP = 0x2000  # Cisco Discovery Protocol
+ETH_TYPE_EDP = 0x00bb  # Extreme Networks Discovery Protocol
+ETH_TYPE_DTP = 0x2004  # Cisco Dynamic Trunking Protocol
+ETH_TYPE_REVARP	= 0x8035  # reverse addr resolution protocol
+ETH_TYPE_DOT1Q = 0x8100  # IEEE 802.1Q VLAN tagging
+ETH_TYPE_IPX = 0x8137  # Internetwork Packet Exchange
+ETH_TYPE_IP6 = 0x86DD  # IPv6 protocol
+ETH_TYPE_PPP = 0x880B  # PPP
+ETH_TYPE_MPLS = 0x8847  # MPLS
+ETH_TYPE_MPLS_MCAST = 0x8848  # MPLS Multicast
+ETH_TYPE_PPPoE_DISC = 0x8863  # PPP Over Ethernet Discovery Stage
+ETH_TYPE_PPPoE = 0x8864  # PPP Over Ethernet Session Stage
 ETH_TYPE_LLDP = 0x88CC  # Link Layer Discovery Protocol
 
 # MPLS label stack fields
-MPLS_LABEL_MASK	= 0xfffff000
-MPLS_QOS_MASK	= 0x00000e00
-MPLS_TTL_MASK	= 0x000000ff
+MPLS_LABEL_MASK = 0xfffff000
+MPLS_QOS_MASK = 0x00000e00
+MPLS_TTL_MASK = 0x000000ff
 MPLS_LABEL_SHIFT = 12
-MPLS_QOS_SHIFT	= 9
-MPLS_TTL_SHIFT	= 0
+MPLS_QOS_SHIFT = 9
+MPLS_TTL_SHIFT = 0
 MPLS_STACK_BOTTOM = 0x0100
 
 
@@ -50,7 +50,7 @@ class Ethernet(dpkt.Packet):
         ('dst', '6s', ''),
         ('src', '6s', ''),
         ('type', 'H', ETH_TYPE_IP)
-        )
+    )
     _typesw = {}
     
     def _unpack_data(self, buf):
@@ -73,7 +73,7 @@ class Ethernet(dpkt.Packet):
             setattr(self, self.data.__class__.__name__.lower(), self.data)
         except (KeyError, dpkt.UnpackError):
             self.data = buf
-    
+
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
         if self.type > 1500:
@@ -100,11 +100,11 @@ class Ethernet(dpkt.Packet):
             else:
                 # non-SNAP
                 dsap = ord(self.data[0])
-                if dsap == 0x06: # SAP_IP
+                if dsap == 0x06:  # SAP_IP
                     self.data = self.ip = self._typesw[ETH_TYPE_IP](self.data[3:])
-                elif dsap == 0x10 or dsap == 0xe0: # SAP_NETWARE{1,2}
+                elif dsap == 0x10 or dsap == 0xe0:  # SAP_NETWARE{1,2}
                     self.data = self.ipx = self._typesw[ETH_TYPE_IPX](self.data[3:])
-                elif dsap == 0x42: # SAP_STP
+                elif dsap == 0x42:  # SAP_STP
                     self.data = self.stp = stp.STP(self.data[3:])
 
     def pack_hdr(self):
