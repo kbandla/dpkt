@@ -50,25 +50,25 @@ class DOT1Q(dpkt.Packet):
     get_type = classmethod(get_type)
 
     def _unpack_data(self, buf):
-      if self.type == ETH_TYPE_MPLS or \
-            self.type == ETH_TYPE_MPLS_MCAST:
-        # XXX - skip labels (max # of labels is undefined, just use 24)
-        self.labels = []
-        for i in range(24):
-          entry = struct.unpack('>I', buf[i*4:i*4+4])[0]
-          label = ((entry & MPLS_LABEL_MASK) >> MPLS_LABEL_SHIFT, \
-                     (entry & MPLS_QOS_MASK) >> MPLS_QOS_SHIFT, \
-                     (entry & MPLS_TTL_MASK) >> MPLS_TTL_SHIFT)
-          self.labels.append(label)
-          if entry & MPLS_STACK_BOTTOM:
-            break
-          self.type = ETH_TYPE_IP
-          buf = buf[(i + 1) * 4:]
-      try:
-        self.data = self._typesw[self.type](buf)
-        setattr(self, self.data.__class__.__name__.lower(), self.data)
-      except (KeyError, dpkt.UnpackError):
-        self.data = buf
+        if self.type == ETH_TYPE_MPLS or \
+                self.type == ETH_TYPE_MPLS_MCAST:
+            # XXX - skip labels (max # of labels is undefined, just use 24)
+            self.labels = []
+            for i in range(24):
+                entry = struct.unpack('>I', buf[i*4:i*4+4])[0]
+                label = ((entry & MPLS_LABEL_MASK) >> MPLS_LABEL_SHIFT, \
+                           (entry & MPLS_QOS_MASK) >> MPLS_QOS_SHIFT, \
+                           (entry & MPLS_TTL_MASK) >> MPLS_TTL_SHIFT)
+                self.labels.append(label)
+                if entry & MPLS_STACK_BOTTOM:
+                    break
+                self.type = ETH_TYPE_IP
+                buf = buf[(i + 1) * 4:]
+        try:
+            self.data = self._typesw[self.type](buf)
+            setattr(self, self.data.__class__.__name__.lower(), self.data)
+        except (KeyError, dpkt.UnpackError):
+            self.data = buf
 
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
@@ -76,16 +76,16 @@ class DOT1Q(dpkt.Packet):
 
 # XXX - auto-load Ethernet dispatch table from ETH_TYPE_* definitions
 def __load_types():
-  g = globals()
-  for k, v in g.iteritems():
-    if k.startswith('ETH_TYPE_'):
-      name = k[9:]
-      modname = name.lower()
-      try:
-        mod = __import__(modname, g)
-      except ImportError:
-        continue
-      DOT1Q.set_type(v, getattr(mod, name))
+    g = globals()
+    for k, v in g.iteritems():
+        if k.startswith('ETH_TYPE_'):
+            name = k[9:]
+            modname = name.lower()
+            try:
+                mod = __import__(modname, g)
+            except ImportError:
+                continue
+            DOT1Q.set_type(v, getattr(mod, name))
 
 if not DOT1Q._typesw:
-  __load_types()
+    __load_types()
