@@ -88,7 +88,7 @@ def unpack_name(buf, off):
     saved_off = 0
     start_off = off
     while True:
-        if off > len(buf):
+        if off >= len(buf):
             raise dpkt.NeedData()
         n = ord(buf[off])
         if n == 0:
