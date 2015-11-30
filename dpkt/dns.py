@@ -83,28 +83,37 @@ def pack_name(name, off, label_ptrs):
 
 
 def unpack_name(buf, off):
-    name = ''
+    name = []
+    name_length = 0
     saved_off = 0
-    for _ in range(100):  # XXX
+    start_off = off
+    while True:
+        if off >= len(buf):
+            raise dpkt.NeedData()
         n = ord(buf[off])
         if n == 0:
             off += 1
             break
         elif (n & 0xc0) == 0xc0:
             ptr = struct.unpack('>H', buf[off:off + 2])[0] & 0x3fff
+            if ptr >= start_off:
+                raise dpkt.UnpackError('Invalid label compression pointer')
             off += 2
             if not saved_off:
                 saved_off = off
-            # XXX - don't use recursion!@#$
-            name = name + unpack_name(buf, ptr)[0] + '.'
-            break
-        else:
+            start_off = off = ptr
+        elif (n & 0xc0) == 0x00:
             off += 1
-            name = name + buf[off:off + n] + '.'
-            if len(name) > 255:
+            name.append(buf[off:off + n])
+            name_length += n + 1
+            if name_length > 255:
                 raise dpkt.UnpackError('name longer than 255 bytes')
             off += n
-    return name.strip('.'), off
+        else:
+            raise dpkt.UnpackError('Invalid label length %02x' % n)
+    if not saved_off:
+        saved_off = off
+    return '.'.join(name), saved_off
 
 
 class DNS(dpkt.Packet):
@@ -475,6 +484,39 @@ def test_deprecated_method_performance():
     print 'Performance of dns.aa vs. dns.get_aa(): %f %f' % (t1, t2)
 
 
+def test_random_data():
+    try:
+        DNS('\x83z0\xd2\x9a\xec\x94_7\xf3\xb7+\x85"?\xf0\xfb')
+    except dpkt.UnpackError:
+        pass
+    except:
+        assert False
+    else:
+        assert False
+
+
+def test_circular_pointers():
+    try:
+        DNS('\xc0\x00\x01\x00\x00\x01\x00\x00\x00\x00\x00\x00\x07example\x03com\xc0\x00')
+    except dpkt.UnpackError:
+        pass
+    except:
+        assert False
+    else:
+        assert False
+        
+        
+def test_very_long_name():
+    try:
+        DNS('\x00\x00\x01\x00\x00\x01\x00\x00\x00\x00\x00\x00' + ('\x10abcdef0123456789' * 16) + '\x00')
+    except dpkt.UnpackError:
+        pass
+    except:
+        assert False
+    else:
+        assert False
+
+
 if __name__ == '__main__':
     # Runs all the test associated with this class/file
     test_basic()
@@ -483,4 +525,7 @@ if __name__ == '__main__':
     test_pack_name()
     test_deprecated_methods()
     test_deprecated_method_performance()
+    test_random_data()
+    test_circular_pointers()
+    test_very_long_name()
     print 'Tests Successful...'
