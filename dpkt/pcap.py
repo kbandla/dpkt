@@ -8,7 +8,9 @@ import dpkt
 
 
 TCPDUMP_MAGIC = 0xa1b2c3d4L
+TCPDUMP_MAGIC_NANO = 0xa1b23c4d
 PMUDPCT_MAGIC = 0xd4c3b2a1L
+PMUDPCT_MAGIC_NANO = 0x4d3cb2a1
 
 PCAP_VERSION_MAJOR = 2
 PCAP_VERSION_MINOR = 4
@@ -113,15 +115,16 @@ class Reader(object):
         buf = self.__f.read(FileHdr.__hdr_len__)
         self.__fh = FileHdr(buf)
         self.__ph = PktHdr
-        if self.__fh.magic == PMUDPCT_MAGIC:
+        if self.__fh.magic in (PMUDPCT_MAGIC, PMUDPCT_MAGIC_NANO):
             self.__fh = LEFileHdr(buf)
             self.__ph = LEPktHdr
-        elif self.__fh.magic != TCPDUMP_MAGIC:
+        elif self.__fh.magic not in (TCPDUMP_MAGIC, TCPDUMP_MAGIC_NANO):
             raise ValueError('invalid tcpdump header')
         if self.__fh.linktype in dltoff:
             self.dloff = dltoff[self.__fh.linktype]
         else:
             self.dloff = 0
+        self._divisor = 1E6 if self.__fh.magic in (TCPDUMP_MAGIC, PMUDPCT_MAGIC) else 1E9
         self.snaplen = self.__fh.snaplen
         self.filter = ''
         self.__iter = iter(self)
@@ -182,7 +185,7 @@ class Reader(object):
                 break
             hdr = self.__ph(buf)
             buf = self.__f.read(hdr.caplen)
-            yield (hdr.tv_sec + (hdr.tv_usec / 1000000.0), buf)
+            yield (hdr.tv_sec + (hdr.tv_usec / self._divisor), buf)
 
 
 def test_pcap_endian():
