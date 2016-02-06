@@ -175,7 +175,7 @@ class PcapngBlock(dpkt.Packet):
         return ''.join(str(o) for o in self.opts)
 
     def pack_hdr(self):
-        if not self.opts:
+        if not getattr(self, 'opts', None):
             return dpkt.Packet.pack_hdr(self)
 
         opts_buf = self._do_pack_options()
@@ -268,7 +268,7 @@ class EnhancedPacketBlock(PcapngBlock):
     def pack_hdr(self):
         self.caplen = self.pkt_len = len(self.pkt_data)
 
-        opts_buf = self._do_pack_options()
+        opts_buf = self._do_pack_options() if getattr(self, 'opts', None) else ''
         self.len = self._len = self.__hdr_len__ + _align32b(self.caplen) + len(opts_buf)
 
         hdr_buf = dpkt.Packet.pack_hdr(self)
@@ -290,7 +290,7 @@ class Writer(object):
         self.__f = fileobj
         self.__le = sys.byteorder == 'little'
         if self.__le:
-            shb = SectionHeaderBlockLE(bom=BYTE_ORDER_MAGIC_LE)
+            shb = SectionHeaderBlockLE()
             idb = InterfaceDescriptionBlockLE(snaplen=snaplen, linktype=linktype)
         else:
             shb = SectionHeaderBlock()
@@ -301,7 +301,7 @@ class Writer(object):
     def writepkt(self, pkt, ts=None):
         if ts is None:
             ts = time.time()
-        ts *= 1E6  # to microseconds
+        ts = int(ts * 1E6)  # to int microseconds
 
         s = str(pkt)
         n = len(s)
@@ -570,11 +570,72 @@ def test_epb():
     assert len(epb) == len(buf)
 
 
+def test_reader():
+    """test a full pcapng file with 1 ICMP packet"""
+    buf = (
+        b'\x0a\x0d\x0d\x0a\x7c\x00\x00\x00\x4d\x3c\x2b\x1a\x01\x00\x00\x00\xff\xff\xff\xff\xff\xff'
+        b'\xff\xff\x03\x00\x1e\x00\x36\x34\x2d\x62\x69\x74\x20\x57\x69\x6e\x64\x6f\x77\x73\x20\x38'
+        b'\x2e\x31\x2c\x20\x62\x75\x69\x6c\x64\x20\x39\x36\x30\x30\x00\x00\x04\x00\x34\x00\x44\x75'
+        b'\x6d\x70\x63\x61\x70\x20\x31\x2e\x31\x32\x2e\x37\x20\x28\x76\x31\x2e\x31\x32\x2e\x37\x2d'
+        b'\x30\x2d\x67\x37\x66\x63\x38\x39\x37\x38\x20\x66\x72\x6f\x6d\x20\x6d\x61\x73\x74\x65\x72'
+        b'\x2d\x31\x2e\x31\x32\x29\x00\x00\x00\x00\x7c\x00\x00\x00\x01\x00\x00\x00\x7c\x00\x00\x00'
+        b'\x01\x00\x00\x00\x00\x00\x04\x00\x02\x00\x32\x00\x5c\x44\x65\x76\x69\x63\x65\x5c\x4e\x50'
+        b'\x46\x5f\x7b\x33\x42\x42\x46\x32\x31\x41\x37\x2d\x39\x31\x41\x45\x2d\x34\x44\x44\x42\x2d'
+        b'\x41\x42\x32\x43\x2d\x43\x37\x38\x32\x39\x39\x39\x43\x32\x32\x44\x35\x7d\x00\x00\x09\x00'
+        b'\x01\x00\x06\x00\x00\x00\x0c\x00\x1e\x00\x36\x34\x2d\x62\x69\x74\x20\x57\x69\x6e\x64\x6f'
+        b'\x77\x73\x20\x38\x2e\x31\x2c\x20\x62\x75\x69\x6c\x64\x20\x39\x36\x30\x30\x00\x00\x00\x00'
+        b'\x00\x00\x7c\x00\x00\x00\x06\x00\x00\x00\x84\x00\x00\x00\x00\x00\x00\x00\x63\x20\x05\x00'
+        b'\xd6\xc4\xab\x0b\x4a\x00\x00\x00\x4a\x00\x00\x00\x08\x00\x27\x96\xcb\x7c\x52\x54\x00\x12'
+        b'\x35\x02\x08\x00\x45\x00\x00\x3c\xa4\x40\x00\x00\x1f\x01\x27\xa2\xc0\xa8\x03\x28\x0a\x00'
+        b'\x02\x0f\x00\x00\x56\xf0\x00\x01\x00\x6d\x41\x42\x43\x44\x45\x46\x47\x48\x49\x4a\x4b\x4c'
+        b'\x4d\x4e\x4f\x50\x51\x52\x53\x54\x55\x56\x57\x41\x42\x43\x44\x45\x46\x47\x48\x49\x00\x00'
+        b'\x01\x00\x0f\x00\x64\x70\x6b\x74\x20\x69\x73\x20\x61\x77\x65\x73\x6f\x6d\x65\x00\x00\x00'
+        b'\x00\x00\x84\x00\x00\x00')
+
+    import StringIO
+    fobj = StringIO.StringIO(buf)
+
+    reader = Reader(fobj)
+    assert reader.snaplen == 0x40000
+    assert reader.datalink() == DLT_EN10MB
+
+    assert reader.idb.opts[0].val == '\\Device\\NPF_{3BBF21A7-91AE-4DDB-AB2C-C782999C22D5}'
+    assert reader.idb.opts[2].val == '64-bit Windows 8.1, build 9600'
+
+    ts, buf1 = iter(reader).next()
+    assert ts == 1442984653.2108380
+    assert len(buf1) == 74
+
+    assert buf1.startswith(b'\x08\x00\x27\x96')
+    assert buf1.endswith(b'FGHI')
+
+
+def test_writer():
+    """test writing a pcapng and then reading it"""
+    import StringIO
+    fobj = StringIO.StringIO()
+
+    writer = Writer(fobj, snaplen=0x2000, linktype=DLT_LINUX_SLL)
+    writer.writepkt(b'foo', ts=1454725786.526401)
+    fobj.flush()
+    fobj.seek(0)
+
+    reader = Reader(fobj)
+    assert reader.snaplen == 0x2000
+    assert reader.datalink() == DLT_LINUX_SLL
+
+    ts, buf1 = iter(reader).next()
+    assert ts == 1454725786.526401
+    assert buf1 == b'foo'
+
+
 if __name__ == '__main__':
     # TODO: big endian unit tests; could not find any examples..
 
     test_shb()
     test_idb()
     test_epb()
+    test_reader()
+    test_writer()
 
     print 'Tests Successful...'
