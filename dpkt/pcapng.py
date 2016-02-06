@@ -1,6 +1,5 @@
-"""
-pcap Next Generation file format
-"""
+"""pcap Next Generation file format"""
+
 # Spec: https://pcapng.github.io/pcapng/
 
 # pylint: disable=no-member
@@ -102,7 +101,9 @@ def _padlen(s):
 
 
 class _PcapngBlock(dpkt.Packet):
+
     """Base class for a pcapng block with Options"""
+
     __hdr__ = (
         ('type', 'I', 0),  # block type
         ('len', 'I', 12),  # block total length: total size of this block, in octets
@@ -167,7 +168,9 @@ class PcapngBlockLE(_PcapngBlock):
 
 
 class PcapngOption(dpkt.Packet):
+
     """A single Option"""
+
     __hdr__ = (
         ('code', 'H', PCAPNG_OPT_ENDOFOPT),
         ('len', 'H', 0),
@@ -205,7 +208,9 @@ class PcapngOptionLE(PcapngOption):
 
 
 class SectionHeaderBlock(_PcapngBlock):
+
     """Section Header block"""
+
     __hdr__ = (
         ('type', 'I', PCAPNG_BT_SHB),
         ('len', 'I', 28),
@@ -223,7 +228,9 @@ class SectionHeaderBlockLE(SectionHeaderBlock):
 
 
 class InterfaceDescriptionBlock(_PcapngBlock):
+
     """Interface Description block"""
+
     __hdr__ = (
         ('type', 'I', PCAPNG_BT_IDB),
         ('len', 'I', 20),
@@ -240,7 +247,9 @@ class InterfaceDescriptionBlockLE(InterfaceDescriptionBlock):
 
 
 class EnhancedPacketBlock(_PcapngBlock):
-    """Enhanced Packet Block"""
+
+    """Enhanced Packet block"""
+
     __hdr__ = (
         ('type', 'I', PCAPNG_BT_EPB),
         ('len', 'I', 64),
@@ -287,6 +296,7 @@ class EnhancedPacketBlockLE(EnhancedPacketBlock):
 
 
 class Writer(object):
+
     """Simple pcapng dumpfile writer."""
 
     def __init__(self, fileobj, snaplen=1500, linktype=DLT_EN10MB, shb=None, idb=None):
@@ -364,6 +374,7 @@ class Writer(object):
 
 
 class Reader(object):
+
     """Simple pypcap-compatible pcapng file reader."""
 
     def __init__(self, fileobj):
@@ -733,5 +744,6 @@ if __name__ == '__main__':
     test_epb()
     test_simple_write_read()
     test_custom_read_write()
+    repr(PcapngOptionLE())
 
     print 'Tests Successful...'
