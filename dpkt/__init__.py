@@ -41,6 +41,7 @@ import netflow
 import ntp
 import ospf
 import pcap
+import pcapng
 import pim
 import pmap
 import ppp
