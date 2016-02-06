@@ -268,13 +268,14 @@ class EnhancedPacketBlock(_PcapngBlock):
         self._do_unpack_options(buf, opts_offset)
 
     def __str__(self):
-        self.caplen = self.pkt_len = len(self.pkt_data)
+        pkt_buf = str(self.pkt_data)
+        self.caplen = self.pkt_len = len(pkt_buf)
 
         opts_buf = self._do_pack_options()
         self.len = self._len = self.__hdr_len__ + _align32b(self.caplen) + len(opts_buf)
 
         hdr_buf = dpkt.Packet.pack_hdr(self)
-        return hdr_buf[:-4] + _padded(self.pkt_data) + opts_buf + hdr_buf[-4:]
+        return hdr_buf[:-4] + _padded(pkt_buf) + opts_buf + hdr_buf[-4:]
 
     def __len__(self):
         opts_len = sum(len(o) for o in self.opts)
@@ -415,7 +416,7 @@ class Reader(object):
             raise ValueError('IDB not found')
 
         # set timestamp resolution and offset
-        self._divisor = 1e6  # defaults
+        self._divisor = float(1e6)  # defaults
         self._tsoffset = 0
         for opt in idb.opts:
             if opt.code == PCAPNG_OPT_IF_TSRESOL:
@@ -423,7 +424,7 @@ class Reader(object):
                 # if MSB=1, the remaining bits is a neg power of 2 (e.g. 10 means 1/1024 of second)
                 opt_val = struct_unpack('b', opt.data)[0]
                 pow_num = 2 if opt_val & 0b10000000 else 10
-                self._divisor = pow_num ** (opt_val & 0b01111111)
+                self._divisor = float(pow_num ** (opt_val & 0b01111111))
 
             elif opt.code == PCAPNG_OPT_IF_TSOFFSET:
                 # 64-bit int that specifies an offset (in seconds) that must be added to the
@@ -500,9 +501,7 @@ class Reader(object):
 
             if blk_type == PCAPNG_BT_EPB:
                 epb = EnhancedPacketBlockLE(buf) if self.__le else EnhancedPacketBlock(buf)
-
-                # calculate the timestamp
-                ts = self._tsoffset + (((epb.ts_high << 32) | epb.ts_low) / float(self._divisor))
+                ts = self._tsoffset + (((epb.ts_high << 32) | epb.ts_low) / self._divisor)
                 yield (ts, epb.pkt_data)
 
             # just ignore other blocks
