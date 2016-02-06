@@ -7,8 +7,8 @@ pcap Next Generation file format
 # pylint: disable=attribute-defined-outside-init
 
 from struct import pack as struct_pack, unpack as struct_unpack
+from time import time
 import sys
-import time
 
 import dpkt
 
@@ -286,22 +286,68 @@ class EnhancedPacketBlockLE(EnhancedPacketBlock):
 class Writer(object):
     """Simple pcapng dumpfile writer."""
 
-    def __init__(self, fileobj, snaplen=1500, linktype=DLT_EN10MB):
+    def __init__(self, fileobj, snaplen=1500, linktype=DLT_EN10MB, shb=None, idb=None):
+        """
+        shb can be an instance of SectionHeaderBlock(LE)
+        idb can be an instance of InterfaceDescriptionBlock(LE)
+        """
         self.__f = fileobj
         self.__le = sys.byteorder == 'little'
+
+        if shb:
+            self._validate_block('shb', shb, SectionHeaderBlock)
+        if idb:
+            self._validate_block('idb', idb, InterfaceDescriptionBlock)
+
         if self.__le:
-            shb = SectionHeaderBlockLE()
-            idb = InterfaceDescriptionBlockLE(snaplen=snaplen, linktype=linktype)
+            shb = shb or SectionHeaderBlockLE()
+            idb = idb or InterfaceDescriptionBlockLE(snaplen=snaplen, linktype=linktype)
         else:
-            shb = SectionHeaderBlock()
-            idb = InterfaceDescriptionBlock(snaplen=snaplen, linktype=linktype)
+            shb = shb or SectionHeaderBlock()
+            idb = idb or InterfaceDescriptionBlock(snaplen=snaplen, linktype=linktype)
+
         self.__f.write(str(shb))
         self.__f.write(str(idb))
 
+    def _validate_block(self, arg_name, blk, expected_cls):
+        """
+        check a user-defined block for correct type and endianness
+        """
+        if not isinstance(blk, expected_cls):
+            raise ValueError('{}: expecting class {}'.format(
+                arg_name, expected_cls.__name__))
+
+        if self.__le and blk.__byte_order__ != '<':
+            raise ValueError('{}: expecting class {}LE on a little-endian system'.format(
+                arg_name, expected_cls.__name__))
+
+        if not self.__le and blk.__byte_order__ == '<':
+            raise ValueError('{}: expecting class {} on a big-endian system'.format(
+                arg_name, expected_cls.__name__.replace('LE', '')))
+
     def writepkt(self, pkt, ts=None):
+        """
+        pkt can be a buffer or an instance of EnhancedPacketBlock(LE)
+        """
+        if isinstance(pkt, EnhancedPacketBlock):
+            self._validate_block('pkt', pkt, EnhancedPacketBlock)
+
+            if ts is not None:  # ts as an argument gets precedence
+                ts = int(ts * 1e6)
+            elif pkt.ts_high == pkt.ts_low == 0:
+                ts = int(time() * 1e6)
+
+            if ts is not None:
+                pkt.ts_high = ts >> 32
+                pkt.ts_low = ts & 0xffffffff
+
+            self.__f.write(str(pkt))
+            return
+
+        # pkt is a buffer - wrap it into an EPB
         if ts is None:
-            ts = time.time()
-        ts = int(ts * 1E6)  # to int microseconds
+            ts = time()
+        ts = int(ts * 1e6)  # to int microseconds
 
         s = str(pkt)
         n = len(s)
@@ -455,9 +501,12 @@ class Reader(object):
                 ts = self._tsoffset + (((epb.ts_high << 32) | epb.ts_low) / float(self._divisor))
                 yield (ts, epb.pkt_data)
 
-            else:
-                #print('skipping block type', blk.type)
-                pass
+            # ignore all other blocks here
+
+
+#########
+# TESTS #
+#########
 
 
 def test_shb():
@@ -570,7 +619,26 @@ def test_epb():
     assert len(epb) == len(buf)
 
 
-def test_reader():
+def test_simple_write_read():
+    """test writing a basic pcapng and then reading it"""
+    import StringIO
+    fobj = StringIO.StringIO()
+
+    writer = Writer(fobj, snaplen=0x2000, linktype=DLT_LINUX_SLL)
+    writer.writepkt(b'foo', ts=1454725786.526401)
+    fobj.flush()
+    fobj.seek(0)
+
+    reader = Reader(fobj)
+    assert reader.snaplen == 0x2000
+    assert reader.datalink() == DLT_LINUX_SLL
+
+    ts, buf1 = iter(reader).next()
+    assert ts == 1454725786.526401
+    assert buf1 == b'foo'
+
+
+def test_custom_read_write():
     """test a full pcapng file with 1 ICMP packet"""
     buf = (
         b'\x0a\x0d\x0d\x0a\x7c\x00\x00\x00\x4d\x3c\x2b\x1a\x01\x00\x00\x00\xff\xff\xff\xff\xff\xff'
@@ -595,6 +663,7 @@ def test_reader():
     import StringIO
     fobj = StringIO.StringIO(buf)
 
+    # test reading
     reader = Reader(fobj)
     assert reader.snaplen == 0x40000
     assert reader.datalink() == DLT_EN10MB
@@ -608,25 +677,44 @@ def test_reader():
 
     assert buf1.startswith(b'\x08\x00\x27\x96')
     assert buf1.endswith(b'FGHI')
+    fobj.close()
 
-
-def test_writer():
-    """test writing a pcapng and then reading it"""
-    import StringIO
+    # test pcapng customized writing
+    shb = SectionHeaderBlockLE(opts=[
+        PcapngOptionLE(code=3, val='64-bit Windows 8.1, build 9600'),
+        PcapngOptionLE(code=4, val='Dumpcap 1.12.7 (v1.12.7-0-g7fc8978 from master-1.12)'),
+        PcapngOptionLE()
+    ])
+    idb = InterfaceDescriptionBlockLE(snaplen=0x40000, opts=[
+        PcapngOptionLE(code=2, val='\\Device\\NPF_{3BBF21A7-91AE-4DDB-AB2C-C782999C22D5}'),
+        PcapngOptionLE(code=9, val='\x06'),
+        PcapngOptionLE(code=12, val='64-bit Windows 8.1, build 9600'),
+        PcapngOptionLE()
+    ])
+    epb = EnhancedPacketBlockLE(opts=[
+        PcapngOptionLE(code=1, val='dpkt is awesome'),
+        PcapngOptionLE()
+    ], pkt_data=(
+        b'\x08\x00\x27\x96\xcb\x7c\x52\x54\x00\x12\x35\x02\x08\x00\x45\x00\x00\x3c\xa4\x40\x00\x00'
+        b'\x1f\x01\x27\xa2\xc0\xa8\x03\x28\x0a\x00\x02\x0f\x00\x00\x56\xf0\x00\x01\x00\x6d\x41\x42'
+        b'\x43\x44\x45\x46\x47\x48\x49\x4a\x4b\x4c\x4d\x4e\x4f\x50\x51\x52\x53\x54\x55\x56\x57\x41'
+        b'\x42\x43\x44\x45\x46\x47\x48\x49'
+    ))
     fobj = StringIO.StringIO()
+    writer = Writer(fobj, shb=shb, idb=idb)
+    writer.writepkt(epb, ts=1442984653.210838)
+    assert fobj.getvalue() == buf
+    fobj.close()
 
-    writer = Writer(fobj, snaplen=0x2000, linktype=DLT_LINUX_SLL)
-    writer.writepkt(b'foo', ts=1454725786.526401)
-    fobj.flush()
-    fobj.seek(0)
+    # same with timestamps defined inside EPB
+    epb.ts_high = 335971
+    epb.ts_low = 195806422
 
-    reader = Reader(fobj)
-    assert reader.snaplen == 0x2000
-    assert reader.datalink() == DLT_LINUX_SLL
-
-    ts, buf1 = iter(reader).next()
-    assert ts == 1454725786.526401
-    assert buf1 == b'foo'
+    fobj = StringIO.StringIO()
+    writer = Writer(fobj, shb=shb, idb=idb)
+    writer.writepkt(epb)
+    assert fobj.getvalue() == buf
+    fobj.close()
 
 
 if __name__ == '__main__':
@@ -635,7 +723,7 @@ if __name__ == '__main__':
     test_shb()
     test_idb()
     test_epb()
-    test_reader()
-    test_writer()
+    test_simple_write_read()
+    test_custom_read_write()
 
     print 'Tests Successful...'
