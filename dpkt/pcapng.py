@@ -109,12 +109,19 @@ class PcapngOption(dpkt.Packet):
         self.val = buf[self.__hdr_len__:self.__hdr_len__ + self.len]
         self.data = ''  # discard any padding
 
+        # decode comment
+        if self.code == PCAPNG_OPT_COMMENT:
+            self.val = self.val.decode('utf-8')
+
     def pack_hdr(self):
+        # encode comment
+        if self.code == PCAPNG_OPT_COMMENT and isinstance(self.val, unicode):
+            self.val = self.val.encode('utf-8')
         self.len = len(self.val)
         return dpkt.Packet.pack_hdr(self) + _align32str(self.val)
 
     def __len__(self):
-        return self.__hdr_len__ + _align32b(len(self.val))
+        return len(self.pack_hdr())
 
 
 class PcapngOptionLE(PcapngOption):
@@ -150,10 +157,11 @@ class PcapngBlock(dpkt.Packet):
         while opts_buf:
             opt = (PcapngOptionLE(opts_buf) if self.__byte_order__ == '<'
                    else PcapngOption(opts_buf))
+
+            self.opts.append(opt)
             opts_buf = opts_buf[opt.__hdr_len__ + _align32b(opt.len):]
             if opt.code == PCAPNG_OPT_ENDOFOPT:
                 break
-            self.opts.append(opt)
 
         # duplicate total length field
         self._len = struct_unpack(
@@ -161,11 +169,16 @@ class PcapngBlock(dpkt.Packet):
         if self._len != self.len:
             raise dpkt.UnpackError('length fields do not match')
 
+    def _do_pack_options(self):
+        if self.opts[-1].code != PCAPNG_OPT_ENDOFOPT:
+            raise dpkt.PackError('options must end with opt_endofopt')
+        return ''.join(str(o) for o in self.opts)
+
     def pack_hdr(self):
         if not self.opts:
             return dpkt.Packet.pack_hdr(self)
 
-        opts_buf = ''.join(str(o) for o in self.opts) + b'\x00\x00\x00\x00'
+        opts_buf = self._do_pack_options()
         self.len = self._len = self.__hdr_len__ + len(opts_buf)
 
         hdr_buf = dpkt.Packet.pack_hdr(self)
@@ -175,7 +188,7 @@ class PcapngBlock(dpkt.Packet):
         if not self.opts:
             return self.__hdr_len__
 
-        opts_len = sum(len(o) for o in self.opts) + 4
+        opts_len = sum(len(o) for o in self.opts)
         return self.__hdr_len__ + opts_len
 
 
@@ -252,6 +265,19 @@ class EnhancedPacketBlock(PcapngBlock):
         opts_offset = po + _align32b(self.caplen)
         self._do_unpack_options(buf, opts_offset)
 
+    def pack_hdr(self):
+        self.caplen = self.pkt_len = len(self.pkt_data)
+
+        opts_buf = self._do_pack_options()
+        self.len = self._len = self.__hdr_len__ + _align32b(self.caplen) + len(opts_buf)
+
+        hdr_buf = dpkt.Packet.pack_hdr(self)
+        return hdr_buf[:-4] + _align32str(self.pkt_data) + opts_buf + hdr_buf[-4:]
+
+    def __len__(self):
+        opts_len = sum(len(o) for o in self.opts)
+        return self.__hdr_len__ + _align32b(self.caplen) + opts_len
+
 
 class EnhancedPacketBlockLE(EnhancedPacketBlock):
     __byte_order__ = '<'
@@ -262,7 +288,8 @@ class Writer(object):
 
     def __init__(self, fileobj, snaplen=1500, linktype=DLT_EN10MB):
         self.__f = fileobj
-        if sys.byteorder == 'little':
+        self.__le = sys.byteorder == 'little'
+        if self.__le:
             shb = SectionHeaderBlockLE(bom=BYTE_ORDER_MAGIC_LE)
             idb = InterfaceDescriptionBlockLE(snaplen=snaplen, linktype=linktype)
         else:
@@ -274,19 +301,13 @@ class Writer(object):
     def writepkt(self, pkt, ts=None):
         if ts is None:
             ts = time.time()
-        ts *= 1E6  # assume microseconds
+        ts *= 1E6  # to microseconds
 
         s = str(pkt)
         n = len(s)
 
-        if sys.byteorder == 'little':
-            epb = EnhancedPacketBlockLE(
-                ts_high=ts >> 32, ts_low=ts & 0xffffffff,
-                caplen=n, pkt_len=n, pkt_data=s)
-        else:
-            epb = EnhancedPacketBlock(
-                ts_high=ts >> 32, ts_low=ts & 0xffffffff,
-                caplen=n, pkt_len=n, pkt_data=s)
+        kls = EnhancedPacketBlockLE if self.__le else EnhancedPacketBlock
+        epb = kls(ts_high=ts >> 32, ts_low=ts & 0xffffffff, caplen=n, pkt_len=n, pkt_data=s)
         self.__f.write(str(epb))
 
     def close(self):
@@ -459,16 +480,19 @@ def test_shb():
     assert shb.data == ''
 
     # options unpacking
-    assert len(shb.opts) == 1
-    opt = shb.opts[0]
-    assert opt.code == PCAPNG_OPT_SHB_USERAPPL
-    assert opt.val == 'TShark 1.10.0rc2 (SVN Rev 49526 from /trunk-1.10)'
-    assert opt.len == len(opt.val)
-    assert opt.data == ''
+    assert len(shb.opts) == 2
+    assert shb.opts[0].code == PCAPNG_OPT_SHB_USERAPPL
+    assert shb.opts[0].val == 'TShark 1.10.0rc2 (SVN Rev 49526 from /trunk-1.10)'
+    assert shb.opts[0].len == len(shb.opts[0].val)
+    assert shb.opts[0].data == ''
+
+    assert shb.opts[1].code == PCAPNG_OPT_ENDOFOPT
+    assert shb.opts[1].len == 0
 
     # option packing
-    assert str(opt) == opt_buf
-    assert len(opt) == len(opt_buf)
+    assert str(shb.opts[0]) == opt_buf
+    assert len(shb.opts[0]) == len(opt_buf)
+    assert str(shb.opts[1]) == b'\x00\x00\x00\x00'
 
     # block packing
     assert str(shb) == buf
@@ -489,16 +513,19 @@ def test_idb():
     assert idb.data == ''
 
     # options unpacking
-    assert len(idb.opts) == 1
-    opt = idb.opts[0]
-    assert opt.code == PCAPNG_OPT_IF_TSRESOL
-    assert opt.len == 1
-    assert opt.val == b'\x06'
-    assert opt.data == ''
+    assert len(idb.opts) == 2
+    assert idb.opts[0].code == PCAPNG_OPT_IF_TSRESOL
+    assert idb.opts[0].len == 1
+    assert idb.opts[0].val == b'\x06'
+    assert idb.opts[0].data == ''
+
+    assert idb.opts[1].code == PCAPNG_OPT_ENDOFOPT
+    assert idb.opts[1].len == 0
 
     # option packing
-    assert str(opt) == b'\x09\x00\x01\x00\x06\x00\x00\x00'
-    assert len(opt) == 8
+    assert str(idb.opts[0]) == b'\x09\x00\x01\x00\x06\x00\x00\x00'
+    assert len(idb.opts[0]) == 8
+    assert str(idb.opts[1]) == b'\x00\x00\x00\x00'
 
     # block packing
     assert str(idb) == buf
@@ -506,13 +533,45 @@ def test_idb():
 
 
 def test_epb():
-    """test EPB with options"""
-    # TODO
-    pass
+    """test EPB with a non-ascii comment option"""
+    buf = (
+        b'\x06\x00\x00\x00\x80\x00\x00\x00\x00\x00\x00\x00\x73\xe6\x04\x00\xbe\x37\xe2\x19\x4a\x00'
+        b'\x00\x00\x4a\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x08\x00\x45\x00'
+        b'\x00\x3c\x5d\xb3\x40\x00\x40\x06\xdf\x06\x7f\x00\x00\x01\x7f\x00\x00\x01\x98\x34\x11\x4e'
+        b'\x95\xcb\x2d\x3a\x00\x00\x00\x00\xa0\x02\xaa\xaa\xfe\x30\x00\x00\x02\x04\xff\xd7\x04\x02'
+        b'\x08\x0a\x05\x8f\x70\x89\x00\x00\x00\x00\x01\x03\x03\x07\x00\x00\x01\x00\x0a\x00\xd0\xbf'
+        b'\xd0\xb0\xd0\xba\xd0\xb5\xd1\x82\x00\x00\x00\x00\x00\x00\x80\x00\x00\x00')
+
+    # block unpacking
+    epb = EnhancedPacketBlockLE(buf)
+    assert epb.type == PCAPNG_BT_EPB
+    assert epb.caplen == len(epb.pkt_data)
+    assert epb.pkt_len == len(epb.pkt_data)
+    assert epb.caplen == 74
+    assert epb.ts_high == 321139
+    assert epb.ts_low == 434255806
+    assert epb.data == ''
+
+    # options unpacking
+    assert len(epb.opts) == 2
+    assert epb.opts[0].code == PCAPNG_OPT_COMMENT
+    assert epb.opts[0].val == u'\u043f\u0430\u043a\u0435\u0442'
+
+    assert epb.opts[1].code == PCAPNG_OPT_ENDOFOPT
+    assert epb.opts[1].len == 0
+
+    # option packing
+    assert str(epb.opts[0]) == b'\x01\x00\x0a\x00\xd0\xbf\xd0\xb0\xd0\xba\xd0\xb5\xd1\x82\x00\x00'
+    assert len(epb.opts[0]) == 16
+    assert str(epb.opts[1]) == b'\x00\x00\x00\x00'
+
+    # block packing
+    assert str(epb) == buf
+    assert len(epb) == len(buf)
 
 
 if __name__ == '__main__':
-    # TODO: big endian unit tests; I could not find any examples..
+    # TODO: big endian unit tests; could not find any examples..
 
     test_shb()
     test_idb()
