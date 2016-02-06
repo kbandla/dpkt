@@ -80,56 +80,29 @@ dltoff = {DLT_NULL: 4, DLT_EN10MB: 14, DLT_IEEE802: 22, DLT_ARCNET: 6,
 # </copied from pcap.py>
 
 
-def _swap32b(num):
+def _swap32b(i):
     """swap endianness of an uint32"""
-    return struct_unpack('<I', struct_pack('>I', num))[0]
+    return struct_unpack('<I', struct_pack('>I', i))[0]
 
 
-def _align32b(num):
-    """return the `num` aligned to the 32-bit boundary"""
-    r = num % 4
-    return num if not r else num + 4 - r
+def _align32b(i):
+    """return int `i` aligned to the 32-bit boundary"""
+    r = i % 4
+    return i if not r else i + 4 - r
 
 
-def _align32str(s):
+def _padded(s):
     """return str `s` padded with zeroes to align to the 32-bit boundary"""
     return struct_pack('%ss' % _align32b(len(s)), s)
 
 
-class PcapngOption(dpkt.Packet):
-    """A single Option"""
-    __hdr__ = (
-        ('code', 'H', PCAPNG_OPT_ENDOFOPT),
-        ('len', 'H', 0),
-        ('val', '0s', '')
-    )
-
-    def unpack(self, buf):
-        dpkt.Packet.unpack(self, buf)
-        self.val = buf[self.__hdr_len__:self.__hdr_len__ + self.len]
-        self.data = ''  # discard any padding
-
-        # decode comment
-        if self.code == PCAPNG_OPT_COMMENT:
-            self.val = self.val.decode('utf-8')
-
-    def pack_hdr(self):
-        # encode comment
-        if self.code == PCAPNG_OPT_COMMENT and isinstance(self.val, unicode):
-            self.val = self.val.encode('utf-8')
-        self.len = len(self.val)
-        return dpkt.Packet.pack_hdr(self) + _align32str(self.val)
-
-    def __len__(self):
-        return len(self.pack_hdr())
+def _padlen(s):
+    """return size of padding required to align str `s` to the 32-bit boundary"""
+    return _align32b(len(s)) - len(s)
 
 
-class PcapngOptionLE(PcapngOption):
-    __byte_order__ = '<'
-
-
-class PcapngBlock(dpkt.Packet):
-    """Generic pcapng block"""
+class _PcapngBlock(dpkt.Packet):
+    """Base class for a pcapng block with Options"""
     __hdr__ = (
         ('type', 'I', 0),  # block type
         ('len', 'I', 12),  # block total length: total size of this block, in octets
@@ -137,11 +110,10 @@ class PcapngBlock(dpkt.Packet):
         ('_len', 'I', 12),  # dup of len
     )
 
-    @property
-    def tail(self):
-        return self._len
+    def unpack_hdr(self, buf):
+        dpkt.Packet.unpack(self, buf)
 
-    def unpack_options(self, buf):
+    def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
         if self.len > len(buf):
             raise dpkt.NeedData
@@ -155,29 +127,27 @@ class PcapngBlock(dpkt.Packet):
 
         opts_buf = buf[oo:oo + ol]
         while opts_buf:
-            opt = (PcapngOptionLE(opts_buf) if self.__byte_order__ == '<'
+            opt = (PcapngOptionLE(opts_buf) if self.__hdr_fmt__[0] == '<'
                    else PcapngOption(opts_buf))
-
             self.opts.append(opt)
-            opts_buf = opts_buf[opt.__hdr_len__ + _align32b(opt.len):]
+
+            opts_buf = opts_buf[len(opt):]
             if opt.code == PCAPNG_OPT_ENDOFOPT:
                 break
 
         # duplicate total length field
-        self._len = struct_unpack(
-            self.__byte_order__ + 'I', buf[oo + ol:oo + ol + 4])[0]
+        self._len = struct_unpack(self.__hdr_fmt__[0] + 'I', buf[-4:])[0]
         if self._len != self.len:
             raise dpkt.UnpackError('length fields do not match')
 
     def _do_pack_options(self):
+        if not getattr(self, 'opts', None):
+            return ''
         if self.opts[-1].code != PCAPNG_OPT_ENDOFOPT:
             raise dpkt.PackError('options must end with opt_endofopt')
         return ''.join(str(o) for o in self.opts)
 
-    def pack_hdr(self):
-        if not getattr(self, 'opts', None):
-            return dpkt.Packet.pack_hdr(self)
-
+    def __str__(self):
         opts_buf = self._do_pack_options()
         self.len = self._len = self.__hdr_len__ + len(opts_buf)
 
@@ -192,11 +162,49 @@ class PcapngBlock(dpkt.Packet):
         return self.__hdr_len__ + opts_len
 
 
-class PcapngBlockLE(PcapngBlock):
+class PcapngBlockLE(_PcapngBlock):
     __byte_order__ = '<'
 
 
-class SectionHeaderBlock(PcapngBlock):
+class PcapngOption(dpkt.Packet):
+    """A single Option"""
+    __hdr__ = (
+        ('code', 'H', PCAPNG_OPT_ENDOFOPT),
+        ('len', 'H', 0),
+    )
+
+    def unpack(self, buf):
+        dpkt.Packet.unpack(self, buf)
+        self.data = buf[self.__hdr_len__:self.__hdr_len__ + self.len]
+
+        # decode comment
+        if self.code == PCAPNG_OPT_COMMENT:
+            self.text = self.data.decode('utf-8')
+
+    def __str__(self):
+        # encode comment
+        if self.code == PCAPNG_OPT_COMMENT:
+            text = getattr(self, 'text', self.data)
+            self.data = text.encode('utf-8') if isinstance(text, unicode) else text
+
+        self.len = len(self.data)
+        return dpkt.Packet.pack_hdr(self) + _padded(self.data)
+
+    def __len__(self):
+        return self.__hdr_len__ + len(self.data) + _padlen(self.data)
+
+    def __repr__(self):
+        if self.code == PCAPNG_OPT_ENDOFOPT:
+            return '{}(opt_endofopt)'.format(self.__class__.__name__)
+        else:
+            return dpkt.Packet.__repr__(self)
+
+
+class PcapngOptionLE(PcapngOption):
+    __byte_order__ = '<'
+
+
+class SectionHeaderBlock(_PcapngBlock):
     """Section Header block"""
     __hdr__ = (
         ('type', 'I', PCAPNG_BT_SHB),
@@ -209,15 +217,12 @@ class SectionHeaderBlock(PcapngBlock):
         ('_len', 'I', 28)
     )
 
-    def unpack(self, buf):
-        self.unpack_options(buf)
-
 
 class SectionHeaderBlockLE(SectionHeaderBlock):
     __byte_order__ = '<'
 
 
-class InterfaceDescriptionBlock(PcapngBlock):
+class InterfaceDescriptionBlock(_PcapngBlock):
     """Interface Description block"""
     __hdr__ = (
         ('type', 'I', PCAPNG_BT_IDB),
@@ -229,15 +234,12 @@ class InterfaceDescriptionBlock(PcapngBlock):
         ('_len', 'I', 20)
     )
 
-    def unpack(self, buf):
-        self.unpack_options(buf)
-
 
 class InterfaceDescriptionBlockLE(InterfaceDescriptionBlock):
     __byte_order__ = '<'
 
 
-class EnhancedPacketBlock(PcapngBlock):
+class EnhancedPacketBlock(_PcapngBlock):
     """Enhanced Packet Block"""
     __hdr__ = (
         ('type', 'I', PCAPNG_BT_EPB),
@@ -265,14 +267,14 @@ class EnhancedPacketBlock(PcapngBlock):
         opts_offset = po + _align32b(self.caplen)
         self._do_unpack_options(buf, opts_offset)
 
-    def pack_hdr(self):
+    def __str__(self):
         self.caplen = self.pkt_len = len(self.pkt_data)
 
-        opts_buf = self._do_pack_options() if getattr(self, 'opts', None) else ''
+        opts_buf = self._do_pack_options()
         self.len = self._len = self.__hdr_len__ + _align32b(self.caplen) + len(opts_buf)
 
         hdr_buf = dpkt.Packet.pack_hdr(self)
-        return hdr_buf[:-4] + _align32str(self.pkt_data) + opts_buf + hdr_buf[-4:]
+        return hdr_buf[:-4] + _padded(self.pkt_data) + opts_buf + hdr_buf[-4:]
 
     def __len__(self):
         opts_len = sum(len(o) for o in self.opts)
@@ -317,11 +319,11 @@ class Writer(object):
             raise ValueError('{}: expecting class {}'.format(
                 arg_name, expected_cls.__name__))
 
-        if self.__le and blk.__byte_order__ != '<':
+        if self.__le and blk.__hdr_fmt__[0] == '>':
             raise ValueError('{}: expecting class {}LE on a little-endian system'.format(
                 arg_name, expected_cls.__name__))
 
-        if not self.__le and blk.__byte_order__ == '<':
+        if not self.__le and blk.__hdr_fmt__[0] == '<':
             raise ValueError('{}: expecting class {} on a big-endian system'.format(
                 arg_name, expected_cls.__name__.replace('LE', '')))
 
@@ -367,21 +369,25 @@ class Reader(object):
         self.name = getattr(fileobj, 'name', '<{}>'.format(fileobj.__class__.__name__))
         self.__f = fileobj
 
-        buf = self.__f.read(PcapngBlock.__hdr_len__)
-        hdr = PcapngBlock(buf)
-
-        if hdr.type != PCAPNG_BT_SHB:
+        shb = SectionHeaderBlock()
+        buf = self.__f.read(shb.__hdr_len__)
+        if len(buf) < shb.__hdr_len__:
             raise ValueError('invalid pcapng header')
 
-        # determine the correct byte order and read full SHB
-        if hdr.tail == BYTE_ORDER_MAGIC:
-            self.__le = False
-            buf += self.__f.read(hdr.len - hdr.__hdr_len__)
-            shb = SectionHeaderBlock(buf)
-        elif hdr.tail == BYTE_ORDER_MAGIC_LE:
+        # unpack just the header since endianness is not known
+        shb.unpack_hdr(buf)
+        if shb.type != PCAPNG_BT_SHB:
+            raise ValueError('invalid pcapng header: not a SHB')
+
+        # determine the correct byte order and reload full SHB
+        if shb.bom == BYTE_ORDER_MAGIC_LE:
             self.__le = True
-            buf += self.__f.read(_swap32b(hdr.len) - hdr.__hdr_len__)
+            buf += self.__f.read(_swap32b(shb.len) - shb.__hdr_len__)
             shb = SectionHeaderBlockLE(buf)
+        elif shb.bom == BYTE_ORDER_MAGIC:
+            self.__le = False
+            buf += self.__f.read(shb.len - shb.__hdr_len__)
+            shb = SectionHeaderBlock(buf)
         else:
             raise ValueError('unknown endianness')
 
@@ -392,40 +398,37 @@ class Reader(object):
         # look for a mandatory IDB
         idb = None
         while 1:
-            buf = self.__f.read(PcapngBlock.__hdr_len__)
-            if not buf:
+            buf = self.__f.read(8)
+            if len(buf) < 8:
                 break
 
-            blk = PcapngBlockLE(buf) if self.__le else PcapngBlock(buf)
-            buf += self.__f.read(blk.len - blk.__hdr_len__)
+            blk_type, blk_len = struct_unpack('<II' if self.__le else '>II', buf)
+            buf += self.__f.read(blk_len - 8)
 
-            if blk.type == PCAPNG_BT_IDB:
+            if blk_type == PCAPNG_BT_IDB:
                 idb = (InterfaceDescriptionBlockLE(buf) if self.__le
                        else InterfaceDescriptionBlock(buf))
                 break
-
-            elif blk.type in (PCAPNG_BT_SPB, PCAPNG_BT_EPB, PCAPNG_BT_PB):
-                raise ValueError('packet block before interface description block')
             # just skip other blocks
 
         if idb is None:
-            raise ValueError('interface description block not found')
+            raise ValueError('IDB not found')
 
         # set timestamp resolution and offset
-        self._divisor = 1E6  # defaults
+        self._divisor = 1e6  # defaults
         self._tsoffset = 0
         for opt in idb.opts:
             if opt.code == PCAPNG_OPT_IF_TSRESOL:
                 # if MSB=0, the remaining bits is a neg power of 10 (e.g. 6 means microsecs)
                 # if MSB=1, the remaining bits is a neg power of 2 (e.g. 10 means 1/1024 of second)
-                opt_val = struct_unpack('b', opt.val)[0]
+                opt_val = struct_unpack('b', opt.data)[0]
                 pow_num = 2 if opt_val & 0b10000000 else 10
                 self._divisor = pow_num ** (opt_val & 0b01111111)
 
             elif opt.code == PCAPNG_OPT_IF_TSOFFSET:
                 # 64-bit int that specifies an offset (in seconds) that must be added to the
                 # timestamp of each packet
-                self._tsoffset = struct_unpack('<q' if self.__le else '>q', opt.val)[0]
+                self._tsoffset = struct_unpack('<q' if self.__le else '>q', opt.data)[0]
 
         if idb.linktype in dltoff:
             self.dloff = dltoff[idb.linktype]
@@ -488,20 +491,21 @@ class Reader(object):
 
     def __iter__(self):
         while 1:
-            buf = self.__f.read(PcapngBlock.__hdr_len__)
-            if not buf:
+            buf = self.__f.read(8)
+            if len(buf) < 8:
                 break
 
-            blk = PcapngBlockLE(buf) if self.__le else PcapngBlock(buf)
-            if blk.type == PCAPNG_BT_EPB:
-                buf += self.__f.read(blk.len - blk.__hdr_len__)
+            blk_type, blk_len = struct_unpack('<II' if self.__le else '>II', buf)
+            buf += self.__f.read(blk_len - 8)
+
+            if blk_type == PCAPNG_BT_EPB:
                 epb = EnhancedPacketBlockLE(buf) if self.__le else EnhancedPacketBlock(buf)
 
                 # calculate the timestamp
                 ts = self._tsoffset + (((epb.ts_high << 32) | epb.ts_low) / float(self._divisor))
                 yield (ts, epb.pkt_data)
 
-            # ignore all other blocks here
+            # just ignore other blocks
 
 
 #########
@@ -531,9 +535,8 @@ def test_shb():
     # options unpacking
     assert len(shb.opts) == 2
     assert shb.opts[0].code == PCAPNG_OPT_SHB_USERAPPL
-    assert shb.opts[0].val == 'TShark 1.10.0rc2 (SVN Rev 49526 from /trunk-1.10)'
-    assert shb.opts[0].len == len(shb.opts[0].val)
-    assert shb.opts[0].data == ''
+    assert shb.opts[0].data == 'TShark 1.10.0rc2 (SVN Rev 49526 from /trunk-1.10)'
+    assert shb.opts[0].len == len(shb.opts[0].data)
 
     assert shb.opts[1].code == PCAPNG_OPT_ENDOFOPT
     assert shb.opts[1].len == 0
@@ -565,8 +568,7 @@ def test_idb():
     assert len(idb.opts) == 2
     assert idb.opts[0].code == PCAPNG_OPT_IF_TSRESOL
     assert idb.opts[0].len == 1
-    assert idb.opts[0].val == b'\x06'
-    assert idb.opts[0].data == ''
+    assert idb.opts[0].data == b'\x06'
 
     assert idb.opts[1].code == PCAPNG_OPT_ENDOFOPT
     assert idb.opts[1].len == 0
@@ -604,7 +606,7 @@ def test_epb():
     # options unpacking
     assert len(epb.opts) == 2
     assert epb.opts[0].code == PCAPNG_OPT_COMMENT
-    assert epb.opts[0].val == u'\u043f\u0430\u043a\u0435\u0442'
+    assert epb.opts[0].text == u'\u043f\u0430\u043a\u0435\u0442'
 
     assert epb.opts[1].code == PCAPNG_OPT_ENDOFOPT
     assert epb.opts[1].len == 0
@@ -668,8 +670,8 @@ def test_custom_read_write():
     assert reader.snaplen == 0x40000
     assert reader.datalink() == DLT_EN10MB
 
-    assert reader.idb.opts[0].val == '\\Device\\NPF_{3BBF21A7-91AE-4DDB-AB2C-C782999C22D5}'
-    assert reader.idb.opts[2].val == '64-bit Windows 8.1, build 9600'
+    assert reader.idb.opts[0].data == '\\Device\\NPF_{3BBF21A7-91AE-4DDB-AB2C-C782999C22D5}'
+    assert reader.idb.opts[2].data == '64-bit Windows 8.1, build 9600'
 
     ts, buf1 = iter(reader).next()
     assert ts == 1442984653.2108380
@@ -681,18 +683,18 @@ def test_custom_read_write():
 
     # test pcapng customized writing
     shb = SectionHeaderBlockLE(opts=[
-        PcapngOptionLE(code=3, val='64-bit Windows 8.1, build 9600'),
-        PcapngOptionLE(code=4, val='Dumpcap 1.12.7 (v1.12.7-0-g7fc8978 from master-1.12)'),
+        PcapngOptionLE(code=3, data='64-bit Windows 8.1, build 9600'),
+        PcapngOptionLE(code=4, data='Dumpcap 1.12.7 (v1.12.7-0-g7fc8978 from master-1.12)'),
         PcapngOptionLE()
     ])
     idb = InterfaceDescriptionBlockLE(snaplen=0x40000, opts=[
-        PcapngOptionLE(code=2, val='\\Device\\NPF_{3BBF21A7-91AE-4DDB-AB2C-C782999C22D5}'),
-        PcapngOptionLE(code=9, val='\x06'),
-        PcapngOptionLE(code=12, val='64-bit Windows 8.1, build 9600'),
+        PcapngOptionLE(code=2, data='\\Device\\NPF_{3BBF21A7-91AE-4DDB-AB2C-C782999C22D5}'),
+        PcapngOptionLE(code=9, data='\x06'),
+        PcapngOptionLE(code=12, data='64-bit Windows 8.1, build 9600'),
         PcapngOptionLE()
     ])
     epb = EnhancedPacketBlockLE(opts=[
-        PcapngOptionLE(code=1, val='dpkt is awesome'),
+        PcapngOptionLE(code=1, text='dpkt is awesome'),
         PcapngOptionLE()
     ], pkt_data=(
         b'\x08\x00\x27\x96\xcb\x7c\x52\x54\x00\x12\x35\x02\x08\x00\x45\x00\x00\x3c\xa4\x40\x00\x00'
