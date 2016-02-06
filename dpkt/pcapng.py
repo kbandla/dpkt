@@ -155,7 +155,7 @@ class _PcapngBlock(dpkt.Packet):
         return hdr_buf[:-4] + opts_buf + hdr_buf[-4:]
 
     def __len__(self):
-        if not self.opts:
+        if not getattr(self, 'opts', None):
             return self.__hdr_len__
 
         opts_len = sum(len(o) for o in self.opts)
@@ -638,6 +638,13 @@ def test_simple_write_read():
     ts, buf1 = iter(reader).next()
     assert ts == 1454725786.526401
     assert buf1 == b'foo'
+
+    # test dispatch()
+    fobj.seek(0)
+    reader = Reader(fobj)
+    assert reader.dispatch(1, lambda ts, pkt: None) == 1
+    assert reader.dispatch(1, lambda ts, pkt: None) == 0
+    fobj.close()
 
 
 def test_custom_read_write():
