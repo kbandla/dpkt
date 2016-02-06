@@ -301,6 +301,8 @@ class Writer(object):
 
     def __init__(self, fileobj, snaplen=1500, linktype=DLT_EN10MB, shb=None, idb=None):
         """
+        Create a pcapng dumpfile writer for the given fileobj.
+
         shb can be an instance of SectionHeaderBlock(LE)
         idb can be an instance of InterfaceDescriptionBlock(LE)
         """
@@ -323,9 +325,7 @@ class Writer(object):
         self.__f.write(str(idb))
 
     def _validate_block(self, arg_name, blk, expected_cls):
-        """
-        check a user-defined block for correct type and endianness
-        """
+        """check a user-defined block for correct type and endianness"""
         if not isinstance(blk, expected_cls):
             raise ValueError('{0}: expecting class {1}'.format(
                 arg_name, expected_cls.__name__))
@@ -340,7 +340,10 @@ class Writer(object):
 
     def writepkt(self, pkt, ts=None):
         """
+        Write a single packet with its timestamp.
+
         pkt can be a buffer or an instance of EnhancedPacketBlock(LE)
+        ts is a Unix timestamp in seconds since Epoch (e.g. 1454725786.99)
         """
         if isinstance(pkt, EnhancedPacketBlock):
             self._validate_block('pkt', pkt, EnhancedPacketBlock)
