@@ -195,7 +195,7 @@ class PcapngOption(dpkt.Packet):
 
     def __repr__(self):
         if self.code == PCAPNG_OPT_ENDOFOPT:
-            return '{}(opt_endofopt)'.format(self.__class__.__name__)
+            return '{0}(opt_endofopt)'.format(self.__class__.__name__)
         else:
             return dpkt.Packet.__repr__(self)
 
@@ -316,15 +316,15 @@ class Writer(object):
         check a user-defined block for correct type and endianness
         """
         if not isinstance(blk, expected_cls):
-            raise ValueError('{}: expecting class {}'.format(
+            raise ValueError('{0}: expecting class {1}'.format(
                 arg_name, expected_cls.__name__))
 
         if self.__le and blk.__hdr_fmt__[0] == '>':
-            raise ValueError('{}: expecting class {}LE on a little-endian system'.format(
+            raise ValueError('{0}: expecting class {1}LE on a little-endian system'.format(
                 arg_name, expected_cls.__name__))
 
         if not self.__le and blk.__hdr_fmt__[0] == '<':
-            raise ValueError('{}: expecting class {} on a big-endian system'.format(
+            raise ValueError('{0}: expecting class {1} on a big-endian system'.format(
                 arg_name, expected_cls.__name__.replace('LE', '')))
 
     def writepkt(self, pkt, ts=None):
@@ -366,7 +366,7 @@ class Reader(object):
     """Simple pypcap-compatible pcapng file reader."""
 
     def __init__(self, fileobj):
-        self.name = getattr(fileobj, 'name', '<{}>'.format(fileobj.__class__.__name__))
+        self.name = getattr(fileobj, 'name', '<{0}>'.format(fileobj.__class__.__name__))
         self.__f = fileobj
 
         shb = SectionHeaderBlock()
@@ -393,7 +393,7 @@ class Reader(object):
 
         # check if this version is supported
         if shb.v_major != PCAPNG_VERSION_MAJOR:
-            raise ValueError('unknown pcapng version {}.{}'.format(shb.v_major, shb.v_minor,))
+            raise ValueError('unknown pcapng version {0}.{1}'.format(shb.v_major, shb.v_minor,))
 
         # look for a mandatory IDB
         idb = None
