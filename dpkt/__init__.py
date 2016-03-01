@@ -19,6 +19,8 @@ import dhcp
 import diameter
 import dns
 import dtp
+import dot1q
+import edp
 import esp
 import ethernet
 import gre

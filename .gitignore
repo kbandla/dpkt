@@ -27,3 +27,6 @@ pip-log.txt
 
 # ReadTheDocs build directory
 _build
+
+# Emacs backup files
+*~
