@@ -79,12 +79,14 @@ class LEFileHdr(FileHdr):
 class Writer(object):
     """Simple pcap dumpfile writer."""
 
-    def __init__(self, fileobj, snaplen=1500, linktype=DLT_EN10MB):
+    def __init__(self, fileobj, snaplen=1500, linktype=DLT_EN10MB, nano=False):
         self.__f = fileobj
+        self._precision = 9 if nano else 6
+        magic = TCPDUMP_MAGIC_NANO if nano else TCPDUMP_MAGIC
         if sys.byteorder == 'little':
-            fh = LEFileHdr(snaplen=snaplen, linktype=linktype)
+            fh = LEFileHdr(snaplen=snaplen, linktype=linktype, magic=magic)
         else:
-            fh = FileHdr(snaplen=snaplen, linktype=linktype)
+            fh = FileHdr(snaplen=snaplen, linktype=linktype, magic=magic)
         self.__f.write(str(fh))
 
     def writepkt(self, pkt, ts=None):
@@ -94,11 +96,11 @@ class Writer(object):
         n = len(s)
         if sys.byteorder == 'little':
             ph = LEPktHdr(tv_sec=int(ts),
-                          tv_usec=int(round(ts % 1, 6) * 10 ** 6), 
+                          tv_usec=int(round(ts % 1, self._precision) * 10 ** self._precision),
                           caplen=n, len=n)
         else:
             ph = PktHdr(tv_sec=int(ts),
-                        tv_usec=int(round(ts % 1, 6) * 10 ** 6),
+                        tv_usec=int(round(ts % 1, self._precision) * 10 ** self._precision),
                         caplen=n, len=n)
         self.__f.write(str(ph))
         self.__f.write(s)
