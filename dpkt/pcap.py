@@ -5,6 +5,7 @@
 import sys
 import time
 import dpkt
+from decimal import Decimal
 
 
 TCPDUMP_MAGIC = 0xa1b2c3d4L
@@ -124,7 +125,7 @@ class Reader(object):
             self.dloff = dltoff[self.__fh.linktype]
         else:
             self.dloff = 0
-        self._divisor = 1E6 if self.__fh.magic in (TCPDUMP_MAGIC, PMUDPCT_MAGIC) else 1E9
+        self._divisor = 1E6 if self.__fh.magic in (TCPDUMP_MAGIC, PMUDPCT_MAGIC) else Decimal(1E9)
         self.snaplen = self.__fh.snaplen
         self.filter = ''
         self.__iter = iter(self)
