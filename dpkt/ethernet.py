@@ -55,7 +55,13 @@ class Ethernet(dpkt.Packet):
 
     def _unpack_data(self, buf):
         if self.type == ETH_TYPE_8021Q:
-            self.tag, self.type = struct.unpack('>HH', buf[:4])
+            vlan_info, self.type = struct.unpack('>HH', buf[:4])
+            vlanid_mask = 0xFFF
+            cfi_mask = 0x1000
+            priority_mask = 0xE000
+            self.priority = (priority_mask & vlan_info) >> 13
+            self.cfi = (cfi_mask & vlan_info) >> 12
+            self.vlanid = (vlanid_mask & vlan_info)
             buf = buf[4:]
         elif self.type == ETH_TYPE_MPLS or self.type == ETH_TYPE_MPLS_MCAST:
             # XXX - skip labels (max # of labels is undefined, just use 24)
@@ -124,14 +130,14 @@ def __load_types():
             name = k[9:]
             modname = name.lower()
             try:
-                mod = __import__(modname, g, level=1)
+                mod = __import__(modname, g)
                 Ethernet.set_type(v, getattr(mod, name))
             except (ImportError, AttributeError):
                 continue
 
 
-if not Ethernet._typesw:
-    __load_types()
+#if not Ethernet._typesw:
+    #__load_types()
 
 
 def test_eth():  # TODO recheck this test
@@ -143,7 +149,18 @@ def test_eth():  # TODO recheck this test
          '\x00\x00\x00\x00')
     assert Ethernet(s)
 
+def test_802dot1q():
+    s = ('\x00\x60\x08\x9f\xb1\xf3\x00\x40\x05\x40\xef\x24\x81\x00\x90\x20\x08'
+         '\x00\x45\x00\x00\x34\x3b\x64\x40\x00\x40\x06\xb7\x9b\x83\x97\x20\x81'
+         '\x83\x97\x20\x15\x04\x95\x17\x70\x51\xd4\xee\x9c\x51\xa5\x5b\x36\x80'
+         '\x10\x7c\x70\x12\xc7\x00\x00\x01\x01\x08\x0a\x00\x04\xf0\xd4\x01\x99'
+         '\xa3\xfd')
+    eth = Ethernet(s)
+    assert eth.cfi == 1
+    assert eth.vlanid == 32
+    assert eth.priority == 4
 
 if __name__ == '__main__':
     test_eth()
+    test_802dot1q()
     print 'Tests Successful...'
