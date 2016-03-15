@@ -62,6 +62,8 @@ class Ethernet(dpkt.Packet):
             self.priority = (priority_mask & vlan_info) >> 13
             self.cfi = (cfi_mask & vlan_info) >> 12
             self.vlanid = (vlanid_mask & vlan_info)
+	    # for backward compatibility
+	    self.type = self.vlanid
             buf = buf[4:]
         elif self.type == ETH_TYPE_MPLS or self.type == ETH_TYPE_MPLS_MCAST:
             # XXX - skip labels (max # of labels is undefined, just use 24)
@@ -136,8 +138,8 @@ def __load_types():
                 continue
 
 
-#if not Ethernet._typesw:
-    #__load_types()
+if not Ethernet._typesw:
+    __load_types()
 
 
 def test_eth():  # TODO recheck this test
