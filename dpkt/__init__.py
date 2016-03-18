@@ -4,7 +4,7 @@ __author__ = 'Dug Song'
 __author_email__ = 'dugsong@monkey.org'
 __license__ = 'BSD'
 __url__ = 'http://dpkt.googlecode.com/'
-__version__ = '1.8.6.2'
+__version__ = '1.8.7'
 
 from dpkt import *
 
