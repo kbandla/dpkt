@@ -68,7 +68,7 @@ def print_packets(pcap):
 
 def test():
     """Open up a test pcap file and print out the packets"""
-    with open('data/http.pcap') as f:
+    with open('data/http.pcap', 'rb') as f:
         pcap = dpkt.pcap.Reader(f)
         print_packets(pcap)
 
