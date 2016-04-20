@@ -43,7 +43,8 @@ def tlv(buf):
     n = 4
     t, l = struct.unpack('>HH', buf[:n])
     v = buf[n:n + l]
-    buf = buf[n + l:]
+    pad = (n - l % n) % n
+    buf = buf[n + l + pad:]
     return t, l, v, buf
 
 
@@ -66,7 +67,24 @@ def test_stun_response():
     assert attrs == [(MAPPED_ADDRESS, '\x00\x01\x11\x22\x33\x44\x55\x66'), ]
 
 
+def test_stun_padded():
+    s = ('\x00\x01\x00\x54\x21\x12\xa4\x42\x35\x59\x53\x6e\x42\x71\x70\x56\x77\x61\x39\x4f\x00\x06'
+         '\x00\x17\x70\x4c\x79\x5a\x48\x52\x3a\x47\x77\x4c\x33\x41\x48\x42\x6f\x76\x75\x62\x4c\x76'
+         '\x43\x71\x6e\x00\x80\x2a\x00\x08\x18\x8b\x10\x4c\x69\x7b\xf6\x5b\x00\x25\x00\x00\x00\x24'
+         '\x00\x04\x6e\x00\x1e\xff\x00\x08\x00\x14\x60\x2b\xc7\xfc\x0d\x10\x63\xaa\xc5\x38\x1c\xcb'
+         '\x96\xa9\x73\x08\x73\x9a\x96\x0c\x80\x28\x00\x04\xd1\x62\xea\x65')
+    m = STUN(s)
+    assert m.type == BINDING_REQUEST
+    assert m.len == 84
+
+    attrs = parse_attrs(m.data)
+    assert len(attrs) == 6
+    assert attrs[0] == (USERNAME, 'pLyZHR:GwL3AHBovubLvCqn')
+    assert attrs[4][0] == MESSAGE_INTEGRITY
+
+
 if __name__ == '__main__':
     test_stun_response()
+    test_stun_padded()
 
     print 'Tests Successful...'
