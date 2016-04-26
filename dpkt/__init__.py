@@ -33,7 +33,6 @@ import igmp
 import ip
 import ip6
 import ipx
-import llc
 import loopback
 import mrt
 import netbios
