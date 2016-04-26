@@ -111,8 +111,8 @@ class Ethernet(dpkt.Packet):
                 lbl.s = 0
             lbl.s = 1
 
-            # re-pack Eth header if necessary
-            if self.type not in (ETH_TYPE_MPLS, ETH_TYPE_MPLS_MCAST):
+            # set encapsulation type
+            if not (self.type == ETH_TYPE_MPLS or self.type == ETH_TYPE_MPLS_MCAST):
                 self.type = ETH_TYPE_MPLS
             tags_buf = ''.join(lbl.pack_hdr() for lbl in self.mpls_labels)
 
@@ -165,7 +165,6 @@ def __load_types():
             except (ImportError, AttributeError):
                 continue
 
-
 if not Ethernet._typesw:
     __load_types()
 
@@ -183,10 +182,13 @@ class LLC(dpkt.Packet):
     )
     _typesw = Ethernet._typesw
 
+    @property
+    def is_snap(self):
+        return self.dsap == self.ssap == 0xaa
+
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
-        if self.dsap == self.ssap == 0xaa:
-            # SNAP
+        if self.is_snap:
             self.oui, self.type = struct.unpack('>IH', '\x00' + self.data[:5])
             self.data = self.data[5:]
             try:
@@ -205,13 +207,13 @@ class LLC(dpkt.Packet):
 
     def pack_hdr(self):
         buf = dpkt.Packet.pack_hdr(self)
-        if self.dsap == self.ssap == 0xaa:  # add SNAP sublayer
+        if self.is_snap:  # add SNAP sublayer
             oui = getattr(self, 'oui', 0)
             buf += struct.pack('>IH', oui, self.type)[1:]
         return buf
 
-    def __len__(self):
-        return len(str(self))  # this adds SNAP header length as necessary
+    def __len__(self):  # add 5 bytes of SNAP header if needed
+        return self.__hdr_len__ + 5 * int(self.is_snap) + len(self.data)
 
 
 class MPLSlabel(dpkt.Packet):
