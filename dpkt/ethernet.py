@@ -7,7 +7,7 @@ from copy import copy
 import struct
 
 import dpkt
-
+import stp
 
 ETH_CRC_LEN = 4
 ETH_HDR_LEN = 14
@@ -475,7 +475,6 @@ if __name__ == '__main__':
     import cdp
     import ip
     import ip6
-    import stp
 
     test_eth()
     test_llc()
