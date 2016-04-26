@@ -425,16 +425,33 @@ def test_eth_llc_snap_cdp():  # Ethernet - LLC/SNAP - CDP
     assert str(eth) == s
 
 
+def test_eth_llc_ipx():  # 802.3 Ethernet - LLC - IPX
+    import ipx
+    import llc
+    s = ('\xff\xff\xff\xff\xff\xff\x00\xb0\xd0\x22\xf7\xf3\x00\x54\xe0\xe0\x03\xff\xff\x00\x50\x00'
+         '\x14\x00\x00\x00\x00\xff\xff\xff\xff\xff\xff\x04\x55\x00\x00\x00\x00\x00\xb0\xd0\x22\xf7'
+         '\xf3\x04\x55\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+         '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x01\x02\x5f\x5f\x4d\x53\x42'
+         '\x52\x4f\x57\x53\x45\x5f\x5f\x02\x01\x00')
+    eth = Ethernet(s)
+
+    # stack
+    assert isinstance(eth.data, llc.LLC)
+    assert isinstance(eth.data.data, ipx.IPX)
+    assert eth.data.data.pt == 0x14
+    assert str(eth) == s
+
+
 if __name__ == '__main__':
     test_eth()
     test_mpls_label()
     test_802dot1q_tag()
     test_isl_tag()
-
     test_eth_802dot1q()
     test_eth_802dot1q_stacked()
     test_eth_mpls_stacked()
     test_isl_eth_llc_stp()
     test_eth_llc_snap_cdp()
+    test_eth_llc_ipx()
 
     print 'Tests Successful...'
