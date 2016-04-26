@@ -112,7 +112,7 @@ class Ethernet(dpkt.Packet):
             lbl.s = 1
 
             # re-pack Eth header if necessary
-            if self.type not in {ETH_TYPE_MPLS, ETH_TYPE_MPLS_MCAST}:
+            if self.type not in (ETH_TYPE_MPLS, ETH_TYPE_MPLS_MCAST):
                 self.type = ETH_TYPE_MPLS
             tags_buf = ''.join(lbl.pack_hdr() for lbl in self.mpls_labels)
 
@@ -303,6 +303,7 @@ class VLANtagISL(dpkt.Packet):
 
 
 def test_eth():  # TODO recheck this test
+    import ip6
     s = ('\x00\xb0\xd0\xe1\x80\x72\x00\x11\x24\x8c\x11\xde\x86\xdd\x60\x00\x00\x00'
          '\x00\x28\x06\x40\xfe\x80\x00\x00\x00\x00\x00\x00\x02\x11\x24\xff\xfe\x8c'
          '\x11\xde\xfe\x80\x00\x00\x00\x00\x00\x00\x02\xb0\xd0\xff\xfe\xe1\x80\x72'
@@ -360,6 +361,7 @@ def test_isl_tag():
 
 
 def test_eth_802dot1q():
+    import ip
     s = ('\x00\x60\x08\x9f\xb1\xf3\x00\x40\x05\x40\xef\x24\x81\x00\x90\x20\x08'
          '\x00\x45\x00\x00\x34\x3b\x64\x40\x00\x40\x06\xb7\x9b\x83\x97\x20\x81'
          '\x83\x97\x20\x15\x04\x95\x17\x70\x51\xd4\xee\x9c\x51\xa5\x5b\x36\x80'
@@ -381,6 +383,8 @@ def test_eth_802dot1q():
 
 
 def test_eth_802dot1q_stacked():  # 2 VLAN tags
+    import arp
+    import ip
     s = ('\x00\x1b\xd4\x1b\xa4\xd8\x00\x13\xc3\xdf\xae\x18\x81\x00\x00\x76\x81\x00\x00\x0a\x08\x00'
          '\x45\x00\x00\x64\x00\x0f\x00\x00\xff\x01\x92\x9b\x0a\x76\x0a\x01\x0a\x76\x0a\x02\x08\x00'
          '\xce\xb7\x00\x03\x00\x00\x00\x00\x00\x00\x00\x1f\xaf\x70\xab\xcd\xab\xcd\xab\xcd\xab\xcd'
@@ -414,6 +418,7 @@ def test_eth_802dot1q_stacked():  # 2 VLAN tags
 
 
 def test_eth_mpls_stacked():  # 2 MPLS labels
+    import ip
     s = ('\x00\x30\x96\xe6\xfc\x39\x00\x30\x96\x05\x28\x38\x88\x47\x00\x01\x20\xff\x00\x01\x01\xff'
          '\x45\x00\x00\x64\x00\x50\x00\x00\xff\x01\xa7\x06\x0a\x1f\x00\x01\x0a\x22\x00\x01\x08\x00'
          '\xbd\x11\x0f\x65\x12\xa0\x00\x00\x00\x00\x00\x53\x9e\xe0\xab\xcd\xab\xcd\xab\xcd\xab\xcd'
@@ -453,6 +458,7 @@ def test_isl_eth_llc_stp():  # ISL VLAN - Ethernet - LLC/non-SNAP - STP
 
 
 def test_eth_llc_snap_cdp():  # Ethernet - LLC/SNAP - CDP
+    import cdp
     s = ('\x01\x00\x0c\xcc\xcc\xcc\xc4\x022k\x00\x00\x01T\xaa\xaa\x03\x00\x00\x0c \x00\x02\xb4,B'
          '\x00\x01\x00\x06R2\x00\x05\x00\xffCisco IOS Software, 3700 Software (C3745-ADVENTERPRI'
          'SEK9_SNA-M), Version 12.4(25d), RELEASE SOFTWARE (fc1)\nTechnical Support: http://www.'
@@ -470,12 +476,6 @@ def test_eth_llc_snap_cdp():  # Ethernet - LLC/SNAP - CDP
 
 
 if __name__ == '__main__':
-    # imports for tests
-    import arp
-    import cdp
-    import ip
-    import ip6
-
     test_eth()
     test_llc()
     test_mpls_label()
