@@ -101,7 +101,7 @@ class Ethernet(dpkt.Packet):
             self.data = self.ipx = self._typesw[ETH_TYPE_IPX](self.data[2:])
 
         else:
-            self.data = LLC(self.data)
+            self.data = self.llc = LLC(self.data)
 
     def pack_hdr(self):
         tags_buf = ''
