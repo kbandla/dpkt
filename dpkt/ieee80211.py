@@ -774,9 +774,9 @@ def test_80211_data():
     assert ieee.data == '\xaa\xaa\x03\x00\x00\x00\x08\x00\x45\x00\x00\x28\x07\x27\x40\x00\x80\x06\x1d\x39\x8d\xd4\x37\x3d\x3f\xf5\xd1\x69\xc0\x5f\x01\xbb\xb2\xd6\xef\x23\x38\x2b\x4f\x08\x50\x10\x42\x04'
     assert ieee.fcs == struct.unpack('I', '\xac\x17\x00\x00')[0]
 
-    import ethernet
+    import llc
 
-    llc_pkt = ethernet.LLC(ieee.data_frame.data)
+    llc_pkt = llc.LLC(ieee.data_frame.data)
     ip_pkt = llc_pkt.data
     assert ip_pkt.dst == '\x3f\xf5\xd1\x69'
 

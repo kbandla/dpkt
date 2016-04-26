@@ -4,10 +4,9 @@
 with automatic 802.1q, MPLS, PPPoE, and Cisco ISL decapsulation."""
 
 from copy import copy
-import struct
 
 import dpkt
-import stp
+import llc
 
 ETH_CRC_LEN = 4
 ETH_HDR_LEN = 14
@@ -101,7 +100,7 @@ class Ethernet(dpkt.Packet):
             self.data = self.ipx = self._typesw[ETH_TYPE_IPX](self.data[2:])
 
         else:
-            self.data = self.llc = LLC(self.data)
+            self.data = self.llc = llc.LLC(self.data)
 
     def pack_hdr(self):
         tags_buf = ''
@@ -138,7 +137,7 @@ class Ethernet(dpkt.Packet):
 
         # if self.data is LLC then this is IEEE 802.3 Ethernet and self.type
         # then actually encodes the length of data
-        if isinstance(self.data, LLC):
+        if isinstance(self.data, llc.LLC):
             self.type = len(self.data)
 
         return dpkt.Packet.pack_hdr(self) + tags_buf
@@ -170,50 +169,6 @@ if not Ethernet._typesw:
 
 
 # Misc protocols
-
-
-class LLC(dpkt.Packet):
-    """802.2 Logical Link Control"""
-
-    __hdr__ = (
-        ('dsap', 'B', 0xaa),   # Destination Service Access Point
-        ('ssap', 'B', 0xaa),   # Source Service Access Point
-        ('ctl', 'B', 3)        # Control Byte
-    )
-    _typesw = Ethernet._typesw
-
-    @property
-    def is_snap(self):
-        return self.dsap == self.ssap == 0xaa
-
-    def unpack(self, buf):
-        dpkt.Packet.unpack(self, buf)
-        if self.is_snap:
-            self.oui, self.type = struct.unpack('>IH', '\x00' + self.data[:5])
-            self.data = self.data[5:]
-            try:
-                self.data = self._typesw[self.type](self.data)
-                setattr(self, self.data.__class__.__name__.lower(), self.data)
-            except (KeyError, dpkt.UnpackError):
-                pass
-        else:
-            # non-SNAP
-            if self.dsap == 0x06:  # SAP_IP
-                self.data = self.ip = self._typesw[ETH_TYPE_IP](self.data)
-            elif self.dsap == 0x10 or self.dsap == 0xe0:  # SAP_NETWARE{1,2}
-                self.data = self.ipx = self._typesw[ETH_TYPE_IPX](self.data)
-            elif self.dsap == 0x42:  # SAP_STP
-                self.data = self.stp = stp.STP(self.data)
-
-    def pack_hdr(self):
-        buf = dpkt.Packet.pack_hdr(self)
-        if self.is_snap:  # add SNAP sublayer
-            oui = getattr(self, 'oui', 0)
-            buf += struct.pack('>IH', oui, self.type)[1:]
-        return buf
-
-    def __len__(self):  # add 5 bytes of SNAP header if needed
-        return self.__hdr_len__ + 5 * int(self.is_snap) + len(self.data)
 
 
 class MPLSlabel(dpkt.Packet):
@@ -316,16 +271,6 @@ def test_eth():  # TODO recheck this test
     assert eth
     assert isinstance(eth.data, ip6.IP6)
     assert str(eth) == s
-
-
-def test_llc():  # copied from llc.py
-    s = ('\xaa\xaa\x03\x00\x00\x00\x08\x00\x45\x00\x00\x28\x07\x27\x40\x00\x80\x06\x1d'
-         '\x39\x8d\xd4\x37\x3d\x3f\xf5\xd1\x69\xc0\x5f\x01\xbb\xb2\xd6\xef\x23\x38\x2b'
-         '\x4f\x08\x50\x10\x42\x04\xac\x17\x00\x00')
-    llc = LLC(s)
-    assert llc.type == ETH_TYPE_IP
-    assert llc.data.dst == '\x3f\xf5\xd1\x69'
-    assert str(llc) == s
 
 
 def test_mpls_label():
@@ -442,6 +387,8 @@ def test_eth_mpls_stacked():  # 2 MPLS labels
 
 
 def test_isl_eth_llc_stp():  # ISL VLAN - Ethernet - LLC/non-SNAP - STP
+    import llc
+    import stp
     s = ('\x01\x00\x0c\x00\x00\x03\x00\x02\xfd\x2c\xb8\x97\x00\x00\xaa\xaa\x03\x00\x00\x00\x02\x9b'
          '\x00\x00\x00\x00\x01\x80\xc2\x00\x00\x00\x00\x02\xfd\x2c\xb8\x98\x00\x26\x42\x42\x03\x00'
          '\x00\x00\x00\x00\x80\x00\x00\x02\xfd\x2c\xb8\x83\x00\x00\x00\x00\x80\x00\x00\x02\xfd\x2c'
@@ -454,13 +401,14 @@ def test_isl_eth_llc_stp():  # ISL VLAN - Ethernet - LLC/non-SNAP - STP
     assert eth.vlan_tags[0].pri == 3
 
     # stack
-    assert isinstance(eth.data, LLC)
+    assert isinstance(eth.data, llc.LLC)
     assert isinstance(eth.data.data, stp.STP)
     assert str(eth) == s
 
 
 def test_eth_llc_snap_cdp():  # Ethernet - LLC/SNAP - CDP
     import cdp
+    import llc
     s = ('\x01\x00\x0c\xcc\xcc\xcc\xc4\x022k\x00\x00\x01T\xaa\xaa\x03\x00\x00\x0c \x00\x02\xb4,B'
          '\x00\x01\x00\x06R2\x00\x05\x00\xffCisco IOS Software, 3700 Software (C3745-ADVENTERPRI'
          'SEK9_SNA-M), Version 12.4(25d), RELEASE SOFTWARE (fc1)\nTechnical Support: http://www.'
@@ -471,7 +419,7 @@ def test_eth_llc_snap_cdp():  # Ethernet - LLC/SNAP - CDP
     eth = Ethernet(s)
 
     # stack
-    assert isinstance(eth.data, LLC)
+    assert isinstance(eth.data, llc.LLC)
     assert isinstance(eth.data.data, cdp.CDP)
     assert len(eth.data.data.data) == 8  # number of CDP TLVs; ensures they are decoded
     assert str(eth) == s
@@ -479,7 +427,6 @@ def test_eth_llc_snap_cdp():  # Ethernet - LLC/SNAP - CDP
 
 if __name__ == '__main__':
     test_eth()
-    test_llc()
     test_mpls_label()
     test_802dot1q_tag()
     test_isl_tag()
