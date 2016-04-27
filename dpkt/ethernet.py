@@ -128,7 +128,7 @@ class Ethernet(dpkt.Packet):
 
         # initial type is based on next layer, pointed by self.data;
         # try to find an ETH_TYPE matching the data class
-        if not isinstance(self.data, basestring):
+        if isinstance(self.data, dpkt.Packet):
             new_type = self._typesw_rev.get(self.data.__class__, new_type)
 
         if getattr(self, 'mpls_labels', None):
@@ -205,6 +205,10 @@ class Ethernet(dpkt.Packet):
     @classmethod
     def get_type(cls, t):
         return cls._typesw[t]
+
+    @classmethod
+    def get_type_rev(cls, k):
+        return cls._typesw_rev[k]
 
 
 # XXX - auto-load Ethernet dispatch table from ETH_TYPE_* definitions
