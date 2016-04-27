@@ -3,8 +3,7 @@
 """Ethernet II, LLC (802.3+802.2), LLC/SNAP, and Novell raw 802.3,
 with automatic 802.1q, MPLS, PPPoE, and Cisco ISL decapsulation."""
 
-from copy import copy
-
+import struct
 import dpkt
 import llc
 
@@ -111,12 +110,12 @@ class Ethernet(dpkt.Packet):
 
     def pack_hdr(self):
         tags_buf = ''
-        orig_type = copy(self.type)  # packing should not modify self.type
+        new_type = self.type
 
         # initial type is based on next layer, pointed by self.data;
         # try to find an ETH_TYPE matching the data class
         if not isinstance(self.data, basestring):
-            self.type = self._typesw_rev.get(self.data.__class__, self.type)
+            new_type = self._typesw_rev.get(self.data.__class__, new_type)
 
         if getattr(self, 'mpls_labels', None):
             # mark all labels with s=0, last one with s=1
@@ -126,7 +125,7 @@ class Ethernet(dpkt.Packet):
 
             # set encapsulation type
             if not (self.type == ETH_TYPE_MPLS or self.type == ETH_TYPE_MPLS_MCAST):
-                self.type = ETH_TYPE_MPLS
+                new_type = ETH_TYPE_MPLS
             tags_buf = ''.join(lbl.pack_hdr() for lbl in self.mpls_labels)
 
         elif getattr(self, 'vlan_tags', None):
@@ -134,8 +133,8 @@ class Ethernet(dpkt.Packet):
             t1 = self.vlan_tags[0]
             if len(self.vlan_tags) == 1:
                 if isinstance(t1, VLANtag8021Q):
-                    t1.type = orig_type
-                    self.type = ETH_TYPE_8021Q
+                    t1.type = self.type
+                    new_type = ETH_TYPE_8021Q
                 elif isinstance(t1, VLANtagISL):
                     t1.type = 0  # 0 means Ethernet
                     return t1.pack_hdr() + dpkt.Packet.pack_hdr(self)
@@ -143,8 +142,8 @@ class Ethernet(dpkt.Packet):
             elif len(self.vlan_tags) == 2:
                 t2 = self.vlan_tags[1]
                 if isinstance(t1, VLANtag8021Q) and isinstance(t2, VLANtag8021Q):
-                    t2.type = orig_type
-                    self.type = t1.type = ETH_TYPE_8021Q
+                    t2.type = self.type
+                    new_type = t1.type = ETH_TYPE_8021Q
             else:
                 raise dpkt.PackError('maximum is 2 VLAN tags per Ethernet frame')
             tags_buf = ''.join(tag.pack_hdr() for tag in self.vlan_tags)
@@ -152,11 +151,9 @@ class Ethernet(dpkt.Packet):
         # if self.data is LLC then this is IEEE 802.3 Ethernet and self.type
         # then actually encodes the length of data
         if isinstance(self.data, llc.LLC):
-            self.type = len(self.data)
+            new_type = len(self.data)
 
-        buf = dpkt.Packet.pack_hdr(self) + tags_buf
-        self.type = orig_type  # restore self.type after packing
-        return buf
+        return dpkt.Packet.pack_hdr(self)[:-2] + struct.pack('>H', new_type) + tags_buf
 
     def __len__(self):
         tags = getattr(self, 'mpls_labels', []) + getattr(self, 'vlan_tags', [])
