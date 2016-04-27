@@ -104,6 +104,8 @@ class Ethernet(dpkt.Packet):
 
     def pack_hdr(self):
         tags_buf = ''
+        orig_type = copy(self.type)  # packing should not modify self.type
+
         if getattr(self, 'mpls_labels', None):
             # mark all labels with s=0, last one with s=1
             for lbl in self.mpls_labels:
@@ -120,7 +122,7 @@ class Ethernet(dpkt.Packet):
             t1 = self.vlan_tags[0]
             if len(self.vlan_tags) == 1:
                 if isinstance(t1, VLANtag8021Q):
-                    t1.type = copy(self.type)
+                    t1.type = orig_type
                     self.type = ETH_TYPE_8021Q
                 elif isinstance(t1, VLANtagISL):
                     t1.type = 0  # 0 means Ethernet
@@ -129,7 +131,7 @@ class Ethernet(dpkt.Packet):
             elif len(self.vlan_tags) == 2:
                 t2 = self.vlan_tags[1]
                 if isinstance(t1, VLANtag8021Q) and isinstance(t2, VLANtag8021Q):
-                    t2.type = copy(self.type)
+                    t2.type = orig_type
                     self.type = t1.type = ETH_TYPE_8021Q
             else:
                 raise dpkt.PackError('maximum is 2 VLAN tags per Ethernet frame')
@@ -140,7 +142,13 @@ class Ethernet(dpkt.Packet):
         if isinstance(self.data, llc.LLC):
             self.type = len(self.data)
 
-        return dpkt.Packet.pack_hdr(self) + tags_buf
+        buf = dpkt.Packet.pack_hdr(self) + tags_buf
+        self.type = orig_type  # restore self.type after packing
+        return buf
+
+    def __len__(self):
+        tags = getattr(self, 'mpls_labels', []) + getattr(self, 'vlan_tags', [])
+        return self.__hdr_len__ + len(self.data) + sum(t.__hdr_len__ for t in tags)
 
     @classmethod
     def set_type(cls, t, pktclass):
@@ -271,6 +279,7 @@ def test_eth():  # TODO recheck this test
     assert eth
     assert isinstance(eth.data, ip6.IP6)
     assert str(eth) == s
+    assert len(eth) == len(s)
 
 
 def test_mpls_label():
@@ -281,7 +290,7 @@ def test_mpls_label():
     assert m.s == 1
     assert m.ttl == 255
     assert str(m) == s
-    #print repr(m)
+    assert len(m) == len(s)
 
 
 def test_802dot1q_tag():
@@ -293,7 +302,7 @@ def test_802dot1q_tag():
     assert str(t) == s
     t.cfi = 1
     assert str(t) == '\xb0\x76\x01\x65'
-    #print repr(t)
+    assert len(t) == len(s)
 
 
 def test_isl_tag():
@@ -304,7 +313,7 @@ def test_isl_tag():
     assert t.id == 555
     assert t.bpdu == 1
     assert str(t) == s
-    #print repr(t)
+    assert len(t) == len(s)
 
 
 def test_eth_802dot1q():
@@ -323,10 +332,12 @@ def test_eth_802dot1q():
     assert isinstance(eth.data, ip.IP)
 
     # construction
-    assert str(eth) == s
-    # construction w/o the tag; eth.type is still ETH_TYPE_8021Q
+    assert str(eth) == s, 'pack 1'
+    assert str(eth) == s, 'pack 2'
+    assert len(eth) == len(s)
+    # construction w/o the tag
     del eth.vlan_tags, eth.cfi, eth.vlanid, eth.priority
-    assert str(eth) == s[:14] + s[18:]
+    assert str(eth) == s[:12] + '\x08\x00' + s[18:]
 
 
 def test_eth_802dot1q_stacked():  # 2 VLAN tags
@@ -339,6 +350,7 @@ def test_eth_802dot1q_stacked():  # 2 VLAN tags
          '\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd'
          '\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd')
     eth = Ethernet(s)
+    assert eth.type == ETH_TYPE_IP
     assert len(eth.vlan_tags) == 2
     assert eth.vlan_tags[0].id == 118
     assert eth.vlan_tags[1].id == 10
@@ -348,10 +360,12 @@ def test_eth_802dot1q_stacked():  # 2 VLAN tags
     assert isinstance(eth.data, ip.IP)
 
     # construction
-    assert str(eth) == s
-    # construction w/o the tags; eth.type is still ETH_TYPE_8021Q
+    assert str(eth) == s, 'pack 1'
+    assert str(eth) == s, 'pack 2'
+    assert len(eth) == len(s)
+    # construction w/o the tags
     del eth.vlan_tags, eth.cfi, eth.vlanid, eth.priority
-    assert str(eth) == s[:14] + s[22:]
+    assert str(eth) == s[:12] + '\x08\x00' + s[22:]
 
     # 2 VLAN tags + ARP
     s = ('\xff\xff\xff\xff\xff\xff\xca\x03\x0d\xb4\x00\x1c\x81\x00\x00\x64\x81\x00\x00\xc8\x08\x06'
@@ -380,13 +394,15 @@ def test_eth_mpls_stacked():  # 2 MPLS labels
     assert isinstance(eth.data, ip.IP)
 
     # construction
-    assert str(eth) == s
-    # construction w/o labels; eth.type is still ETH_TYPE_MPLS
+    assert str(eth) == s, 'pack 1'
+    assert str(eth) == s, 'pack 2'
+    assert len(eth) == len(s)
+    # construction w/o labels
     del eth.labels, eth.mpls_labels
-    assert str(eth) == s[:14] + s[22:]
+    assert str(eth) == s[:12] + '\x08\x00' + s[22:]
 
 
-def test_isl_eth_llc_stp():  # ISL VLAN - Ethernet - LLC/non-SNAP - STP
+def test_isl_eth_llc_stp():  # ISL VLAN - Ethernet - LLC - STP
     import llc
     import stp
     s = ('\x01\x00\x0c\x00\x00\x03\x00\x02\xfd\x2c\xb8\x97\x00\x00\xaa\xaa\x03\x00\x00\x00\x02\x9b'
@@ -403,7 +419,9 @@ def test_isl_eth_llc_stp():  # ISL VLAN - Ethernet - LLC/non-SNAP - STP
     # stack
     assert isinstance(eth.data, llc.LLC)
     assert isinstance(eth.data.data, stp.STP)
-    assert str(eth) == s
+    assert str(eth) == s, 'pack 1'
+    assert str(eth) == s, 'pack 2'
+    assert len(eth) == len(s)
 
 
 def test_eth_llc_snap_cdp():  # Ethernet - LLC/SNAP - CDP
@@ -422,7 +440,9 @@ def test_eth_llc_snap_cdp():  # Ethernet - LLC/SNAP - CDP
     assert isinstance(eth.data, llc.LLC)
     assert isinstance(eth.data.data, cdp.CDP)
     assert len(eth.data.data.data) == 8  # number of CDP TLVs; ensures they are decoded
-    assert str(eth) == s
+    assert str(eth) == s, 'pack 1'
+    assert str(eth) == s, 'pack 2'
+    assert len(eth) == len(s)
 
 
 def test_eth_llc_ipx():  # 802.3 Ethernet - LLC - IPX
@@ -439,7 +459,9 @@ def test_eth_llc_ipx():  # 802.3 Ethernet - LLC - IPX
     assert isinstance(eth.data, llc.LLC)
     assert isinstance(eth.data.data, ipx.IPX)
     assert eth.data.data.pt == 0x14
-    assert str(eth) == s
+    assert str(eth) == s, 'pack 1'
+    assert str(eth) == s, 'pack 2'
+    assert len(eth) == len(s)
 
 
 if __name__ == '__main__':

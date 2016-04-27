@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 
 import struct
-
 import dpkt
-import ethernet
 import stp
+import ethernet
 
 
 class LLC(dpkt.Packet):
@@ -65,6 +64,7 @@ def test_llc():
     assert (llc_pkt.type == ethernet.ETH_TYPE_IP)
     assert (ip_pkt.dst == '\x3f\xf5\xd1\x69')
     assert str(llc_pkt) == s
+    assert len(llc_pkt) == len(s)
 
 
 if __name__ == '__main__':
