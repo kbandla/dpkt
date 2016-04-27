@@ -4,6 +4,8 @@
 with automatic 802.1q, MPLS, PPPoE, and Cisco ISL decapsulation."""
 
 import struct
+from zlib import crc32
+
 import dpkt
 import llc
 
@@ -106,11 +108,23 @@ class Ethernet(dpkt.Packet):
             self.data = self.ipx = self._typesw[ETH_TYPE_IPX](self.data[2:])
 
         else:
-            self.data = self.llc = llc.LLC(self.data)
+            # IEEE 802.3 Ethernet - LLC
+            # try to unpack FCS here; we follow the same heuristic approach as Wireshark:
+            # if the upper layer len(self.data) can be fully decoded and returns its size,
+            # and there's a difference with size in the Eth header, then assume the last
+            # 4 bytes is the FCS and remaining bytes are a trailer.
+            eth_len = self.type
+            if len(self.data) > eth_len:
+                tail_len = len(self.data) - eth_len
+                if tail_len >= 4:
+                    self.fcs = struct.unpack('>I', self.data[-4:])[0]
+                    self.trailer = self.data[eth_len:-4]
+            self.data = self.llc = llc.LLC(self.data[:eth_len])
 
     def pack_hdr(self):
         tags_buf = ''
         new_type = self.type
+        is_isl = False  # ISL wraps Ethernet, this determines order of packing
 
         # initial type is based on next layer, pointed by self.data;
         # try to find an ETH_TYPE matching the data class
@@ -137,8 +151,7 @@ class Ethernet(dpkt.Packet):
                     new_type = ETH_TYPE_8021Q
                 elif isinstance(t1, VLANtagISL):
                     t1.type = 0  # 0 means Ethernet
-                    return t1.pack_hdr() + dpkt.Packet.pack_hdr(self)
-
+                    is_isl = True
             elif len(self.vlan_tags) == 2:
                 t2 = self.vlan_tags[1]
                 if isinstance(t1, VLANtag8021Q) and isinstance(t2, VLANtag8021Q):
@@ -153,11 +166,36 @@ class Ethernet(dpkt.Packet):
         if isinstance(self.data, llc.LLC):
             new_type = len(self.data)
 
-        return dpkt.Packet.pack_hdr(self)[:-2] + struct.pack('>H', new_type) + tags_buf
+        hdr_buf = dpkt.Packet.pack_hdr(self)[:-2] + struct.pack('>H', new_type)
+        if not is_isl:
+            return hdr_buf + tags_buf
+        else:
+            return tags_buf + hdr_buf
+
+    def __str__(self):
+        tail = ''
+        if isinstance(self.data, llc.LLC):
+            if hasattr(self, 'fcs'):
+                if self.fcs:
+                    fcs = self.fcs
+                else:
+                    # if fcs field is present but 0/None, then compute it and add to the tail
+                    fcs_buf = self.pack_hdr() + str(self.data) + getattr(self, 'trailer', '')
+                    # if ISL header is present, exclude it from the calculation
+                    if getattr(self, 'vlan_tags', None):
+                        if isinstance(self.vlan_tags[0], VLANtagISL):
+                            fcs_buf = fcs_buf[VLANtagISL.__hdr_len__:]
+                    revcrc = crc32(fcs_buf) & 0xffffffff
+                    fcs = struct.unpack('<I', struct.pack('>I', revcrc))[0]  # bswap32
+                tail = getattr(self, 'trailer', '') + struct.pack('>I', fcs)
+        return dpkt.Packet.__str__(self) + tail
 
     def __len__(self):
         tags = getattr(self, 'mpls_labels', []) + getattr(self, 'vlan_tags', [])
-        return self.__hdr_len__ + len(self.data) + sum(t.__hdr_len__ for t in tags)
+        _len = dpkt.Packet.__len__(self) + sum(t.__hdr_len__ for t in tags)
+        if isinstance(self.data, llc.LLC) and hasattr(self, 'fcs'):
+            _len += len(getattr(self, 'trailer', '')) + 4
+        return _len
 
     @classmethod
     def set_type(cls, t, pktclass):
@@ -277,7 +315,7 @@ class VLANtagISL(dpkt.Packet):
 # Unit tests
 
 
-def test_eth():  # TODO recheck this test
+def test_eth():
     import ip6
     s = ('\x00\xb0\xd0\xe1\x80\x72\x00\x11\x24\x8c\x11\xde\x86\xdd\x60\x00\x00\x00'
          '\x00\x28\x06\x40\xfe\x80\x00\x00\x00\x00\x00\x00\x02\x11\x24\xff\xfe\x8c'
@@ -360,6 +398,11 @@ def test_eth_802dot1q():
     assert str(eth) == s, 'pack 1'
     assert str(eth) == s, 'pack 2'
     assert len(eth) == len(s)
+
+    # construction with kwargs
+    eth2 = Ethernet(src=eth.src, dst=eth.dst, vlan_tags=eth.vlan_tags, data=eth.data)
+    assert str(eth2) == s
+
     # construction w/o the tag
     del eth.vlan_tags, eth.cfi, eth.vlanid, eth.priority
     assert str(eth) == s[:12] + '\x08\x00' + s[18:]
@@ -388,6 +431,11 @@ def test_eth_802dot1q_stacked():  # 2 VLAN tags
     assert str(eth) == s, 'pack 1'
     assert str(eth) == s, 'pack 2'
     assert len(eth) == len(s)
+
+    # construction with kwargs
+    eth2 = Ethernet(src=eth.src, dst=eth.dst, vlan_tags=eth.vlan_tags, data=eth.data)
+    assert str(eth2) == s
+
     # construction w/o the tags
     del eth.vlan_tags, eth.cfi, eth.vlanid, eth.priority
     assert str(eth) == s[:12] + '\x08\x00' + s[22:]
@@ -422,13 +470,17 @@ def test_eth_mpls_stacked():  # 2 MPLS labels
     assert str(eth) == s, 'pack 1'
     assert str(eth) == s, 'pack 2'
     assert len(eth) == len(s)
+
+    # construction with kwargs
+    eth2 = Ethernet(src=eth.src, dst=eth.dst, mpls_labels=eth.mpls_labels, data=eth.data)
+    assert str(eth2) == s
+
     # construction w/o labels
     del eth.labels, eth.mpls_labels
     assert str(eth) == s[:12] + '\x08\x00' + s[22:]
 
 
-def test_isl_eth_llc_stp():  # ISL VLAN - Ethernet - LLC - STP
-    import llc
+def test_isl_eth_llc_stp():  # ISL - 802.3 Ethernet(w/FCS) - LLC - STP
     import stp
     s = ('\x01\x00\x0c\x00\x00\x03\x00\x02\xfd\x2c\xb8\x97\x00\x00\xaa\xaa\x03\x00\x00\x00\x02\x9b'
          '\x00\x00\x00\x00\x01\x80\xc2\x00\x00\x00\x00\x02\xfd\x2c\xb8\x98\x00\x26\x42\x42\x03\x00'
@@ -441,17 +493,33 @@ def test_isl_eth_llc_stp():  # ISL VLAN - Ethernet - LLC - STP
     assert eth.vlan_tags[0].id == 333
     assert eth.vlan_tags[0].pri == 3
 
+    # check that FCS was decoded
+    assert eth.fcs == 0x41c675d6
+    assert eth.trailer == '\x00' * 8
+
     # stack
     assert isinstance(eth.data, llc.LLC)
     assert isinstance(eth.data.data, stp.STP)
+
+    # construction
     assert str(eth) == s, 'pack 1'
     assert str(eth) == s, 'pack 2'
     assert len(eth) == len(s)
 
+    # construction with kwargs
+    eth2 = Ethernet(src=eth.src, dst=eth.dst, vlan_tags=eth.vlan_tags, data=eth.data)
+    eth2.trailer = eth.trailer
+    eth2.fcs = None
+    # test FCS computation
+    assert str(eth2) == s
 
-def test_eth_llc_snap_cdp():  # Ethernet - LLC/SNAP - CDP
+    # construction w/o the ISL tag
+    del eth.vlan_tags, eth.vlan
+    assert str(eth) == s[26:]
+
+
+def test_eth_llc_snap_cdp():  # 802.3 Ethernet - LLC/SNAP - CDP
     import cdp
-    import llc
     s = ('\x01\x00\x0c\xcc\xcc\xcc\xc4\x022k\x00\x00\x01T\xaa\xaa\x03\x00\x00\x0c \x00\x02\xb4,B'
          '\x00\x01\x00\x06R2\x00\x05\x00\xffCisco IOS Software, 3700 Software (C3745-ADVENTERPRI'
          'SEK9_SNA-M), Version 12.4(25d), RELEASE SOFTWARE (fc1)\nTechnical Support: http://www.'
@@ -472,7 +540,6 @@ def test_eth_llc_snap_cdp():  # Ethernet - LLC/SNAP - CDP
 
 def test_eth_llc_ipx():  # 802.3 Ethernet - LLC - IPX
     import ipx
-    import llc
     s = ('\xff\xff\xff\xff\xff\xff\x00\xb0\xd0\x22\xf7\xf3\x00\x54\xe0\xe0\x03\xff\xff\x00\x50\x00'
          '\x14\x00\x00\x00\x00\xff\xff\xff\xff\xff\xff\x04\x55\x00\x00\x00\x00\x00\xb0\xd0\x22\xf7'
          '\xf3\x04\x55\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
