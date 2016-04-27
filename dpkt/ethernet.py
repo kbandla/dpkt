@@ -43,6 +43,13 @@ class Ethernet(dpkt.Packet):
         ('type', 'H', ETH_TYPE_IP)
     )
     _typesw = {}
+    _typesw_rev = {}  # reverse mapping
+
+    def __init__(self, *args, **kwargs):
+        dpkt.Packet.__init__(self, *args, **kwargs)
+        # if data was given in kwargs, try to unpack it
+        if self.data and isinstance(self.data, basestring):
+            self._unpack_data(self.data)
 
     def _unpack_data(self, buf):
         if self.type == ETH_TYPE_8021Q:
@@ -106,6 +113,11 @@ class Ethernet(dpkt.Packet):
         tags_buf = ''
         orig_type = copy(self.type)  # packing should not modify self.type
 
+        # initial type is based on next layer, pointed by self.data;
+        # try to find an ETH_TYPE matching the data class
+        if not isinstance(self.data, basestring):
+            self.type = self._typesw_rev.get(self.data.__class__, self.type)
+
         if getattr(self, 'mpls_labels', None):
             # mark all labels with s=0, last one with s=1
             for lbl in self.mpls_labels:
@@ -153,6 +165,7 @@ class Ethernet(dpkt.Packet):
     @classmethod
     def set_type(cls, t, pktclass):
         cls._typesw[t] = pktclass
+        cls._typesw_rev[pktclass] = t
 
     @classmethod
     def get_type(cls, t):
@@ -280,6 +293,21 @@ def test_eth():  # TODO recheck this test
     assert isinstance(eth.data, ip6.IP6)
     assert str(eth) == s
     assert len(eth) == len(s)
+
+
+def test_eth_init_with_data():
+    # initialize with a data string, test that it gets unpacked
+    import arp
+    eth1 = Ethernet(
+        dst='PQRSTU', src='ABCDEF', type=ETH_TYPE_ARP,
+        data='\x00\x01\x08\x00\x06\x04\x00\x01123456abcd7890abwxyz')
+    assert isinstance(eth1.data, arp.ARP)
+
+    # now initialize with a class, test packing
+    eth2 = Ethernet(
+        dst='PQRSTU', src='ABCDEF',
+        data=arp.ARP(sha='123456', spa='abcd', tha='7890ab', tpa='wxyz'))
+    assert str(eth1) == str(eth2)
 
 
 def test_mpls_label():
@@ -466,6 +494,7 @@ def test_eth_llc_ipx():  # 802.3 Ethernet - LLC - IPX
 
 if __name__ == '__main__':
     test_eth()
+    test_eth_init_with_data()
     test_mpls_label()
     test_802dot1q_tag()
     test_isl_tag()
