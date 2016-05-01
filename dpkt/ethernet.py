@@ -320,7 +320,9 @@ class VLANtagISL(dpkt.Packet):
 
 
 def test_eth():
+    import ip  # IPv6 needs this to build its protocol stack
     import ip6
+    import tcp
     s = ('\x00\xb0\xd0\xe1\x80\x72\x00\x11\x24\x8c\x11\xde\x86\xdd\x60\x00\x00\x00'
          '\x00\x28\x06\x40\xfe\x80\x00\x00\x00\x00\x00\x00\x02\x11\x24\xff\xfe\x8c'
          '\x11\xde\xfe\x80\x00\x00\x00\x00\x00\x00\x02\xb0\xd0\xff\xfe\xe1\x80\x72'
@@ -330,6 +332,7 @@ def test_eth():
     eth = Ethernet(s)
     assert eth
     assert isinstance(eth.data, ip6.IP6)
+    assert isinstance(eth.data.data, tcp.TCP)
     assert str(eth) == s
     assert len(eth) == len(s)
 
@@ -347,6 +350,7 @@ def test_eth_init_with_data():
         dst='PQRSTU', src='ABCDEF',
         data=arp.ARP(sha='123456', spa='abcd', tha='7890ab', tpa='wxyz'))
     assert str(eth1) == str(eth2)
+    assert len(eth1) == len(eth2)
 
 
 def test_mpls_label():
@@ -560,6 +564,31 @@ def test_eth_llc_ipx():  # 802.3 Ethernet - LLC - IPX
     assert len(eth) == len(s)
 
 
+def test_eth_pppoe():   # Eth - PPPoE - IPv6 - UDP - DHCP6
+    import ip  # IPv6 needs this to build its protocol stack
+    import ip6
+    import ppp
+    import pppoe
+    import udp
+    s = ('\xca\x01\x0e\x88\x00\x06\xcc\x05\x0e\x88\x00\x00\x88\x64\x11\x00\x00\x11\x00\x64\x57\x6e'
+         '\x00\x00\x00\x00\x3a\x11\xff\xfe\x80\x00\x00\x00\x00\x00\x00\xce\x05\x0e\xff\xfe\x88\x00'
+         '\x00\xff\x02\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x02\x02\x22\x02\x23\x00'
+         '\x3a\x1a\x67\x01\xfc\x24\xab\x00\x08\x00\x02\x05\xe9\x00\x01\x00\x0a\x00\x03\x00\x01\xcc'
+         '\x05\x0e\x88\x00\x00\x00\x06\x00\x06\x00\x19\x00\x17\x00\x18\x00\x19\x00\x0c\x00\x09\x00'
+         '\x01\x00\x00\x00\x00\x00\x00\x00\x00')
+    eth = Ethernet(s)
+
+    # stack
+    assert isinstance(eth.data, pppoe.PPPoE)
+    assert isinstance(eth.data.data, ppp.PPP)
+    assert isinstance(eth.data.data.data, ip6.IP6)
+    assert isinstance(eth.data.data.data.data, udp.UDP)
+
+    # construction
+    assert str(eth) == s
+    assert len(eth) == len(s)
+
+
 if __name__ == '__main__':
     test_eth()
     test_eth_init_with_data()
@@ -572,5 +601,6 @@ if __name__ == '__main__':
     test_isl_eth_llc_stp()
     test_eth_llc_snap_cdp()
     test_eth_llc_ipx()
+    test_eth_pppoe()
 
     print 'Tests Successful...'
