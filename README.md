@@ -11,8 +11,6 @@
 [![wheel](https://img.shields.io/pypi/wheel/dpkt.svg)](https://pypi.python.org/pypi/dpkt)
 [![supported-versions](https://img.shields.io/pypi/pyversions/dpkt.svg)](https://pypi.python.org/pypi/dpkt)
 [![supported-implementations](https://img.shields.io/pypi/implementation/dpkt.svg)](https://pypi.python.org/pypi/dpkt)
-[![On Deck](https://badge.waffle.io/kbandla/dpkt.svg?label=on%20deck&title=On%20Deck)](http://waffle.io/kbandla/dpkt)
-[![In Progress](https://badge.waffle.io/kbandla/dpkt.svg?label=in%20progress&title=In%20Progress)](http://waffle.io/kbandla/dpkt)
 
 ## Installation
 
