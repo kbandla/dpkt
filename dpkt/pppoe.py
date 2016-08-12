@@ -67,7 +67,9 @@ class PPPoE(dpkt.Packet):
         dpkt.Packet.unpack(self, buf)
         try:
             if self.code == 0:
-                self.data = self.ppp = ppp.PPP(self.data)
+                # We need to use the light PPP header here, because PPPoE
+                # doesn't do the normal encapsulation.
+                self.data = self.ppp = ppp.PPP_light(self.data)
         except dpkt.UnpackError:
             pass
 
