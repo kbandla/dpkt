@@ -141,6 +141,24 @@ class Packet(object):
     def __str__(self):
         return self.pack_hdr() + str(self.data)
 
+    def get(self, type_):
+        """ Find first header in packet of given type """
+        if isinstance(self, type_):
+            return self
+        if isinstance(self.data, Packet):
+            return self.data.get(type_)
+        return None
+
+    def getall(self, type_, res=None):
+        """ Find all headers in packet of given type """
+        if res is None:
+            res = []
+        if isinstance(self, type_):
+            res.append(self)
+        if isinstance(self.data, Packet):
+            return self.data.getall(type_, res=res)
+        return res
+
     def pack_hdr(self):
         """Return packed header string."""
         try:
@@ -205,3 +223,31 @@ def in_cksum_done(s):
 def in_cksum(buf):
     """Return computed Internet checksum."""
     return in_cksum_done(in_cksum_add(0, buf))
+
+def test_get():
+    import ethernet
+    import udp
+    import ppp
+    import llc
+    import ip
+
+    p = """ c500000082c400121ef2613d81000064
+        86dd60000000008b04f62402f0000001
+        8e0100000000000055552607fcd00100
+        230000000000b1082a6b4500008b8caf
+        0000402f75fe100000c8c034a69a3081
+        880b0067178000068fb100083a76ff03
+        002145000063000040003c115667ac10
+        2c03080808089f400035004f2d23a62c
+        01000001000000000000357871742d64
+        65746563742d6d6f6465322d39373731
+        326538382d313637612d343562392d39
+        3365652d393133313430653736363738
+        00001c0001 """.replace(' ','').replace('\n','').decode('hex')
+
+    eth = ethernet.Ethernet(p)
+    assert eth.get(udp.UDP) is not None
+    assert len(eth.getall(ppp.PPP)) == 1
+    assert len(eth.getall(ip.IP)) == 2
+    assert eth.get(llc.LLC) is None
+    assert len(eth.getall(llc.LLC)) == 0
