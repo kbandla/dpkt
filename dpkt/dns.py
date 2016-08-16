@@ -158,6 +158,17 @@ class DNS(dpkt.Packet):
             self.op &= ~DNS_AA
 
     @property
+    def tc(self):
+        return int((self.op & DNS_TC) == DNS_TC)
+
+    @tc.setter
+    def tc(self, v):
+        if v:
+            self.op |= DNS_TC
+        else:
+            self.op &= ~DNS_TC
+
+    @property
     def rd(self):
         return int((self.op & DNS_RD) == DNS_RD)
 
@@ -504,8 +515,8 @@ def test_circular_pointers():
         assert False
     else:
         assert False
-        
-        
+
+
 def test_very_long_name():
     try:
         DNS('\x00\x00\x01\x00\x00\x01\x00\x00\x00\x00\x00\x00' + ('\x10abcdef0123456789' * 16) + '\x00')
