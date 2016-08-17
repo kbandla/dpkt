@@ -358,6 +358,8 @@ class DNS(dpkt.Packet):
                     buf = buf[1 + n:]
             elif self.type == DNS_AAAA:
                 self.ip6 = self.rdata
+            elif self.type == DNS_NULL:
+                self.null = self.rdata.encode('hex')
             elif self.type == DNS_SRV:
                 self.priority, self.weight, self.port = struct.unpack('>HHH', self.rdata[:6])
                 self.srvname, off = unpack_name(buf, off + 6)
@@ -528,6 +530,12 @@ def test_very_long_name():
     else:
         assert False
 
+def test_null_response():
+    s = '\x12\xb0\x84\x00\x00\x01\x00\x01\x00\x00\x00\x00\x0bblahblah666\x06pirate\x03sea\x00\x00\n\x00\x01\xc0\x0c\x00\n\x00\x01\x00\x00\x00\x00\x00\tVACKD\x03\xc5\xe9\x01'
+    my_dns = DNS(s)
+    assert my_dns.qd[0].name == 'blahblah666.pirate.sea' and \
+           my_dns.an[0].null == '5641434b4403c5e901'
+    assert s == str(my_dns)
 
 if __name__ == '__main__':
     # Runs all the test associated with this class/file
@@ -535,9 +543,10 @@ if __name__ == '__main__':
     test_PTR()
     test_OPT()
     test_pack_name()
-    test_deprecated_methods()
-    test_deprecated_method_performance()
     test_random_data()
     test_circular_pointers()
     test_very_long_name()
+    test_null_response()
+    test_deprecated_methods()
+    test_deprecated_method_performance()
     print 'Tests Successful...'
