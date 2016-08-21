@@ -40,6 +40,15 @@ ICMP6_MAXTYPE = 201
 
 
 class ICMP6(dpkt.Packet):
+    """Internet Control Message Protocol for IPv6.
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of ICMPv6.
+        TODO.
+    """
+    
     __hdr__ = (
         ('type', 'B', 0),
         ('code', 'B', 0),

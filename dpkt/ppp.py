@@ -16,6 +16,15 @@ PFC_BIT = 0x01
 
 
 class PPP(dpkt.Packet):
+    """Point-to-Point Protocol.
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of PPP.
+        TODO.
+    """
+    
     __hdr__ = (
         ('p', 'B', PPP_IP),
     )

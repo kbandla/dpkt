@@ -71,7 +71,15 @@ def parse_body(f, headers):
 
 
 class Message(dpkt.Packet):
-    """Hypertext Transfer Protocol headers + body."""
+    """Hypertext Transfer Protocol headers + body.
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of HTTP.
+        TODO.
+    """
+    
     __metaclass__ = type
     __hdr_defaults__ = {}
     headers = None
@@ -109,7 +117,15 @@ class Message(dpkt.Packet):
 
 
 class Request(Message):
-    """Hypertext Transfer Protocol Request."""
+    """Hypertext Transfer Protocol Request.
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of HTTP request.
+        TODO.
+    """
+    
     __hdr_defaults__ = {
         'method': 'GET',
         'uri': '/',
@@ -155,7 +171,15 @@ class Request(Message):
 
 
 class Response(Message):
-    """Hypertext Transfer Protocol Response."""
+    """Hypertext Transfer Protocol Response.
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of HTTP Response.
+        TODO.
+    """
+    
     __hdr_defaults__ = {
         'version': '1.0',
         'status': '200',

@@ -6,7 +6,15 @@ import http
 
 
 class Request(http.Request):
-    """SIP request."""
+    """SIP request.
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of SIP request.
+        TODO.
+    """
+    
     __hdr_defaults__ = {
         'method': 'INVITE',
         'uri': 'sip:user@example.com',
@@ -22,7 +30,15 @@ class Request(http.Request):
 
 
 class Response(http.Response):
-    """SIP response."""
+    """SIP response.
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of SIP response.
+        TODO.
+    """
+    
     __hdr_defaults__ = {
         'version': '2.0',
         'status': '200',

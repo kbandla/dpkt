@@ -7,7 +7,15 @@ import ethernet
 
 
 class LLC(dpkt.Packet):
-    """802.2 Logical Link Control"""
+    """802.2 Logical Link Control (LLC) data communication protocol.
+
+    Attributes:
+        __hdr__ = (
+            ('dsap', 'B', 0xaa),   # Destination Service Access Point
+            ('ssap', 'B', 0xaa),   # Source Service Access Point
+            ('ctl', 'B', 3)        # Control Byte
+        )
+    """
 
     __hdr__ = (
         ('dsap', 'B', 0xaa),   # Destination Service Access Point

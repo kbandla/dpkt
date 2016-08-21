@@ -19,6 +19,15 @@ ARP_OP_REVREPLY = 4  # response giving protocol address
 
 
 class ARP(dpkt.Packet):
+    """Address Resolution Protocol.
+
+    See more about the ARP on \
+    https://en.wikipedia.org/wiki/Address_Resolution_Protocol
+
+    Attributes:
+        __hdr__: Header fields of ARP.
+    """
+    
     __hdr__ = (
         ('hrd', 'H', ARP_HRD_ETH),
         ('pro', 'H', ARP_PRO_IP),

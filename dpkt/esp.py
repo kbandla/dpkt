@@ -6,6 +6,15 @@ import dpkt
 
 
 class ESP(dpkt.Packet):
+    """Encapsulated Security Protocol.
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of ESP.
+        TODO.
+    """
+    
     __hdr__ = (
         ('spi', 'I', 0),
         ('seq', 'I', 0)

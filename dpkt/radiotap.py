@@ -78,6 +78,15 @@ _FCS_MASK = 0x10
 
 
 class Radiotap(dpkt.Packet):
+    """Radiotap.
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of Radiotap.
+        TODO.
+    """
+    
     __hdr__ = (
         ('version', 'B', 0),
         ('pad', 'B', 0),

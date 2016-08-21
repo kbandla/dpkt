@@ -20,6 +20,15 @@ GRE_opt_fields = (
 
 
 class GRE(dpkt.Packet):
+    """Generic Routing Encapsulation.
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of GRE.
+        TODO.
+    """
+    
     __hdr__ = (
         ('flags', 'H', 0),
         ('p', 'H', 0x0800),  # ETH_TYPE_IP

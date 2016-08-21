@@ -118,6 +118,15 @@ def unpack_name(buf, off):
 
 
 class DNS(dpkt.Packet):
+    """Domain Name System.
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of DNS.
+        TODO.
+    """
+    
     __hdr__ = (
         ('id', 'H', 0),
         ('op', 'H', DNS_RD),  # recursive query

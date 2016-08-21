@@ -6,6 +6,15 @@ import dpkt
 
 
 class TNS(dpkt.Packet):
+    """Transparent Network Substrate.
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of TNS.
+        TODO.
+    """
+
     __hdr__ = (
         ('length', 'H', 0),
         ('pktsum', 'H', 0),

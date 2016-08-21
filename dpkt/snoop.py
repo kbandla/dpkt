@@ -26,7 +26,15 @@ dltoff = {SDL_ETHER: 14}
 
 
 class PktHdr(dpkt.Packet):
-    """snoop packet header."""
+    """snoop packet header.
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of snoop packet header.
+        TODO.
+    """
+    
     __byte_order__ = '!'
     __hdr__ = (
         ('orig_len', 'I', 0),
@@ -39,7 +47,15 @@ class PktHdr(dpkt.Packet):
 
 
 class FileHdr(dpkt.Packet):
-    """snoop file header."""
+    """snoop file header.
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of snoop file header.
+        TODO.
+    """
+    
     __byte_order__ = '!'
     __hdr__ = (
         ('magic', 'Q', SNOOP_MAGIC),
@@ -49,7 +65,13 @@ class FileHdr(dpkt.Packet):
 
 
 class Writer(object):
-    """Simple snoop dumpfile writer."""
+    """Simple snoop dumpfile writer.
+
+    TODO: Longer class information....
+
+    Attributes:
+        TODO.
+    """
 
     def __init__(self, fileobj, linktype=SDL_ETHER):
         self.__f = fileobj
@@ -74,8 +96,14 @@ class Writer(object):
 
 
 class Reader(object):
-    """Simple pypcap-compatible snoop file reader."""
+    """Simple pypcap-compatible snoop file reader.
 
+    TODO: Longer class information....
+
+    Attributes:
+        TODO.
+    """
+    
     def __init__(self, fileobj):
         self.name = fileobj.name
         self.fd = fileobj.fileno()

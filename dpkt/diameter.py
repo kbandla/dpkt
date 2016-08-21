@@ -20,6 +20,15 @@ SESSION_TERMINATION = 275
 
 
 class Diameter(dpkt.Packet):
+    """Diameter.
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of Diameter.
+        TODO.
+    """
+    
     __hdr__ = (
         ('v', 'B', 1),
         ('len', '3s', 0),

@@ -32,6 +32,17 @@ REFLECTED_FROM = 0x000b
 
 
 class STUN(dpkt.Packet):
+    """Simple Traversal of UDP through NAT.
+
+    STUN - RFC 3489
+    http://tools.ietf.org/html/rfc3489
+    Each packet has a 20 byte header followed by 0 or more attribute TLVs.
+
+    Attributes:
+        __hdr__: Header fields of STUN.
+        TODO.
+    """
+    
     __hdr__ = (
         ('type', 'H', 0),
         ('len', 'H', 0),

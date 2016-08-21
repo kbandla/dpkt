@@ -115,6 +115,15 @@ BLOCK_ACK_CODE_RESPONSE = 1
 
 
 class IEEE80211(dpkt.Packet):
+    """IEEE 802.11.
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of IEEE802.11.
+        TODO.
+    """
+    
     __hdr__ = (
         ('framectl', 'H', 0),
         ('duration', 'H', 0)

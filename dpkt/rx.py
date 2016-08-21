@@ -30,6 +30,15 @@ SEC_RXKAD_ENC = 0x03
 
 
 class Rx(dpkt.Packet):
+    """Rx Protocol.
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of Rx.
+        TODO.
+    """
+    
     __hdr__ = (
         ('epoch', 'I', 0),
         ('cid', 'I', 0),

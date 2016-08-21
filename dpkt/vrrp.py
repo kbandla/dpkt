@@ -7,6 +7,15 @@ from decorators import deprecated
 
 
 class VRRP(dpkt.Packet):
+    """Virtual Router Redundancy Protocol.
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of VRRP.
+        TODO.
+    """
+    
     __hdr__ = (
         ('_v_type', 'B', 0x21),
         ('vrid', 'B', 0),

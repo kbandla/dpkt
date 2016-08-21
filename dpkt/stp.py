@@ -6,6 +6,15 @@ import dpkt
 
 
 class STP(dpkt.Packet):
+    """Spanning Tree Protocol.
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of STP.
+        TODO.
+    """
+    
     __hdr__ = (
         ('proto_id', 'H', 0),
         ('v', 'B', 0),

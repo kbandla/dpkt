@@ -20,6 +20,15 @@ TCP_WIN_MAX = 65535  # maximum (unscaled) window
 
 
 class TCP(dpkt.Packet):
+    """Transmission Control Protocol.
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of TCP.
+        TODO.
+    """
+    
     __hdr__ = (
         ('sport', 'H', 0xdead),
         ('dport', 'H', 0),

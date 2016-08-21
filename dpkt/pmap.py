@@ -10,6 +10,15 @@ PMAP_VERS = 2
 
 
 class Pmap(dpkt.Packet):
+    """Portmap / rpcbind.
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of Pmap.
+        TODO.
+    """
+    
     __hdr__ = (
         ('prog', 'I', 0),
         ('vers', 'I', 0),

@@ -1,6 +1,6 @@
 # $Id: rtp.py 23 2006-11-08 15:45:33Z dugsong $
 # -*- coding: utf-8 -*-
-"""Real-Time Transport Protocol"""
+"""Real-Time Transport Protocol."""
 
 from dpkt import Packet
 from decorators import deprecated
@@ -30,6 +30,15 @@ VERSION = 2
 
 
 class RTP(Packet):
+    """Real-Time Transport Protocol.
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of RTP.
+        TODO.
+    """
+    
     __hdr__ = (
         ('_type', 'H', 0x8000),
         ('seq', 'H', 0),

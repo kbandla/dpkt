@@ -93,6 +93,15 @@ ESCAPE_FOR_EXTENSION = 127
 
 
 class H225(dpkt.Packet):
+    """ITU-T H.225.0 Call Signaling.
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of H225.
+        TODO.
+    """
+    
     __hdr__ = (
         ('proto', 'B', 8),
         ('ref_len', 'B', 2)
