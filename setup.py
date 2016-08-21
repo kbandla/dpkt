@@ -42,8 +42,14 @@ class BuildDebPackage(Command):
         os.system('py2dsc-deb ' + sdist_file)
 
 
+package_version = package.__version__
+if "bdist_msi" in sys.argv:
+    # The MSI build target does not support a 4 digit version, e.g. '1.2.3.4'
+    # therefore we remove the last digit.
+    package_version, _, _ = package_version.rpartition('.')
+
 setup(name=package_name,
-      version=package.__version__,
+      version=package_version,
       author=package.__author__,
       author_email=package.__author_email__,
       url=package.__url__,

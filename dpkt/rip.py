@@ -41,11 +41,11 @@ class RIP(dpkt.Packet):
         self.data = self.rtes = l
 
     def __len__(self):
-        len = self.__hdr_len__
+        n = self.__hdr_len__
         if self.auth:
-            len += len(self.auth)
-        len += sum(map(len, self.rtes))
-        return len
+            n += len(self.auth)
+        n += sum(map(len, self.rtes))
+        return n
 
     def __str__(self):
         auth = ''

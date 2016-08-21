@@ -58,3 +58,6 @@ Jirka Vejrazka
 
 Tim Yardley <yardley@gmail.com>
 	DHCP definitions
+
+obormot <oscar.ibatullin@gmail.com>
+	pcapng module, Packet repr improvements

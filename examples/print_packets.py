@@ -8,24 +8,24 @@ import datetime
 import socket
 
 
-def mac_addr(mac_string):
-    """Print out MAC address given a string
+def mac_addr(address):
+    """Convert a MAC address to a readable/printable string
 
-    Args:
-        mac_string: the string representation of a MAC address
-    Returns:
-        printable MAC address
+       Args:
+           address (str): a MAC address in hex form (e.g. '\x01\x02\x03\x04\x05\x06')
+       Returns:
+           str: Printable/readable MAC address
     """
-    return ':'.join('%02x' % ord(b) for b in mac_string)
+    return ':'.join('%02x' % ord(b) for b in address)
 
 
 def ip_to_str(address):
     """Print out an IP address given a string
 
     Args:
-        address: the string representation of a MAC address
+        address (inet struct): inet network address
     Returns:
-        printable IP address
+        str: Printable/readable IP address
     """
     return socket.inet_ntop(socket.AF_INET, address)
 
@@ -68,7 +68,7 @@ def print_packets(pcap):
 
 def test():
     """Open up a test pcap file and print out the packets"""
-    with open('data/http.pcap') as f:
+    with open('data/http.pcap', 'rb') as f:
         pcap = dpkt.pcap.Reader(f)
         print_packets(pcap)
 
