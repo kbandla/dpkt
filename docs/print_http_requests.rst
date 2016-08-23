@@ -28,9 +28,17 @@ that use DPKT (http://chains.readthedocs.io and others)
         # Now grab the data within the Ethernet frame (the IP packet)
         ip = eth.data
 
-        # Now check if this is an ICMP packet
-        if hasattr(ip, 'data') and ip.data.__class__.__name__ == 'ICMP':
-            icmp = ip.data
+        # Check for TCP in the transport layer
+        if hasattr(ip, 'data') and ip.data.__class__.__name__ == 'TCP':
+
+            # Set the TCP data
+            tcp = ip.data
+
+            # Now see if we can parse the contents as a HTTP request
+            try:
+                request = dpkt.http.Request(tcp.data)
+            except (dpkt.dpkt.NeedData, dpkt.dpkt.UnpackError):
+                continue
 
             # Pull out fragment information (flags and offset all packed into off field, so use bitmasks)
             do_not_fragment = bool(ip.off & dpkt.ip.IP_DF)
@@ -42,7 +50,8 @@ that use DPKT (http://chains.readthedocs.io and others)
             print 'Ethernet Frame: ', mac_addr(eth.src), mac_addr(eth.dst), eth.type
             print 'IP: %s -> %s   (len=%d ttl=%d DF=%d MF=%d offset=%d)' % \
                   (inet_to_str(ip.src), inet_to_str(ip.dst), ip.len, ip.ttl, do_not_fragment, more_fragments, fragment_offset)
-            print 'ICMP: type:%d code:%d checksum:%d data: %s\n' % (icmp.type, icmp.code, icmp.sum, repr(icmp.data))
+            print 'HTTP request: %s\n' % repr(request)
+
 
 **Example Output**
 
