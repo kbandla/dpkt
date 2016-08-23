@@ -1,44 +1,13 @@
-#!/usr/bin/env python
-"""
-Use DPKT to read in a pcap file and print out the contents of the packets
-This example is focused on the fields in the Ethernet Frame and IP packet
-"""
-import dpkt
-import datetime
-import socket
 
+Print Packets Example
+=====================
+This example uses DPKT to read in a pcap file and print out the contents of the packets This example is
+focused on the fields in the Ethernet Frame and IP packet
 
-def mac_addr(address):
-    """Convert a MAC address to a readable/printable string
+**Code Excerpt**
 
-       Args:
-           address (str): a MAC address in hex form (e.g. '\x01\x02\x03\x04\x05\x06')
-       Returns:
-           str: Printable/readable MAC address
-    """
-    return ':'.join('%02x' % ord(b) for b in address)
+.. code-block:: python
 
-
-def inet_to_str(inet):
-    """Convert inet object to a string
-
-        Args:
-            inet (inet struct): inet network address
-        Returns:
-            str: Printable/readable IP address
-    """
-    # First try ipv4 and then ipv6
-    try:
-        return socket.inet_ntop(socket.AF_INET, inet)
-    except ValueError:
-        return socket.inet_ntop(socket.AF_INET6, inet)
-
-def print_packets(pcap):
-    """Print out information about each packet in a pcap
-
-       Args:
-           pcap: dpkt pcap reader object (dpkt.pcap.Reader)
-    """
     # For each packet in the pcap process the contents
     for timestamp, buf in pcap:
 
@@ -68,13 +37,20 @@ def print_packets(pcap):
         print 'IP: %s -> %s   (len=%d ttl=%d DF=%d MF=%d offset=%d)\n' % \
               (inet_to_str(ip.src), inet_to_str(ip.dst), ip.len, ip.ttl, do_not_fragment, more_fragments, fragment_offset)
 
+**Example Output**
 
-def test():
-    """Open up a test pcap file and print out the packets"""
-    with open('data/http.pcap', 'rb') as f:
-        pcap = dpkt.pcap.Reader(f)
-        print_packets(pcap)
+.. code-block:: json
 
+        Timestamp:  2004-05-13 10:17:07.311224
+        Ethernet Frame:  00:00:01:00:00:00 fe:ff:20:00:01:00 2048
+        IP: 145.254.160.237 -> 65.208.228.223   (len=48 ttl=128 DF=1 MF=0 offset=0)
 
-if __name__ == '__main__':
-    test()
+        Timestamp:  2004-05-13 10:17:08.222534
+        Ethernet Frame:  fe:ff:20:00:01:00 00:00:01:00:00:00 2048
+        IP: 65.208.228.223 -> 145.254.160.237   (len=48 ttl=47 DF=1 MF=0 offset=0)
+
+        ...
+
+**dpkt/examples/print_packets.py**
+
+.. automodule:: examples.print_packets
