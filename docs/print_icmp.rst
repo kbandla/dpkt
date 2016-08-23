@@ -2,7 +2,7 @@
 Print ICMP Example
 ==================
 
-This example expands on the print_packets example. It checks for IMCP packets and displays the ICMP contents.
+This example expands on the print_packets example. It checks for ICMP packets and displays the ICMP contents.
 
 **Code Excerpt**
 
