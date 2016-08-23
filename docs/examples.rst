@@ -10,6 +10,7 @@ Examples in dpkt/examples
 
     print_packets
     print_icmp
+    print_http_requests
 
 Jon Oberheide's Examples
 -------------------------

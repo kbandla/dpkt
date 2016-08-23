@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 """
-This example expands on the print_packets example. It checks for ICMP packets and displays the ICMP contents.
+This example expands on the print_packets example. It checks for HTTP request headers and displays their contents.
+NOTE: We are not reconstructing 'flows' so the request (and response if you tried to parse it) will only
+      parse correctly if they fit within a single packet. Requests can often fit in a single packet but
+      Responses almost never will. For proper reconstruction of flows you may want to look at other projects
+      that use DPKT (http://chains.readthedocs.io and others)
 """
 import dpkt
 import datetime
@@ -32,7 +36,7 @@ def inet_to_str(inet):
     except ValueError:
         return socket.inet_ntop(socket.AF_INET6, inet)
 
-def print_icmp(pcap):
+def print_http_request(pcap):
     """Print out information about each packet in a pcap
 
        Args:
@@ -53,9 +57,17 @@ def print_icmp(pcap):
         # Now grab the data within the Ethernet frame (the IP packet)
         ip = eth.data
 
-        # Now check if this is an ICMP packet
-        if hasattr(ip, 'data') and ip.data.__class__.__name__ == 'ICMP':
-            icmp = ip.data
+        # Check for TCP in the transport layer
+        if hasattr(ip, 'data') and ip.data.__class__.__name__ == 'TCP':
+
+            # Set the TCP data
+            tcp = ip.data
+
+            # Now see if we can parse the contents as a HTTP request
+            try:
+                request = dpkt.http.Request(tcp.data)
+            except (dpkt.dpkt.NeedData, dpkt.dpkt.UnpackError):
+                continue
 
             # Pull out fragment information (flags and offset all packed into off field, so use bitmasks)
             do_not_fragment = bool(ip.off & dpkt.ip.IP_DF)
@@ -67,14 +79,14 @@ def print_icmp(pcap):
             print 'Ethernet Frame: ', mac_addr(eth.src), mac_addr(eth.dst), eth.type
             print 'IP: %s -> %s   (len=%d ttl=%d DF=%d MF=%d offset=%d)' % \
                   (inet_to_str(ip.src), inet_to_str(ip.dst), ip.len, ip.ttl, do_not_fragment, more_fragments, fragment_offset)
-            print 'ICMP: type:%d code:%d checksum:%d data: %s\n' % (icmp.type, icmp.code, icmp.sum, repr(icmp.data))
+            print 'HTTP request: %s\n' % repr(request)
 
 
 def test():
     """Open up a test pcap file and print out the packets"""
-    with open('data/dns_icmp.pcap', 'rb') as f:
+    with open('data/http.pcap', 'rb') as f:
         pcap = dpkt.pcap.Reader(f)
-        print_icmp(pcap)
+        print_http_requests(pcap)
 
 
 if __name__ == '__main__':
