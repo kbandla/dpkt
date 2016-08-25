@@ -54,7 +54,7 @@ def print_icmp(pcap):
         ip = eth.data
 
         # Now check if this is an ICMP packet
-        if hasattr(ip, 'data') and ip.data.__class__.__name__ == 'ICMP':
+        if isinstance(ip.data, dpkt.icmp.ICMP):
             icmp = ip.data
 
             # Pull out fragment information (flags and offset all packed into off field, so use bitmasks)
