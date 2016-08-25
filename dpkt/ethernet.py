@@ -592,6 +592,32 @@ def test_eth_pppoe():   # Eth - PPPoE - IPv6 - UDP - DHCP6
     assert len(eth) == len(s)
 
 
+def test_eth_gre_teb():  # Eth - IP - GRE(TEB) - Eth - IP - ICMP
+    import ethernet
+    import gre
+    import icmp
+    import ip
+    s = ('\x08\x00\x27\xf2\x1d\x8c\x08\x00\x27\xae\x4d\x62\x08\x00\x45\x00\x00\x7a\xcc\xea\x40\x00'
+         '\x40\x2f\x7c\x02\xc0\xa8\x38\x0b\xc0\xa8\x38\x0c\x00\x00\x65\x58\x3a\xbe\xca\xd5\xc3\x89'
+         '\x5a\x97\xdd\x63\x4e\x52\x08\x00\x45\x00\x00\x54\xef\xde\x40\x00\x40\x01\x36\xc8\x0a\x00'
+         '\x00\x01\x0a\x00\x00\x02\x08\x00\x63\xa2\x0c\xb4\x00\x01\x05\x36\x7c\x57\x00\x00\x00\x00'
+         '\x45\x48\x02\x00\x00\x00\x00\x00\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d'
+         '\x1e\x1f\x20\x21\x22\x23\x24\x25\x26\x27\x28\x29\x2a\x2b\x2c\x2d\x2e\x2f\x30\x31\x32\x33'
+         '\x34\x35\x36\x37')
+    eth = Ethernet(s)
+
+    # stack
+    assert isinstance(eth.data, ip.IP)
+    assert isinstance(eth.data.data, gre.GRE)
+    assert isinstance(eth.data.data.data, ethernet.Ethernet)
+    assert isinstance(eth.data.data.data.data, ip.IP)
+    assert isinstance(eth.data.data.data.data.data, icmp.ICMP)
+
+    # construction
+    assert str(eth) == s
+    assert len(eth) == len(s)
+
+
 if __name__ == '__main__':
     test_eth()
     test_eth_init_with_data()
@@ -605,5 +631,6 @@ if __name__ == '__main__':
     test_eth_llc_snap_cdp()
     test_eth_llc_ipx()
     test_eth_pppoe()
+    test_eth_gre_teb()
 
     print 'Tests Successful...'
