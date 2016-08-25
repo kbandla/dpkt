@@ -49,9 +49,8 @@ def print_packets(pcap):
         eth = dpkt.ethernet.Ethernet(buf)
         print 'Ethernet Frame: ', mac_addr(eth.src), mac_addr(eth.dst), eth.type
 
-        # Make sure the Ethernet frame contains an IP packet
-        # EtherType (IP, ARP, PPPoE, IP6... see http://en.wikipedia.org/wiki/EtherType)
-        if eth.type != dpkt.ethernet.ETH_TYPE_IP:
+        # Make sure the Ethernet data contains an IP packet
+        if not isinstance(eth.data, dpkt.ip.IP):
             print 'Non IP Packet type not supported %s\n' % eth.data.__class__.__name__
             continue
 

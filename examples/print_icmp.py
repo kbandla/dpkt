@@ -44,9 +44,8 @@ def print_icmp(pcap):
         # Unpack the Ethernet frame (mac src/dst, ethertype)
         eth = dpkt.ethernet.Ethernet(buf)
 
-        # Make sure the Ethernet frame contains an IP packet
-        # EtherType (IP, ARP, PPPoE, IP6... see http://en.wikipedia.org/wiki/EtherType)
-        if eth.type != dpkt.ethernet.ETH_TYPE_IP:
+        # Make sure the Ethernet data contains an IP packet
+        if not isinstance(eth.data, dpkt.ip.IP):
             print 'Non IP Packet type not supported %s\n' % eth.data.__class__.__name__
             continue
 
