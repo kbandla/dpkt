@@ -36,7 +36,7 @@ def inet_to_str(inet):
     except ValueError:
         return socket.inet_ntop(socket.AF_INET6, inet)
 
-def print_http_request(pcap):
+def print_http_requests(pcap):
     """Print out information about each packet in a pcap
 
        Args:
@@ -58,7 +58,7 @@ def print_http_request(pcap):
         ip = eth.data
 
         # Check for TCP in the transport layer
-        if hasattr(ip, 'data') and ip.data.__class__.__name__ == 'TCP':
+        if isinstance(ip.data, dpkt.tcp.TCP):
 
             # Set the TCP data
             tcp = ip.data
