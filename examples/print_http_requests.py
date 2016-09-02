@@ -80,6 +80,10 @@ def print_http_requests(pcap):
                   (inet_to_str(ip.src), inet_to_str(ip.dst), ip.len, ip.ttl, do_not_fragment, more_fragments, fragment_offset)
             print 'HTTP request: %s\n' % repr(request)
 
+            # Check for Header spanning acrossed TCP segments
+            if not tcp.data.endswith('\r\n'):
+                print '\nHEADER TRUNCATED! Reassemble TCP segments!\n'
+
 
 def test():
     """Open up a test pcap file and print out the packets"""

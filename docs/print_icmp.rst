@@ -14,9 +14,8 @@ This example expands on the print_packets example. It checks for ICMP packets an
         # Unpack the Ethernet frame (mac src/dst, ethertype)
         eth = dpkt.ethernet.Ethernet(buf)
 
-        # Make sure the Ethernet frame contains an IP packet
-        # EtherType (IP, ARP, PPPoE, IP6... see http://en.wikipedia.org/wiki/EtherType)
-        if eth.type != dpkt.ethernet.ETH_TYPE_IP:
+        # Make sure the Ethernet data contains an IP packet
+        if not isinstance(eth.data, dpkt.ip.IP):
             print 'Non IP Packet type not supported %s\n' % eth.data.__class__.__name__
             continue
 
@@ -24,7 +23,7 @@ This example expands on the print_packets example. It checks for ICMP packets an
         ip = eth.data
 
         # Now check if this is an ICMP packet
-        if hasattr(ip, 'data') and ip.data.__class__.__name__ == 'ICMP':
+        if isinstance(ip.data, dpkt.icmp.ICMP):
             icmp = ip.data
 
             # Pull out fragment information (flags and offset all packed into off field, so use bitmasks)
