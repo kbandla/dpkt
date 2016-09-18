@@ -70,7 +70,7 @@ class Gzip(dpkt.Packet):
     def unpack(self, buf):
         super(Gzip, self).unpack(buf)
         if self.flags & GZIP_FEXTRA:
-            n = struct.unpack(self.data[:2], '>H')[0]
+            n = struct.unpack('>H', self.data[:2])[0]
             self.extra = GzipExtra(self.data[2:2 + n])
             self.data = self.data[2 + n:]
         if self.flags & GZIP_FNAME:
