@@ -50,7 +50,7 @@ GZIP_FENCRYPT_LEN = 12
 class GzipExtra(dpkt.Packet):
     __hdr__ = (
         ('id', '2s', ''),
-        ('len', 'H', 0)
+        ('len', '<H', 0)
     )
 
 
@@ -59,7 +59,7 @@ class Gzip(dpkt.Packet):
         ('magic', '2s', GZIP_MAGIC),
         ('method', 'B', GZIP_MDEFLATE),
         ('flags', 'B', 0),
-        ('mtime', 'I', 0),
+        ('mtime', '<I', 0),
         ('xflags', 'B', 0),
         ('os', 'B', GZIP_OS_UNIX),
 
@@ -71,7 +71,7 @@ class Gzip(dpkt.Packet):
     def unpack(self, buf):
         super(Gzip, self).unpack(buf)
         if self.flags & GZIP_FEXTRA:
-            n = struct.unpack('>H', self.data[:2])[0]
+            n = struct.unpack('<H', self.data[:2])[0]
             self.extra = GzipExtra(self.data[2:2 + n])
             self.data = self.data[2 + n:]
         if self.flags & GZIP_FNAME:
