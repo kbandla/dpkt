@@ -48,18 +48,20 @@ GZIP_FENCRYPT_LEN = 12
 
 
 class GzipExtra(dpkt.Packet):
+    __byte_order__ = '<'
     __hdr__ = (
         ('id', '2s', ''),
-        ('len', '<H', 0)
+        ('len', 'H', 0)
     )
 
 
 class Gzip(dpkt.Packet):
+    __byte_order__ = '<'
     __hdr__ = (
         ('magic', '2s', GZIP_MAGIC),
         ('method', 'B', GZIP_MDEFLATE),
         ('flags', 'B', 0),
-        ('mtime', '<I', 0),
+        ('mtime', 'I', 0),
         ('xflags', 'B', 0),
         ('os', 'B', GZIP_OS_UNIX),
 
