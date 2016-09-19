@@ -5,6 +5,7 @@
 import struct
 import zlib
 import dpkt
+import binascii
 
 
 # RFC 1952
@@ -114,6 +115,44 @@ class Gzip(dpkt.Packet):
         """Return decompressed payload."""
         d = zlib.decompressobj(-zlib.MAX_WBITS)
         return d.decompress(self.data)
+
+
+_hexdecode = binascii.a2b_hex
+
+class TestGzip(object):
+
+    """This data is created with the gzip command line tool"""
+
+    @classmethod
+    def setup_class(cls):
+        cls.data = _hexdecode('1F8B' # magic
+                              '080880C185560003' # header
+                              '68656C6C6F2E74787400' # filename
+                              'F348CDC9C95728CF2FCA4951E40200' # data
+                              '41E4A9B20D000000') # checksum
+        cls.p = Gzip(cls.data)
+
+    def test_method(self):
+        assert (self.p.method == GZIP_MDEFLATE)
+
+    def test_flags(self):
+        assert (self.p.flags == GZIP_FNAME)
+
+    def test_mtime(self):
+        # Fri Jan 01 00:00:00 2016 UTC
+        assert (self.p.mtime == 0x5685c180)
+
+    def test_xflags(self):
+        assert (self.p.xflags == 0)
+
+    def test_os(self):
+        assert (self.p.os == GZIP_OS_UNIX)
+
+    def test_filename(self):
+        assert (self.p.filename == "hello.txt")
+
+    def test_decompress(self):
+        assert (self.p.decompress() == "Hello world!\n")
 
 
 if __name__ == '__main__':
