@@ -73,20 +73,32 @@ class Gzip(dpkt.Packet):
     def unpack(self, buf):
         super(Gzip, self).unpack(buf)
         if self.flags & GZIP_FEXTRA:
+            if len(self.data) < 2:
+                raise dpkt.NeedData('Gzip extra')
             n = struct.unpack('<H', self.data[:2])[0]
+            if len(self.data) < 2 + n:
+                raise dpkt.NeedData('Gzip extra')
             self.extra = GzipExtra(self.data[2:2 + n])
             self.data = self.data[2 + n:]
         if self.flags & GZIP_FNAME:
             n = self.data.find('\x00')
+            if n == -1:
+                raise dpkt.NeedData('Gzip end of file name not found')
             self.filename = self.data[:n]
             self.data = self.data[n + 1:]
         if self.flags & GZIP_FCOMMENT:
             n = self.data.find('\x00')
+            if n == -1:
+                raise dpkt.NeedData('Gzip end of comment not found')
             self.comment = self.data[:n]
             self.data = self.data[n + 1:]
         if self.flags & GZIP_FENCRYPT:
+            if len(self.data) < GZIP_FENCRYPT_LEN:
+                raise dpkt.NeedData('Gzip encrypt')
             self.data = self.data[GZIP_FENCRYPT_LEN:]  # XXX - skip
         if self.flags & GZIP_FHCRC:
+            if len(self.data) < 2:
+                raise dpkt.NeedData('Gzip hcrc')
             self.data = self.data[2:]  # XXX - skip
 
     def pack_hdr(self):
