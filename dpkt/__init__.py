@@ -26,6 +26,7 @@ import gzip
 import h225
 import hsrp
 import http
+import http2
 import icmp
 import icmp6
 import ieee80211
