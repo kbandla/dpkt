@@ -5,6 +5,7 @@
 import struct
 import zlib
 import dpkt
+import binascii
 
 
 # RFC 1952
@@ -47,6 +48,7 @@ GZIP_FENCRYPT_LEN = 12
 
 
 class GzipExtra(dpkt.Packet):
+    __byte_order__ = '<'
     __hdr__ = (
         ('id', '2s', ''),
         ('len', 'H', 0)
@@ -54,6 +56,7 @@ class GzipExtra(dpkt.Packet):
 
 
 class Gzip(dpkt.Packet):
+    __byte_order__ = '<'
     __hdr__ = (
         ('magic', '2s', GZIP_MAGIC),
         ('method', 'B', GZIP_MDEFLATE),
@@ -70,20 +73,32 @@ class Gzip(dpkt.Packet):
     def unpack(self, buf):
         super(Gzip, self).unpack(buf)
         if self.flags & GZIP_FEXTRA:
-            n = struct.unpack('>H', self.data[:2])[0]
+            if len(self.data) < 2:
+                raise dpkt.NeedData('Gzip extra')
+            n = struct.unpack('<H', self.data[:2])[0]
+            if len(self.data) < 2 + n:
+                raise dpkt.NeedData('Gzip extra')
             self.extra = GzipExtra(self.data[2:2 + n])
             self.data = self.data[2 + n:]
         if self.flags & GZIP_FNAME:
             n = self.data.find('\x00')
+            if n == -1:
+                raise dpkt.NeedData('Gzip end of file name not found')
             self.filename = self.data[:n]
             self.data = self.data[n + 1:]
         if self.flags & GZIP_FCOMMENT:
             n = self.data.find('\x00')
+            if n == -1:
+                raise dpkt.NeedData('Gzip end of comment not found')
             self.comment = self.data[:n]
             self.data = self.data[n + 1:]
         if self.flags & GZIP_FENCRYPT:
+            if len(self.data) < GZIP_FENCRYPT_LEN:
+                raise dpkt.NeedData('Gzip encrypt')
             self.data = self.data[GZIP_FENCRYPT_LEN:]  # XXX - skip
         if self.flags & GZIP_FHCRC:
+            if len(self.data) < 2:
+                raise dpkt.NeedData('Gzip hcrc')
             self.data = self.data[2:]  # XXX - skip
 
     def pack_hdr(self):
@@ -91,7 +106,7 @@ class Gzip(dpkt.Packet):
         if self.extra:
             self.flags |= GZIP_FEXTRA
             s = str(self.extra)
-            l.append(struct.pack('>H', len(s)))
+            l.append(struct.pack('<H', len(s)))
             l.append(s)
         if self.filename:
             self.flags |= GZIP_FNAME
@@ -114,6 +129,44 @@ class Gzip(dpkt.Packet):
         """Return decompressed payload."""
         d = zlib.decompressobj(-zlib.MAX_WBITS)
         return d.decompress(self.data)
+
+
+_hexdecode = binascii.a2b_hex
+
+class TestGzip(object):
+
+    """This data is created with the gzip command line tool"""
+
+    @classmethod
+    def setup_class(cls):
+        cls.data = _hexdecode('1F8B' # magic
+                              '080880C185560003' # header
+                              '68656C6C6F2E74787400' # filename
+                              'F348CDC9C95728CF2FCA4951E40200' # data
+                              '41E4A9B20D000000') # checksum
+        cls.p = Gzip(cls.data)
+
+    def test_method(self):
+        assert (self.p.method == GZIP_MDEFLATE)
+
+    def test_flags(self):
+        assert (self.p.flags == GZIP_FNAME)
+
+    def test_mtime(self):
+        # Fri Jan 01 00:00:00 2016 UTC
+        assert (self.p.mtime == 0x5685c180)
+
+    def test_xflags(self):
+        assert (self.p.xflags == 0)
+
+    def test_os(self):
+        assert (self.p.os == GZIP_OS_UNIX)
+
+    def test_filename(self):
+        assert (self.p.filename == "hello.txt")
+
+    def test_decompress(self):
+        assert (self.p.decompress() == "Hello world!\n")
 
 
 if __name__ == '__main__':
