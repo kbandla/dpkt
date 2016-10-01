@@ -537,8 +537,12 @@ BY_CODE = dict(
     (cipher.code, cipher) for cipher in CIPHERSUITES)
 
 # This is a function to avoid artificially increased coverage
-def BY_NAME():
-    dict((suite.name, suite) for suite in CIPHERSUITES)
+BY_NAME_DICT = None
+def BY_NAME(name):
+    # We initialize the dictionary only on the first call
+    if BY_NAME_DICT == None:
+        BY_NAME_DICT = dict((suite.name, suite) for suite in CIPHERSUITES)
+    return BY_NAME_DICT[name]
 
 NULL_SUITE = BY_CODE[0x0000]
 
