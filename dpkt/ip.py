@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 """Internet Protocol."""
 
-import dpkt
-from decorators import deprecated
+from . import dpkt
+from .decorators import deprecated
 
 
 class IP(dpkt.Packet):
@@ -131,7 +131,7 @@ class IP(dpkt.Packet):
         dpkt.Packet.unpack(self, buf)
         ol = ((self._v_hl & 0xf) << 2) - self.__hdr_len__
         if ol < 0:
-            raise dpkt.UnpackError, 'invalid header length'
+            raise dpkt.UnpackError('invalid header length')
         self.opts = buf[self.__hdr_len__:self.__hdr_len__ + ol]
         if self.len:
             buf = buf[self.__hdr_len__ + ol:self.len]
@@ -344,7 +344,7 @@ IP_PROTO_MAX = 255
 
 def __load_protos():
     g = globals()
-    for k, v in g.iteritems():
+    for k, v in g.items():
         if k.startswith('IP_PROTO_'):
             name = k[9:].lower()
             try:
@@ -438,4 +438,4 @@ if __name__ == '__main__':
     test_zerolen()
     test_constuctor()
     test_frag()
-    print 'Tests Successful...'
+    print('Tests Successful...')

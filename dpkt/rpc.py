@@ -3,7 +3,7 @@
 """Remote Procedure Call."""
 
 import struct
-import dpkt
+from . import dpkt
 
 # RPC.dir
 CALL = 0
@@ -162,7 +162,7 @@ def unpack_xdrlist(cls, buf):
         elif buf.startswith('\x00\x00\x00\x00'):
             break
         else:
-            raise dpkt.UnpackError, 'invalid XDR list'
+            raise dpkt.UnpackError('invalid XDR list')
     return l
 
 

@@ -96,7 +96,7 @@ class Packet(object):
         else:
             for k in self.__hdr_fields__:
                 setattr(self, k, copy.copy(self.__hdr_defaults__[k]))
-            for k, v in kwargs.iteritems():
+            for k, v in kwargs.items():
                 setattr(self, k, v)
 
     def __len__(self):
@@ -130,7 +130,7 @@ class Packet(object):
         # (3)
         l.extend(
             ['%s=%r' % (attr_name, attr_value)
-             for attr_name, attr_value in self.__dict__.iteritems()
+             for attr_name, attr_value in self.__dict__.items()
              if attr_name[0] != '_'                   # exclude _private attributes
              and attr_name != self.data.__class__.__name__.lower()])  # exclude fields like ip.udp
         # (4)
@@ -156,7 +156,7 @@ class Packet(object):
                     vals.append(v)
             try:
                 return struct.pack(self.__hdr_fmt__, *vals)
-            except struct.error, e:
+            except struct.error as e:
                 raise PackError(str(e))
 
     def pack(self):

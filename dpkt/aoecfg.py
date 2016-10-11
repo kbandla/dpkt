@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """ATA over Ethernet ATA command"""
 
-import dpkt
+from . import dpkt
 
 
 class AOECFG(dpkt.Packet):
@@ -32,4 +32,4 @@ def test_aoecfg():
 
 if __name__ == '__main__':
     test_aoecfg()
-    print 'Tests Successful...'
+    print('Tests Successful...')

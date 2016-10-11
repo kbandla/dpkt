@@ -2,9 +2,9 @@
 # -*- coding: utf-8 -*-
 """Linux libpcap "cooked" capture encapsulation."""
 
-import arp
-import dpkt
-import ethernet
+from . import arp
+from . import dpkt
+from . import ethernet
 
 
 class SLL(dpkt.Packet):

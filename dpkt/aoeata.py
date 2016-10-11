@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """ATA over Ethernet ATA command"""
 
-import dpkt
+from . import dpkt
 
 ATA_DEVICE_IDENTIFY = 0xec
 
@@ -42,4 +42,4 @@ def test_aoeata():
 
 if __name__ == '__main__':
     test_aoeata()
-    print 'Tests Successful...'
+    print('Tests Successful...')

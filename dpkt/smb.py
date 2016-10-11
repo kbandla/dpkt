@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """Server Message Block."""
 
-import dpkt
+from . import dpkt
 
 
 # https://msdn.microsoft.com/en-us/library/ee441774.aspx
@@ -88,7 +88,7 @@ def test_smb():
     assert smb.pid == 31482
     assert smb.uid == 2048
     assert smb.mid == 595
-    print repr(smb)
+    print(repr(smb))
 
     smb = SMB()
     smb.pid = 0x00081020
@@ -98,4 +98,4 @@ def test_smb():
 
 if __name__ == '__main__':
     test_smb()
-    print 'Tests Successful...'
+    print('Tests Successful...')

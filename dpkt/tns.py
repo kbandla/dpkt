@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """Transparent Network Substrate."""
 
-import dpkt
+from . import dpkt
 
 
 class TNS(dpkt.Packet):
@@ -50,4 +50,4 @@ def test_tns():
 if __name__ == '__main__':
     test_tns()
 
-    print 'Tests Successful...'
+    print('Tests Successful...')

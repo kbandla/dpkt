@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 """Transmission Control Protocol."""
 
-import dpkt
-from decorators import deprecated
+from . import dpkt
+from .decorators import deprecated
 
 # TCP control flags
 TH_FIN = 0x01  # end of data
@@ -32,7 +32,7 @@ class TCP(dpkt.Packet):
     __hdr__ = (
         ('sport', 'H', 0xdead),
         ('dport', 'H', 0),
-        ('seq', 'I', 0xdeadbeefL),
+        ('seq', 'I', 0xdeadbeef),
         ('ack', 'I', 0),
         ('_off', 'B', ((5 << 4) | 0)),
         ('flags', 'B', TH_SYN),
@@ -69,7 +69,7 @@ class TCP(dpkt.Packet):
         dpkt.Packet.unpack(self, buf)
         ol = ((self._off >> 4) << 2) - self.__hdr_len__
         if ol < 0:
-            raise dpkt.UnpackError, 'invalid header length'
+            raise dpkt.UnpackError('invalid header length')
         self.opts = buf[self.__hdr_len__:self.__hdr_len__ + ol]
         self.data = buf[self.__hdr_len__ + ol:]
 
@@ -160,4 +160,4 @@ def test_parse_opts():
 if __name__ == '__main__':
     # Runs all the test associated with this class/file
     test_parse_opts()
-    print 'Tests Successful...'
+    print('Tests Successful...')

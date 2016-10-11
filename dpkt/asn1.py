@@ -4,7 +4,7 @@
 
 import struct
 import time
-import dpkt
+from . import dpkt
 
 # Type class
 CLASSMASK = 0xc0
@@ -139,4 +139,4 @@ def test_asn1():
 
 if __name__ == '__main__':
     test_asn1()
-    print 'Tests Successful...'
+    print('Tests Successful...')

@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
 import struct
-import dpkt
-import stp
-import ethernet
+from . import dpkt
+from . import stp
+from . import ethernet
 
 
 class LLC(dpkt.Packet):
@@ -91,4 +91,4 @@ def test_llc():
 
 if __name__ == '__main__':
     test_llc()
-    print 'Tests Successful...'
+    print('Tests Successful...')

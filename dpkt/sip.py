@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """Session Initiation Protocol."""
 
-import http
+from . import http
 
 
 class Request(http.Request):

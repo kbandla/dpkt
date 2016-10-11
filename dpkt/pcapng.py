@@ -9,7 +9,13 @@ from struct import pack as struct_pack, unpack as struct_unpack
 from time import time
 import sys
 
-import dpkt
+from . import dpkt
+
+try:
+    import StringIO
+except ImportError:
+    from io import StringIO
+
 
 BYTE_ORDER_MAGIC = 0x1A2B3C4D
 BYTE_ORDER_MAGIC_LE = 0x4D3C2B1A
@@ -636,7 +642,6 @@ def test_epb():
 
 def test_simple_write_read():
     """test writing a basic pcapng and then reading it"""
-    import StringIO
     fobj = StringIO.StringIO()
 
     writer = Writer(fobj, snaplen=0x2000, linktype=DLT_LINUX_SLL)
@@ -682,7 +687,6 @@ def test_custom_read_write():
         b'\x01\x00\x0f\x00\x64\x70\x6b\x74\x20\x69\x73\x20\x61\x77\x65\x73\x6f\x6d\x65\x00\x00\x00'
         b'\x00\x00\x84\x00\x00\x00')
 
-    import StringIO
     fobj = StringIO.StringIO(buf)
 
     # test reading
@@ -749,4 +753,4 @@ if __name__ == '__main__':
     test_custom_read_write()
     repr(PcapngOptionLE())
 
-    print 'Tests Successful...'
+    print('Tests Successful...')

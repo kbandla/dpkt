@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 """Radiotap"""
 
-import dpkt
-import ieee80211
+from . import dpkt
+from . import ieee80211
 import socket
-from decorators import deprecated
+from .decorators import deprecated
 
 # Ref: http://www.radiotap.org
 # Fields Ref: http://www.radiotap.org/defined-fields/all
@@ -536,4 +536,4 @@ def test_fcs():
 if __name__ == '__main__':
     test_Radiotap()
     test_fcs()
-    print 'Tests Successful...'
+    print('Tests Successful...')

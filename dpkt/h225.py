@@ -3,8 +3,8 @@
 """ITU-T H.225.0 Call Signaling."""
 
 import struct
-import dpkt
-import tpkt
+from . import dpkt
+from . import tpkt
 
 
 # H225 Call Signaling
@@ -219,4 +219,4 @@ def test_unpack():
 if __name__ == '__main__':
     test_pack()
     test_unpack()
-    print 'Tests Successful...'
+    print('Tests Successful...')

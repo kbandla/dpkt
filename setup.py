@@ -23,7 +23,7 @@ class BuildDebPackage(Command):
     try:
         import stdeb
     except ImportError as exc:
-        print 'To build a Debian Package you must install stdeb (pip install stdeb)'
+        print('To build a Debian Package you must install stdeb (pip install stdeb)')
 
     description = "Build a Debian Package out of this Python Package"
     user_options = []
@@ -38,7 +38,7 @@ class BuildDebPackage(Command):
         os.system('python setup.py sdist')
         sdist_file = os.path.join(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'dist'),
                                   package_name + '-' + package.__version__ + '.tar.gz')
-        print sdist_file
+        print(sdist_file)
         os.system('py2dsc-deb ' + sdist_file)
 
 

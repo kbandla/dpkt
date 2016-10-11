@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """Spanning Tree Protocol."""
 
-import dpkt
+from . import dpkt
 
 
 class STP(dpkt.Packet):
@@ -83,4 +83,4 @@ def test_stp():
 if __name__ == '__main__':
     # Runs all the test associated with this class/file
     test_stp()
-    print 'Tests Successful...'
+    print('Tests Successful...')

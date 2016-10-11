@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 """Virtual Router Redundancy Protocol."""
 
-import dpkt
-from decorators import deprecated
+from . import dpkt
+from .decorators import deprecated
 
 
 class VRRP(dpkt.Packet):
@@ -113,4 +113,4 @@ def test_vrrp():
 if __name__ == '__main__':
     test_vrrp()
 
-    print 'Tests Successful...'
+    print('Tests Successful...')

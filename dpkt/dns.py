@@ -3,8 +3,8 @@
 """Domain Name System."""
 
 import struct
-import dpkt
-from decorators import deprecated
+from . import dpkt
+from .decorators import deprecated
 
 DNS_Q = 0
 DNS_R = 1
@@ -459,7 +459,7 @@ def test_PTR():
     assert my_dns.qd[0].name == '1.1.211.141.in-addr.arpa' and \
            my_dns.an[0].ptrname == 'default.v-umce-ifs.umnet.umich.edu' and \
            my_dns.ns[0].nsname == 'shabby.ifs.umich.edu' and \
-           my_dns.ns[1].ttl == 3382L and \
+           my_dns.ns[1].ttl == 3382 and \
            my_dns.ns[2].nsname == 'dns2.itd.umich.edu'
     assert s == str(my_dns)
 
@@ -504,7 +504,7 @@ def test_deprecated_method_performance():
     my_dns = DNS(s)
     t1 = Timer(lambda: my_dns.aa).timeit(10000)
     t2 = Timer(my_dns.get_aa).timeit(10000)
-    print 'Performance of dns.aa vs. dns.get_aa(): %f %f' % (t1, t2)
+    print('Performance of dns.aa vs. dns.get_aa(): %f %f' % (t1, t2))
 
 
 def test_random_data():
@@ -558,4 +558,4 @@ if __name__ == '__main__':
     test_null_response()
     test_deprecated_methods()
     test_deprecated_method_performance()
-    print 'Tests Successful...'
+    print('Tests Successful...')

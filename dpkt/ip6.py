@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 """Internet Protocol, version 6."""
 
-import dpkt
-from decorators import deprecated
+from . import dpkt
+from .decorators import deprecated
 
 
 class IP6(dpkt.Packet):
@@ -17,7 +17,7 @@ class IP6(dpkt.Packet):
     """
     
     __hdr__ = (
-        ('_v_fc_flow', 'I', 0x60000000L),
+        ('_v_fc_flow', 'I', 0x60000000),
         ('plen', 'H', 0),  # payload length (not including header)
         ('nxt', 'B', 0),  # next header protocol
         ('hlim', 'B', 0),  # hop limit
@@ -36,7 +36,7 @@ class IP6(dpkt.Packet):
 
     @v.setter
     def v(self, v):
-        self._v_fc_flow = (self._v_fc_flow & ~0xf0000000L) | (v << 28)
+        self._v_fc_flow = (self._v_fc_flow & ~0xf0000000) | (v << 28)
 
     @property
     def fc(self):
@@ -44,7 +44,7 @@ class IP6(dpkt.Packet):
 
     @fc.setter
     def fc(self, v):
-        self._v_fc_flow = (self._v_fc_flow & ~0xff00000L) | (v << 20)
+        self._v_fc_flow = (self._v_fc_flow & ~0xff00000) | (v << 20)
 
     @property
     def flow(self):
@@ -140,7 +140,7 @@ class IP6(dpkt.Packet):
         return cls._protosw[p]
 
 
-import ip
+from . import ip
 # We are most likely still in the middle of ip.__load_protos() which
 # implicitly loads this module through __import__(), so the content of
 # ip.IP._protosw is still incomplete at the moment.  By sharing the
@@ -415,4 +415,4 @@ if __name__ == '__main__':
     test_ip6_ah_header()
     test_ip6_esp_header()
     test_ip6_extension_headers()
-    print 'Tests Successful...'
+    print('Tests Successful...')

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """Routing Information Protocol."""
 
-import dpkt
+from . import dpkt
 
 # RIP v2 - RFC 2453
 # http://tools.ietf.org/html/rfc2453
@@ -95,4 +95,4 @@ def test_rtp_unpack():
 if __name__ == '__main__':
     test_rtp_pack()
     test_rtp_unpack()
-    print 'Tests Successful...'
+    print('Tests Successful...')

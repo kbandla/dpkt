@@ -3,8 +3,8 @@
 """Network Basic Input/Output System."""
 
 import struct
-import dpkt
-import dns
+from . import dpkt
+from . import dns
 
 
 def encode_name(name):
@@ -82,7 +82,8 @@ nbstat_svcs = {
 }
 
 
-def node_to_service_name((name, service, flags)):
+def node_to_service_name(name_service_flags):
+    name, service, flags = name_service_flags
     try:
         unique = int(flags & NS_NAME_G == 0)
         for namepfx, svcname in nbstat_svcs[(service, unique)]:

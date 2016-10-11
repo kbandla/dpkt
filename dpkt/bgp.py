@@ -4,8 +4,8 @@
 
 import struct
 import socket
-import dpkt
-from decorators import deprecated
+from . import dpkt
+from .decorators import deprecated
 
 
 # Border Gateway Protocol 4 - RFC 4271
@@ -51,10 +51,10 @@ AS_CONFED_SEQUENCE = 3
 AS_CONFED_SET = 4
 
 # Reserved Communities Types
-NO_EXPORT = 0xffffff01L
-NO_ADVERTISE = 0xffffff02L
-NO_EXPORT_SUBCONFED = 0xffffff03L
-NO_PEER = 0xffffff04L
+NO_EXPORT = 0xffffff01
+NO_ADVERTISE = 0xffffff02
+NO_EXPORT_SUBCONFED = 0xffffff03
+NO_PEER = 0xffffff04
 
 # Common AFI types
 AFI_IPV4 = 1
@@ -478,7 +478,7 @@ class BGP(dpkt.Packet):
                     l = []
                     while self.data:
                         val = struct.unpack('>I', self.data[:4])[0]
-                        if (0x00000000L <= val <= 0x0000ffffL) or (0xffff0000L <= val <= 0xffffffffL):
+                        if (0x00000000 <= val <= 0x0000ffff) or (0xffff0000 <= val <= 0xffffffff):
                             comm = self.ReservedCommunity(self.data[:4])
                         else:
                             comm = self.Community(self.data[:4])
@@ -796,4 +796,4 @@ def test_unpack():
 if __name__ == '__main__':
     test_pack()
     test_unpack()
-    print 'Tests Successful...'
+    print('Tests Successful...')

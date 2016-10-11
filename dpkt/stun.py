@@ -3,7 +3,7 @@
 """Simple Traversal of UDP through NAT."""
 
 import struct
-import dpkt
+from . import dpkt
 
 # STUN - RFC 3489
 # http://tools.ietf.org/html/rfc3489
@@ -98,4 +98,4 @@ if __name__ == '__main__':
     test_stun_response()
     test_stun_padded()
 
-    print 'Tests Successful...'
+    print('Tests Successful...')
