@@ -86,7 +86,7 @@ class Radiotap(dpkt.Packet):
         __hdr__: Header fields of Radiotap.
         TODO.
     """
-    
+
     __hdr__ = (
         ('version', 'B', 0),
         ('pad', 'B', 0),

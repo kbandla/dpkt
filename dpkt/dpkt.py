@@ -48,7 +48,7 @@ class Packet(object):
     self.__hdr__.
 
     Attributes:
-        __hdr__: Packet header should be defined as a list of 
+        __hdr__: Packet header should be defined as a list of
                  (name, structfmt, default) tuples.
         __byte_order__: Byte order, can be set to override the default ('>')
 
