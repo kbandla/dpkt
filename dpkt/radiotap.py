@@ -4,6 +4,7 @@
 import dpkt
 import ieee80211
 import socket
+import struct
 from decorators import deprecated
 
 # Ref: http://www.radiotap.org
@@ -26,7 +27,7 @@ _DB_ANT_SIG_MASK = 0x100000
 _DB_ANT_NOISE_MASK = 0x200000
 _RX_FLAGS_MASK = 0x400000
 _CHANNELPLUS_MASK = 0x200
-_EXT_MASK = 0x1
+_EXT_MASK = 0x80
 
 _TSFT_SHIFT = 24
 _FLAGS_SHIFT = 25
@@ -44,7 +45,7 @@ _DB_ANT_SIG_SHIFT = 20
 _DB_ANT_NOISE_SHIFT = 21
 _RX_FLAGS_SHIFT = 22
 _CHANNELPLUS_SHIFT = 10
-_EXT_SHIFT = 0
+_EXT_SHIFT = 7
 
 # Flags elements
 _FLAGS_SIZE = 2
@@ -369,12 +370,18 @@ class Radiotap(dpkt.Packet):
         self.ext_present = val
     # =================================================
 
+    @staticmethod
+    def align(offset, parser):
+        align = struct.calcsize(parser.__hdr__[0][1])
+        return (offset + align -1) & ~(align - 1)
+
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
         self.data = buf[socket.ntohs(self.length):]
 
         self.fields = []
-        buf = buf[self.__hdr_len__:]
+        offset = self.__hdr_len__
+        buf_radiotap = buf[offset:]
 
         # decode each field into self.<name> (eg. self.tsft) as well as append it self.fields list
         field_decoder = [
@@ -394,13 +401,24 @@ class Radiotap(dpkt.Packet):
             ('db_ant_noise', self.db_ant_noise_present, self.DbAntennaNoise),
             ('rx_flags', self.rx_flags_present, self.RxFlags)
         ]
+
+        # if we have extended radiotap present bitmap, just skip them
+        ext_present = self.ext_present
+        while ext_present == 1:
+            offset += self.PresentFlagsExt.__hdr_len__
+            field = self.PresentFlagsExt(buf_radiotap)
+            buf_radiotap = buf[offset:]
+            ext_present = field.val
+
         for name, present_bit, parser in field_decoder:
             if present_bit:
-                field = parser(buf)
+                offset = Radiotap.align(offset, parser)
+                aligned_buf = buf[offset:]
+                field = parser(aligned_buf)
                 field.data = ''
                 setattr(self, name, field)
                 self.fields.append(field)
-                buf = buf[len(field):]
+                offset += len(field)
 
         if len(self.data) > 0:
             if self.flags_present and self.flags.fcs:
@@ -501,6 +519,10 @@ class Radiotap(dpkt.Packet):
             ('dbm', 'B', 0),
         )
 
+    class PresentFlagsExt(dpkt.Packet):
+        __hdr__ = (
+            ('val', 'I', 0),
+        )
 
 def test_Radiotap():
     s = '\x00\x00\x00\x18\x6e\x48\x00\x00\x00\x02\x6c\x09\xa0\x00\xa8\x81\x02\x00\x00\x00\x00\x00\x00\x00'
