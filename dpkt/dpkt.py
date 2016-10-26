@@ -42,8 +42,7 @@ class _MetaPacket(type):
 
 
 class Packet(_MetaPacket("Temp", (object,), {})):
-    """Base packet class, with metaclass magic to generate members from
-    self.__hdr__.
+    """Base packet class, with metaclass magic to generate members from self.__hdr__.
 
     Attributes:
         __hdr__: Packet header should be defined as a list of 
