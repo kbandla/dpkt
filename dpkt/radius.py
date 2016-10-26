@@ -3,6 +3,7 @@
 """Remote Authentication Dial-In User Service."""
 
 from . import dpkt
+from . import compatible
 
 # http://www.untruth.org/~josh/security/radius/radius-auth.html
 # RFC 2865
@@ -22,7 +23,7 @@ class RADIUS(dpkt.Packet):
         ('code', 'B', 0),
         ('id', 'B', 0),
         ('len', 'H', 4),
-        ('auth', '16s', '')
+        ('auth', '16s', b'')
     )
     attrs = b''
 
