@@ -84,7 +84,7 @@ class ICMPPing(Ping):
         return sock
     
     def gen_ping(self, opts):
-        for i in xrange(opts.count):
+        for i in range(opts.count):
             icmp = dpkt.icmp.ICMP(
                 type=8, data=dpkt.icmp.ICMP.Echo(id=random.randint(0, 0xffff),
                                                  seq=i, data=opts.payload))

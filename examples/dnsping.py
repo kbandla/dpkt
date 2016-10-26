@@ -27,7 +27,7 @@ class DNSPing(ping.Ping):
         return sock
 
     def gen_ping(self, opts):
-        for i in xrange(opts.count):
+        for i in range(opts.count):
             dns = dpkt.dns.DNS(id=i)
             if opts.norecurse:
                 dns.op &= ~dpkt.dns.DNS_RD

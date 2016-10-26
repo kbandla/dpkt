@@ -18,7 +18,7 @@ class NBTPing(ping.Ping):
         return sock
 
     def gen_ping(self, opts):
-        for i in xrange(opts.count):
+        for i in range(opts.count):
             ns = netbios.NS(id=i,
                             qd=[netbios.NS.Q(type=netbios.NS_NBSTAT, name='*')])
             yield str(ns)
