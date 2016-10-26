@@ -61,3 +61,6 @@ Tim Yardley <yardley@gmail.com>
 
 obormot <oscar.ibatullin@gmail.com>
 	pcapng module, Packet repr improvements
+	
+Kyle Keppler <kyle.keppler@gmail.com>
+	Python 3 port

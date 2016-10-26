@@ -1,9 +1,11 @@
 # $Id: icmp.py 45 2007-08-03 00:05:22Z jon.oberheide $
 # -*- coding: utf-8 -*-
 """Internet Control Message Protocol."""
+from __future__ import print_function
+from __future__ import absolute_import
 
-import dpkt
-import ip
+from . import dpkt
+from . import ip
 
 # Types (icmp_type) and codes (icmp_code) -
 # http://www.iana.org/assignments/icmp-parameters
@@ -122,15 +124,19 @@ class ICMP(dpkt.Packet):
             pass
 
     def __str__(self):
+        return str(self.__bytes__())
+    
+    def __bytes__(self):
         if not self.sum:
             self.sum = dpkt.in_cksum(dpkt.Packet.__str__(self))
-        return dpkt.Packet.__str__(self)
+        return self.pack_hdr() + bytes(self.data)
 
 
 def test_icmp():
-    s = '\x03\x0a\x6b\x19\x00\x00\x00\x00\x45\x00\x00\x28\x94\x1f\x00\x00\xe3\x06\x99\xb4\x23\x2b\x24\x00\xde\x8e\x84\x42\xab\xd1\x00\x50\x00\x35\xe1\x29\x20\xd9\x00\x00\x00\x22\x9b\xf0\xe2\x04\x65\x6b'
-    assert (str(ICMP(s)) == s)
+    s = b'\x03\x0a\x6b\x19\x00\x00\x00\x00\x45\x00\x00\x28\x94\x1f\x00\x00\xe3\x06\x99\xb4\x23\x2b\x24\x00\xde\x8e\x84\x42\xab\xd1\x00\x50\x00\x35\xe1\x29\x20\xd9\x00\x00\x00\x22\x9b\xf0\xe2\x04\x65\x6b'
+    r = ICMP(s)
+    assert (bytes(r) == s)
 
 if __name__ == '__main__':
     test_icmp()
-    print 'Tests Successful...'
+    print('Tests Successful...')

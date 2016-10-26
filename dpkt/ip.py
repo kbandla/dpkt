@@ -1,9 +1,10 @@
 # $Id: ip.py 87 2013-03-05 19:41:04Z andrewflnr@gmail.com $
 # -*- coding: utf-8 -*-
 """Internet Protocol."""
+from __future__ import print_function
 
-import dpkt
-from decorators import deprecated
+from . import dpkt
+from .decorators import deprecated
 
 
 class IP(dpkt.Packet):
@@ -25,11 +26,11 @@ class IP(dpkt.Packet):
         ('ttl', 'B', 64),
         ('p', 'B', 0),
         ('sum', 'H', 0),
-        ('src', '4s', '\x00' * 4),
-        ('dst', '4s', '\x00' * 4)
+        ('src', '4s', b'\x00' * 4),
+        ('dst', '4s', b'\x00' * 4)
     )
     _protosw = {}
-    opts = ''
+    opts = b''
     
     def __init__(self, *args, **kwargs):
         super(IP, self).__init__(*args, **kwargs)
@@ -110,13 +111,16 @@ class IP(dpkt.Packet):
         return self.__hdr_len__ + len(self.opts) + len(self.data)
 
     def __str__(self):
+        return str(self.__bytes__())
+    
+    def __bytes__(self):
         self.len = self.__len__()
         if self.sum == 0:
-            self.sum = dpkt.in_cksum(self.pack_hdr() + str(self.opts))
+            self.sum = dpkt.in_cksum(self.pack_hdr() + bytes(self.opts))
             if (self.p == 6 or self.p == 17) and (self.off & (IP_MF | IP_OFFMASK)) == 0 and \
                     isinstance(self.data, dpkt.Packet) and self.data.sum == 0:
                 # Set zeroed TCP and UDP checksums for non-fragments.
-                p = str(self.data)
+                p = bytes(self.data)
                 s = dpkt.struct.pack('>4s4sxBH', self.src, self.dst,
                                      self.p, len(p))
                 s = dpkt.in_cksum_add(0, s)
@@ -125,13 +129,13 @@ class IP(dpkt.Packet):
                 if self.p == 17 and self.data.sum == 0:
                     self.data.sum = 0xffff  # RFC 768
                     # XXX - skip transports which don't need the pseudoheader
-        return self.pack_hdr() + str(self.opts) + str(self.data)
+        return self.pack_hdr() + bytes(self.opts) + bytes(self.data)
 
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
         ol = ((self._v_hl & 0xf) << 2) - self.__hdr_len__
         if ol < 0:
-            raise dpkt.UnpackError, 'invalid header length'
+            raise dpkt.UnpackError('invalid header length')
         self.opts = buf[self.__hdr_len__:self.__hdr_len__ + ol]
         if self.len:
             buf = buf[self.__hdr_len__ + ol:self.len]
@@ -344,7 +348,11 @@ IP_PROTO_MAX = 255
 
 def __load_protos():
     g = globals()
-    for k, v in g.iteritems():
+    try:
+        gi = g.iteritems()
+    except:
+        gi = g.items()
+    for k, v in gi:
         if k.startswith('IP_PROTO_'):
             name = k[9:].lower()
             try:
@@ -359,25 +367,25 @@ if not IP._protosw:
 
 
 def test_ip():
-    import udp
+    from . import udp
 
-    s = 'E\x00\x00"\x00\x00\x00\x00@\x11r\xc0\x01\x02\x03\x04\x01\x02\x03\x04\x00o\x00\xde\x00\x0e\xbf5foobar'
-    ip = IP(id=0, src='\x01\x02\x03\x04', dst='\x01\x02\x03\x04', p=17)
+    s = b'E\x00\x00"\x00\x00\x00\x00@\x11r\xc0\x01\x02\x03\x04\x01\x02\x03\x04\x00o\x00\xde\x00\x0e\xbf5foobar'
+    ip = IP(id=0, src=b'\x01\x02\x03\x04', dst=b'\x01\x02\x03\x04', p=17)
     u = udp.UDP(sport=111, dport=222)
-    u.data = 'foobar'
+    u.data = b'foobar'
     u.ulen += len(u.data)
     ip.data = u
     ip.len += len(u)
-    assert (str(ip) == s)
+    assert (bytes(ip) == s)
 
     ip = IP(s)
-    assert (str(ip) == s)
+    assert (bytes(ip) == s)
     assert (ip.udp.sport == 111)
-    assert (ip.udp.data == 'foobar')
+    assert (ip.udp.data == b'foobar')
 
 
 def test_hl():  # Todo chack this test method
-    s = 'BB\x03\x00\x00\x00\x00\x00\x00\x00\xd0\x00\xec\xbc\xa5\x00\x00\x00\x03\x80\x00\x00\xd0\x01\xf2\xac\xa5"0\x01\x00\x14\x00\x02\x00\x0f\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+    s = b'BB\x03\x00\x00\x00\x00\x00\x00\x00\xd0\x00\xec\xbc\xa5\x00\x00\x00\x03\x80\x00\x00\xd0\x01\xf2\xac\xa5"0\x01\x00\x14\x00\x02\x00\x0f\x00\x00\x00\x00\x00\x00\x00\x00\x00'
     try:
         IP(s)
     except dpkt.UnpackError:
@@ -385,35 +393,34 @@ def test_hl():  # Todo chack this test method
 
 
 def test_opt():
-    s = '\x4f\x00\x00\x3c\xae\x08\x00\x00\x40\x06\x18\x10\xc0\xa8\x0a\x26\xc0\xa8\x0a\x01\x07\x27\x08\x01\x02\x03\x04\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+    s = b'\x4f\x00\x00\x3c\xae\x08\x00\x00\x40\x06\x18\x10\xc0\xa8\x0a\x26\xc0\xa8\x0a\x01\x07\x27\x08\x01\x02\x03\x04\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
     ip = IP(s)
     ip.sum = 0
-    assert (str(ip) == s)
+    assert (bytes(ip) == s)
 
 
 def test_zerolen():
-    import tcp
-    d = 'X' * 2048
-    s = 'E\x00\x00\x004\xce@\x00\x80\x06\x00\x00\x7f\x00\x00\x01\x7f\x00\x00\x01\xccN\x0c8`\xff\xc6N_\x8a\x12\x98P\x18@):\xa3\x00\x00' + d
+    from . import tcp
+    d = b'X' * 2048
+    s = b'E\x00\x00\x004\xce@\x00\x80\x06\x00\x00\x7f\x00\x00\x01\x7f\x00\x00\x01\xccN\x0c8`\xff\xc6N_\x8a\x12\x98P\x18@):\xa3\x00\x00' + d
     ip = IP(s)
     assert (isinstance(ip.data, tcp.TCP))
     assert (ip.tcp.data == d)
 
 
 def test_constuctor():
-    ip1 = IP(data = "Hello world!")
-    ip2 = IP(data = "Hello world!", len = 0)
-    ip3 = IP(str(ip1))
-    ip4 = IP(str(ip2))
-    assert (str(ip1) == str(ip3))
-    assert (str(ip1) == 'E\x00\x00 \x00\x00\x00\x00@\x00z\xdf\x00\x00\x00\x00\x00\x00\x00\x00Hello world!')
-    assert (str(ip2) == str(ip4))
-    assert (str(ip2) == 'E\x00\x00 \x00\x00\x00\x00@\x00z\xdf\x00\x00\x00\x00\x00\x00\x00\x00Hello world!')
-    
+    ip1 = IP(data = b"Hello world!")
+    ip2 = IP(data = b"Hello world!", len = 0)
+    ip3 = IP(bytes(ip1))
+    ip4 = IP(bytes(ip2))
+    assert (bytes(ip1) == bytes(ip3))
+    assert (bytes(ip1) == b'E\x00\x00 \x00\x00\x00\x00@\x00z\xdf\x00\x00\x00\x00\x00\x00\x00\x00Hello world!')
+    assert (bytes(ip2) == bytes(ip4))
+    assert (bytes(ip2) == b'E\x00\x00 \x00\x00\x00\x00@\x00z\xdf\x00\x00\x00\x00\x00\x00\x00\x00Hello world!')
 
 def test_frag():
-    import ethernet
-    s = "\x00\x23\x20\xd4\x2a\x8c\x00\x23\x20\xd4\x2a\x8c\x08\x00\x45\x00\x00\x54\x00\x00\x40\x00\x40\x01\x25\x8d\x0a\x00\x00\x8f\x0a\x00\x00\x8e\x08\x00\x2e\xa0\x01\xff\x23\x73\x20\x48\x4a\x4d\x00\x00\x00\x00\x78\x85\x02\x00\x00\x00\x00\x00\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f\x20\x21\x22\x23\x24\x25\x26\x27\x28\x29\x2a\x2b\x2c\x2d\x2e\x2f\x30\x31\x32\x33\x34\x35\x36\x37"
+    from . import ethernet
+    s = b"\x00\x23\x20\xd4\x2a\x8c\x00\x23\x20\xd4\x2a\x8c\x08\x00\x45\x00\x00\x54\x00\x00\x40\x00\x40\x01\x25\x8d\x0a\x00\x00\x8f\x0a\x00\x00\x8e\x08\x00\x2e\xa0\x01\xff\x23\x73\x20\x48\x4a\x4d\x00\x00\x00\x00\x78\x85\x02\x00\x00\x00\x00\x00\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f\x20\x21\x22\x23\x24\x25\x26\x27\x28\x29\x2a\x2b\x2c\x2d\x2e\x2f\x30\x31\x32\x33\x34\x35\x36\x37"
     ip = ethernet.Ethernet(s).ip
     assert (ip.rf == 0)
     assert (ip.df == 1)
@@ -438,4 +445,4 @@ if __name__ == '__main__':
     test_zerolen()
     test_constuctor()
     test_frag()
-    print 'Tests Successful...'
+    print('Tests Successful...')

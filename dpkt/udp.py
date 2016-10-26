@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """User Datagram Protocol."""
 
-import dpkt
+from . import dpkt
 
 UDP_HDR_LEN = 8
 UDP_PORT_MAX = 65535

@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 """Protocol Independent Multicast."""
 
-import dpkt
-from decorators import deprecated
+from . import dpkt
+from .decorators import deprecated
 
 
 class PIM(dpkt.Packet):
@@ -54,6 +54,9 @@ class PIM(dpkt.Packet):
     # =================================================
 
     def __str__(self):
+        return str(self.__bytes__())
+    
+    def __bytes__(self):
         if not self.sum:
-            self.sum = dpkt.in_cksum(dpkt.Packet.__str__(self))
-        return dpkt.Packet.__str__(self)
+            self.sum = dpkt.in_cksum(dpkt.Packet.__bytes__(self))
+        return dpkt.Packet.__bytes__(self)

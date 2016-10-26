@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from __future__ import print_function
 import warnings
 
 
@@ -46,7 +47,10 @@ class TestDeprecatedDecorator(object):
 
     def test_deprecated_decorator(self):
         import sys
-        from StringIO import StringIO
+        try:
+            from StringIO import StringIO
+        except ImportError:
+            from io import StringIO
 
         saved_stderr = sys.stderr
         try:
@@ -67,4 +71,4 @@ class TestDeprecatedDecorator(object):
 if __name__ == '__main__':
     a = TestDeprecatedDecorator()
     a.test_deprecated_decorator()
-    print 'Tests Successful...'
+    print('Tests Successful...')

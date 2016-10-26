@@ -2,8 +2,8 @@
 """ATA over Ethernet Protocol."""
 
 import struct
-import dpkt
-from decorators import deprecated
+from . import dpkt
+from .decorators import deprecated
 
 
 class AOE(dpkt.Packet):
@@ -58,7 +58,7 @@ class AOE(dpkt.Packet):
     def pack_hdr(self):
         try:
             return dpkt.Packet.pack_hdr(self)
-        except struct.error, e:
+        except struct.error as e:
             raise dpkt.PackError(str(e))
 
     # Deprecated methods, will be removed in the future
@@ -86,7 +86,11 @@ AOE_FLAG_RSP = 1 << 3
 def __load_cmds():
     prefix = 'AOE_CMD_'
     g = globals()
-    for k, v in g.iteritems():
+    try:
+        gi = g.iteritems()
+    except:
+        gi = g.items()
+    for k, v in gi:
         if k.startswith(prefix):
             name = 'aoe' + k[len(prefix):].lower()
             try:

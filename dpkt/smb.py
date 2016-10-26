@@ -1,8 +1,9 @@
 # $Id: smb.py 23 2006-11-08 15:45:33Z dugsong $
 # -*- coding: utf-8 -*-
 """Server Message Block."""
+from __future__ import print_function
 
-import dpkt
+from . import dpkt
 
 
 # https://msdn.microsoft.com/en-us/library/ee441774.aspx
@@ -38,13 +39,13 @@ class SMB(dpkt.Packet):
 
     Attributes:
         __hdr__ = [
-            ('proto', '4s', '\xffSMB'),
+            ('proto', '4s', b'\xffSMB'),
             ('cmd', 'B', 0),
             ('status', 'I', SMB_STATUS_SUCCESS),
             ('flags', 'B', 0),
             ('flags2', 'H', 0),
             ('_pidhi', 'H', 0),
-            ('security', '8s', ''),
+            ('security', '8s', b''),
             ('rsvd', 'H', 0),
             ('tid', 'H', 0),
             ('_pidlo', 'H', 0),
@@ -55,13 +56,13 @@ class SMB(dpkt.Packet):
 
     __byte_order__ = '<'
     __hdr__ = [
-        ('proto', '4s', '\xffSMB'),
+        ('proto', '4s', b'\xffSMB'),
         ('cmd', 'B', 0),
         ('status', 'I', SMB_STATUS_SUCCESS),
         ('flags', 'B', 0),
         ('flags2', 'H', 0),
         ('_pidhi', 'H', 0),
-        ('security', '8s', ''),
+        ('security', '8s', b''),
         ('rsvd', 'H', 0),
         ('tid', 'H', 0),
         ('_pidlo', 'H', 0),
@@ -80,7 +81,7 @@ class SMB(dpkt.Packet):
 
 
 def test_smb():
-    buf = '\xffSMB\xa0\x00\x00\x00\x00\x08\x03\xc8\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x08\xfa\x7a\x00\x08\x53\x02'
+    buf = b'\xffSMB\xa0\x00\x00\x00\x00\x08\x03\xc8\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x08\xfa\x7a\x00\x08\x53\x02'
     smb = SMB(buf)
 
     assert smb.flags == SMB_FLAGS_CASE_INSENSITIVE
@@ -88,14 +89,14 @@ def test_smb():
     assert smb.pid == 31482
     assert smb.uid == 2048
     assert smb.mid == 595
-    print repr(smb)
+    print(repr(smb))
 
     smb = SMB()
     smb.pid = 0x00081020
     smb.uid = 0x800
-    assert str(smb) == '\xffSMB\x00\x00\x00\x00\x00\x00\x00\x00\x08\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x20\x10\x00\x08\x00\x00'
+    assert str(smb) == str(b'\xffSMB\x00\x00\x00\x00\x00\x00\x00\x00\x08\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x20\x10\x00\x08\x00\x00')
 
 
 if __name__ == '__main__':
     test_smb()
-    print 'Tests Successful...'
+    print('Tests Successful...')

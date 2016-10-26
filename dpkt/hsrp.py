@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """Cisco Hot Standby Router Protocol."""
 
-import dpkt
+from . import dpkt
 
 # Opcodes
 HELLO = 0

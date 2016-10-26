@@ -3,7 +3,7 @@
 
 """Authentication Header."""
 
-import dpkt
+from . import dpkt
 
 
 class AH(dpkt.Packet):
@@ -24,13 +24,13 @@ class AH(dpkt.Packet):
         ('spi', 'I', 0),
         ('seq', 'I', 0)
     )
-    auth = ''
+    auth = b''
 
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
         self.auth = self.data[:self.len]
         buf = self.data[self.len:]
-        import ip
+        from . import ip
 
         try:
             self.data = ip.IP.get_proto(self.nxt)(buf)
@@ -42,4 +42,7 @@ class AH(dpkt.Packet):
         return self.__hdr_len__ + len(self.auth) + len(self.data)
 
     def __str__(self):
-        return self.pack_hdr() + str(self.auth) + str(self.data)
+        return str(self.__bytes__())
+    
+    def __bytes__(self):
+        return self.pack_hdr() + bytes(self.auth) + bytes(self.data)

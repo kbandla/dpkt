@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """Open Shortest Path First."""
 
-import dpkt
+from . import dpkt
 
 AUTH_NONE = 0
 AUTH_PASSWORD = 1
@@ -31,6 +31,9 @@ class OSPF(dpkt.Packet):
     )
 
     def __str__(self):
+        return str(self.__bytes__())
+    
+    def __bytes__(self):
         if not self.sum:
-            self.sum = dpkt.in_cksum(dpkt.Packet.__str__(self))
-        return dpkt.Packet.__str__(self)
+            self.sum = dpkt.in_cksum(dpkt.Packet.__bytes__(self))
+        return dpkt.Packet.__bytes__(self)

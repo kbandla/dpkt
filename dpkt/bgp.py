@@ -1,11 +1,12 @@
 # $Id: bgp.py 76 2011-01-06 15:51:30Z dugsong $
 # -*- coding: utf-8 -*-
 """Border Gateway Protocol."""
+from __future__ import print_function
 
 import struct
 import socket
-import dpkt
-from decorators import deprecated
+from . import dpkt
+from .decorators import deprecated
 
 
 # Border Gateway Protocol 4 - RFC 4271
@@ -51,10 +52,10 @@ AS_CONFED_SEQUENCE = 3
 AS_CONFED_SET = 4
 
 # Reserved Communities Types
-NO_EXPORT = 0xffffff01L
-NO_ADVERTISE = 0xffffff02L
-NO_EXPORT_SUBCONFED = 0xffffff03L
-NO_PEER = 0xffffff04L
+NO_EXPORT = 0xffffff01
+NO_ADVERTISE = 0xffffff02
+NO_EXPORT_SUBCONFED = 0xffffff03
+NO_PEER = 0xffffff04
 
 # Common AFI types
 AFI_IPV4 = 1
@@ -178,7 +179,10 @@ class BGP(dpkt.Packet):
             return self.__hdr_len__ + sum(map(len, self.parameters))
 
         def __str__(self):
-            params = ''.join(map(str, self.parameters))
+            return str(self.__bytes__())
+        
+        def __bytes__(self):
+            params = b''.join(map(bytes, self.parameters))
             self.param_len = len(params)
             return self.pack_hdr() + params
 
@@ -258,11 +262,14 @@ class BGP(dpkt.Packet):
                    sum(map(len, self.announced))
 
         def __str__(self):
+            return str(self.__bytes__())
+
+        def __bytes__(self):
             return struct.pack('>H', sum(map(len, self.withdrawn))) + \
-                   ''.join(map(str, self.withdrawn)) + \
+                   b''.join(map(bytes, self.withdrawn)) + \
                    struct.pack('>H', sum(map(len, self.attributes))) + \
-                   ''.join(map(str, self.attributes)) + \
-                   ''.join(map(str, self.announced))
+                   b''.join(map(bytes, self.attributes)) + \
+                   b''.join(map(bytes, self.announced))
 
         class Attribute(dpkt.Packet):
             __hdr__ = (
@@ -382,11 +389,14 @@ class BGP(dpkt.Packet):
                 return self.__hdr_len__ + attr_len + len(self.data)
 
             def __str__(self):
+                return str(self.__bytes__())
+
+            def __bytes__(self):
                 if self.extended_length:
                     attr_len_str = struct.pack('>H', self.len)
                 else:
                     attr_len_str = struct.pack('B', self.len)
-                return self.pack_hdr() + attr_len_str + str(self.data)
+                return self.pack_hdr() + attr_len_str + bytes(self.data)
 
             class Origin(dpkt.Packet):
                 __hdr__ = (
@@ -411,7 +421,10 @@ class BGP(dpkt.Packet):
                     return sum(map(len, self.data))
 
                 def __str__(self):
-                    return ''.join(map(str, self.data))
+                    return str(self.__bytes__())
+
+                def __bytes__(self):
+                    return b''.join(map(bytes, self.data))
 
                 class ASPathSegment(dpkt.Packet):
                     __hdr__ = (
@@ -432,7 +445,10 @@ class BGP(dpkt.Packet):
                         return self.__hdr_len__ + 2 * len(self.path)
 
                     def __str__(self):
-                        as_str = ''
+                        return str(self.__bytes__())
+
+                    def __bytes__(self):
+                        as_str = b''
                         for AS in self.path:
                             as_str += struct.pack('>H', AS)
                         return self.pack_hdr() + as_str
@@ -460,7 +476,10 @@ class BGP(dpkt.Packet):
                     return 0
 
                 def __str__(self):
-                    return ''
+                    return str(self.__bytes__())
+                
+                def __bytes__(self):
+                    return b''
 
             class Aggregator(dpkt.Packet):
                 __hdr__ = (
@@ -478,7 +497,7 @@ class BGP(dpkt.Packet):
                     l = []
                     while self.data:
                         val = struct.unpack('>I', self.data[:4])[0]
-                        if (0x00000000L <= val <= 0x0000ffffL) or (0xffff0000L <= val <= 0xffffffffL):
+                        if (0x00000000 <= val <= 0x0000ffff) or (0xffff0000 <= val <= 0xffffffff):
                             comm = self.ReservedCommunity(self.data[:4])
                         else:
                             comm = self.Community(self.data[:4])
@@ -490,7 +509,10 @@ class BGP(dpkt.Packet):
                     return sum(map(len, self.data))
 
                 def __str__(self):
-                    return ''.join(map(str, self.data))
+                    return str(self.__bytes__())
+
+                def __bytes__(self):
+                    return b''.join(map(bytes, self.data))
 
                 class Community(dpkt.Packet):
                     __hdr__ = (
@@ -526,7 +548,10 @@ class BGP(dpkt.Packet):
                     return 4 * len(self.list)
 
                 def __str__(self):
-                    cluster_str = ''
+                    return str(self.__bytes__())
+
+                def __bytes__(self):
+                    cluster_str = b''
                     for val in self.list:
                         cluster_str += struct.pack('>I', val)
                     return cluster_str
@@ -578,12 +603,15 @@ class BGP(dpkt.Packet):
                            sum(map(len, self.announced))
 
                 def __str__(self):
+                    return str(self.__bytes__())
+
+                def __bytes__(self):
                     return self.pack_hdr() + \
                            struct.pack('B', len(self.next_hop)) + \
-                           str(self.next_hop) + \
+                           bytes(self.next_hop) + \
                            struct.pack('B', len(self.snpas)) + \
-                           ''.join(map(str, self.snpas)) + \
-                           ''.join(map(str, self.announced))
+                           b''.join(map(bytes, self.snpas)) + \
+                           b''.join(map(bytes, self.announced))
 
                 class SNPA(object):
                     __hdr__ = (
@@ -592,7 +620,7 @@ class BGP(dpkt.Packet):
 
                     def unpack(self, buf):
                         dpkt.Packet.unpack(self, buf)
-                        self.data = self.data[:(self.len + 1) / 2]
+                        self.data = self.data[:(self.len + 1) // 2]
 
             class MPUnreachNLRI(dpkt.Packet):
                 __hdr__ = (
@@ -622,7 +650,10 @@ class BGP(dpkt.Packet):
                     return self.__hdr_len__ + sum(map(len, self.data))
 
                 def __str__(self):
-                    return self.pack_hdr() + ''.join(map(str, self.data))
+                    return str(self.__bytes__())
+                
+                def __bytes__(self):
+                    return self.pack_hdr() + b''.join(map(bytes, self.data))
 
     class Notification(dpkt.Packet):
         __hdr__ = (
@@ -642,7 +673,10 @@ class BGP(dpkt.Packet):
             return 0
 
         def __str__(self):
-            return ''
+            return str(self.__bytes__())
+
+        def __bytes__(self):
+            return b''
 
     class RouteRefresh(dpkt.Packet):
         __hdr__ = (
@@ -659,7 +693,7 @@ class RouteGeneric(dpkt.Packet):
 
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
-        self.data = self.prefix = self.data[:(self.len + 7) / 8]
+        self.data = self.prefix = self.data[:(self.len + 7) // 8]
 
 
 class RouteIPV4(dpkt.Packet):
@@ -669,8 +703,8 @@ class RouteIPV4(dpkt.Packet):
 
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
-        tmp = self.data[:(self.len + 7) / 8]
-        tmp += (4 - len(tmp)) * '\x00'
+        tmp = self.data[:(self.len + 7) // 8]
+        tmp += (4 - len(tmp)) * b'\x00'
         self.data = self.prefix = tmp
 
     def __repr__(self):
@@ -678,10 +712,13 @@ class RouteIPV4(dpkt.Packet):
         return '%s(%s)' % (self.__class__.__name__, cidr)
 
     def __len__(self):
-        return self.__hdr_len__ + (self.len + 7) / 8
-
+        return self.__hdr_len__ + (self.len + 7) // 8
+    
     def __str__(self):
-        return self.pack_hdr() + self.prefix[:(self.len + 7) / 8]
+        return str(self.__bytes__())
+
+    def __bytes__(self):
+        return self.pack_hdr() + self.prefix[:(self.len + 7) // 8]
 
 
 class RouteIPV6(dpkt.Packet):
@@ -691,28 +728,31 @@ class RouteIPV6(dpkt.Packet):
 
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
-        tmp = self.data[:(self.len + 7) / 8]
-        tmp += (16 - len(tmp)) * '\x00'
+        tmp = self.data[:(self.len + 7) // 8]
+        tmp += (16 - len(tmp)) * b'\x00'
         self.data = self.prefix = tmp
 
     def __len__(self):
-        return self.__hdr_len__ + (self.len + 7) / 8
-
+        return self.__hdr_len__ + (self.len + 7) // 8
+    
     def __str__(self):
-        return self.pack_hdr() + self.prefix[:(self.len + 7) / 8]
+        return str(self.__bytes__())
+
+    def __bytes__(self):
+        return self.pack_hdr() + self.prefix[:(self.len + 7) // 8]
 
 
-__bgp1 = '\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x13\x04'
-__bgp2 = '\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x63\x02\x00\x00\x00\x48\x40\x01\x01\x00\x40\x02\x0a\x01\x02\x01\xf4\x01\xf4\x02\x01\xfe\xbb\x40\x03\x04\xc0\xa8\x00\x0f\x40\x05\x04\x00\x00\x00\x64\x40\x06\x00\xc0\x07\x06\xfe\xba\xc0\xa8\x00\x0a\xc0\x08\x0c\xfe\xbf\x00\x01\x03\x16\x00\x04\x01\x54\x00\xfa\x80\x09\x04\xc0\xa8\x00\x0f\x80\x0a\x04\xc0\xa8\x00\xfa\x16\xc0\xa8\x04'
-__bgp3 = '\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x79\x02\x00\x00\x00\x62\x40\x01\x01\x00\x40\x02\x00\x40\x05\x04\x00\x00\x00\x64\xc0\x10\x08\x00\x02\x01\x2c\x00\x00\x01\x2c\xc0\x80\x24\x00\x00\xfd\xe9\x40\x01\x01\x00\x40\x02\x04\x02\x01\x15\xb3\x40\x05\x04\x00\x00\x00\x2c\x80\x09\x04\x16\x05\x05\x05\x80\x0a\x04\x16\x05\x05\x05\x90\x0e\x00\x1e\x00\x01\x80\x0c\x00\x00\x00\x00\x00\x00\x00\x00\x0c\x04\x04\x04\x00\x60\x18\x77\x01\x00\x00\x01\xf4\x00\x00\x01\xf4\x85'
-__bgp4 = '\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x2d\x01\x04\x00\xed\x00\x5a\xc6\x6e\x83\x7d\x10\x02\x06\x01\x04\x00\x01\x00\x01\x02\x02\x80\x00\x02\x02\x02\x00'
+__bgp1 = b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x13\x04'
+__bgp2 = b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x63\x02\x00\x00\x00\x48\x40\x01\x01\x00\x40\x02\x0a\x01\x02\x01\xf4\x01\xf4\x02\x01\xfe\xbb\x40\x03\x04\xc0\xa8\x00\x0f\x40\x05\x04\x00\x00\x00\x64\x40\x06\x00\xc0\x07\x06\xfe\xba\xc0\xa8\x00\x0a\xc0\x08\x0c\xfe\xbf\x00\x01\x03\x16\x00\x04\x01\x54\x00\xfa\x80\x09\x04\xc0\xa8\x00\x0f\x80\x0a\x04\xc0\xa8\x00\xfa\x16\xc0\xa8\x04'
+__bgp3 = b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x79\x02\x00\x00\x00\x62\x40\x01\x01\x00\x40\x02\x00\x40\x05\x04\x00\x00\x00\x64\xc0\x10\x08\x00\x02\x01\x2c\x00\x00\x01\x2c\xc0\x80\x24\x00\x00\xfd\xe9\x40\x01\x01\x00\x40\x02\x04\x02\x01\x15\xb3\x40\x05\x04\x00\x00\x00\x2c\x80\x09\x04\x16\x05\x05\x05\x80\x0a\x04\x16\x05\x05\x05\x90\x0e\x00\x1e\x00\x01\x80\x0c\x00\x00\x00\x00\x00\x00\x00\x00\x0c\x04\x04\x04\x00\x60\x18\x77\x01\x00\x00\x01\xf4\x00\x00\x01\xf4\x85'
+__bgp4 = b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x2d\x01\x04\x00\xed\x00\x5a\xc6\x6e\x83\x7d\x10\x02\x06\x01\x04\x00\x01\x00\x01\x02\x02\x80\x00\x02\x02\x02\x00'
 
 
 def test_pack():
-    assert (__bgp1 == str(BGP(__bgp1)))
-    assert (__bgp2 == str(BGP(__bgp2)))
-    assert (__bgp3 == str(BGP(__bgp3)))
-    assert (__bgp4 == str(BGP(__bgp4)))
+    assert (__bgp1 == bytes(BGP(__bgp1)))
+    assert (__bgp2 == bytes(BGP(__bgp2)))
+    assert (__bgp3 == bytes(BGP(__bgp3)))
+    assert (__bgp4 == bytes(BGP(__bgp4)))
 
 
 def test_unpack():
@@ -745,7 +785,7 @@ def test_unpack():
     assert (c.value == 1)
     r = b2.update.announced[0]
     assert (r.len == 22)
-    assert (r.prefix == '\xc0\xa8\x04\x00')
+    assert (r.prefix == b'\xc0\xa8\x04\x00')
 
     b3 = BGP(__bgp3)
     assert (b3.type == UPDATE)
@@ -787,7 +827,7 @@ def test_unpack():
     c = p.capability
     assert (c.code == CAP_MULTIPROTOCOL)
     assert (c.len == 4)
-    assert (c.data == '\x00\x01\x00\x01')
+    assert (c.data == b'\x00\x01\x00\x01')
     c = b4.open.parameters[2].capability
     assert (c.code == CAP_ROUTE_REFRESH)
     assert (c.len == 0)
@@ -796,4 +836,4 @@ def test_unpack():
 if __name__ == '__main__':
     test_pack()
     test_unpack()
-    print 'Tests Successful...'
+    print('Tests Successful...')

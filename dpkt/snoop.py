@@ -3,11 +3,11 @@
 """Snoop file format."""
 
 import sys, time
-import dpkt
+from . import dpkt
 
 # RFC 1761
 
-SNOOP_MAGIC = 0x736E6F6F70000000L
+SNOOP_MAGIC = 0x736E6F6F70000000
 
 SNOOP_VERSION = 2
 
@@ -131,7 +131,7 @@ class Reader(object):
     def dispatch(self, cnt, callback, *args):
         if cnt > 0:
             for i in range(cnt):
-                ts, pkt = self.next()
+                ts, pkt = next(self)
                 callback(ts, pkt, *args)
         else:
             for ts, pkt in self:

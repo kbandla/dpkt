@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 """Internet Control Message Protocol for IPv6."""
 
-import dpkt
-import ip6
+from . import dpkt
+from . import ip6
 
 ICMP6_DST_UNREACH = 1  # dest unreachable, codes:
 ICMP6_PACKET_TOO_BIG = 2  # packet too big
@@ -83,4 +83,4 @@ class ICMP6(dpkt.Packet):
             self.data = self._typesw[self.type](self.data)
             setattr(self, self.data.__class__.__name__.lower(), self.data)
         except (KeyError, dpkt.UnpackError):
-            pass
+            self.data = buf

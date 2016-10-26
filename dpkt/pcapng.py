@@ -1,4 +1,5 @@
 """pcap Next Generation file format"""
+from __future__ import print_function
 
 # Spec: https://pcapng.github.io/pcapng/
 
@@ -9,7 +10,7 @@ from struct import pack as struct_pack, unpack as struct_unpack
 from time import time
 import sys
 
-import dpkt
+from . import dpkt
 
 BYTE_ORDER_MAGIC = 0x1A2B3C4D
 BYTE_ORDER_MAGIC_LE = 0x4D3C2B1A
@@ -91,7 +92,7 @@ def _align32b(i):
 
 
 def _padded(s):
-    """return str `s` padded with zeroes to align to the 32-bit boundary"""
+    """return bytes `s` padded with zeroes to align to the 32-bit boundary"""
     return struct_pack('%ss' % _align32b(len(s)), s)
 
 
@@ -143,17 +144,20 @@ class _PcapngBlock(dpkt.Packet):
 
     def _do_pack_options(self):
         if not getattr(self, 'opts', None):
-            return ''
+            return b''
         if self.opts[-1].code != PCAPNG_OPT_ENDOFOPT:
             raise dpkt.PackError('options must end with opt_endofopt')
-        return ''.join(str(o) for o in self.opts)
+        return b''.join(bytes(o) for o in self.opts)
 
-    def __str__(self):
+    def __bytes__(self):
         opts_buf = self._do_pack_options()
         self.len = self._len = self.__hdr_len__ + len(opts_buf)
 
         hdr_buf = dpkt.Packet.pack_hdr(self)
         return hdr_buf[:-4] + opts_buf + hdr_buf[-4:]
+        
+    def __str__(self):
+        return str(self.__bytes__())
 
     def __len__(self):
         if not getattr(self, 'opts', None):
@@ -184,14 +188,20 @@ class PcapngOption(dpkt.Packet):
         if self.code == PCAPNG_OPT_COMMENT:
             self.text = self.data.decode('utf-8')
 
-    def __str__(self):
+    
+    def __bytes__(self):
+        #return dpkt.Packet.__bytes__(self)
         # encode comment
         if self.code == PCAPNG_OPT_COMMENT:
             text = getattr(self, 'text', self.data)
-            self.data = text.encode('utf-8') if isinstance(text, unicode) else text
+            
+            self.data = text.encode('utf-8') if not isinstance(text, bytes) else text
 
         self.len = len(self.data)
         return dpkt.Packet.pack_hdr(self) + _padded(self.data)
+    
+    def __str__(self):
+        return str(self.__bytes__())
 
     def __len__(self):
         return self.__hdr_len__ + len(self.data) + _padlen(self.data)
@@ -276,8 +286,8 @@ class EnhancedPacketBlock(_PcapngBlock):
         opts_offset = po + _align32b(self.caplen)
         self._do_unpack_options(buf, opts_offset)
 
-    def __str__(self):
-        pkt_buf = str(self.pkt_data)
+    def __bytes__(self):
+        pkt_buf = self.pkt_data
         self.caplen = self.pkt_len = len(pkt_buf)
 
         opts_buf = self._do_pack_options()
@@ -285,6 +295,9 @@ class EnhancedPacketBlock(_PcapngBlock):
 
         hdr_buf = dpkt.Packet.pack_hdr(self)
         return hdr_buf[:-4] + _padded(pkt_buf) + opts_buf + hdr_buf[-4:]
+    
+    def __str__(self):
+        return str(self.__bytes__())
 
     def __len__(self):
         opts_len = sum(len(o) for o in self.opts)
@@ -321,8 +334,8 @@ class Writer(object):
             shb = shb or SectionHeaderBlock()
             idb = idb or InterfaceDescriptionBlock(snaplen=snaplen, linktype=linktype)
 
-        self.__f.write(str(shb))
-        self.__f.write(str(idb))
+        self.__f.write(bytes(shb))
+        self.__f.write(bytes(idb))
 
     def _validate_block(self, arg_name, blk, expected_cls):
         """check a user-defined block for correct type and endianness"""
@@ -357,7 +370,7 @@ class Writer(object):
                 pkt.ts_high = ts >> 32
                 pkt.ts_low = ts & 0xffffffff
 
-            self.__f.write(str(pkt))
+            self.__f.write(bytes(pkt))
             return
 
         # pkt is a buffer - wrap it into an EPB
@@ -365,12 +378,12 @@ class Writer(object):
             ts = time()
         ts = int(ts * 1e6)  # to int microseconds
 
-        s = str(pkt)
+        s = bytes(pkt)
         n = len(s)
 
         kls = EnhancedPacketBlockLE if self.__le else EnhancedPacketBlock
         epb = kls(ts_high=ts >> 32, ts_low=ts & 0xffffffff, caplen=n, pkt_len=n, pkt_data=s)
-        self.__f.write(str(epb))
+        self.__f.write(bytes(epb))
 
     def close(self):
         self.__f.close()
@@ -472,7 +485,7 @@ class Reader(object):
         return list(self)
 
     def next(self):
-        return self.__iter.next()
+        return next(self.__iter)
 
     def dispatch(self, cnt, callback, *args):
         """Collect and process packets with a user callback.
@@ -490,7 +503,7 @@ class Reader(object):
         if cnt > 0:
             for _ in range(cnt):
                 try:
-                    ts, pkt = self.next()
+                    ts, pkt = next(iter(self))
                 except StopIteration:
                     break
                 callback(ts, pkt, *args)
@@ -548,19 +561,19 @@ def test_shb():
     # options unpacking
     assert len(shb.opts) == 2
     assert shb.opts[0].code == PCAPNG_OPT_SHB_USERAPPL
-    assert shb.opts[0].data == 'TShark 1.10.0rc2 (SVN Rev 49526 from /trunk-1.10)'
+    assert shb.opts[0].data == b'TShark 1.10.0rc2 (SVN Rev 49526 from /trunk-1.10)'
     assert shb.opts[0].len == len(shb.opts[0].data)
 
     assert shb.opts[1].code == PCAPNG_OPT_ENDOFOPT
     assert shb.opts[1].len == 0
 
     # option packing
-    assert str(shb.opts[0]) == opt_buf
+    assert str(shb.opts[0]) == str(opt_buf)
     assert len(shb.opts[0]) == len(opt_buf)
-    assert str(shb.opts[1]) == b'\x00\x00\x00\x00'
+    assert bytes(shb.opts[1]) == b'\x00\x00\x00\x00'
 
     # block packing
-    assert str(shb) == buf
+    assert str(shb) == str(buf)
     assert len(shb) == len(buf)
 
 
@@ -587,12 +600,12 @@ def test_idb():
     assert idb.opts[1].len == 0
 
     # option packing
-    assert str(idb.opts[0]) == b'\x09\x00\x01\x00\x06\x00\x00\x00'
+    assert bytes(idb.opts[0]) == b'\x09\x00\x01\x00\x06\x00\x00\x00'
     assert len(idb.opts[0]) == 8
-    assert str(idb.opts[1]) == b'\x00\x00\x00\x00'
+    assert bytes(idb.opts[1]) == b'\x00\x00\x00\x00'
 
     # block packing
-    assert str(idb) == buf
+    assert str(idb) == str(buf)
     assert len(idb) == len(buf)
 
 
@@ -625,19 +638,22 @@ def test_epb():
     assert epb.opts[1].len == 0
 
     # option packing
-    assert str(epb.opts[0]) == b'\x01\x00\x0a\x00\xd0\xbf\xd0\xb0\xd0\xba\xd0\xb5\xd1\x82\x00\x00'
+    assert bytes(epb.opts[0]) == b'\x01\x00\x0a\x00\xd0\xbf\xd0\xb0\xd0\xba\xd0\xb5\xd1\x82\x00\x00'
     assert len(epb.opts[0]) == 16
-    assert str(epb.opts[1]) == b'\x00\x00\x00\x00'
+    assert bytes(epb.opts[1]) == b'\x00\x00\x00\x00'
 
     # block packing
-    assert str(epb) == buf
+    assert str(epb) == str(buf)
     assert len(epb) == len(buf)
 
 
 def test_simple_write_read():
     """test writing a basic pcapng and then reading it"""
-    import StringIO
-    fobj = StringIO.StringIO()
+    try: 
+        from BytesIO import BytesIO 
+    except ImportError: 
+        from io import BytesIO
+    fobj = BytesIO()
 
     writer = Writer(fobj, snaplen=0x2000, linktype=DLT_LINUX_SLL)
     writer.writepkt(b'foo', ts=1454725786.526401)
@@ -648,7 +664,7 @@ def test_simple_write_read():
     assert reader.snaplen == 0x2000
     assert reader.datalink() == DLT_LINUX_SLL
 
-    ts, buf1 = iter(reader).next()
+    ts, buf1 = next(iter(reader))
     assert ts == 1454725786.526401
     assert buf1 == b'foo'
 
@@ -682,18 +698,21 @@ def test_custom_read_write():
         b'\x01\x00\x0f\x00\x64\x70\x6b\x74\x20\x69\x73\x20\x61\x77\x65\x73\x6f\x6d\x65\x00\x00\x00'
         b'\x00\x00\x84\x00\x00\x00')
 
-    import StringIO
-    fobj = StringIO.StringIO(buf)
+    try: 
+        from BytesIO import BytesIO 
+    except ImportError: 
+        from io import BytesIO
+    fobj = BytesIO(buf)
 
     # test reading
     reader = Reader(fobj)
     assert reader.snaplen == 0x40000
     assert reader.datalink() == DLT_EN10MB
 
-    assert reader.idb.opts[0].data == '\\Device\\NPF_{3BBF21A7-91AE-4DDB-AB2C-C782999C22D5}'
-    assert reader.idb.opts[2].data == '64-bit Windows 8.1, build 9600'
+    assert reader.idb.opts[0].data.decode('utf-8') == '\\Device\\NPF_{3BBF21A7-91AE-4DDB-AB2C-C782999C22D5}'
+    assert reader.idb.opts[2].data.decode('utf-8') == '64-bit Windows 8.1, build 9600'
 
-    ts, buf1 = iter(reader).next()
+    ts, buf1 = next(iter(reader))
     assert ts == 1442984653.2108380
     assert len(buf1) == 74
 
@@ -703,18 +722,18 @@ def test_custom_read_write():
 
     # test pcapng customized writing
     shb = SectionHeaderBlockLE(opts=[
-        PcapngOptionLE(code=3, data='64-bit Windows 8.1, build 9600'),
-        PcapngOptionLE(code=4, data='Dumpcap 1.12.7 (v1.12.7-0-g7fc8978 from master-1.12)'),
+        PcapngOptionLE(code=3, data=b'64-bit Windows 8.1, build 9600'),
+        PcapngOptionLE(code=4, data=b'Dumpcap 1.12.7 (v1.12.7-0-g7fc8978 from master-1.12)'),
         PcapngOptionLE()
     ])
     idb = InterfaceDescriptionBlockLE(snaplen=0x40000, opts=[
-        PcapngOptionLE(code=2, data='\\Device\\NPF_{3BBF21A7-91AE-4DDB-AB2C-C782999C22D5}'),
-        PcapngOptionLE(code=9, data='\x06'),
-        PcapngOptionLE(code=12, data='64-bit Windows 8.1, build 9600'),
+        PcapngOptionLE(code=2, data=b'\\Device\\NPF_{3BBF21A7-91AE-4DDB-AB2C-C782999C22D5}'),
+        PcapngOptionLE(code=9, data=b'\x06'),
+        PcapngOptionLE(code=12, data=b'64-bit Windows 8.1, build 9600'),
         PcapngOptionLE()
     ])
     epb = EnhancedPacketBlockLE(opts=[
-        PcapngOptionLE(code=1, text='dpkt is awesome'),
+        PcapngOptionLE(code=1, text=b'dpkt is awesome'),
         PcapngOptionLE()
     ], pkt_data=(
         b'\x08\x00\x27\x96\xcb\x7c\x52\x54\x00\x12\x35\x02\x08\x00\x45\x00\x00\x3c\xa4\x40\x00\x00'
@@ -722,7 +741,7 @@ def test_custom_read_write():
         b'\x43\x44\x45\x46\x47\x48\x49\x4a\x4b\x4c\x4d\x4e\x4f\x50\x51\x52\x53\x54\x55\x56\x57\x41'
         b'\x42\x43\x44\x45\x46\x47\x48\x49'
     ))
-    fobj = StringIO.StringIO()
+    fobj = BytesIO()
     writer = Writer(fobj, shb=shb, idb=idb)
     writer.writepkt(epb, ts=1442984653.210838)
     assert fobj.getvalue() == buf
@@ -732,7 +751,7 @@ def test_custom_read_write():
     epb.ts_high = 335971
     epb.ts_low = 195806422
 
-    fobj = StringIO.StringIO()
+    fobj = BytesIO()
     writer = Writer(fobj, shb=shb, idb=idb)
     writer.writepkt(epb)
     assert fobj.getvalue() == buf
@@ -749,4 +768,4 @@ if __name__ == '__main__':
     test_custom_read_write()
     repr(PcapngOptionLE())
 
-    print 'Tests Successful...'
+    print('Tests Successful...')

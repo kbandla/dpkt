@@ -1,9 +1,13 @@
 # $Id: http.py 86 2013-03-05 19:25:19Z andrewflnr@gmail.com $
 # -*- coding: utf-8 -*-
 """Hypertext Transfer Protocol."""
+from __future__ import print_function
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
 
-import cStringIO
-import dpkt
+from . import dpkt
 
 
 def parse_headers(f):
@@ -91,13 +95,13 @@ class Message(dpkt.Packet):
         else:
             self.headers = {}
             self.body = ''
-            for k, v in self.__hdr_defaults__.iteritems():
+            for k, v in self.__hdr_defaults__.items():
                 setattr(self, k, v)
-            for k, v in kwargs.iteritems():
+            for k, v in kwargs.items():
                 setattr(self, k, v)
 
     def unpack(self, buf, is_body_allowed = True):
-        f = cStringIO.StringIO(buf)
+        f = StringIO(buf)
         # Parse headers
         self.headers = parse_headers(f)
         # Parse body
@@ -107,7 +111,11 @@ class Message(dpkt.Packet):
         self.data = f.read()
 
     def pack_hdr(self):
-        return ''.join(['%s: %s\r\n' % t for t in self.headers.iteritems()])
+        try:
+            hi = self.headers.iteritems()
+        except:
+            hi = self.headers.items()
+        return ''.join(['%s: %s\r\n' % t for t in hi])
 
     def __len__(self):
         return len(str(self))
@@ -147,7 +155,7 @@ class Request(Message):
     __proto = 'HTTP'
 
     def unpack(self, buf):
-        f = cStringIO.StringIO(buf)
+        f = StringIO(buf)
         line = f.readline()
         l = line.strip().split()
         if len(l) < 2:
@@ -188,7 +196,7 @@ class Response(Message):
     __proto = 'HTTP'
 
     def unpack(self, buf):
-        f = cStringIO.StringIO(buf)
+        f = StringIO(buf)
         line = f.readline()
         l = line.strip().split(None, 2)
         if len(l) < 2 or not l[0].startswith(self.__proto) or not l[1].isdigit():
@@ -378,4 +386,4 @@ if __name__ == '__main__':
     test_request_version()
     test_invalid_header()
     test_body_forbidden_response()
-    print 'Tests Successful...'
+    print('Tests Successful...')

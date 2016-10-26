@@ -3,8 +3,10 @@
 """Generic Routing Encapsulation."""
 
 import struct
-import dpkt
-from decorators import deprecated
+import codecs
+
+from . import dpkt
+from .decorators import deprecated
 
 GRE_CP = 0x8000  # Checksum Present
 GRE_RP = 0x4000  # Routing Present
@@ -99,7 +101,7 @@ class GRE(dpkt.Packet):
             fmtlen = struct.calcsize(fmt)
             vals = struct.unpack("!" + fmt, self.data[:fmtlen])
             self.data = self.data[fmtlen:]
-            self.__dict__.update(dict(zip(fields, vals)))
+            self.__dict__.update(dict(list(zip(fields, vals))))
         if self.flags & GRE_RP:
             l = []
             while True:
@@ -117,29 +119,32 @@ class GRE(dpkt.Packet):
             pass
 
     def __len__(self):
-        opt_fmtlen = struct.calcsize(''.join(self.opt_fields_fmts()[1]))
+        opt_fmtlen = struct.calcsize(b''.join(self.opt_fields_fmts()[1]))
         return self.__hdr_len__ + opt_fmtlen + sum(map(len, self.sre)) + len(self.data)
 
     def __str__(self):
+        return str(self.__bytes__())
+    
+    def __bytes__(self):
         fields, fmts = self.opt_fields_fmts()
         if fields:
             vals = []
             for f in fields:
                 vals.append(getattr(self, f))
-            opt_s = struct.pack(''.join(fmts), *vals)
+            opt_s = struct.pack(b''.join(fmts), *vals)
         else:
-            opt_s = ''
-        return self.pack_hdr() + opt_s + ''.join(map(str, self.sre)) + str(self.data)
+            opt_s = b''
+        return self.pack_hdr() + opt_s + b''.join(map(bytes, self.sre)) + bytes(self.data)
 
 # XXX - auto-load GRE dispatch table from Ethernet dispatch table
-import ethernet
+from . import ethernet
 
 GRE._protosw.update(ethernet.Ethernet._typesw)
 
 
 def test_gre_v1():
     # Runs all the test associated with this class/file
-    s = "3081880a0067178000068fb100083a76".decode('hex') + "A" * 103
+    s = codecs.decode("3081880a0067178000068fb100083a76", 'hex') + b"A" * 103
     g = GRE(s)
 
     assert g.v == 1
@@ -148,9 +153,9 @@ def test_gre_v1():
     assert g.ack == 539254
     assert g.callid == 6016
     assert g.len == 103
-    assert g.data == "A" * 103
+    assert g.data == b"A" * 103
 
-    s = "3001880a00b2001100083ab8".decode('hex') + "A" * 178
+    s = codecs.decode("3001880a00b2001100083ab8", 'hex') + b"A" * 178
     g = GRE(s)
 
     assert g.v == 1
@@ -158,7 +163,7 @@ def test_gre_v1():
     assert g.seq == 539320
     assert g.callid == 17
     assert g.len == 178
-    assert g.data == "A" * 178
+    assert g.data == b"A" * 178
 
 
 if __name__ == '__main__':

@@ -1,8 +1,9 @@
 # $Id: tns.py 23 2006-11-08 15:45:33Z dugsong $
 # -*- coding: utf-8 -*-
 """Transparent Network Substrate."""
+from __future__ import print_function
 
-import dpkt
+from . import dpkt
 
 
 class TNS(dpkt.Packet):
@@ -35,10 +36,10 @@ class TNS(dpkt.Packet):
 
 
 def test_tns():
-    s = ('\x00\x23\x00\x00\x01\x00\x00\x00\x01\x34\x01\x2c\x00\x00\x08\x00\x7f'
-         '\xff\x4f\x98\x00\x00\x00\x01\x00\x01\x00\x22\x00\x00\x00\x00\x01\x01X')
+    s = (b'\x00\x23\x00\x00\x01\x00\x00\x00\x01\x34\x01\x2c\x00\x00\x08\x00\x7f'
+         b'\xff\x4f\x98\x00\x00\x00\x01\x00\x01\x00\x22\x00\x00\x00\x00\x01\x01X')
     t = TNS(s)
-    assert t.msg.startswith('\x01\x34')
+    assert t.msg.startswith(b'\x01\x34')
 
     # test a truncated packet
     try:
@@ -50,4 +51,4 @@ def test_tns():
 if __name__ == '__main__':
     test_tns()
 
-    print 'Tests Successful...'
+    print('Tests Successful...')
