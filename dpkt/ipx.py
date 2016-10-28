@@ -8,6 +8,15 @@ IPX_HDR_LEN = 30
 
 
 class IPX(dpkt.Packet):
+    """Internetwork Packet Exchange.
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of IPX.
+        TODO.
+    """
+    
     __hdr__ = (
         ('sum', 'H', 0xffff),
         ('len', 'H', IPX_HDR_LEN),

@@ -9,6 +9,15 @@ import dpkt
 
 
 class TPKT(dpkt.Packet):
+    """ISO Transport Service on top of the TCP (TPKT).
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of TPKT.
+        TODO.
+    """
+    
     __hdr__ = (
         ('v', 'B', 3),
         ('rsvd', 'B', 0),

@@ -39,6 +39,16 @@ ETH_TYPE_TEB = 0x6558  # Transparent Ethernet Bridging
 
 
 class Ethernet(dpkt.Packet):
+    """Ethernet.
+
+    Ethernet II, LLC (802.3+802.2), LLC/SNAP, and Novell raw 802.3,
+    with automatic 802.1q, MPLS, PPPoE, and Cisco ISL decapsulation.
+
+    Attributes:
+        __hdr__: Header fields of Ethernet.
+        TODO.
+    """
+    
     __hdr__ = (
         ('dst', '6s', ''),
         ('src', '6s', ''),

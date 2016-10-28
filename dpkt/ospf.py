@@ -10,6 +10,15 @@ AUTH_CRYPTO = 2
 
 
 class OSPF(dpkt.Packet):
+    """Open Shortest Path First.
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of OSPF.
+        TODO.
+    """
+    
     __hdr__ = (
         ('v', 'B', 0),
         ('type', 'B', 0),

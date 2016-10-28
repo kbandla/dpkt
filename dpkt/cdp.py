@@ -25,6 +25,16 @@ CDP_LOCATION = 23  # string
 
 
 class CDP(dpkt.Packet):
+    """Cisco Discovery Protocol.
+
+    See more about the BGP on \
+    https://en.wikipedia.org/wiki/Cisco_Discovery_Protocol
+
+    Attributes:
+        __hdr__: Header fields of CDP.
+        #TODO
+    """
+    
     __hdr__ = (
         ('version', 'B', 2),
         ('ttl', 'B', 180),

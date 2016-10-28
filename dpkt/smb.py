@@ -32,6 +32,27 @@ SMB_STATUS_SUCCESS = 0x00000000
 
 
 class SMB(dpkt.Packet):
+    """Server Message Block.
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__ = [
+            ('proto', '4s', '\xffSMB'),
+            ('cmd', 'B', 0),
+            ('status', 'I', SMB_STATUS_SUCCESS),
+            ('flags', 'B', 0),
+            ('flags2', 'H', 0),
+            ('_pidhi', 'H', 0),
+            ('security', '8s', ''),
+            ('rsvd', 'H', 0),
+            ('tid', 'H', 0),
+            ('_pidlo', 'H', 0),
+            ('uid', 'H', 0),
+            ('mid', 'H', 0)
+        ]
+    """
+
     __byte_order__ = '<'
     __hdr__ = [
         ('proto', '4s', '\xffSMB'),

@@ -20,6 +20,15 @@ GRE_opt_fields = (
 
 
 class GRE(dpkt.Packet):
+    """Generic Routing Encapsulation.
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of GRE.
+        TODO.
+    """
+    
     __hdr__ = (
         ('flags', 'H', 0),
         ('p', 'H', 0x0800),  # ETH_TYPE_IP
@@ -88,7 +97,7 @@ class GRE(dpkt.Packet):
         if fields:
             fmt = ''.join(fmts)
             fmtlen = struct.calcsize(fmt)
-            vals = struct.unpack(fmt, self.data[:fmtlen])
+            vals = struct.unpack("!" + fmt, self.data[:fmtlen])
             self.data = self.data[fmtlen:]
             self.__dict__.update(dict(zip(fields, vals)))
         if self.flags & GRE_RP:
@@ -100,8 +109,12 @@ class GRE(dpkt.Packet):
                 if not sre.len:
                     break
             self.sre = l
-        self.data = ethernet.Ethernet._typesw[self.p](self.data)
-        setattr(self, self.data.__class__.__name__.lower(), self.data)
+        try:
+            self.data = ethernet.Ethernet._typesw[self.p](self.data)
+            setattr(self, self.data.__class__.__name__.lower(), self.data)
+        except (KeyError, dpkt.UnpackError):
+            # data alrady set
+            pass
 
     def __len__(self):
         opt_fmtlen = struct.calcsize(''.join(self.opt_fields_fmts()[1]))
@@ -122,3 +135,31 @@ class GRE(dpkt.Packet):
 import ethernet
 
 GRE._protosw.update(ethernet.Ethernet._typesw)
+
+
+def test_gre_v1():
+    # Runs all the test associated with this class/file
+    s = "3081880a0067178000068fb100083a76".decode('hex') + "A" * 103
+    g = GRE(s)
+
+    assert g.v == 1
+    assert g.p == 0x880a
+    assert g.seq == 430001
+    assert g.ack == 539254
+    assert g.callid == 6016
+    assert g.len == 103
+    assert g.data == "A" * 103
+
+    s = "3001880a00b2001100083ab8".decode('hex') + "A" * 178
+    g = GRE(s)
+
+    assert g.v == 1
+    assert g.p == 0x880a
+    assert g.seq == 539320
+    assert g.callid == 17
+    assert g.len == 178
+    assert g.data == "A" * 178
+
+
+if __name__ == '__main__':
+    test_gre_v1()

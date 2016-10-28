@@ -33,6 +33,15 @@ AUTH_ERROR = 1
 
 
 class RPC(dpkt.Packet):
+    """Remote Procedure Call.
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of RPC.
+        TODO.
+    """
+    
     __hdr__ = (
         ('xid', 'I', 0),
         ('dir', 'I', CALL)

@@ -16,7 +16,19 @@ PFC_BIT = 0x01
 
 
 class PPP(dpkt.Packet):
+    # Note: This class is subclassed in PPPoE
+    """Point-to-Point Protocol.
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of PPP.
+        TODO.
+    """
+    
     __hdr__ = (
+        ('addr', 'B', 0xff),
+        ('cntrl', 'B', 3),
         ('p', 'B', PPP_IP),
     )
     _protosw = {}
@@ -32,7 +44,10 @@ class PPP(dpkt.Packet):
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
         if self.p & PFC_BIT == 0:
-            self.p = struct.unpack('>H', buf[:2])[0]
+            try:
+                self.p = struct.unpack('>H', buf[2:4])[0]
+            except struct.error:
+                raise dpkt.NeedData
             self.data = self.data[1:]
         try:
             self.data = self._protosw[self.p](self.data)
@@ -43,7 +58,7 @@ class PPP(dpkt.Packet):
     def pack_hdr(self):
         try:
             if self.p > 0xff:
-                return struct.pack('>H', self.p)
+                return struct.pack('>BBH', self.addr, self.cntrl, self.p)
             return dpkt.Packet.pack_hdr(self)
         except struct.error, e:
             raise dpkt.PackError(str(e))
@@ -64,3 +79,34 @@ def __load_protos():
 
 if not PPP._protosw:
     __load_protos()
+
+
+def test_ppp():
+    # Test protocol compression
+    s = b"\xff\x03\x21"
+    p = PPP(s)
+    assert p.p == 0x21
+
+    s = b"\xff\x03\x00\x21"
+    p = PPP(s)
+    assert p.p == 0x21
+
+
+def test_ppp_short():
+    s = b"\xff\x03\x00"
+
+    import pytest
+    pytest.raises(dpkt.NeedData, PPP, s)
+
+
+def test_packing():
+    p = PPP()
+    assert p.pack_hdr() == b"\xff\x03\x21"
+
+    p.p = 0xc021  # LCP
+    assert p.pack_hdr() == b"\xff\x03\xc0\x21"
+
+
+if __name__ == '__main__':
+    # Runs all the test associated with this class/file
+    test_ppp()

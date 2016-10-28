@@ -19,6 +19,15 @@ ACTIVE = 0x10
 
 
 class HSRP(dpkt.Packet):
+    """Cisco Hot Standby Router Protocol.
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of HSRP.
+        TODO.
+    """
+    
     __hdr__ = (
         ('version', 'B', 0),
         ('opcode', 'B', 0),

@@ -67,5 +67,4 @@ class TestDeprecatedDecorator(object):
 if __name__ == '__main__':
     a = TestDeprecatedDecorator()
     a.test_deprecated_decorator()
-    a.test_duration_decorator()
     print 'Tests Successful...'

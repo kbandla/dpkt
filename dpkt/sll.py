@@ -8,6 +8,15 @@ import ethernet
 
 
 class SLL(dpkt.Packet):
+    """Linux libpcap "cooked" capture encapsulation.
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of SLL.
+        TODO.
+    """
+    
     __hdr__ = (
         ('type', 'H', 0),  # 0: to us, 1: bcast, 2: mcast, 3: other, 4: from us
         ('hrd', 'H', arp.ARP_HRD_ETH),

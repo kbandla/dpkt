@@ -12,6 +12,15 @@ RESPONSE = 2
 
 
 class RIP(dpkt.Packet):
+    """Routing Information Protocol.
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of RIP.
+        TODO.
+    """
+    
     __hdr__ = (
         ('cmd', 'B', REQUEST),
         ('v', 'B', 2),

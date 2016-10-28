@@ -8,7 +8,14 @@ import dpkt
 
 
 class NetflowBase(dpkt.Packet):
-    """Base class for Cisco Netflow packets."""
+    """Base class for Cisco Netflow packets.
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of NetflowBase.
+        TODO.
+    """
 
     __hdr__ = (
         ('version', 'H', 1),
@@ -37,7 +44,14 @@ class NetflowBase(dpkt.Packet):
         self.data = l
 
     class NetflowRecordBase(dpkt.Packet):
-        """Base class for netflow v1-v7 netflow records."""
+        """Base class for netflow v1-v7 netflow records.
+
+        TODO: Longer class information....
+
+        Attributes:
+            __hdr__: Header fields of NetflowRecordBase.
+            TODO.
+        """
 
         # performance optimizations
         def __len__(self):
@@ -57,10 +71,25 @@ class NetflowBase(dpkt.Packet):
 
 
 class Netflow1(NetflowBase):
-    """Netflow Version 1."""
+    """Netflow Version 1.
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of Netflow Version 1.
+        TODO.
+    """
 
     class NetflowRecord(NetflowBase.NetflowRecordBase):
-        """Netflow v1 flow record."""
+        """Netflow v1 flow record.
+
+        TODO: Longer class information....
+    
+        Attributes:
+            __hdr__: Header fields of Netflow Version 1 flow record.
+            TODO.
+        """
+        
         __hdr__ = (
             ('src_addr', 'I', 0),
             ('dst_addr', 'I', 0),
@@ -86,7 +115,15 @@ class Netflow1(NetflowBase):
 # FYI, versions 2-4 don't appear to have ever seen the light of day.
 
 class Netflow5(NetflowBase):
-    """Netflow Version 5."""
+    """Netflow Version 5.
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of Netflow Version 5.
+        TODO.
+    """
+    
     __hdr__ = NetflowBase.__hdr__ + (
         ('flow_sequence', 'I', 0),
         ('engine_type', 'B', 0),
@@ -95,7 +132,15 @@ class Netflow5(NetflowBase):
     )
 
     class NetflowRecord(NetflowBase.NetflowRecordBase):
-        """Netflow v5 flow record."""
+        """Netflow v5 flow record.
+
+        TODO: Longer class information....
+    
+        Attributes:
+            __hdr__: Header fields of Netflow Version 5 flow record.
+            TODO.
+        """
+        
         __hdr__ = (
             ('src_addr', 'I', 0),
             ('dst_addr', 'I', 0),
@@ -120,14 +165,29 @@ class Netflow5(NetflowBase):
         )
 
 
-class Netflow6(NetflowBase):
+class Netflow6(NetflowBase):    
     """Netflow Version 6.
+
     XXX - unsupported by Cisco, but may be found in the field.
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of Netflow Version 6.
+        TODO.
     """
+    
     __hdr__ = Netflow5.__hdr__
 
     class NetflowRecord(NetflowBase.NetflowRecordBase):
-        """Netflow v6 flow record."""
+        """Netflow v6 flow record.
+
+        TODO: Longer class information....
+    
+        Attributes:
+            __hdr__: Header fields of Netflow Version 6 flow record.
+            TODO.
+        """
+        
         __hdr__ = (
             ('src_addr', 'I', 0),
             ('dst_addr', 'I', 0),
@@ -155,14 +215,30 @@ class Netflow6(NetflowBase):
 
 
 class Netflow7(NetflowBase):
-    """Netflow Version 7."""
+    """Netflow Version 7.
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of Netflow Version 7.
+        TODO.
+    """
+    
     __hdr__ = NetflowBase.__hdr__ + (
         ('flow_sequence', 'I', 0),
         ('reserved', 'I', 0),
     )
 
     class NetflowRecord(NetflowBase.NetflowRecordBase):
-        """Netflow v7 flow record."""
+        """Netflow v6 flow record.
+
+        TODO: Longer class information....
+    
+        Attributes:
+            __hdr__: Header fields of Netflow Version 6 flow record.
+            TODO.
+        """
+        
         __hdr__ = (
             ('src_addr', 'I', 0),
             ('dst_addr', 'I', 0),

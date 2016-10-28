@@ -7,6 +7,15 @@ import dpkt
 
 
 class DTP(dpkt.Packet):
+    """Dynamic Trunking Protocol.
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of DTP.
+        TODO.
+    """
+    
     __hdr__ = (
         ('v', 'B', 0),
     )  # rest is TLVs
