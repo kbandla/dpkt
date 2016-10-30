@@ -7,7 +7,7 @@ import struct
 
 from . import arp
 from . import dpkt
-from . import compatible
+from .compat import compat_ord
 
 DHCP_OP_REQUEST = 1
 DHCP_OP_REPLY = 2
@@ -163,14 +163,14 @@ class DHCP(dpkt.Packet):
         buf = self.data
         l = []
         while buf:
-            t = compatible.compatible_ord(buf[0])
+            t = compat_ord(buf[0])
             if t == 0xff:
                 buf = buf[1:]
                 break
             elif t == 0:
                 buf = buf[1:]
             else:
-                n = compatible.compatible_ord(buf[1])
+                n = compat_ord(buf[1])
                 l.append((t, buf[2:2 + n]))
                 buf = buf[2 + n:]
         self.opts = l

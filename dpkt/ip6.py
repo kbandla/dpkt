@@ -5,7 +5,7 @@ from __future__ import print_function
 
 from . import dpkt
 from .decorators import deprecated
-from . import compatible
+from .compat import compat_ord
 
 
 class IP6(dpkt.Packet):
@@ -177,14 +177,14 @@ class IP6OptsHeader(IP6ExtensionHeader):
         index = 0
 
         while index < self.length - 2:
-            opt_type = compatible.compatible_ord(self.data[index])
+            opt_type = compat_ord(self.data[index])
 
             # PAD1 option
             if opt_type == 0:
                 index += 1
                 continue
 
-            opt_length = compatible.compatible_ord(self.data[index + 1])
+            opt_length = compat_ord(self.data[index + 1])
 
             if opt_type == 1:  # PADN option
                 # PADN uses opt_length bytes in total

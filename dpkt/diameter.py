@@ -8,7 +8,7 @@ import struct
 from . import dpkt
 
 from .decorators import deprecated
-from . import compatible
+from .compat import compat_ord
 
 # Diameter Base Protocol - RFC 3588
 # http://tools.ietf.org/html/rfc3588
@@ -104,12 +104,12 @@ class Diameter(dpkt.Packet):
 
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
-        self.cmd = (compatible.compatible_ord(self.cmd[0]) << 16) | \
-                    (compatible.compatible_ord(self.cmd[1]) << 8) | \
-                    (compatible.compatible_ord(self.cmd[2]))
-        self.len = (compatible.compatible_ord(self.len[0]) << 16) | \
-                    (compatible.compatible_ord(self.len[1]) << 8) | \
-                    (compatible.compatible_ord(self.len[2]))
+        self.cmd = (compat_ord(self.cmd[0]) << 16) | \
+                    (compat_ord(self.cmd[1]) << 8) | \
+                    (compat_ord(self.cmd[2]))
+        self.len = (compat_ord(self.len[0]) << 16) | \
+                    (compat_ord(self.len[1]) << 8) | \
+                    (compat_ord(self.len[2]))
         self.data = self.data[:self.len - self.__hdr_len__]
 
         l = []
@@ -197,9 +197,9 @@ class AVP(dpkt.Packet):
 
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
-        self.len = (compatible.compatible_ord(self.len[0]) << 16) | \
-                    (compatible.compatible_ord(self.len[1]) << 8) | \
-                    (compatible.compatible_ord(self.len[2]))
+        self.len = (compat_ord(self.len[0]) << 16) | \
+                    (compat_ord(self.len[1]) << 8) | \
+                    (compat_ord(self.len[2]))
 
         if self.vendor_flag:
             self.vendor = struct.unpack('>I', self.data[:4])[0]

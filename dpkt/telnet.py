@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """Telnet."""
 from __future__ import print_function
-from . import compatible
+from .compat import compat_ord
 
 import sys
 import struct
@@ -44,7 +44,7 @@ def strip_options(buf):
     for w in l:
         if not w:
             continue
-        o = compatible.compatible_ord(w[0])
+        o = compat_ord(w[0])
         if o > SB:
             # print 'WILL/WONT/DO/DONT/IAC', `w`
             w = w[2:]

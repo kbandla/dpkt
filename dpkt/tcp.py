@@ -5,7 +5,7 @@ from __future__ import print_function
 
 from . import dpkt
 from .decorators import deprecated
-from . import compatible
+from .compat import compat_ord
 
 # TCP control flags
 TH_FIN = 0x01  # end of data
@@ -112,11 +112,11 @@ def parse_opts(buf):
     """Parse TCP option buffer into a list of (option, data) tuples."""
     opts = []
     while buf:
-        o = compatible.compatible_ord(buf[0])
+        o = compat_ord(buf[0])
         if o > TCP_OPT_NOP:
             try:
                 # advance buffer at least 2 bytes = 1 type + 1 length
-                l = max(2, compatible.compatible_ord(buf[1]))
+                l = max(2, compat_ord(buf[1]))
                 d, buf = buf[2:l], buf[l:]
             except (IndexError, ValueError):
                 # print 'bad option', repr(str(buf))

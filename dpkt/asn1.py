@@ -7,7 +7,7 @@ import struct
 import time
 from . import dpkt
 import sys
-from . import compatible
+from .compat import compat_ord
 
 # Type class
 CLASSMASK = 0xc0
@@ -83,10 +83,10 @@ def decode(buf):
 
     msg = []
     while buf:
-        t = compatible.compatible_ord(buf[0])
+        t = compat_ord(buf[0])
         constructed = t & CONSTRUCTED
         tag = t & TAGMASK
-        l = compatible.compatible_ord(buf[1])
+        l = compat_ord(buf[1])
         c = 0
         if constructed and l == 128:
             # XXX - constructed, indefinite length
@@ -94,7 +94,7 @@ def decode(buf):
         elif l >= 128:
             c = l & 127
             if c == 1:
-                l = compatible.compatible_ord(buf[2])
+                l = compat_ord(buf[2])
             elif c == 2:
                 l = struct.unpack('>H', buf[2:4])[0]
             elif c == 3:
@@ -116,7 +116,7 @@ def decode(buf):
             if l == 0:
                 n = 0
             elif l == 1:
-                n = compatible.compatible_ord(buf[0])
+                n = compat_ord(buf[0])
             elif l == 2:
                 n = struct.unpack('>H', buf[:2])[0]
             elif l == 3:

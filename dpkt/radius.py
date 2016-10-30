@@ -3,7 +3,7 @@
 """Remote Authentication Dial-In User Service."""
 
 from . import dpkt
-from . import compatible
+from .compat import compat_ord
 
 # http://www.untruth.org/~josh/security/radius/radius-auth.html
 # RFC 2865
@@ -37,8 +37,8 @@ def parse_attrs(buf):
     """Parse attributes buffer into a list of (type, data) tuples."""
     attrs = []
     while buf:
-        t = compatible.compatible_ord(buf[0])
-        l = compatible.compatible_ord(buf[1])
+        t = compat_ord(buf[0])
+        l = compat_ord(buf[1])
         if l < 2:
             break
         d, buf = buf[2:l], buf[l:]

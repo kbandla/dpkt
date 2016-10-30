@@ -9,7 +9,7 @@ import codecs
 
 from . import dpkt
 from .decorators import deprecated
-from . import compatible
+from .compat import compat_ord
 
 DNS_Q = 0
 DNS_R = 1
@@ -99,7 +99,7 @@ def unpack_name(buf, off):
     while True:
         if off >= len(buf):
             raise dpkt.NeedData()
-        n = compatible.compatible_ord(buf[off])
+        n = compat_ord(buf[off])
         if n == 0:
             off += 1
             break
@@ -370,7 +370,7 @@ class DNS(dpkt.Packet):
                 self.text = []
                 buf = self.rdata
                 while buf:
-                    n = compatible.compatible_ord(buf[0])
+                    n = compat_ord(buf[0])
                     self.text.append(buf[1:1 + n])
                     buf = buf[1 + n:]
             elif self.type == DNS_AAAA:
