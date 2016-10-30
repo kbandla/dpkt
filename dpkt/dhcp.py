@@ -150,10 +150,7 @@ class DHCP(dpkt.Packet):
             return b''
         l = []
         for t, data in self.opts:
-            if sys.version_info < (3,):
-                l.append('%s%s%s' % (chr(t), chr(len(data)), data))
-            else:
-                l.append(struct.pack("BB%is"%len(data), t, len(data), data))
+            l.append(struct.pack("BB%is"%len(data), t, len(data), data))
         l.append(b'\xff')
         return b''.join(l)
 

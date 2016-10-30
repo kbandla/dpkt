@@ -81,10 +81,7 @@ def pack_name(name, off, label_ptrs):
                 if ptr < 0xc000:
                     label_ptrs[key] = ptr
             i = len(label)
-            if sys.version_info < (3,):
-                buf += chr(i) + label
-            else:
-                buf += struct.pack("B",i) + label
+            buf += struct.pack("B",i) + label
         else:
             buf += struct.pack('>H', (0xc000 | ptr))
             break

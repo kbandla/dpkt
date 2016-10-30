@@ -120,12 +120,8 @@ class Diameter(dpkt.Packet):
         self.data = self.avps = l
 
     def pack_hdr(self):
-        if sys.version_info < (3,):
-            self.len = chr((self.len >> 16) & 0xff) + chr((self.len >> 8) & 0xff) + chr(self.len & 0xff)
-            self.cmd = chr((self.cmd >> 16) & 0xff) + chr((self.cmd >> 8) & 0xff) + chr(self.cmd & 0xff)
-        else:
-            self.len = struct.pack("BBB", (self.len >> 16) & 0xff, (self.len >> 8) & 0xff, self.len & 0xff)
-            self.cmd = struct.pack("BBB", (self.cmd >> 16) & 0xff, (self.cmd >> 8) & 0xff, self.cmd & 0xff)
+        self.len = struct.pack("BBB", (self.len >> 16) & 0xff, (self.len >> 8) & 0xff, self.len & 0xff)
+        self.cmd = struct.pack("BBB", (self.cmd >> 16) & 0xff, (self.cmd >> 8) & 0xff, self.cmd & 0xff)
         return dpkt.Packet.pack_hdr(self)
 
     def __len__(self):
@@ -208,10 +204,7 @@ class AVP(dpkt.Packet):
             self.data = self.data[:self.len - self.__hdr_len__]
 
     def pack_hdr(self):
-        if sys.version_info < (3,):
-            self.len = chr((self.len >> 16) & 0xff) + chr((self.len >> 8) & 0xff) + chr(self.len & 0xff)
-        else:
-            self.len = struct.pack("BBB", (self.len >> 16) & 0xff, (self.len >> 8) & 0xff, self.len & 0xff)
+        self.len = struct.pack("BBB", (self.len >> 16) & 0xff, (self.len >> 8) & 0xff, self.len & 0xff)
         data = dpkt.Packet.pack_hdr(self)
         if self.vendor_flag:
             data += struct.pack('>I', self.vendor)

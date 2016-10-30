@@ -33,10 +33,7 @@ SYNCH = 242  # for telfunc calls
 
 def strip_options(buf):
     """Return a list of lines and dict of options from telnet data."""
-    if sys.version_info < (3,):
-        l = buf.split(chr(IAC))
-    else:
-        l = buf.split(struct.pack("B", IAC))
+    l = buf.split(struct.pack("B", IAC))
     # print l
     b = []
     d = {}
