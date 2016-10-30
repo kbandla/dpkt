@@ -3,7 +3,7 @@
 """Hypertext Transfer Protocol."""
 from __future__ import print_function
 try:
-    from StringIO import StringIO
+    from cStringIO import StringIO
 except ImportError:
     from io import StringIO
 
