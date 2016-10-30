@@ -103,7 +103,7 @@ class Gzip(dpkt.Packet):
         if self.extra:
             self.flags |= GZIP_FEXTRA
             s = bytes(self.extra)
-            l.append(struct.pack('>H', len(s)))
+            l.append(struct.pack('<H', len(s)))
             l.append(s)
         if self.filename:
             self.flags |= GZIP_FNAME
