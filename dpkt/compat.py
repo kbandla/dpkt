@@ -6,3 +6,9 @@ if sys.version_info < (3,):
 else:
     def compat_ord(char):
         return char
+
+try:
+    from itertools import izip
+    compat_izip = izip
+except ImportError:
+    compat_izip = zip

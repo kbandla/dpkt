@@ -8,6 +8,8 @@ import socket
 import struct
 import array
 
+from .compat import compat_izip
+
 
 class Error(Exception):
     pass
@@ -36,8 +38,8 @@ class _MetaPacket(type):
             t.__hdr_fields__ = [x[0] for x in st]
             t.__hdr_fmt__ = getattr(t, '__byte_order__', '>') + ''.join([x[1] for x in st])
             t.__hdr_len__ = struct.calcsize(t.__hdr_fmt__)
-            t.__hdr_defaults__ = dict(list(zip(
-                t.__hdr_fields__, [x[2] for x in st])))
+            t.__hdr_defaults__ = dict(compat_izip(
+                t.__hdr_fields__, [x[2] for x in st]))
         return t
 
 
