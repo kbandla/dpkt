@@ -94,7 +94,7 @@ class Packet(_MetaPacket("Temp", (object,), {})):
                 setattr(self, k, copy.copy(self.__hdr_defaults__[k]))
             try:
                 ki = kwargs.iteritems()
-            except:
+            except AttributeError:
                 ki = kwargs.items()
             for k, v in ki:
                 setattr(self, k, v)
@@ -130,7 +130,7 @@ class Packet(_MetaPacket("Temp", (object,), {})):
         # (3)
         try:
             di = self.__dict__.iteritems()
-        except:
+        except AttributeError:
             di = self.__dict__.items()
         l.extend(
             ['%s=%r' % (attr_name, attr_value)

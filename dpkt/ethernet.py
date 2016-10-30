@@ -238,7 +238,7 @@ def __load_types():
     g = globals()
     try:
         gi = g.iteritems()
-    except:
+    except AttributeError:
         gi = g.items()
     for k, v in gi:
         if k.startswith('ETH_TYPE_'):

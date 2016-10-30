@@ -88,7 +88,7 @@ def __load_cmds():
     g = globals()
     try:
         gi = g.iteritems()
-    except:
+    except AttributeError:
         gi = g.items()
     for k, v in gi:
         if k.startswith(prefix):

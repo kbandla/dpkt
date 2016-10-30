@@ -350,7 +350,7 @@ def __load_protos():
     g = globals()
     try:
         gi = g.iteritems()
-    except:
+    except AttributeError:
         gi = g.items()
     for k, v in gi:
         if k.startswith('IP_PROTO_'):

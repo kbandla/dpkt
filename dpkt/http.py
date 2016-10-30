@@ -113,7 +113,7 @@ class Message(dpkt.Packet):
     def pack_hdr(self):
         try:
             hi = self.headers.iteritems()
-        except:
+        except AttributeError:
             hi = self.headers.items()
         return ''.join(['%s: %s\r\n' % t for t in hi])
 
