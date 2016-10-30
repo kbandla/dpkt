@@ -129,7 +129,7 @@ class ICMP(dpkt.Packet):
     def __bytes__(self):
         if not self.sum:
             self.sum = dpkt.in_cksum(dpkt.Packet.__str__(self))
-        return self.pack_hdr() + bytes(self.data)
+        return dpkt.Packet.__bytes__(self)
 
 
 def test_icmp():
