@@ -11,6 +11,7 @@ from zlib import crc32
 
 from . import dpkt
 from . import llc
+from .compat import iteritems
 
 try:
     isinstance("", basestring)
@@ -237,11 +238,7 @@ class Ethernet(dpkt.Packet):
 # XXX - auto-load Ethernet dispatch table from ETH_TYPE_* definitions
 def __load_types():
     g = globals()
-    try:
-        gi = g.iteritems()
-    except AttributeError:
-        gi = g.items()
-    for k, v in gi:
+    for k, v in iteritems(g):
         if k.startswith('ETH_TYPE_'):
             name = k[9:]
             modname = name.lower()

@@ -49,10 +49,7 @@ class TestDeprecatedDecorator(object):
 
     def test_deprecated_decorator(self):
         import sys
-        try:
-            from StringIO import StringIO
-        except ImportError:
-            from io import StringIO
+        from .compat import StringIO
 
         saved_stderr = sys.stderr
         try:

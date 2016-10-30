@@ -4,13 +4,8 @@
 from __future__ import print_function
 from __future__ import absolute_import
 
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from io import StringIO
-
 from . import dpkt
-
+from .compat import StringIO, iteritems
 
 def parse_headers(f):
     """Return dict of HTTP headers parsed from a file object."""
@@ -113,11 +108,7 @@ class Message(dpkt.Packet):
         self.data = f.read()
 
     def pack_hdr(self):
-        try:
-            hi = self.headers.iteritems()
-        except AttributeError:
-            hi = self.headers.items()
-        return ''.join(['%s: %s\r\n' % t for t in hi])
+        return ''.join(['%s: %s\r\n' % t for t in iteritems(self.headers)])
 
     def __len__(self):
         return len(str(self))

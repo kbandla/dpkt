@@ -6,7 +6,7 @@ import struct
 
 from . import dpkt
 from .decorators import deprecated
-
+from .compat import iteritems
 
 class AOE(dpkt.Packet):
     """ATA over Ethernet Protocol.
@@ -88,11 +88,8 @@ AOE_FLAG_RSP = 1 << 3
 def __load_cmds():
     prefix = 'AOE_CMD_'
     g = globals()
-    try:
-        gi = g.iteritems()
-    except AttributeError:
-        gi = g.items()
-    for k, v in gi:
+
+    for k, v in iteritems(g):
         if k.startswith(prefix):
             name = 'aoe' + k[len(prefix):].lower()
             try:

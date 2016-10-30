@@ -698,10 +698,8 @@ def test_custom_read_write():
         b'\x01\x00\x0f\x00\x64\x70\x6b\x74\x20\x69\x73\x20\x61\x77\x65\x73\x6f\x6d\x65\x00\x00\x00'
         b'\x00\x00\x84\x00\x00\x00')
 
-    try: 
-        from BytesIO import BytesIO 
-    except ImportError: 
-        from io import BytesIO
+    from .compat import BytesIO
+    
     fobj = BytesIO(buf)
 
     # test reading

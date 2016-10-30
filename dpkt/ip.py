@@ -6,7 +6,7 @@ from __future__ import absolute_import
 
 from . import dpkt
 from .decorators import deprecated
-
+from .compat import iteritems
 
 class IP(dpkt.Packet):
     """Internet Protocol.
@@ -349,11 +349,7 @@ IP_PROTO_MAX = 255
 
 def __load_protos():
     g = globals()
-    try:
-        gi = g.iteritems()
-    except AttributeError:
-        gi = g.items()
-    for k, v in gi:
+    for k, v in iteritems(g):
         if k.startswith('IP_PROTO_'):
             name = k[9:].lower()
             try:

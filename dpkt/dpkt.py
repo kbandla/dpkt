@@ -9,7 +9,7 @@ import socket
 import struct
 import array
 
-from .compat import compat_izip
+from .compat import compat_izip, iteritems
 
 
 class Error(Exception):
@@ -95,11 +95,7 @@ class Packet(_MetaPacket("Temp", (object,), {})):
         else:
             for k in self.__hdr_fields__:
                 setattr(self, k, copy.copy(self.__hdr_defaults__[k]))
-            try:
-                ki = kwargs.iteritems()
-            except AttributeError:
-                ki = kwargs.items()
-            for k, v in ki:
+            for k, v in iteritems(kwargs):
                 setattr(self, k, v)
 
     def __len__(self):
@@ -131,13 +127,9 @@ class Packet(_MetaPacket("Temp", (object,), {})):
                         if isinstance(getattr(self.__class__, prop_name, None), property):
                             l.append('%s=%r' % (prop_name, getattr(self, prop_name)))
         # (3)
-        try:
-            di = self.__dict__.iteritems()
-        except AttributeError:
-            di = self.__dict__.items()
         l.extend(
             ['%s=%r' % (attr_name, attr_value)
-             for attr_name, attr_value in di
+             for attr_name, attr_value in iteritems(self.__dict__)
              if attr_name[0] != '_'                   # exclude _private attributes
              and attr_name != self.data.__class__.__name__.lower()])  # exclude fields like ip.udp
         # (4)

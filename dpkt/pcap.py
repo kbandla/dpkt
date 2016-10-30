@@ -332,10 +332,7 @@ def test_reader():
     )
 
     # --- BytesIO tests ---
-    try: 
-        from BytesIO import BytesIO 
-    except ImportError: 
-        from io import BytesIO
+    from .compat import BytesIO
 
     # BytesIO
     fobj = BytesIO(data)
