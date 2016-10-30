@@ -167,8 +167,8 @@ class Packet(_MetaPacket("Temp", (object,), {})):
 
     def unpack(self, buf):
         """Unpack packet header fields from buf, and set self.data."""
-        for k, v in zip(self.__hdr_fields__,
-                                   struct.unpack(self.__hdr_fmt__, buf[:self.__hdr_len__])):
+        for k, v in compat_izip(self.__hdr_fields__,
+                                struct.unpack(self.__hdr_fmt__, buf[:self.__hdr_len__])):
             setattr(self, k, v)
         self.data = buf[self.__hdr_len__:]
 
