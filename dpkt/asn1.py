@@ -1,12 +1,14 @@
 # $Id: asn1.py 23 2006-11-08 15:45:33Z dugsong $
 # -*- coding: utf-8 -*-
 """Abstract Syntax Notation #1."""
+from __future__ import absolute_import
 from __future__ import print_function
 
 import struct
 import time
-from . import dpkt
 import sys
+
+from . import dpkt
 from .compat import compat_ord
 
 # Type class

@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 """Radiotap"""
 from __future__ import print_function
+from __future__ import absolute_import
+
+import socket
 
 from . import dpkt
 from . import ieee80211
-import socket
 from .decorators import deprecated
 
 # Ref: http://www.radiotap.org

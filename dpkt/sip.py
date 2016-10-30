@@ -1,6 +1,7 @@
 # $Id: sip.py 48 2008-05-27 17:31:15Z yardley $
 # -*- coding: utf-8 -*-
 """Session Initiation Protocol."""
+from __future__ import absolute_import
 
 from . import http
 

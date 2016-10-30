@@ -1,6 +1,7 @@
 # $Id: mrt.py 29 2007-01-26 02:29:07Z jon.oberheide $
 # -*- coding: utf-8 -*-
 """Multi-threaded Routing Toolkit."""
+from __future__ import absolute_import
 
 from . import dpkt
 from . import bgp

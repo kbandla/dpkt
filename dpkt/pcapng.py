@@ -1,10 +1,10 @@
 """pcap Next Generation file format"""
-from __future__ import print_function
-
 # Spec: https://pcapng.github.io/pcapng/
 
 # pylint: disable=no-member
 # pylint: disable=attribute-defined-outside-init
+from __future__ import print_function
+from __future__ import absolute_import
 
 from struct import pack as struct_pack, unpack as struct_unpack
 from time import time

@@ -1,8 +1,11 @@
 # $Id$
 # -*- coding: utf-8 -*-
 """Snoop file format."""
+from __future__ import absolute_import
 
-import sys, time
+import sys
+import time
+
 from . import dpkt
 
 # RFC 1761

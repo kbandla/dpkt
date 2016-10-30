@@ -2,11 +2,13 @@
 # -*- coding: utf-8 -*-
 """Libpcap file format."""
 from __future__ import print_function
+from __future__ import absolute_import
 
 import sys
 import time
-from . import dpkt
 from decimal import Decimal
+
+from . import dpkt
 
 TCPDUMP_MAGIC = 0xa1b2c3d4
 TCPDUMP_MAGIC_NANO = 0xa1b23c4d

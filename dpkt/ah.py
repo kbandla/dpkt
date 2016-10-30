@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """Authentication Header."""
+from __future__ import absolute_import
 
 from . import dpkt
 

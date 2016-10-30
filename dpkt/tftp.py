@@ -2,9 +2,11 @@
 # -*- coding: utf-8 -*-
 """Trivial File Transfer Protocol."""
 from __future__ import print_function
+from __future__ import absolute_import
 
 import sys
 import struct
+
 from . import dpkt
 
 # Opcodes

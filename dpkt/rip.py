@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 """Routing Information Protocol."""
 from __future__ import print_function
+from __future__ import absolute_import
 
 from . import dpkt
 

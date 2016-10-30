@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 """Hypertext Transfer Protocol."""
 from __future__ import print_function
+from __future__ import absolute_import
+
 try:
     from cStringIO import StringIO
 except ImportError:

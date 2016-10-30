@@ -2,10 +2,12 @@
 # -*- coding: utf-8 -*-
 """Telnet."""
 from __future__ import print_function
-from .compat import compat_ord
+from __future__ import absolute_import
 
 import sys
 import struct
+
+from .compat import compat_ord
 
 IAC = 255  # interpret as command:
 DONT = 254  # you are not to use option

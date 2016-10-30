@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 """Internet Protocol, version 6."""
 from __future__ import print_function
+from __future__ import absolute_import
 
 from . import dpkt
 from .decorators import deprecated

@@ -7,6 +7,7 @@ from __future__ import absolute_import
 import sys
 import socket
 import struct
+
 from . import dpkt
 from .decorators import deprecated
 

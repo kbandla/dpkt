@@ -2,11 +2,12 @@
 # -*- coding: utf-8 -*-
 """Diameter."""
 from __future__ import print_function
+from __future__ import absolute_import
 
 import sys
 import struct
-from . import dpkt
 
+from . import dpkt
 from .decorators import deprecated
 from .compat import compat_ord
 
