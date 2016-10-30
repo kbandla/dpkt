@@ -30,5 +30,3 @@ if sys.version_info < (3,):
 else:
     def iteritems(d, **kw):
         return iter(d.items(**kw))
-\
-        
