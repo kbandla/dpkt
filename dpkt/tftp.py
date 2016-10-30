@@ -60,10 +60,7 @@ class TFTP(dpkt.Packet):
     
     def __bytes__(self):
         if self.opcode in (OP_RRQ, OP_WRQ):
-            if sys.version_info < (3,):
-                s = '%s\x00%s\x00' % (self.filename, self.mode)
-            else:
-                s = self.filename + b'\x00' + self.mode + b'\x00'
+            s = self.filename + b'\x00' + self.mode + b'\x00'
         elif self.opcode in (OP_DATA, OP_ACK):
             s = struct.pack('>H', self.block)
         elif self.opcode == OP_ERR:
