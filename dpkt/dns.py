@@ -132,7 +132,7 @@ class DNS(dpkt.Packet):
         __hdr__: Header fields of DNS.
         TODO.
     """
-    
+
     __hdr__ = (
         ('id', 'H', 0),
         ('op', 'H', DNS_RD),  # recursive query
@@ -548,12 +548,27 @@ def test_very_long_name():
     else:
         assert False
 
+
 def test_null_response():
     s = b'\x12\xb0\x84\x00\x00\x01\x00\x01\x00\x00\x00\x00\x0bblahblah666\x06pirate\x03sea\x00\x00\n\x00\x01\xc0\x0c\x00\n\x00\x01\x00\x00\x00\x00\x00\tVACKD\x03\xc5\xe9\x01'
     my_dns = DNS(s)
     assert my_dns.qd[0].name == b'blahblah666.pirate.sea' and \
            my_dns.an[0].null == b'5641434b4403c5e901'
     assert str(s) == str(my_dns)
+
+
+def test_txt_response():
+    buf = (
+        b'\x10\x32\x81\x80\x00\x01\x00\x01\x00\x00\x00\x00\x06\x67\x6f\x6f\x67\x6c\x65\x03\x63\x6f'
+        b'\x6d\x00\x00\x10\x00\x01\xc0\x0c\x00\x10\x00\x01\x00\x00\x01\x0e\x00\x10\x0f\x76\x3d\x73'
+        b'\x70\x66\x31\x20\x70\x74\x72\x20\x3f\x61\x6c\x6c')
+    my_dns = DNS(buf)
+    my_rr = my_dns.an[0]
+    assert my_rr.type == DNS_TXT
+    assert my_rr.name == 'google.com'
+    assert my_rr.text == ['v=spf1 ptr ?all']
+    assert str(my_dns) == buf
+
 
 if __name__ == '__main__':
     # Runs all the test associated with this class/file
@@ -565,6 +580,7 @@ if __name__ == '__main__':
     test_circular_pointers()
     test_very_long_name()
     test_null_response()
+    test_txt_response()
     test_deprecated_methods()
     test_deprecated_method_performance()
     print('Tests Successful...')
