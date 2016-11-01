@@ -3,7 +3,7 @@
 """Cisco Discovery Protocol."""
 
 import struct
-import dpkt
+from . import dpkt
 
 CDP_DEVID = 1  # string
 CDP_ADDRESS = 2

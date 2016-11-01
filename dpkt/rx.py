@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """Rx Protocol."""
 
-import dpkt
+from . import dpkt
 
 # Types
 DATA = 0x01

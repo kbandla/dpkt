@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 """PPP-over-Ethernet."""
 
-import dpkt
-import ppp
+from . import dpkt
+from . import ppp
 import struct
-from decorators import deprecated
+from .decorators import deprecated
 
 # RFC 2516 codes
 PPPoE_PADI = 0x09
@@ -102,7 +102,7 @@ class PPP(ppp.PPP):
             if self.p > 0xff:
                 return struct.pack('>H', self.p)
             return dpkt.Packet.pack_hdr(self)
-        except struct.error, e:
+        except struct.error as e:
             raise dpkt.PackError(str(e))
 
 

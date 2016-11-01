@@ -4,7 +4,7 @@
 
 import struct
 import zlib
-import dpkt
+from . import dpkt
 import binascii
 
 
@@ -173,4 +173,4 @@ if __name__ == '__main__':
     import sys
 
     gz = Gzip(open(sys.argv[1]).read())
-    print `gz`, `gz.decompress()`
+    print(repr(gz), repr(gz.decompress()))

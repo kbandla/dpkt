@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """Address Resolution Protocol."""
 
-import dpkt
+from . import dpkt
 
 # Hardware address format
 ARP_HRD_ETH = 0x0001  # ethernet hardware

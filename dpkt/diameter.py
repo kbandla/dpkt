@@ -3,8 +3,8 @@
 """Diameter."""
 
 import struct
-import dpkt
-from decorators import deprecated
+from . import dpkt
+from .decorators import deprecated
 
 # Diameter Base Protocol - RFC 3588
 # http://tools.ietf.org/html/rfc3588
@@ -246,5 +246,5 @@ def test_unpack():
 if __name__ == '__main__':
     test_pack()
     test_unpack()
-    print 'Tests Successful...'
+    print('Tests Successful...')
 

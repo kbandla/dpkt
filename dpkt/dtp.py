@@ -3,7 +3,7 @@
 """Dynamic Trunking Protocol."""
 
 import struct
-import dpkt
+from . import dpkt
 
 
 class DTP(dpkt.Packet):

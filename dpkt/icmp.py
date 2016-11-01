@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 """Internet Control Message Protocol."""
 
-import dpkt
-import ip
+from . import dpkt
+from . import ip
 
 # Types (icmp_type) and codes (icmp_code) -
 # http://www.iana.org/assignments/icmp-parameters
@@ -133,4 +133,4 @@ def test_icmp():
 
 if __name__ == '__main__':
     test_icmp()
-    print 'Tests Successful...'
+    print('Tests Successful...')

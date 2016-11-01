@@ -77,4 +77,4 @@ def test_telnet():
 
 if __name__ == '__main__':
     test_telnet()
-    print 'Tests Successful...'
+    print('Tests Successful...')

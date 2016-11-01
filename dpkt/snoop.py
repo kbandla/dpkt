@@ -3,11 +3,11 @@
 """Snoop file format."""
 
 import sys, time
-import dpkt
+from . import dpkt
 
 # RFC 1761
 
-SNOOP_MAGIC = 0x736E6F6F70000000L
+SNOOP_MAGIC = 0x736E6F6F70000000
 
 SNOOP_VERSION = 2
 

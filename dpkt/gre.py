@@ -3,8 +3,8 @@
 """Generic Routing Encapsulation."""
 
 import struct
-import dpkt
-from decorators import deprecated
+from . import dpkt
+from .decorators import deprecated
 
 GRE_CP = 0x8000  # Checksum Present
 GRE_RP = 0x4000  # Routing Present
@@ -132,7 +132,7 @@ class GRE(dpkt.Packet):
         return self.pack_hdr() + opt_s + ''.join(map(str, self.sre)) + str(self.data)
 
 # XXX - auto-load GRE dispatch table from Ethernet dispatch table
-import ethernet
+from . import ethernet
 
 GRE._protosw.update(ethernet.Ethernet._typesw)
 

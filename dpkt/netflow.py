@@ -4,7 +4,7 @@
 
 import itertools
 import struct
-import dpkt
+from . import dpkt
 
 
 class NetflowBase(dpkt.Packet):
@@ -292,4 +292,4 @@ if __name__ == '__main__':
     test_net_flow_v1_unpack()
     test_net_flow_v5_pack()
     test_net_flow_v5_unpack()
-    print 'Tests Successful...'
+    print('Tests Successful...')

@@ -6,67 +6,67 @@ __license__ = 'BSD'
 __url__ = 'http://dpkt.googlecode.com/'
 __version__ = '1.8.8'
 
-from dpkt import *
+from .dpkt import *
 
-import ah
-import aoe
-import aim
-import arp
-import asn1
-import bgp
-import cdp
-import dhcp
-import diameter
-import dns
-import dtp
-import esp
-import ethernet
-import gre
-import gzip
-import h225
-import hsrp
-import http
-import icmp
-import icmp6
-import ieee80211
-import igmp
-import ip
-import ip6
-import ipx
-import llc
-import loopback
-import mrt
-import netbios
-import netflow
-import ntp
-import ospf
-import pcap
-import pcapng
-import pim
-import pmap
-import ppp
-import pppoe
-import qq
-import radiotap
-import radius
-import rfb
-import rip
-import rpc
-import rtp
-import rx
-import sccp
-import sctp
-import sip
-import sll
-import smb
-import ssl
-import stp
-import stun
-import tcp
-import telnet
-import tftp
-import tns
-import tpkt
-import udp
-import vrrp
-import yahoo
+from . import ah
+from . import aoe
+from . import aim
+from . import arp
+from . import asn1
+from . import bgp
+from . import cdp
+from . import dhcp
+from . import diameter
+from . import dns
+from . import dtp
+from . import esp
+from . import ethernet
+from . import gre
+from . import gzip
+from . import h225
+from . import hsrp
+from . import http
+from . import icmp
+from . import icmp6
+from . import ieee80211
+from . import igmp
+from . import ip
+from . import ip6
+from . import ipx
+from . import llc
+from . import loopback
+from . import mrt
+from . import netbios
+from . import netflow
+from . import ntp
+from . import ospf
+from . import pcap
+from . import pcapng
+from . import pim
+from . import pmap
+from . import ppp
+from . import pppoe
+from . import qq
+from . import radiotap
+from . import radius
+from . import rfb
+from . import rip
+from . import rpc
+from . import rtp
+from . import rx
+from . import sccp
+from . import sctp
+from . import sip
+from . import sll
+from . import smb
+from . import ssl
+from . import stp
+from . import stun
+from . import tcp
+from . import telnet
+from . import tftp
+from . import tns
+from . import tpkt
+from . import udp
+from . import vrrp
+from . import yahoo

@@ -3,7 +3,7 @@
 
 """Authentication Header."""
 
-import dpkt
+from . import dpkt
 
 
 class AH(dpkt.Packet):

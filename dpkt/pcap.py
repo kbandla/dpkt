@@ -4,13 +4,17 @@
 
 import sys
 import time
-import dpkt
+from . import dpkt
 from decimal import Decimal
 
+try:
+    import StringIO
+except ImportError:
+    from io import StringIO
 
-TCPDUMP_MAGIC = 0xa1b2c3d4L
+TCPDUMP_MAGIC = 0xa1b2c3d4
 TCPDUMP_MAGIC_NANO = 0xa1b23c4d
-PMUDPCT_MAGIC = 0xd4c3b2a1L
+PMUDPCT_MAGIC = 0xd4c3b2a1
 PMUDPCT_MAGIC_NANO = 0x4d3cb2a1
 
 PCAP_VERSION_MAJOR = 2
@@ -332,18 +336,9 @@ def test_reader():
     # --- StringIO tests ---
 
     # StringIO
-    import StringIO
     fobj = StringIO.StringIO(data)
     reader = Reader(fobj)
     assert reader.name == '<StringIO>'
-    _, buf1 = iter(reader).next()
-    assert buf1 == data[FileHdr.__hdr_len__ + PktHdr.__hdr_len__:]
-
-    # cStringIO
-    import cStringIO
-    fobj = cStringIO.StringIO(data)
-    reader = Reader(fobj)
-    assert reader.name == '<StringI>'
     _, buf1 = iter(reader).next()
     assert buf1 == data[FileHdr.__hdr_len__ + PktHdr.__hdr_len__:]
 
@@ -370,4 +365,4 @@ if __name__ == '__main__':
     test_pcap_endian()
     test_reader()
 
-    print 'Tests Successful...'
+    print('Tests Successful...')

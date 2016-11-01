@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 """Network Time Protocol."""
 
-import dpkt
-from decorators import deprecated
+from . import dpkt
+from .decorators import deprecated
 
 # NTP v4
 
@@ -119,4 +119,4 @@ def test_ntp_unpack():
 if __name__ == '__main__':
     test_ntp_pack()
     test_ntp_unpack()
-    print 'Tests Successful...'
+    print('Tests Successful...')

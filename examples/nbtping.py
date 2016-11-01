@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import sys, os; sys.path.append(os.path.dirname(__file__))
 
 import socket
 from dpkt import netbios
@@ -24,7 +25,7 @@ class NBTPing(ping.Ping):
             yield str(ns)
 
     def print_header(self, opts):
-        print 'NBTPING %s:' % opts.ip
+        print('NBTPING %s:' % opts.ip)
 
     def print_reply(self, opts, buf, rtt):
         ns = netbios.NS(buf)
@@ -37,9 +38,9 @@ class NBTPing(ping.Ping):
                 elif svc == 0x03 and unique:
                     if 'user' not in d or d['user'].startswith(d['host']):
                         d['user'] = name
-        print '%d bytes from %s: id=%d time=%.3f ms host=%s user=%s' % \
+        print('%d bytes from %s: id=%d time=%.3f ms host=%s user=%s' % \
               (len(buf), opts.ip, ns.id, rtt * 1000,
-               d.get('host', ''), d.get('user', ''))
+               d.get('host', ''), d.get('user', '')))
 
 
 if __name__ == '__main__':

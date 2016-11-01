@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """Encapsulated Security Protocol."""
 
-import dpkt
+from . import dpkt
 
 
 class ESP(dpkt.Packet):

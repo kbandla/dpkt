@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 """Dynamic Host Configuration Protocol."""
 
-import arp
-import dpkt
+from . import arp
+from . import dpkt
 
 DHCP_OP_REQUEST = 1
 DHCP_OP_REPLY = 2
@@ -110,7 +110,7 @@ class DHCP(dpkt.Packet):
         ('hrd', 'B', arp.ARP_HRD_ETH),  # just like ARP.hrd
         ('hln', 'B', 6),  # and ARP.hln
         ('hops', 'B', 0),
-        ('xid', 'I', 0xdeadbeefL),
+        ('xid', 'I', 0xdeadbeef),
         ('secs', 'H', 0),
         ('flags', 'H', 0),
         ('ciaddr', 'I', 0),
@@ -175,4 +175,4 @@ def test_dhcp():
 
 if __name__ == '__main__':
     test_dhcp()
-    print 'Tests Successful...'
+    print('Tests Successful...')

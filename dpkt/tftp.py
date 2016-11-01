@@ -3,7 +3,7 @@
 """Trivial File Transfer Protocol."""
 
 import struct
-import dpkt
+from . import dpkt
 
 # Opcodes
 OP_RRQ = 1  # read request
@@ -90,4 +90,4 @@ if __name__ == '__main__':
     test_op_data()
     test_op_err()
 
-    print 'Tests Successful...'
+    print('Tests Successful...')

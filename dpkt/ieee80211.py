@@ -4,8 +4,8 @@
 
 import socket
 import struct
-import dpkt
-from decorators import deprecated
+from . import dpkt
+from .decorators import deprecated
 
 # Frame Types
 MGMT_TYPE = 0
@@ -412,7 +412,7 @@ class IEEE80211(dpkt.Packet):
             parser = decoder[self.type][self.subtype][1]
             name = decoder[self.type][self.subtype][0]
         except KeyError:
-            print "Key error:", self.type, self.subtype
+            print("Key error:", self.type, self.subtype)
             return
 
         if self.type == DATA_TYPE:
@@ -882,4 +882,4 @@ if __name__ == '__main__':
     test_compressed_block_ack()
     test_action_block_ack_request()
     test_action_block_ack_response()
-    print 'Tests Successful...'
+    print('Tests Successful...')
