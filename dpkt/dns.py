@@ -67,6 +67,7 @@ DNS_ANY = 255
 
 
 def pack_name(name, off, label_ptrs):
+    name = codecs.encode(name, 'utf-8')
     if name:
         labels = name.split(b'.')
     else:
@@ -120,7 +121,7 @@ def unpack_name(buf, off):
             raise dpkt.UnpackError('Invalid label length %02x' % n)
     if not saved_off:
         saved_off = off
-    return b'.'.join(name), saved_off
+    return codecs.decode(b'.'.join(name), 'utf-8'), saved_off
 
 
 class DNS(dpkt.Packet):
@@ -369,7 +370,7 @@ class DNS(dpkt.Packet):
                 buf = self.rdata
                 while buf:
                     n = compat_ord(buf[0])
-                    self.text.append(buf[1:1 + n])
+                    self.text.append(codecs.decode(buf[1:1 + n], 'utf-8'))
                     buf = buf[1 + n:]
             elif self.type == DNS_AAAA:
                 self.ip6 = self.rdata
@@ -456,7 +457,7 @@ def test_basic():
     s = b'E\x00\x02\x08\xc15\x00\x00\x80\x11\x92aBk0\x01Bk0w\x005\xc07\x01\xf4\xda\xc2d\xd2\x81\x80\x00\x01\x00\x03\x00\x0b\x00\x0b\x03www\x06google\x03com\x00\x00\x01\x00\x01\xc0\x0c\x00\x05\x00\x01\x00\x00\x03V\x00\x17\x03www\x06google\x06akadns\x03net\x00\xc0,\x00\x01\x00\x01\x00\x00\x01\xa3\x00\x04@\xe9\xabh\xc0,\x00\x01\x00\x01\x00\x00\x01\xa3\x00\x04@\xe9\xabc\xc07\x00\x02\x00\x01\x00\x00KG\x00\x0c\x04usw5\x04akam\xc0>\xc07\x00\x02\x00\x01\x00\x00KG\x00\x07\x04usw6\xc0t\xc07\x00\x02\x00\x01\x00\x00KG\x00\x07\x04usw7\xc0t\xc07\x00\x02\x00\x01\x00\x00KG\x00\x08\x05asia3\xc0t\xc07\x00\x02\x00\x01\x00\x00KG\x00\x05\x02za\xc07\xc07\x00\x02\x00\x01\x00\x00KG\x00\x0f\x02zc\x06akadns\x03org\x00\xc07\x00\x02\x00\x01\x00\x00KG\x00\x05\x02zf\xc07\xc07\x00\x02\x00\x01\x00\x00KG\x00\x05\x02zh\xc0\xd5\xc07\x00\x02\x00\x01\x00\x00KG\x00\x07\x04eur3\xc0t\xc07\x00\x02\x00\x01\x00\x00KG\x00\x07\x04use2\xc0t\xc07\x00\x02\x00\x01\x00\x00KG\x00\x07\x04use4\xc0t\xc0\xc1\x00\x01\x00\x01\x00\x00\xfb4\x00\x04\xd0\xb9\x84\xb0\xc0\xd2\x00\x01\x00\x01\x00\x001\x0c\x00\x04?\xf1\xc76\xc0\xed\x00\x01\x00\x01\x00\x00\xfb4\x00\x04?\xd7\xc6S\xc0\xfe\x00\x01\x00\x01\x00\x001\x0c\x00\x04?\xd00.\xc1\x0f\x00\x01\x00\x01\x00\x00\n\xdf\x00\x04\xc1-\x01g\xc1"\x00\x01\x00\x01\x00\x00\x101\x00\x04?\xd1\xaa\x88\xc15\x00\x01\x00\x01\x00\x00\r\x1a\x00\x04PCC\xb6\xc0o\x00\x01\x00\x01\x00\x00\x10\x7f\x00\x04?\xf1I\xd6\xc0\x87\x00\x01\x00\x01\x00\x00\n\xdf\x00\x04\xce\x84dl\xc0\x9a\x00\x01\x00\x01\x00\x00\n\xdf\x00\x04A\xcb\xea\x1b\xc0\xad\x00\x01\x00\x01\x00\x00\x0b)\x00\x04\xc1l\x9a\t'
     ip = ip.IP(s)
     my_dns = DNS(ip.udp.data)
-    assert my_dns.qd[0].name == b'www.google.com' and my_dns.an[1].name == b'www.google.akadns.net'
+    assert my_dns.qd[0].name == 'www.google.com' and my_dns.an[1].name == 'www.google.akadns.net'
     s = b'\x05\xf5\x01\x00\x00\x01\x00\x00\x00\x00\x00\x00\x03www\x03cnn\x03com\x00\x00\x01\x00\x01'
     my_dns = DNS(s)
     assert s == bytes(my_dns)
@@ -465,11 +466,11 @@ def test_basic():
 def test_PTR():
     s = b'g\x02\x81\x80\x00\x01\x00\x01\x00\x03\x00\x00\x011\x011\x03211\x03141\x07in-addr\x04arpa\x00\x00\x0c\x00\x01\xc0\x0c\x00\x0c\x00\x01\x00\x00\r6\x00$\x07default\nv-umce-ifs\x05umnet\x05umich\x03edu\x00\xc0\x0e\x00\x02\x00\x01\x00\x00\r6\x00\r\x06shabby\x03ifs\xc0O\xc0\x0e\x00\x02\x00\x01\x00\x00\r6\x00\x0f\x0cfish-license\xc0m\xc0\x0e\x00\x02\x00\x01\x00\x00\r6\x00\x0b\x04dns2\x03itd\xc0O'
     my_dns = DNS(s)
-    assert my_dns.qd[0].name == b'1.1.211.141.in-addr.arpa' and \
-           my_dns.an[0].ptrname == b'default.v-umce-ifs.umnet.umich.edu' and \
-           my_dns.ns[0].nsname == b'shabby.ifs.umich.edu' and \
+    assert my_dns.qd[0].name == '1.1.211.141.in-addr.arpa' and \
+           my_dns.an[0].ptrname == 'default.v-umce-ifs.umnet.umich.edu' and \
+           my_dns.ns[0].nsname == 'shabby.ifs.umich.edu' and \
            my_dns.ns[1].ttl == 3382 and \
-           my_dns.ns[2].nsname == b'dns2.itd.umich.edu'
+           my_dns.ns[2].nsname == 'dns2.itd.umich.edu'
     assert s == bytes(my_dns)
 
 
@@ -489,7 +490,7 @@ def test_OPT():
 
 def test_pack_name():
     # Empty name is \0
-    x = pack_name(b'', 0, {})
+    x = pack_name('', 0, {})
     assert x == b'\0'
 
 
@@ -552,7 +553,7 @@ def test_very_long_name():
 def test_null_response():
     s = b'\x12\xb0\x84\x00\x00\x01\x00\x01\x00\x00\x00\x00\x0bblahblah666\x06pirate\x03sea\x00\x00\n\x00\x01\xc0\x0c\x00\n\x00\x01\x00\x00\x00\x00\x00\tVACKD\x03\xc5\xe9\x01'
     my_dns = DNS(s)
-    assert my_dns.qd[0].name == b'blahblah666.pirate.sea' and \
+    assert my_dns.qd[0].name == 'blahblah666.pirate.sea' and \
            my_dns.an[0].null == b'5641434b4403c5e901'
     assert str(s) == str(my_dns)
 
@@ -567,7 +568,8 @@ def test_txt_response():
     assert my_rr.type == DNS_TXT
     assert my_rr.name == 'google.com'
     assert my_rr.text == ['v=spf1 ptr ?all']
-    assert str(my_dns) == buf
+    assert bytes(my_dns) == buf
+    assert str(my_dns) == str(buf)
 
 
 if __name__ == '__main__':
