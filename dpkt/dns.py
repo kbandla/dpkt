@@ -568,8 +568,8 @@ def test_txt_response():
     assert my_rr.type == DNS_TXT
     assert my_rr.name == 'google.com'
     assert my_rr.text == ['v=spf1 ptr ?all']
-    assert bytes(my_dns) == buf
     assert str(my_dns) == str(buf)
+    assert bytes(my_dns) == buf
 
 
 if __name__ == '__main__':
