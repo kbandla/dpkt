@@ -572,6 +572,20 @@ def test_txt_response():
     assert bytes(my_dns) == buf
 
 
+
+def test_txt_response():
+    buf = (
+        b'\x10\x32\x81\x80\x00\x01\x00\x01\x00\x00\x00\x00\x06\x67\x6f\x6f\x67\x6c\x65\x03\x63\x6f'
+        b'\x6d\x00\x00\x10\x00\x01\xc0\x0c\x00\x10\x00\x01\x00\x00\x01\x0e\x00\x10\x0f\x76\x3d\x73'
+        b'\x70\x66\x31\x20\x70\x74\x72\x20\x3f\x61\x6c\x6c')
+    my_dns = DNS(buf)
+    my_rr = my_dns.an[0]
+    assert my_rr.type == DNS_TXT
+    assert my_rr.name == 'google.com'
+    assert my_rr.text == ['v=spf1 ptr ?all']
+    assert str(my_dns) == buf
+
+
 if __name__ == '__main__':
     # Runs all the test associated with this class/file
     test_basic()
