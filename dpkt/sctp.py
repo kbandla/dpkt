@@ -26,6 +26,21 @@ ECNE = 12
 CWR = 13
 SHUTDOWN_COMPLETE = 14
 
+# Chunk Error Cause Codes
+INVALID_STREAM_IDENTIFIER = 1
+MISSING_MANDATORY_PARAMETER = 2
+STALE_COOKIE_ERROR = 3
+OUT_OF_RESOURCE = 4
+UNRESOLVABLE_ADDRESS = 5
+UNRECOGNIZED_CHUNK_TYPE = 6
+INVALID_MANDATORY_PARAMETER = 7
+UNRECOGNIZED_PARAMETER = 8
+NO_USER_DATA = 9
+COOKIE_RECEIVED_WHILE_SHUTTING_DOWN = 10
+RESTART_OF_AN_ASSOCIATION_WITH_NEW_ADDRESSES = 11
+USER_INITIATED_ABORT = 12
+PROTOCOL_VIOLATION = 13
+
 
 class SCTP(dpkt.Packet):
     """Stream Control Transmission Protocol.
@@ -422,27 +437,12 @@ class ChunkError(Chunk):
     )
     __hdr__ = Chunk.__hdr__ + __hdr_spec__
 
-    INVALID_STREAM_IDENTIFIER = 1
-    MISSING_MANDATORY_PARAMETER = 2
-    STALE_COOKIE_ERROR = 3
-    OUT_OF_RESOURCE = 4
-    UNRESOLVABLE_ADDRESS = 5
-    UNRECOGNIZED_CHUNK_TYPE = 6
-    INVALID_MANDATORY_PARAMETER = 7
-    UNRECOGNIZED_PARAMETER = 8
-    NO_USER_DATA = 9
-    COOKIE_RECEIVED_WHILE_SHUTTING_DOWN = 10
-    RESTART_OF_AN_ASSOCIATION_WITH_NEW_ADDRESSES = 11
-    USER_INITIATED_ABORT = 12
-    PROTOCOL_VIOLATION = 13
-
     @property
     def error_spec(self, data, cause):
         if cause == INVALID_STREAM_IDENTIFIER:
             self.invalid_id = data[:self.len - self.__hdr_len__]
             return 0
         elif cause == MISSING_MANDATORY_PARAMETER:
-            data[:self.len - self.__hdr_len__]
             self.num_miss_param = data[:4]
             self.miss_param_types = [data[4*i:4*i+2] for i in xrange(1, self.num_miss_param + 1)]
             return 0
@@ -632,6 +632,7 @@ def test_sctp_pack():
         print 'Successfully done packing %s' % k
 
 def test_sctp_unpack():
+    import binascii
     for k, v in test_bytearr.items():
         sctp = SCTP(v)
         sctpchunk = sctp.chunks[0]
@@ -740,7 +741,6 @@ def test_sctp_unpack():
         print 'Successfully done unpacking %s' % k
 
 if __name__ == '__main__':
-    import binascii
     test_sctp_pack()
     test_sctp_unpack()
     print 'Tests Successful...'
