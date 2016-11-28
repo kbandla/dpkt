@@ -18,6 +18,7 @@ pip-log.txt
 # Unit test / coverage reports
 .coverage
 .tox
+.cache
 
 # iPython temp files
 .ipynb_checkpoints

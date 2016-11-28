@@ -7,6 +7,16 @@ from decorators import deprecated
 
 
 class AOE(dpkt.Packet):
+    """ATA over Ethernet Protocol.
+
+    See more about the AOE on \
+    https://en.wikipedia.org/wiki/ATA_over_Ethernet
+
+    Attributes:
+        __hdr__: Header fields of AOE.
+        data: Message data.
+    """
+    
     __hdr__ = (
         ('ver_fl', 'B', 0x10),
         ('err', 'B', 0),

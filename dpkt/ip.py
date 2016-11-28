@@ -7,6 +7,15 @@ from decorators import deprecated
 
 
 class IP(dpkt.Packet):
+    """Internet Protocol.
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of IP.
+        TODO.
+    """
+    
     __hdr__ = (
         ('_v_hl', 'B', (4 << 4) | (20 >> 2)),
         ('tos', 'B', 0),
@@ -45,6 +54,38 @@ class IP(dpkt.Packet):
     @hl.setter
     def hl(self, hl):
         self._v_hl = (self._v_hl & 0xf0) | hl
+        
+    @property
+    def rf(self):
+        return (self.off >> 15) & 0x1
+
+    @rf.setter
+    def rf(self, rf):
+        self.off = (self.off & ~IP_RF) | (rf << 15)
+        
+    @property
+    def df(self):
+        return (self.off >> 14) & 0x1
+
+    @df.setter
+    def df(self, df):
+        self.off = (self.off & ~IP_DF) | (df << 14)
+        
+    @property
+    def mf(self):
+        return (self.off >> 13) & 0x1
+
+    @mf.setter
+    def mf(self, mf):
+        self.off = (self.off & ~IP_MF) | (mf << 13)
+        
+    @property
+    def offset(self):
+        return (self.off & IP_OFFMASK) << 3
+
+    @offset.setter
+    def offset(self, offset):
+        self.off = (self.off & ~IP_OFFMASK) | (offset >> 3)
 
     # Deprecated methods, will be removed in the future
     # =================================================
@@ -358,6 +399,7 @@ def test_zerolen():
     assert (isinstance(ip.data, tcp.TCP))
     assert (ip.tcp.data == d)
 
+
 def test_constuctor():
     ip1 = IP(data = "Hello world!")
     ip2 = IP(data = "Hello world!", len = 0)
@@ -367,11 +409,33 @@ def test_constuctor():
     assert (str(ip1) == 'E\x00\x00 \x00\x00\x00\x00@\x00z\xdf\x00\x00\x00\x00\x00\x00\x00\x00Hello world!')
     assert (str(ip2) == str(ip4))
     assert (str(ip2) == 'E\x00\x00 \x00\x00\x00\x00@\x00z\xdf\x00\x00\x00\x00\x00\x00\x00\x00Hello world!')
+    
 
+def test_frag():
+    import ethernet
+    s = "\x00\x23\x20\xd4\x2a\x8c\x00\x23\x20\xd4\x2a\x8c\x08\x00\x45\x00\x00\x54\x00\x00\x40\x00\x40\x01\x25\x8d\x0a\x00\x00\x8f\x0a\x00\x00\x8e\x08\x00\x2e\xa0\x01\xff\x23\x73\x20\x48\x4a\x4d\x00\x00\x00\x00\x78\x85\x02\x00\x00\x00\x00\x00\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f\x20\x21\x22\x23\x24\x25\x26\x27\x28\x29\x2a\x2b\x2c\x2d\x2e\x2f\x30\x31\x32\x33\x34\x35\x36\x37"
+    ip = ethernet.Ethernet(s).ip
+    assert (ip.rf == 0)
+    assert (ip.df == 1)
+    assert (ip.mf == 0)
+    assert (ip.offset == 0)
+    
+    # test setters of fragmentation related attributes.
+    ip.rf = 1
+    ip.df = 0
+    ip.mf = 1
+    ip.offset = 1480
+    assert (ip.rf == 1)
+    assert (ip.df == 0)
+    assert (ip.mf == 1)
+    assert (ip.offset == 1480)
+    
+    
 if __name__ == '__main__':
     test_ip()
     test_hl()
     test_opt()
     test_zerolen()
     test_constuctor()
+    test_frag()
     print 'Tests Successful...'

@@ -23,6 +23,15 @@ SERVER_CUT_TEXT = 3
 
 
 class RFB(dpkt.Packet):
+    """Remote Framebuffer Protocol.
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of RADIUS.
+        TODO.
+    """
+    
     __hdr__ = (
         ('type', 'B', 0),
     )

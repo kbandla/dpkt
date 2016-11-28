@@ -115,6 +115,15 @@ BLOCK_ACK_CODE_RESPONSE = 1
 
 
 class IEEE80211(dpkt.Packet):
+    """IEEE 802.11.
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of IEEE802.11.
+        TODO.
+    """
+    
     __hdr__ = (
         ('framectl', 'H', 0),
         ('duration', 'H', 0)
@@ -771,10 +780,10 @@ def test_80211_data():
     assert ieee.data == '\xaa\xaa\x03\x00\x00\x00\x08\x00\x45\x00\x00\x28\x07\x27\x40\x00\x80\x06\x1d\x39\x8d\xd4\x37\x3d\x3f\xf5\xd1\x69\xc0\x5f\x01\xbb\xb2\xd6\xef\x23\x38\x2b\x4f\x08\x50\x10\x42\x04'
     assert ieee.fcs == struct.unpack('I', '\xac\x17\x00\x00')[0]
 
-    import llc, ip
+    import llc
 
     llc_pkt = llc.LLC(ieee.data_frame.data)
-    ip_pkt = ip.IP(llc_pkt.data)
+    ip_pkt = llc_pkt.data
     assert ip_pkt.dst == '\x3f\xf5\xd1\x69'
 
 def test_80211_data_qos():
@@ -860,6 +869,7 @@ def test_action_block_ack_response():
     assert ieee.action.block_ack_response.timeout == timeout
     parameters = struct.unpack('H', '\x10\x02')[0]
     assert ieee.action.block_ack_response.parameters == parameters
+
 
 if __name__ == '__main__':
     # Runs all the test associated with this class/file

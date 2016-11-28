@@ -10,6 +10,16 @@ import struct
 
 
 class FLAP(dpkt.Packet):
+    """Frame Layer Protocol.
+
+    See more about the FLAP on \
+    https://en.wikipedia.org/wiki/OSCAR_protocol#FLAP_header
+
+    Attributes:
+        __hdr__: Header fields of FLAP.
+        data: Message data.
+    """
+    
     __hdr__ = (
         ('ast', 'B', 0x2a),  # '*'
         ('type', 'B', 0),
@@ -26,6 +36,15 @@ class FLAP(dpkt.Packet):
 
 
 class SNAC(dpkt.Packet):
+    """Simple Network Atomic Communication.
+
+    See more about the SNAC on \
+    https://en.wikipedia.org/wiki/OSCAR_protocol#SNAC_data
+
+    Attributes:
+        __hdr__: Header fields of SNAC.
+    """
+    
     __hdr__ = (
         ('family', 'H', 0),
         ('subtype', 'H', 0),

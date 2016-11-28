@@ -25,6 +25,15 @@ PRIVATE = 7
 
 
 class NTP(dpkt.Packet):
+    """Network Time Protocol.
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of NTP.
+        TODO.
+    """
+    
     __hdr__ = (
         ('flags', 'B', 0),
         ('stratum', 'B', 0),

@@ -32,7 +32,17 @@ UTC_TIME = 23
 
 
 def utctime(buf):
-    """Convert ASN.1 UTCTime string to UTC float."""
+    """Convert ASN.1 UTCTime string to UTC float.
+
+    TODO: Long description here.
+
+    Args:
+        buf: A buffer with format "yymnddhhmm"
+
+    Returns:
+        A floating point number, indicates seconds since the Epoch.
+    """
+
     yy = int(buf[:2])
     mn = int(buf[2:4])
     dd = int(buf[4:6])
@@ -55,8 +65,19 @@ def utctime(buf):
 
 def decode(buf):
     """Sleazy ASN.1 decoder.
-    Return list of (id, value) tuples from ASN.1 BER/DER encoded buffer.
+
+    TODO: Long description here.
+
+    Args:
+        buf: A buffer with Sleazy ASN.1 data.
+
+    Returns:
+        A list of (id, value) tuples from ASN.1 BER/DER encoded buffer.
+
+    Raises:
+        UnpackError: An error occurred the ASN.1 length exceed.
     """
+
     msg = []
     while buf:
         t = ord(buf[0])

@@ -96,6 +96,15 @@ DHCPINFORM = 8
 
 
 class DHCP(dpkt.Packet):
+    """Dynamic Host Configuration Protocol.
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of DHCP.
+        TODO.
+    """
+    
     __hdr__ = (
         ('op', 'B', DHCP_OP_REQUEST),
         ('hrd', 'B', arp.ARP_HRD_ETH),  # just like ARP.hrd

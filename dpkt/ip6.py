@@ -7,6 +7,15 @@ from decorators import deprecated
 
 
 class IP6(dpkt.Packet):
+    """Internet Protocol, version 6.
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of IPv6.
+        TODO.
+    """
+    
     __hdr__ = (
         ('_v_fc_flow', 'I', 0x60000000L),
         ('plen', 'H', 0),  # payload length (not including header)

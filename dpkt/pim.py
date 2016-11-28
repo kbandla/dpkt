@@ -7,6 +7,15 @@ from decorators import deprecated
 
 
 class PIM(dpkt.Packet):
+    """Protocol Independent Multicast.
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of PIM.
+        TODO.
+    """
+    
     __hdr__ = (
         ('_v_type', 'B', 0x20),
         ('rsvd', 'B', 0),
