@@ -5,42 +5,41 @@
 import dpkt
 import crc32c
 import struct
-import binascii
 
 # Stream Control Transmission Protocol
 # http://tools.ietf.org/html/rfc4960
 
 # Chunk Types
-DATA = 0
-INIT = 1
-INIT_ACK = 2
-SACK = 3
-HEARTBEAT = 4
-HEARTBEAT_ACK = 5
-ABORT = 6
-SHUTDOWN = 7
-SHUTDOWN_ACK = 8
-ERROR = 9
-COOKIE_ECHO = 10
-COOKIE_ACK = 11
-ECNE = 12
-CWR = 13
-SHUTDOWN_COMPLETE = 14
+CHUNK_TYPE_DATA = 0
+CHUNK_TYPE_INIT = 1
+CHUNK_TYPE_INIT_ACK = 2
+CHUNK_TYPE_SACK = 3
+CHUNK_TYPE_HEARTBEAT = 4
+CHUNK_TYPE_HEARTBEAT_ACK = 5
+CHUNK_TYPE_ABORT = 6
+CHUNK_TYPE_SHUTDOWN = 7
+CHUNK_TYPE_SHUTDOWN_ACK = 8
+CHUNK_TYPE_ERROR = 9
+CHUNK_TYPE_COOKIE_ECHO = 10
+CHUNK_TYPE_COOKIE_ACK = 11
+CHUNK_TYPE_ECNE = 12
+CHUNK_TYPE_CWR = 13
+CHUNK_TYPE_SHUTDOWN_COMPLETE = 14
 
 # Chunk Error Cause Codes
-INVALID_STREAM_IDENTIFIER = 1
-MISSING_MANDATORY_PARAMETER = 2
-STALE_COOKIE_ERROR = 3
-OUT_OF_RESOURCE = 4
-UNRESOLVABLE_ADDRESS = 5
-UNRECOGNIZED_CHUNK_TYPE = 6
-INVALID_MANDATORY_PARAMETER = 7
-UNRECOGNIZED_PARAMETER = 8
-NO_USER_DATA = 9
-COOKIE_RECEIVED_WHILE_SHUTTING_DOWN = 10
-RESTART_OF_AN_ASSOCIATION_WITH_NEW_ADDRESSES = 11
-USER_INITIATED_ABORT = 12
-PROTOCOL_VIOLATION = 13
+CHUNK_ERR_INVALID_ID = 1
+CHUNK_ERR_MISS_MAND_PARAM = 2
+CHUNK_ERR_STALE_COOKIE = 3
+CHUNK_ERR_OUT_OF_RESOURCE = 4
+CHUNK_ERR_UNRESOLV_ADDR = 5
+CHUNK_ERR_UNRECOG_TYPE = 6
+CHUNK_ERR_INVALID_MAND_PARAM = 7
+CHUNK_ERR_UNRECOG_PARAM = 8
+CHUNK_ERR_NO_USER_DATA = 9
+CHUNK_ERR_COOKIE_WHILE_SHUT = 10
+CHUNK_ERR_RESTART_ASSOC = 11
+CHUNK_ERR_USER_INIT_ABORT = 12
+CHUNK_ERR_PROTO_VIOLATION = 13
 
 
 class SCTP(dpkt.Packet):
@@ -50,7 +49,6 @@ class SCTP(dpkt.Packet):
 
     Attributes:
         __hdr__: Common Header fields of SCTP.
-        TODO.
     """
     __hdr__ = (
         ('sport', 'H', 0),
@@ -68,39 +66,7 @@ class SCTP(dpkt.Packet):
         dpkt.Packet.unpack(self, buf)
         l = []
         while self.data:
-            if self.ctype == DATA:
-                chunk = ChunkData(self.data)
-            elif self.ctype == INIT:
-                chunk = ChunkInit(self.data)
-            elif self.ctype == INIT_ACK:
-                chunk = ChunkInitAck(self.data)
-            elif self.ctype == SACK:
-                chunk = ChunkSack(self.data)
-            elif self.ctype == HEARTBEAT:
-                chunk = ChunkHeartbeat(self.data)
-            elif self.ctype == HEARTBEAT_ACK:
-                chunk = ChunkHeartbeatAck(self.data)
-            elif self.ctype == ABORT:
-                chunk = ChunkAbort(self.data)
-            elif self.ctype == SHUTDOWN:
-                chunk = ChunkShutdown(self.data)
-            elif self.ctype == SHUTDOWN_ACK:
-                chunk = ChunkShutdownAck(self.data)
-            elif self.ctype == ERROR:
-                chunk = ChunkError(self.data)
-            elif self.ctype == COOKIE_ECHO:
-                chunk = ChunkCookieEcho(self.data)
-            elif self.ctype == COOKIE_ACK:
-                chunk = ChunkCookieAck(self.data)
-            elif self.ctype == ECNE:
-                chunk = ChunkECNE(self.data)
-            elif self.ctype == CWR:
-                chunk = ChunkCWR(self.data)
-            elif self.ctype == SHUTDOWN_COMPLETE:
-                chunk = ChunkShutdownComplete(self.data)
-            else:
-                chunk = Chunk(self.data)
-
+            chunk = CHUNK_TYPES_DICT.get(self.ctype, Chunk)(self.data)
             l.append(chunk)
             self.data = self.data[len(chunk):]
         self.data = self.chunks = l
@@ -129,10 +95,9 @@ class Chunk(dpkt.Packet):
 
     Attributes:
         __hdr__: Generic Chunk Header fields common in all types.
-        TODO.
     """
     __hdr__ = (
-        ('type', 'B', INIT),
+        ('type', 'B', CHUNK_TYPE_INIT),
         ('flags', 'B', 0),
         ('len', 'H', 0)
     )
@@ -157,7 +122,6 @@ class ChunkData(Chunk):
     Attributes:
         __hdr__: Generic Chunk Header fields of SCTP.
         __hdr_spec__: Type-specific Chunk Header fields of SCTP.
-        TODO.
     """
     __hdr_spec__ = (
         ('tsn', 'I', 0),
@@ -166,6 +130,30 @@ class ChunkData(Chunk):
         ('proto_id', 'I', 0)
     )
     __hdr__ = Chunk.__hdr__ + __hdr_spec__
+
+    @property
+    def unordered_flag(self):
+        return (self.flags >> 2) & 0x1
+
+    @unordered_flag.setter
+    def unordered_flag(self, u):
+        self.flags = (flags & ~0x4) | ((u & 0x1) << 2)
+
+    @property
+    def beginning_flag(self):
+        return (self.flags >> 1) & 0x1
+
+    @beginning_flag.setter
+    def beginning_flag(self, b):
+        self.flags = (flags & ~0x2) | ((b & 0x1) << 1)
+
+    @property
+    def ending_flag(self):
+        return self.flags & 0x1
+
+    @ending_flag.setter
+    def ending_flag(self, e):
+        self.flags = (flags & ~0x1) | (e & 0x1)
 
     def unpack(self, buf):
         super(ChunkData, self).unpack(buf)
@@ -188,20 +176,19 @@ class ChunkInit(Chunk):
     Attributes:
         __hdr__: Generic Chunk Header fields of SCTP.
         __hdr_spec__: Type-specific Chunk Header fields of SCTP.
-        TODO.
     """
     __hdr_spec__ = (
         ('init_tag', 'I', 0),
         ('a_rwnd', 'I', 0),
-        ('num_outstream', 'H', 0),
-        ('num_instream', 'H', 0),
+        ('num_os', 'H', 0),
+        ('num_is', 'H', 0),
         ('init_tsn', 'I', 0)
     )
     __hdr__ = Chunk.__hdr__ + __hdr_spec__
 
     def unpack(self, buf):
         super(ChunkInit, self).unpack(buf)
-        self.data = self.data[:self.len - self.__hdr_len__]
+        self.data = self.optionals = self.data[:self.len - self.__hdr_len__]
 
 
 class ChunkInitAck(Chunk):
@@ -221,13 +208,12 @@ class ChunkInitAck(Chunk):
     Attributes:
         __hdr__: Generic Chunk Header fields of SCTP.
         __hdr_spec__: Type-specific Chunk Header fields of SCTP.
-        TODO.
     """
     __hdr_spec__ = (
         ('init_tag', 'I', 0),
         ('a_rwnd', 'I', 0),
-        ('num_outstream', 'H', 0),
-        ('num_instream', 'H', 0),
+        ('num_os', 'H', 0),
+        ('num_is', 'H', 0),
         ('init_tsn', 'I', 0),
         ('cookie_param', 'H', 0),
         ('param_len', 'H', 0),
@@ -236,7 +222,8 @@ class ChunkInitAck(Chunk):
 
     def unpack(self, buf):
         super(ChunkInitAck, self).unpack(buf)
-        self.data = self.state_cookie = self.data[:self.len - self.__hdr_len__]
+        self.state_cookie = self.data[:self.param_len]
+        self.data = self.optionals = self.data[self.param_len:self.len]
 
 
 class ChunkSack(Chunk):
@@ -254,7 +241,6 @@ class ChunkSack(Chunk):
     Attributes:
         __hdr__: Generic Chunk Header fields of SCTP.
         __hdr_spec__: Type-specific Chunk Header fields of SCTP.
-        TODO.
     """
     __hdr_spec__ = (
         ('cum_tsn_ack', 'I', 0),
@@ -284,7 +270,6 @@ class ChunkHeartbeat(Chunk):
     Attributes:
         __hdr__: Generic Chunk Header fields of SCTP.
         __hdr_spec__: Type-specific Chunk Header fields of SCTP.
-        TODO.
     """
     __hdr_spec__ = (
         ('hb_type', 'H', 0),
@@ -312,7 +297,6 @@ class ChunkHeartbeatAck(Chunk):
     Attributes:
         __hdr__: Generic Chunk Header fields of SCTP.
         __hdr_spec__: Type-specific Chunk Header fields of SCTP.
-        TODO.
     """
     __hdr_spec__ = (
         ('hb_type', 'H', 0),
@@ -336,7 +320,6 @@ class ChunkAbort(Chunk):
     Attributes:
         __hdr__: Generic Chunk Header fields of SCTP.
         __hdr_spec__: Type-specific Chunk Header fields of SCTP.
-        TODO.
     """
     __hdr__ = Chunk.__hdr__
 
@@ -357,7 +340,6 @@ class ChunkShutdown(Chunk):
     Attributes:
         __hdr__: Generic Chunk Header fields of SCTP.
         __hdr_spec__: Type-specific Chunk Header fields of SCTP.
-        TODO.
     """
     __hdr_spec__ = (
         ('cum_tsn_ack', 'I', 0),
@@ -380,7 +362,6 @@ class ChunkShutdownAck(Chunk):
     Attributes:
         __hdr__: Generic Chunk Header fields of SCTP.
         __hdr_spec__: Type-specific Chunk Header fields of SCTP.
-        TODO.
     """
     __hdr__ = Chunk.__hdr__
 
@@ -417,7 +398,6 @@ class ChunkError(Chunk):
     Attributes:
         __hdr__: Generic Chunk Header fields of SCTP.
         __hdr_spec__: Type-specific Chunk Header fields of SCTP.
-        TODO.
     """
     __hdr_spec__ = (
         ('cause_code', 'H', 0),
@@ -427,35 +407,35 @@ class ChunkError(Chunk):
 
 
     def error_spec(self, data):
-        if self.cause_code == INVALID_STREAM_IDENTIFIER:
-            self.invalid_id = struct.unpack('H', data[:self.len - self.__hdr_len__ -6])[0] >> 8
-        elif self.cause_code == MISSING_MANDATORY_PARAMETER:
+        if self.cause_code == CHUNK_ERR_INVALID_ID:
+            self.invalid_id = data[:self.len - self.__hdr_len__ -6]
+        elif self.cause_code == CHUNK_ERR_MISS_MAND_PARAM:
             self.num_miss_param = data[:4]
             self.miss_param_types = [data[4*i:4*i+2] for i in xrange(1, self.num_miss_param + 1)]
-        elif self.cause_code == STALE_COOKIE_ERROR:
+        elif self.cause_code == CHUNK_ERR_STALE_COOKIE:
             self.measure_stale = data[:self.len - self.__hdr_len__]
-        elif self.cause_code == OUT_OF_RESOURCE:
+        elif self.cause_code == CHUNK_ERR_OUT_OF_RESOURCE:
             # This should be None as no value would be inserted here.
             self._out_of_resource = data[:self.len - self.__hdr_len__]
-        elif self.cause_code == UNRESOLVABLE_ADDRESS:
+        elif self.cause_code == CHUNK_ERR_UNRESOLV_ADDR:
             self.unresolv_addr = data[:self.len - self.__hdr_len__]
-        elif self.cause_code == UNRECOGNIZED_CHUNK_TYPE:
+        elif self.cause_code == CHUNK_ERR_UNRECOG_TYPE:
             self.unrecog_chunk = data[:self.len - self.__hdr_len__]
-        elif self.cause_code == INVALID_MANDATORY_PARAMETER:
+        elif self.cause_code == CHUNK_ERR_INVALID_MAND_PARAM:
             # This should be None as no value would be inserted here.
             self._invalid_param = data[:self.len - self.__hdr_len__]
-        elif self.cause_code == UNRECOGNIZED_PARAMETER:
+        elif self.cause_code == CHUNK_ERR_UNRECOG_PARAM:
             self.unrecog_param = data[:self.len - self.__hdr_len__]
-        elif self.cause_code == NO_USER_DATA:
+        elif self.cause_code == CHUNK_ERR_NO_USER_DATA:
             self.no_data_tsn = data[:self.len - self.__hdr_len__]
-        elif self.cause_code == COOKIE_RECEIVED_WHILE_SHUTTING_DOWN:
+        elif self.cause_code == CHUNK_ERR_COOKIE_WHILE_SHUT:
             # This should be None as no value would be inserted here.
             self._cookie_while_shut = data[:self.len - self.__hdr_len__]
-        elif self.cause_code == RESTART_OF_AN_ASSOCIATION_WITH_NEW_ADDRESSES:
+        elif self.cause_code == CHUNK_ERR_RESTART_ASSOC:
             self.new_addr_tlvs = data[:self.len - self.__hdr_len__]
-        elif self.cause_code == USER_INITIATED_ABORT:
+        elif self.cause_code == CHUNK_ERR_USER_INIT_ABORT:
             self.abort_reason = data[:self.len - self.__hdr_len__]
-        elif self.cause_code == PROTOCOL_VIOLATION:
+        elif self.cause_code == CHUNK_ERR_PROTO_VIOLATION:
             self.additional_info = data[:self.len - self.__hdr_len__]
         else:
             raise NotImplementedError
@@ -478,7 +458,6 @@ class ChunkCookieEcho(Chunk):
     Attributes:
         __hdr__: Generic Chunk Header fields of SCTP.
         __hdr_spec__: Type-specific Chunk Header fields of SCTP.
-        TODO.
     """
     __hdr__ = Chunk.__hdr__
 
@@ -498,7 +477,6 @@ class ChunkCookieAck(Chunk):
     Attributes:
         __hdr__: Generic Chunk Header fields of SCTP.
         __hdr_spec__: Type-specific Chunk Header fields of SCTP.
-        TODO.
     """
     __hdr__ = Chunk.__hdr__
 
@@ -519,7 +497,6 @@ class ChunkECNE(Chunk):
     Attributes:
         __hdr__: Generic Chunk Header fields of SCTP.
         __hdr_spec__: Type-specific Chunk Header fields of SCTP.
-        TODO.
     """
     __hdr_spec__ = (
         ('lowest_tsn', 'I', 0),
@@ -543,7 +520,6 @@ class ChunkCWR(Chunk):
     Attributes:
         __hdr__: Generic Chunk Header fields of SCTP.
         __hdr_spec__: Type-specific Chunk Header fields of SCTP.
-        TODO.
     """
     __hdr_spec__ = (
         ('lowest_tsn', 'I', 0),
@@ -566,7 +542,6 @@ class ChunkShutdownComplete(Chunk):
     Attributes:
         __hdr__: Generic Chunk Header fields of SCTP.
         __hdr_spec__: Type-specific Chunk Header fields of SCTP.
-        TODO.
     """
     __hdr__ = Chunk.__hdr__
 
@@ -575,22 +550,82 @@ class ChunkShutdownComplete(Chunk):
         self.data = self.data[:self.len - self.__hdr_len__]
 
 
+# Dictionary to call appropriate subclass from superclass.
+CHUNK_TYPES_DICT = {
+    CHUNK_TYPE_DATA: ChunkData,
+    CHUNK_TYPE_INIT: ChunkInit,
+    CHUNK_TYPE_INIT_ACK: ChunkInitAck,
+    CHUNK_TYPE_SACK: ChunkSack,
+    CHUNK_TYPE_HEARTBEAT: ChunkHeartbeat,
+    CHUNK_TYPE_HEARTBEAT_ACK: ChunkHeartbeatAck,
+    CHUNK_TYPE_ABORT: ChunkAbort,
+    CHUNK_TYPE_SHUTDOWN: ChunkShutdown,
+    CHUNK_TYPE_SHUTDOWN_ACK: ChunkShutdownAck,
+    CHUNK_TYPE_ERROR: ChunkError,
+    CHUNK_TYPE_COOKIE_ECHO: ChunkCookieEcho,
+    CHUNK_TYPE_COOKIE_ACK: ChunkCookieAck,
+    CHUNK_TYPE_ECNE: ChunkECNE,
+    CHUNK_TYPE_CWR: ChunkCWR,
+    CHUNK_TYPE_SHUTDOWN_COMPLETE: ChunkShutdownComplete
+}
+
+
 test_bytearr = {
-    'DATA': '\x0f\xe4\x0f\x1c\xceU\xce\x8f\xf5@\x8bv\x00\x03\x01\xcc\xbb{\x0f\x9c\x00\x00\x00\x00\x00\x00\x00\x00\xde\xad\xbe\xef',
-    'INIT': '\x0f\xe4\x0f\x1c\x00\x00\x00\x00\x9fx\xa7\x04\x01\x00\x00\x14\xbb{\x0f\x9c\x00\x00\xfa\x00\x00\n\x00\n\xbb{\x0f\x9c',
-    'INIT_ACK': '\x0f\x1c\x0f\xe4\xbb{\x0f\x9c\xf7\x06\xbds\x02\x00\x01\xc4\xceU\xce\x8f\x00\x00\xfa\x00\x00\n\x00\n\xceU\xce\x8f\x00\x07\x01\xb0\xbb{\x0f\x9c\x00\x00\xfa\x00\x00\n\x00\x00\xbb{\x0f\x9c\x00\x00\x00\x00\x0f\xe4\x00\x00\x01\x00\x00\x00\x04\x00\x00\x00\x01\x01\x01\n\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xceU\xce\x8f\x00\x00\xfa\x00\x00\n\x00\x00\xceU\xce\x8f\x0f\x1c\x00\x00\x01\x00\x00\x00\x04\x00\x00\x00\x01\x01\x01\x14\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00O9\xd8XO:\xc2\xb8',
-    'SACK': '\x0f\x1c\x0f\xe4\xbb{\x0f\x9cy\x94\x91)\x03\x00\x00\x10\xbb{\x0f\x9c\x00\x00\xfa\x00\x00\x00\x00\x00',
-    'HEARTBEAT': '\x0bY\x0bY\x00\x00\x0ePS\xc3\x05_\x04\x00\x00\x18\x00\x01\x00\x14@\xe4K\x92\n\x1c\x06,\x1bf\xaf~\xde\xad\x00\x00',
-    'HEARTBEAT_ACK': '\x0bY\x0bY\rS\xe6\xfe\x8c\x8e\x07F\x05\x00\x00\x18\x00\x01\x00\x14@\xe4K\x92\n\x1c\x06,\x1bf\xaf~\xbe\xef\x00\x00',
-    'ABORT': '0909\xbee\xa7\xef}\xc1\xb2\xfc\x06\x00\x00\x04',
-    'COOKIE_ECHO': '\x0f\xe4\x0f\x1c\xceU\xce\x8f\x99j\x08\xa6\n\x00\x01\xb0\xbb{\x0f\x9c\x00\x00\xfa\x00\x00\n\x00\x00\xbb{\x0f\x9c\x00\x00\x00\x00\x0f\xe4\x00\x00\x01\x00\x00\x00\x04\x00\x00\x00\x01\x01\x01\n\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xceU\xce\x8f\x00\x00\xfa\x00\x00\n\x00\x00\xceU\xce\x8f\x0f\x1c\x00\x00\x01\x00\x00\x00\x04\x00\x00\x00\x01\x01\x01\x14\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00O9\xd8XO:\xc2\xb8',
-    'COOKIE_ACK': '\x0f\x1c\x0f\xe4\xbb{\x0f\x9c!B\xfaa\x0b\x00\x00\x04',
-    'ERROR_01': '0909\xde\xad\xbe\xef\xde\xad\xbe\xef\t\x00\x00\x10\x00\x01\x00\x08\x00\x99\x00\x00',
-    'SHUTDOWN': '\x0f\x1c\x0f\xe4\xbb{\x0f\x9ca\x1d\xedW\x07\x00\x00\x08\xbb{\x0f\x9d',
-    'SHUTDOWN_ACK': '\x0f\xe4\x0f\x1c\xceU\xce\x8f<\xd9\xc2\x82\x08\x00\x00\x04',
-    'ECNE': '0909\xde\xad\xbe\xef\xde\xad\xbe\xef\x0c\x00\x00\x08\xde\xad\xbe\xef',
-    'CWR': '0909\xde\xad\xbe\xef\xde\xad\xbe\xef\r\x00\x00\x08\xde\xad\xbe\xef',
-    'SHUTDOWN_COMPLETE': '\x0f\x1c\x0f\xe4\xbb{\x0f\x9cj\xd9\x9d\xc7\x0e\x00\x00\x04',
+    'DATA': b'\x0f\xe4\x0f\x1c\xceU\xce\x8f\xf5@\x8bv\x00\x03\x01\xcc\xbb{\x0f\x9c\x00\x00\x00\x00\x00\x00\x00\x00\xde\xad\xbe\xef',
+    'INIT': b'\x0f\xe4\x0f\x1c\x00\x00\x00\x00\x9fx\xa7\x04\x01\x00\x00\x14\xbb{\x0f\x9c\x00\x00\xfa\x00\x00\n\x00\n\xbb{\x0f\x9c',
+    'INIT_ACK': b'\x0f\x1c\x0f\xe4\xbb{\x0f\x9c\xf7\x06\xbds\x02\x00\x01\xc4\xceU\xce\x8f\x00\x00\xfa'
+                 '\x00\x00\n\x00\n\xceU\xce\x8f\x00\x07\x01\xb0\xbb{\x0f\x9c\x00\x00\xfa\x00\x00\n\x00'
+                 '\x00\xbb{\x0f\x9c\x00\x00\x00\x00\x0f\xe4\x00\x00\x01\x00\x00\x00\x04\x00\x00\x00\x01'
+                 '\x01\x01\n\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+                 '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+                 '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+                 '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+                 '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+                 '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+                 '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+                 '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xceU\xce\x8f\x00\x00\xfa\x00\x00\n'
+                 '\x00\x00\xceU\xce\x8f\x0f\x1c\x00\x00\x01\x00\x00\x00\x04\x00\x00\x00\x01\x01\x01\x14'
+                 '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+                 '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+                 '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+                 '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+                 '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+                 '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+                 '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+                 '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+                 '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00O9\xd8XO:\xc2\xb8',
+    'SACK': b'\x0f\x1c\x0f\xe4\xbb{\x0f\x9cy\x94\x91)\x03\x00\x00\x10\xbb{\x0f\x9c\x00\x00\xfa\x00\x00\x00\x00\x00',
+    'HEARTBEAT': b'\x0bY\x0bY\x00\x00\x0ePS\xc3\x05_\x04\x00\x00\x18\x00\x01\x00\x14@\xe4K\x92\n\x1c\x06,\x1bf\xaf~\xde\xad\x00\x00',
+    'HEARTBEAT_ACK': b'\x0bY\x0bY\rS\xe6\xfe\x8c\x8e\x07F\x05\x00\x00\x18\x00\x01\x00\x14@\xe4K\x92\n\x1c\x06,\x1bf\xaf~\xbe\xef\x00\x00',
+    'ABORT': b'0909\xbee\xa7\xef}\xc1\xb2\xfc\x06\x00\x00\x04',
+    'COOKIE_ECHO': b'\x0f\xe4\x0f\x1c\xceU\xce\x8f\x99j\x08\xa6\n\x00\x01\xb0\xbb{\x0f\x9c\x00\x00\xfa\x00'
+                    '\x00\n\x00\x00\xbb{\x0f\x9c\x00\x00\x00\x00\x0f\xe4\x00\x00\x01\x00\x00\x00\x04\x00'
+                    '\x00\x00\x01\x01\x01\n\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+                    '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+                    '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+                    '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+                    '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+                    '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+                    '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+                    '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+                    '\x00\x00\xceU\xce\x8f\x00\x00\xfa\x00\x00\n\x00\x00\xceU\xce\x8f\x0f\x1c\x00\x00\x01'
+                    '\x00\x00\x00\x04\x00\x00\x00\x01\x01\x01\x14\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+                    '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+                    '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+                    '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+                    '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+                    '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+                    '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+                    '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+                    '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+                    '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00O9\xd8XO:\xc2\xb8',
+    'COOKIE_ACK': b'\x0f\x1c\x0f\xe4\xbb{\x0f\x9c!B\xfaa\x0b\x00\x00\x04',
+    'ERROR_01': b'0909\xde\xad\xbe\xef\xde\xad\xbe\xef\t\x00\x00\x10\x00\x01\x00\x08\x00\x99\x00\x00',
+    'SHUTDOWN': b'\x0f\x1c\x0f\xe4\xbb{\x0f\x9ca\x1d\xedW\x07\x00\x00\x08\xbb{\x0f\x9d',
+    'SHUTDOWN_ACK': b'\x0f\xe4\x0f\x1c\xceU\xce\x8f<\xd9\xc2\x82\x08\x00\x00\x04',
+    'ECNE': b'0909\xde\xad\xbe\xef\xde\xad\xbe\xef\x0c\x00\x00\x08\xde\xad\xbe\xef',
+    'CWR': b'0909\xde\xad\xbe\xef\xde\xad\xbe\xef\r\x00\x00\x08\xde\xad\xbe\xef',
+    'SHUTDOWN_COMPLETE': b'\x0f\x1c\x0f\xe4\xbb{\x0f\x9cj\xd9\x9d\xc7\x0e\x00\x00\x04',
 }
 
 
@@ -611,11 +646,15 @@ def test_sctp_unpack():
             assert (sctp.dport == 3868)
             assert (sctpchunk.type == 0)
             assert (sctpchunk.flags == 3)
+            assert (sctpchunk.unordered_flag == 0)
+            assert (sctpchunk.beginning_flag == 1)
+            assert (sctpchunk.ending_flag == 1)
             assert (sctpchunk.len == 460)
             assert (sctpchunk.tsn == 3145404316)
             assert (sctpchunk.stream_id == 0)
             assert (sctpchunk.stream_seq == 0)
             assert (sctpchunk.proto_id == 0)
+            assert (binascii.hexlify(sctpchunk.data) == 'deadbeef')
         elif isinstance(sctpchunk, ChunkInit):
             assert (sctp.sport == 4068)
             assert (sctp.dport == 3868)
@@ -624,8 +663,8 @@ def test_sctp_unpack():
             assert (sctpchunk.len == 20)
             assert (sctpchunk.init_tag == 3145404316)
             assert (sctpchunk.a_rwnd == 64000)
-            assert (sctpchunk.num_outstream == 10)
-            assert (sctpchunk.num_instream == 10)
+            assert (sctpchunk.num_os == 10)
+            assert (sctpchunk.num_is == 10)
             assert (sctpchunk.init_tsn == 3145404316)
         elif isinstance(sctpchunk, ChunkInitAck):
             assert (sctp.sport == 3868)
@@ -635,12 +674,25 @@ def test_sctp_unpack():
             assert (sctpchunk.len == 452)
             assert (sctpchunk.init_tag == 3461729935)
             assert (sctpchunk.a_rwnd == 64000)
-            assert (sctpchunk.num_outstream == 10)
-            assert (sctpchunk.num_instream == 10)
+            assert (sctpchunk.num_os == 10)
+            assert (sctpchunk.num_is == 10)
             assert (sctpchunk.init_tsn == 3461729935)
             assert (sctpchunk.cookie_param == 7)
             assert (sctpchunk.param_len == 432)
-            assert (binascii.hexlify(sctpchunk.state_cookie) == 'bb7b0f9c0000fa00000a0000bb7b0f9c000000000fe4000001000000040000000101010a0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000ce55ce8f0000fa00000a0000ce55ce8f0f1c000001000000040000000101011400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004f39d8584f3ac2b8')
+            assert (binascii.hexlify(sctpchunk.state_cookie) == (
+                'bb7b0f9c0000fa00000a0000bb7b0f9c000000000fe4000001000000040000000101010a0000000000'
+                '0000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+                '0000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+                '0000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+                '000000000000000000000000000000000000000000000000000000000000000000000000ce55ce8f00'
+                '00fa00000a0000ce55ce8f0f1c00000100000004000000010101140000000000000000000000000000'
+                '0000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+                '0000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+                '0000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+                '0000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+                '000000000000000000004f39d8584f3ac2b8'
+                )
+            )
         elif isinstance(sctpchunk, ChunkSack):
             assert (sctp.sport == 3868)
             assert (sctp.dport == 4068)
@@ -696,14 +748,27 @@ def test_sctp_unpack():
             assert (sctpchunk.len == 16)
             assert (sctpchunk.cause_code == 1)
             assert (sctpchunk.cause_len == 8)
-            assert (sctpchunk.invalid_id == 153)
+            assert ((struct.unpack('H', sctpchunk.invalid_id)[0] >> 8) == 153)
         elif isinstance(sctpchunk, ChunkCookieEcho):
             assert (sctp.sport == 4068)
             assert (sctp.dport == 3868)
             assert (sctpchunk.type == 10)
             assert (sctpchunk.flags == 0)
             assert (sctpchunk.len == 432)
-            assert (binascii.hexlify(sctpchunk.cookie) == 'bb7b0f9c0000fa00000a0000bb7b0f9c000000000fe4000001000000040000000101010a0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000ce55ce8f0000fa00000a0000ce55ce8f0f1c000001000000040000000101011400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004f39d8584f3ac2b8')
+            assert (binascii.hexlify(sctpchunk.cookie) == (
+                'bb7b0f9c0000fa00000a0000bb7b0f9c000000000fe4000001000000040000000101010a0000000000'
+                '0000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+                '0000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+                '0000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+                '000000000000000000000000000000000000000000000000000000000000000000000000ce55ce8f00'
+                '00fa00000a0000ce55ce8f0f1c00000100000004000000010101140000000000000000000000000000'
+                '0000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+                '0000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+                '0000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+                '0000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+                '000000000000000000004f39d8584f3ac2b8'
+                )
+            )
         elif isinstance(sctpchunk, ChunkCookieAck):
             assert (sctp.sport == 3868)
             assert (sctp.dport == 4068)
@@ -731,6 +796,7 @@ def test_sctp_unpack():
             assert (sctpchunk.flags == 0)
             assert (sctpchunk.len == 4)
         print 'Successfully done unpacking %s' % k
+
 
 if __name__ == '__main__':
     test_sctp_pack()
