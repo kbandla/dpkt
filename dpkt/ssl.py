@@ -154,6 +154,25 @@ def parse_variable_array(buf, lenbytes):
     return data, size + lenbytes
 
 
+def parse_extensions(buf):
+    """
+    Parse TLS extensions in passed buf. Returns a dictionary of extensions with
+    ordinal extension type as key of dictionary and extension data as corresponding value.
+    Passed buf must start with the 2-byte extensions length TLV.
+    http://www.iana.org/assignments/tls-extensiontype-values/tls-extensiontype-values.xhtml
+    """
+    extensions_length = struct.unpack('!H', buf[:2])[0]
+    extensions = {}
+
+    pointer = 2
+    while(pointer < extensions_length):
+        ext_type = struct.unpack('!H', buf[pointer:pointer+2])[0]
+        pointer += 2
+        extensions[ext_type], parsed = parse_variable_array(buf[pointer:], 2)
+        pointer += parsed
+    return extensions
+
+
 class SSL3Exception(Exception):
     pass
 
@@ -250,6 +269,8 @@ class TLSClientHello(dpkt.Packet):
         self.num_compression_methods = parsed - 1
         self.compression_methods = map(ord, compression_methods)
         # extensions
+        self.extensions_length = struct.unpack('!H', self.data[pointer:pointer+2])[0]
+        self.extensions = parse_extensions(self.data[pointer:])
 
 
 class TLSServerHello(dpkt.Packet):
