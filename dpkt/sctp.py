@@ -57,13 +57,10 @@ class SCTP(dpkt.Packet):
         ('sum', 'I', 0)
     )
 
-    def get_chunktype(self, buf):
-        dpkt.Packet.unpack(self, buf)
-        return struct.unpack('B', self.data[0:1])[0]
-
     def unpack(self, buf):
-        self.ctype = self.get_chunktype(buf)
         dpkt.Packet.unpack(self, buf)
+        if self.data:
+            self.ctype = struct.unpack('B', self.data[0:1])[0]
         l = []
         while self.data:
             chunk = CHUNK_TYPES_DICT.get(self.ctype, Chunk)(self.data)
@@ -130,30 +127,6 @@ class ChunkData(Chunk):
         ('proto_id', 'I', 0)
     )
     __hdr__ = Chunk.__hdr__ + __hdr_spec__
-
-    @property
-    def unordered_flag(self):
-        return (self.flags >> 2) & 0x1
-
-    @unordered_flag.setter
-    def unordered_flag(self, u):
-        self.flags = (flags & ~0x4) | ((u & 0x1) << 2)
-
-    @property
-    def beginning_flag(self):
-        return (self.flags >> 1) & 0x1
-
-    @beginning_flag.setter
-    def beginning_flag(self, b):
-        self.flags = (flags & ~0x2) | ((b & 0x1) << 1)
-
-    @property
-    def ending_flag(self):
-        return self.flags & 0x1
-
-    @ending_flag.setter
-    def ending_flag(self, e):
-        self.flags = (flags & ~0x1) | (e & 0x1)
 
     def unpack(self, buf):
         super(ChunkData, self).unpack(buf)
@@ -646,9 +619,6 @@ def test_sctp_unpack():
             assert (sctp.dport == 3868)
             assert (sctpchunk.type == 0)
             assert (sctpchunk.flags == 3)
-            assert (sctpchunk.unordered_flag == 0)
-            assert (sctpchunk.beginning_flag == 1)
-            assert (sctpchunk.ending_flag == 1)
             assert (sctpchunk.len == 460)
             assert (sctpchunk.tsn == 3145404316)
             assert (sctpchunk.stream_id == 0)
