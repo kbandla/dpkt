@@ -5,6 +5,7 @@
 import dpkt
 import crc32c
 import struct
+import binascii
 
 # Stream Control Transmission Protocol
 # http://tools.ietf.org/html/rfc4960
@@ -421,82 +422,48 @@ class ChunkError(Chunk):
     __hdr_spec__ = (
         ('cause_code', 'H', 0),
         ('cause_len', 'H', 0),
-        ('invalid_id', 'H', 0),
-        ('measure_stale', 'I', 0),
-        ('_out_of_resource', 'H', 0),   # Ignore this, as no values will be inserted
-        ('unresolv_addr', 'H', 0),
-        ('unrecog_chunk', 'H', 0),
-        ('_invalid_param', 'H', 0),   # Ignore this, as no values will be inserted
-        ('unrecog_param', 'H', 0),
-        ('no_data_tsn', 'I', 0),
-        ('_cookie_while_shut', 'H', 0),   # Ignore this, as no values will be inserted
-        ('new_addr_tlvs', 'H', 0),
-        ('abort_reason', 'H', 0),
-        ('additional_info', 'H', 0),
-        ('_reserverd', 'H', 0)
     )
     __hdr__ = Chunk.__hdr__ + __hdr_spec__
 
-    @property
-    def error_spec(self, data, cause):
-        if cause == INVALID_STREAM_IDENTIFIER:
-            self.invalid_id = data[:self.len - self.__hdr_len__]
-            return 0
-        elif cause == MISSING_MANDATORY_PARAMETER:
+
+    def error_spec(self, data):
+        if self.cause_code == INVALID_STREAM_IDENTIFIER:
+            self.invalid_id = struct.unpack('H', data[:self.len - self.__hdr_len__ -6])[0] >> 8
+        elif self.cause_code == MISSING_MANDATORY_PARAMETER:
             self.num_miss_param = data[:4]
             self.miss_param_types = [data[4*i:4*i+2] for i in xrange(1, self.num_miss_param + 1)]
-            return 0
-        elif cause == STALE_COOKIE_ERROR:
+        elif self.cause_code == STALE_COOKIE_ERROR:
             self.measure_stale = data[:self.len - self.__hdr_len__]
-            return 0
-        elif cause == OUT_OF_RESOURCE:
+        elif self.cause_code == OUT_OF_RESOURCE:
             # This should be None as no value would be inserted here.
             self._out_of_resource = data[:self.len - self.__hdr_len__]
-            return 0
-        elif cause == UNRESOLVABLE_ADDRESS:
+        elif self.cause_code == UNRESOLVABLE_ADDRESS:
             self.unresolv_addr = data[:self.len - self.__hdr_len__]
-            return 0
-        elif cause == UNRECOGNIZED_CHUNK_TYPE:
+        elif self.cause_code == UNRECOGNIZED_CHUNK_TYPE:
             self.unrecog_chunk = data[:self.len - self.__hdr_len__]
-            return 0
-        elif cause == INVALID_MANDATORY_PARAMETER:
+        elif self.cause_code == INVALID_MANDATORY_PARAMETER:
             # This should be None as no value would be inserted here.
             self._invalid_param = data[:self.len - self.__hdr_len__]
-            return 0
-        elif cause == UNRECOGNIZED_PARAMETER:
+        elif self.cause_code == UNRECOGNIZED_PARAMETER:
             self.unrecog_param = data[:self.len - self.__hdr_len__]
-            return 0
-        elif cause == NO_USER_DATA:
+        elif self.cause_code == NO_USER_DATA:
             self.no_data_tsn = data[:self.len - self.__hdr_len__]
-            return 0
-        elif cause == COOKIE_RECEIVED_WHILE_SHUTTING_DOWN:
+        elif self.cause_code == COOKIE_RECEIVED_WHILE_SHUTTING_DOWN:
             # This should be None as no value would be inserted here.
             self._cookie_while_shut = data[:self.len - self.__hdr_len__]
-            return 0
-        elif cause == RESTART_OF_AN_ASSOCIATION_WITH_NEW_ADDRESSES:
+        elif self.cause_code == RESTART_OF_AN_ASSOCIATION_WITH_NEW_ADDRESSES:
             self.new_addr_tlvs = data[:self.len - self.__hdr_len__]
-            return 0
-        elif cause == USER_INITIATED_ABORT:
+        elif self.cause_code == USER_INITIATED_ABORT:
             self.abort_reason = data[:self.len - self.__hdr_len__]
-            return 0
-        elif cause == PROTOCOL_VIOLATION:
+        elif self.cause_code == PROTOCOL_VIOLATION:
             self.additional_info = data[:self.len - self.__hdr_len__]
-            return 0
         else:
-            return 1
-
-    @error_spec.setter
-    def error_spec(self, data, cause):
-        pass
+            raise NotImplementedError
 
     def unpack(self, buf):
         super(ChunkError, self).unpack(buf)
-        self.data = self.error_spec = self.data[:self.len - self.__hdr_len__]
-        if error_spec(self.data, self.cause_code):
-            pass
-        else:
-            # Error code is unknown or possibly failed to decode error code
-            raise NotImplementedError
+        self.data = self.data[:self.len - self.__hdr_len__]
+        self.error_spec(self.data)
 
 
 class ChunkCookieEcho(Chunk):
@@ -618,8 +585,11 @@ test_bytearr = {
     'ABORT': '0909\xbee\xa7\xef}\xc1\xb2\xfc\x06\x00\x00\x04',
     'COOKIE_ECHO': '\x0f\xe4\x0f\x1c\xceU\xce\x8f\x99j\x08\xa6\n\x00\x01\xb0\xbb{\x0f\x9c\x00\x00\xfa\x00\x00\n\x00\x00\xbb{\x0f\x9c\x00\x00\x00\x00\x0f\xe4\x00\x00\x01\x00\x00\x00\x04\x00\x00\x00\x01\x01\x01\n\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xceU\xce\x8f\x00\x00\xfa\x00\x00\n\x00\x00\xceU\xce\x8f\x0f\x1c\x00\x00\x01\x00\x00\x00\x04\x00\x00\x00\x01\x01\x01\x14\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00O9\xd8XO:\xc2\xb8',
     'COOKIE_ACK': '\x0f\x1c\x0f\xe4\xbb{\x0f\x9c!B\xfaa\x0b\x00\x00\x04',
+    'ERROR_01': '0909\xde\xad\xbe\xef\xde\xad\xbe\xef\t\x00\x00\x10\x00\x01\x00\x08\x00\x99\x00\x00',
     'SHUTDOWN': '\x0f\x1c\x0f\xe4\xbb{\x0f\x9ca\x1d\xedW\x07\x00\x00\x08\xbb{\x0f\x9d',
     'SHUTDOWN_ACK': '\x0f\xe4\x0f\x1c\xceU\xce\x8f<\xd9\xc2\x82\x08\x00\x00\x04',
+    'ECNE': '0909\xde\xad\xbe\xef\xde\xad\xbe\xef\x0c\x00\x00\x08\xde\xad\xbe\xef',
+    'CWR': '0909\xde\xad\xbe\xef\xde\xad\xbe\xef\r\x00\x00\x08\xde\xad\xbe\xef',
     'SHUTDOWN_COMPLETE': '\x0f\x1c\x0f\xe4\xbb{\x0f\x9cj\xd9\x9d\xc7\x0e\x00\x00\x04',
 }
 
@@ -718,6 +688,15 @@ def test_sctp_unpack():
             assert (sctpchunk.type == 8)
             assert (sctpchunk.flags == 0)
             assert (sctpchunk.len == 4)
+        elif isinstance(sctpchunk, ChunkError):
+            assert (sctp.sport == 12345)
+            assert (sctp.dport == 12345)
+            assert (sctpchunk.type == 9)
+            assert (sctpchunk.flags == 0)
+            assert (sctpchunk.len == 16)
+            assert (sctpchunk.cause_code == 1)
+            assert (sctpchunk.cause_len == 8)
+            assert (sctpchunk.invalid_id == 153)
         elif isinstance(sctpchunk, ChunkCookieEcho):
             assert (sctp.sport == 4068)
             assert (sctp.dport == 3868)
@@ -725,13 +704,26 @@ def test_sctp_unpack():
             assert (sctpchunk.flags == 0)
             assert (sctpchunk.len == 432)
             assert (binascii.hexlify(sctpchunk.cookie) == 'bb7b0f9c0000fa00000a0000bb7b0f9c000000000fe4000001000000040000000101010a0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000ce55ce8f0000fa00000a0000ce55ce8f0f1c000001000000040000000101011400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004f39d8584f3ac2b8')
-        elif isinstance(sctpchunk, ChunkCookieEcho):
+        elif isinstance(sctpchunk, ChunkCookieAck):
             assert (sctp.sport == 3868)
             assert (sctp.dport == 4068)
             assert (sctpchunk.type == 11)
             assert (sctpchunk.flags == 0)
-            assert (sctpchunk.len == 432)
-            assert (binascii.hexlify(sctpchunk.cookie) == 'bb7b0f9c0000fa00000a0000bb7b0f9c000000000fe4000001000000040000000101010a0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000ce55ce8f0000fa00000a0000ce55ce8f0f1c000001000000040000000101011400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004f39d8584f3ac2b8')
+            assert (sctpchunk.len == 4)
+        elif isinstance(sctpchunk, ChunkECNE):
+            assert (sctp.sport == 12345)
+            assert (sctp.dport == 12345)
+            assert (sctpchunk.type == 12)
+            assert (sctpchunk.flags == 0)
+            assert (sctpchunk.len == 8)
+            assert (sctpchunk.lowest_tsn == 3735928559)
+        elif isinstance(sctpchunk, ChunkCWR):
+            assert (sctp.sport == 12345)
+            assert (sctp.dport == 12345)
+            assert (sctpchunk.type == 13)
+            assert (sctpchunk.flags == 0)
+            assert (sctpchunk.len == 8)
+            assert (sctpchunk.lowest_tsn == 3735928559)
         elif isinstance(sctpchunk, ChunkShutdownComplete):
             assert (sctp.sport == 3868)
             assert (sctp.dport == 4068)
