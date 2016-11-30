@@ -99,10 +99,6 @@ class Chunk(dpkt.Packet):
         ('len', 'H', 0)
     )
 
-    def unpack(self, buf):
-        dpkt.Packet.unpack(self, buf)
-        self.data = self.data[:self.len - self.__hdr_len__]
-
 
 class ChunkData(Chunk):
     """SCTP DATA Chunk.
@@ -127,10 +123,6 @@ class ChunkData(Chunk):
         ('proto_id', 'I', 0)
     )
     __hdr__ = Chunk.__hdr__ + __hdr_spec__
-
-    def unpack(self, buf):
-        super(ChunkData, self).unpack(buf)
-        self.data = self.data[:self.len - self.__hdr_len__]
 
 
 class ChunkInit(Chunk):
@@ -159,9 +151,9 @@ class ChunkInit(Chunk):
     )
     __hdr__ = Chunk.__hdr__ + __hdr_spec__
 
-    def unpack(self, buf):
-        super(ChunkInit, self).unpack(buf)
-        self.data = self.optionals = self.data[:self.len - self.__hdr_len__]
+    @property
+    def optionals(self):
+        return self.data
 
 
 class ChunkInitAck(Chunk):
@@ -193,10 +185,9 @@ class ChunkInitAck(Chunk):
     )
     __hdr__ = Chunk.__hdr__ + __hdr_spec__
 
-    def unpack(self, buf):
-        super(ChunkInitAck, self).unpack(buf)
-        self.state_cookie = self.data[:self.param_len]
-        self.data = self.optionals = self.data[self.param_len:self.len]
+    @property
+    def state_cookie(self):
+        return self.data[:self.param_len]
 
 
 class ChunkSack(Chunk):
@@ -223,10 +214,6 @@ class ChunkSack(Chunk):
     )
     __hdr__ = Chunk.__hdr__ + __hdr_spec__
 
-    def unpack(self, buf):
-        super(ChunkSack, self).unpack(buf)
-        self.data = self.data[:self.len - self.__hdr_len__]
-
 
 class ChunkHeartbeat(Chunk):
     """SCTP HEARTBEAT Chunk.
@@ -250,9 +237,9 @@ class ChunkHeartbeat(Chunk):
     )
     __hdr__ = Chunk.__hdr__ + __hdr_spec__
 
-    def unpack(self, buf):
-        super(ChunkHeartbeat, self).unpack(buf)
-        self.data = self.hb_info = self.data[:self.len - self.__hdr_len__]
+    @property
+    def hb_info(self):
+        return self.data
 
 
 class ChunkHeartbeatAck(Chunk):
@@ -277,9 +264,9 @@ class ChunkHeartbeatAck(Chunk):
     )
     __hdr__ = Chunk.__hdr__ + __hdr_spec__
 
-    def unpack(self, buf):
-        super(ChunkHeartbeatAck, self).unpack(buf)
-        self.data = self.hb_info = self.data[:self.len - self.__hdr_len__]
+    @property
+    def hb_info(self):
+        return self.data
 
 
 class ChunkAbort(Chunk):
@@ -295,10 +282,6 @@ class ChunkAbort(Chunk):
         __hdr_spec__: Type-specific Chunk Header fields of SCTP.
     """
     __hdr__ = Chunk.__hdr__
-
-    def unpack(self, buf):
-        super(ChunkAbort, self).unpack(buf)
-        self.data = self.data[:self.len - self.__hdr_len__]
 
 
 class ChunkShutdown(Chunk):
@@ -319,10 +302,6 @@ class ChunkShutdown(Chunk):
     )
     __hdr__ = Chunk.__hdr__ + __hdr_spec__
 
-    def unpack(self, buf):
-        super(ChunkShutdown, self).unpack(buf)
-        self.data = self.data[:self.len - self.__hdr_len__]
-
 
 class ChunkShutdownAck(Chunk):
     """SCTP SHUTDOWN_ACK Chunk.
@@ -337,10 +316,6 @@ class ChunkShutdownAck(Chunk):
         __hdr_spec__: Type-specific Chunk Header fields of SCTP.
     """
     __hdr__ = Chunk.__hdr__
-
-    def unpack(self, buf):
-        super(ChunkShutdownAck, self).unpack(buf)
-        self.data = self.data[:self.len - self.__hdr_len__]
 
 
 class ChunkError(Chunk):
@@ -378,45 +353,77 @@ class ChunkError(Chunk):
     )
     __hdr__ = Chunk.__hdr__ + __hdr_spec__
 
-
-    def error_spec(self, data):
+    @property
+    def invalid_id(self):
         if self.cause_code == CHUNK_ERR_INVALID_ID:
-            self.invalid_id = data[:self.len - self.__hdr_len__ -6]
-        elif self.cause_code == CHUNK_ERR_MISS_MAND_PARAM:
-            self.num_miss_param = data[:4]
-            self.miss_param_types = [data[4*i:4*i+2] for i in xrange(1, self.num_miss_param + 1)]
-        elif self.cause_code == CHUNK_ERR_STALE_COOKIE:
-            self.measure_stale = data[:self.len - self.__hdr_len__]
-        elif self.cause_code == CHUNK_ERR_OUT_OF_RESOURCE:
-            # This should be None as no value would be inserted here.
-            self._out_of_resource = data[:self.len - self.__hdr_len__]
-        elif self.cause_code == CHUNK_ERR_UNRESOLV_ADDR:
-            self.unresolv_addr = data[:self.len - self.__hdr_len__]
-        elif self.cause_code == CHUNK_ERR_UNRECOG_TYPE:
-            self.unrecog_chunk = data[:self.len - self.__hdr_len__]
-        elif self.cause_code == CHUNK_ERR_INVALID_MAND_PARAM:
-            # This should be None as no value would be inserted here.
-            self._invalid_param = data[:self.len - self.__hdr_len__]
-        elif self.cause_code == CHUNK_ERR_UNRECOG_PARAM:
-            self.unrecog_param = data[:self.len - self.__hdr_len__]
-        elif self.cause_code == CHUNK_ERR_NO_USER_DATA:
-            self.no_data_tsn = data[:self.len - self.__hdr_len__]
-        elif self.cause_code == CHUNK_ERR_COOKIE_WHILE_SHUT:
-            # This should be None as no value would be inserted here.
-            self._cookie_while_shut = data[:self.len - self.__hdr_len__]
-        elif self.cause_code == CHUNK_ERR_RESTART_ASSOC:
-            self.new_addr_tlvs = data[:self.len - self.__hdr_len__]
-        elif self.cause_code == CHUNK_ERR_USER_INIT_ABORT:
-            self.abort_reason = data[:self.len - self.__hdr_len__]
-        elif self.cause_code == CHUNK_ERR_PROTO_VIOLATION:
-            self.additional_info = data[:self.len - self.__hdr_len__]
-        else:
-            raise NotImplementedError
+            return self.data[:self.len - self.__hdr_len__ -6]
 
-    def unpack(self, buf):
-        super(ChunkError, self).unpack(buf)
-        self.data = self.data[:self.len - self.__hdr_len__]
-        self.error_spec(self.data)
+    @property
+    def num_miss_param(self):
+        if self.cause_code == CHUNK_ERR_MISS_MAND_PARAM:
+            return self.data[:4]
+
+    @property
+    def miss_param_types(self):
+        if self.cause_code == CHUNK_ERR_MISS_MAND_PARAM:
+            self.miss_param_types = [self.data[4*i:4*i+2] for i in xrange(1, self.num_miss_param + 1)]
+
+    @property
+    def measure_stale(self):
+        if self.cause_code == CHUNK_ERR_STALE_COOKIE:
+            return self.data[:self.len - self.__hdr_len__]
+
+    @property
+    def _out_of_resource(self):
+        # This should be None as no value would be inserted here.
+        if self.cause_code == CHUNK_ERR_OUT_OF_RESOURCE:
+            return self.data[:self.len - self.__hdr_len__]
+
+    @property
+    def unresolv_addr(self):
+        if self.cause_code == CHUNK_ERR_UNRESOLV_ADDR:
+            return self.data[:self.len - self.__hdr_len__]
+    @property
+    def unrecog_chunk(self):
+        if self.cause_code == CHUNK_ERR_UNRECOG_TYPE:
+            return self.data[:self.len - self.__hdr_len__]
+
+    @property
+    def _invalid_param(self):
+        # This should be None as no value would be inserted here.
+        if self.cause_code == CHUNK_ERR_INVALID_MAND_PARAM:
+            return self.data[:self.len - self.__hdr_len__]
+
+    @property
+    def _invalid_param(self):
+        if self.cause_code == CHUNK_ERR_UNRECOG_PARAM:
+            return self.data[:self.len - self.__hdr_len__]
+
+    @property
+    def no_data_tsn(self):
+        if self.cause_code == CHUNK_ERR_NO_USER_DATA:
+            return self.data[:self.len - self.__hdr_len__]
+
+    @property
+    def _cookie_while_shut(self):
+        # This should be None as no value would be inserted here.
+        if self.cause_code == CHUNK_ERR_COOKIE_WHILE_SHUT:
+            return self.data[:self.len - self.__hdr_len__]
+
+    @property
+    def new_addr_tlvs(self):
+        if self.cause_code == CHUNK_ERR_RESTART_ASSOC:
+            return self.data[:self.len - self.__hdr_len__]
+
+    @property
+    def abort_reason(self):
+        if self.cause_code == CHUNK_ERR_USER_INIT_ABORT:
+            return self.data[:self.len - self.__hdr_len__]
+
+    @property
+    def additional_info(self):
+        if self.cause_code == CHUNK_ERR_PROTO_VIOLATION:
+            return self.data[:self.len - self.__hdr_len__]
 
 
 class ChunkCookieEcho(Chunk):
@@ -434,9 +441,9 @@ class ChunkCookieEcho(Chunk):
     """
     __hdr__ = Chunk.__hdr__
 
-    def unpack(self, buf):
-        super(ChunkCookieEcho, self).unpack(buf)
-        self.data = self.cookie = self.data[:self.len - self.__hdr_len__]
+    @property
+    def cookie(self):
+        return self.data
 
 
 class ChunkCookieAck(Chunk):
@@ -452,10 +459,6 @@ class ChunkCookieAck(Chunk):
         __hdr_spec__: Type-specific Chunk Header fields of SCTP.
     """
     __hdr__ = Chunk.__hdr__
-
-    def unpack(self, buf):
-        super(ChunkCookieAck, self).unpack(buf)
-        self.data = self.data[:self.len - self.__hdr_len__]
 
 
 class ChunkECNE(Chunk):
@@ -476,10 +479,6 @@ class ChunkECNE(Chunk):
     )
     __hdr__ = Chunk.__hdr__ + __hdr_spec__
 
-    def unpack(self, buf):
-        super(ChunkECNE, self).unpack(buf)
-        self.data = self.data[:self.len - self.__hdr_len__]
-
 
 class ChunkCWR(Chunk):
     """SCTP CWR(Congestion Window Reduced) Chunk.
@@ -499,10 +498,6 @@ class ChunkCWR(Chunk):
     )
     __hdr__ = Chunk.__hdr__ + __hdr_spec__
 
-    def unpack(self, buf):
-        super(ChunkCWR, self).unpack(buf)
-        self.data = self.data[:self.len - self.__hdr_len__]
-
 
 class ChunkShutdownComplete(Chunk):
     """SCTP SHUTDOWN_COMPLETE Chunk.
@@ -517,10 +512,6 @@ class ChunkShutdownComplete(Chunk):
         __hdr_spec__: Type-specific Chunk Header fields of SCTP.
     """
     __hdr__ = Chunk.__hdr__
-
-    def unpack(self, buf):
-        super(ChunkShutdownComplete, self).unpack(buf)
-        self.data = self.data[:self.len - self.__hdr_len__]
 
 
 # Dictionary to call appropriate subclass from superclass.
