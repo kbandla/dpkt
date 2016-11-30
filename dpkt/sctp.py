@@ -366,46 +366,46 @@ class ChunkError(Chunk):
     @property
     def miss_param_types(self):
         if self.cause_code == CHUNK_ERR_MISS_MAND_PARAM:
-            self.miss_param_types = [self.data[4*i:4*i+2] for i in xrange(1, self.num_miss_param + 1)]
+            return [self.data[4*i:4*i+2] for i in xrange(1, self.num_miss_param + 1)]
 
     @property
     def measure_stale(self):
         if self.cause_code == CHUNK_ERR_STALE_COOKIE:
-            return self.data[:self.len - self.__hdr_len__]
+            return self.data
 
     @property
     def unresolv_addr(self):
         if self.cause_code == CHUNK_ERR_UNRESOLV_ADDR:
-            return self.data[:self.len - self.__hdr_len__]
+            return self.data
     @property
     def unrecog_chunk(self):
         if self.cause_code == CHUNK_ERR_UNRECOG_TYPE:
-            return self.data[:self.len - self.__hdr_len__]
+            return self.data
 
     @property
     def unrecog_param(self):
         if self.cause_code == CHUNK_ERR_UNRECOG_PARAM:
-            return self.data[:self.len - self.__hdr_len__]
+            return self.data
 
     @property
     def no_data_tsn(self):
         if self.cause_code == CHUNK_ERR_NO_USER_DATA:
-            return self.data[:self.len - self.__hdr_len__]
+            return self.data
 
     @property
     def new_addr_tlvs(self):
         if self.cause_code == CHUNK_ERR_RESTART_ASSOC:
-            return self.data[:self.len - self.__hdr_len__]
+            return self.data
 
     @property
     def abort_reason(self):
         if self.cause_code == CHUNK_ERR_USER_INIT_ABORT:
-            return self.data[:self.len - self.__hdr_len__]
+            return self.data
 
     @property
     def additional_info(self):
         if self.cause_code == CHUNK_ERR_PROTO_VIOLATION:
-            return self.data[:self.len - self.__hdr_len__]
+            return self.data
 
 
 class ChunkCookieEcho(Chunk):
