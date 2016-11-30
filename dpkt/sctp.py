@@ -374,12 +374,6 @@ class ChunkError(Chunk):
             return self.data[:self.len - self.__hdr_len__]
 
     @property
-    def _out_of_resource(self):
-        # This should be None as no value would be inserted here.
-        if self.cause_code == CHUNK_ERR_OUT_OF_RESOURCE:
-            return self.data[:self.len - self.__hdr_len__]
-
-    @property
     def unresolv_addr(self):
         if self.cause_code == CHUNK_ERR_UNRESOLV_ADDR:
             return self.data[:self.len - self.__hdr_len__]
@@ -389,25 +383,13 @@ class ChunkError(Chunk):
             return self.data[:self.len - self.__hdr_len__]
 
     @property
-    def _invalid_param(self):
-        # This should be None as no value would be inserted here.
-        if self.cause_code == CHUNK_ERR_INVALID_MAND_PARAM:
-            return self.data[:self.len - self.__hdr_len__]
-
-    @property
-    def _invalid_param(self):
+    def unrecog_param(self):
         if self.cause_code == CHUNK_ERR_UNRECOG_PARAM:
             return self.data[:self.len - self.__hdr_len__]
 
     @property
     def no_data_tsn(self):
         if self.cause_code == CHUNK_ERR_NO_USER_DATA:
-            return self.data[:self.len - self.__hdr_len__]
-
-    @property
-    def _cookie_while_shut(self):
-        # This should be None as no value would be inserted here.
-        if self.cause_code == CHUNK_ERR_COOKIE_WHILE_SHUT:
             return self.data[:self.len - self.__hdr_len__]
 
     @property
