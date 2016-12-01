@@ -169,7 +169,7 @@ def parse_extensions(buf):
         ext_type = struct.unpack('!H', buf[pointer:pointer+2])[0]
         pointer += 2
         ext_data, parsed = parse_variable_array(buf[pointer:], 2)
-        extensions.append([ext_type, ext_data])
+        extensions.append((ext_type, ext_data))
         pointer += parsed
     return extensions
 
@@ -269,10 +269,9 @@ class TLSClientHello(dpkt.Packet):
         pointer += parsed
         self.num_compression_methods = parsed - 1
         self.compression_methods = map(ord, compression_methods)
-        # There should always be atleast 1 extension
-        if struct.unpack('!H', self.data[pointer:pointer+2])[0] < 6:
-            raise SSL3Exception('TLSClientHello has 0 extensions')
-        self.extensions = parse_extensions(self.data[pointer:])
+        # Parse extensions if present
+        if len(self.data[pointer:]) >= 6:
+            self.extensions = parse_extensions(self.data[pointer:])
 
 
 class TLSServerHello(dpkt.Packet):
