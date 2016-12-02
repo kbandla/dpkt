@@ -170,9 +170,9 @@ class DataFrame(PaddedFrame):
     Frame of type DATA.
     """
 
-    def unpack(self, buf):
-        PaddedFrame.unpack(self, buf)
-        self.payload = self.unpadded_data
+    @property
+    def payload(self):
+        return self.unpadded_data
 
 class HeadersFrame(PaddedFrame):
 
