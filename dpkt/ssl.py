@@ -377,7 +377,7 @@ def tls_multi_factory(buf):
     """
     i, n = 0, len(buf)
     msgs = []
-    while i < n:
+    while i + 5 <= n:
         v = buf[i + 1:i + 3]
         if v in SSL3_VERSION_BYTES:
             try:
@@ -576,4 +576,21 @@ class TestTLSMultiFactory(object):
 
     def test_second_msg_data(self):
         assert (self.msgs[1].data == _hexdecode('BB' * 16))
+
+    def test_incomplete(self):
+        msgs, n = tls_multi_factory(_hexdecode('17'))
+        assert (len(msgs) == 0)
+        assert (n == 0)
+        msgs, n = tls_multi_factory(_hexdecode('1703'))
+        assert (len(msgs) == 0)
+        assert (n == 0)
+        msgs, n = tls_multi_factory(_hexdecode('170301'))
+        assert (len(msgs) == 0)
+        assert (n == 0)
+        msgs, n = tls_multi_factory(_hexdecode('17030100'))
+        assert (len(msgs) == 0)
+        assert (n == 0)
+        msgs, n = tls_multi_factory(_hexdecode('1703010000'))
+        assert (len(msgs) == 1)
+        assert (n == 5)
 
