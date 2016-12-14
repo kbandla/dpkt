@@ -290,7 +290,9 @@ class TLSServerHello(dpkt.Packet):
             # single compression method
             self.compression = struct.unpack('!B', self.data[pointer:pointer + 1])[0]
             pointer += 1
-            # ignore extensions for now
+            # Parse extensions if present
+            if len(self.data[pointer:]) >= 6:
+                self.extensions = parse_extensions(self.data[pointer:])
         except struct.error:
             # probably data too short
             raise dpkt.NeedData
