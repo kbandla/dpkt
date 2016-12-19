@@ -64,8 +64,8 @@ crc32c_table = (
 
 
 def add(crc, buf):
-    buf = array.array('B', buf)
-    for b in buf:
+    byte_buf = array.array('B', buf)
+    for b in byte_buf:
         crc = (crc >> 8) ^ crc32c_table[(crc ^ b) & 0xff]
     return crc
 
@@ -95,10 +95,10 @@ def test_crc32c():
     # http://reveng.sourceforge.net/crc-catalogue/17plus.htm#crc.cat.crc-32c
     # SCTP uses tranport-level mirrored byte ordering, so we bswap32
 
-    assert cksum('') == 0
-    assert cksum('123456789') == bswap32(0xe3069283)
+    assert cksum(b'') == 0
+    assert cksum(b'123456789') == bswap32(0xe3069283)
 
 
 if __name__ == '__main__':
     test_crc32c()
-    print 'Tests Successful...'
+    print('Tests Successful...')
