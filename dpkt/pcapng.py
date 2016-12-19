@@ -362,9 +362,9 @@ class Writer(object):
             self._validate_block('pkt', pkt, EnhancedPacketBlock)
 
             if ts is not None:  # ts as an argument gets precedence
-                ts = int(ts * 1e6)
+                ts = int(round(ts * 1e6))
             elif pkt.ts_high == pkt.ts_low == 0:
-                ts = int(time() * 1e6)
+                ts = int(round(time() * 1e6))
 
             if ts is not None:
                 pkt.ts_high = ts >> 32
@@ -376,7 +376,7 @@ class Writer(object):
         # pkt is a buffer - wrap it into an EPB
         if ts is None:
             ts = time()
-        ts = int(ts * 1e6)  # to int microseconds
+        ts = int(round(ts * 1e6))  # to int microseconds
 
         s = bytes(pkt)
         n = len(s)

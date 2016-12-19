@@ -4,7 +4,7 @@ from __future__ import absolute_import
 
 import array
 
-# CRC-32C Checksum
+# CRC-32C Checksum for SCTP
 # http://tools.ietf.org/html/rfc3309
 
 crc32c_table = (
@@ -82,4 +82,23 @@ def done(crc):
 
 def cksum(buf):
     """Return computed CRC-32c checksum."""
-    return done(add(0xffffffff, buf))
+    return done(add(0xffffffffL, buf))
+
+
+def test_crc32c():
+
+    def bswap32(x):
+        from struct import pack, unpack
+        return unpack('<I', pack('>I', x))[0]
+
+    # reference test value from CRC catalogue
+    # http://reveng.sourceforge.net/crc-catalogue/17plus.htm#crc.cat.crc-32c
+    # SCTP uses tranport-level mirrored byte ordering, so we bswap32
+
+    assert cksum('') == 0
+    assert cksum('123456789') == bswap32(0xe3069283)
+
+
+if __name__ == '__main__':
+    test_crc32c()
+    print 'Tests Successful...'

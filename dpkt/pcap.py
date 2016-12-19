@@ -211,13 +211,15 @@ class Writer(object):
             ts = time.time()
         s = bytes(pkt)
         n = len(s)
+        sec = int(ts)
+        usec = int(round(ts % 1 * 10 ** self._precision))
         if sys.byteorder == 'little':
-            ph = LEPktHdr(tv_sec=int(ts),
-                          tv_usec=int(round(ts % 1, self._precision) * 10 ** self._precision),
+            ph = LEPktHdr(tv_sec=sec,
+                          tv_usec=usec,
                           caplen=n, len=n)
         else:
-            ph = PktHdr(tv_sec=int(ts),
-                        tv_usec=int(round(ts % 1, self._precision) * 10 ** self._precision),
+            ph = PktHdr(tv_sec=sec,
+                        tv_usec=usec,
                         caplen=n, len=n)
         self.__f.write(str(ph))
         self.__f.write(s)
