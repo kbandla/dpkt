@@ -82,7 +82,7 @@ def done(crc):
 
 def cksum(buf):
     """Return computed CRC-32c checksum."""
-    return done(add(0xffffffffL, buf))
+    return done(add(0xffffffff, buf))
 
 
 def test_crc32c():
