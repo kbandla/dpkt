@@ -178,6 +178,24 @@ class SSL3Exception(Exception):
     pass
 
 
+class TLS(dpkt.Packet):
+    __hdr__ = tuple()
+
+    def __init__(self, *args, **kwargs):
+        self.records = []
+        dpkt.Packet.__init__(self, *args, **kwargs)
+        self.length = len(self.data)
+
+
+    def unpack(self, buf):
+        dpkt.Packet.unpack(self, buf)
+        pointer = 0
+        while len(self.data[pointer:]) > 0:
+            end = pointer + 5 + struct.unpack("!H", buf[pointer+3:pointer+5])[0]
+            self.records.append(TLSRecord(buf[pointer:end]))
+            pointer = end
+
+
 class TLSRecord(dpkt.Packet):
 
     """
@@ -298,11 +316,27 @@ class TLSServerHello(dpkt.Packet):
             raise dpkt.NeedData
 
 
+class TLSCertificate(dpkt.Packet):
+    __hdr__ = tuple()
+
+    def unpack(self, buf):
+       try:
+           dpkt.Packet.unpack(self, buf)
+           all_certs, all_certs_len = parse_variable_array(self.data, 3)
+           self.certificates = []
+           pointer = 3
+           while pointer < all_certs_len:
+               cert, parsed = parse_variable_array(self.data[pointer:], 3)
+               self.certificates.append((cert))
+               pointer += parsed
+       except struct.error:
+            raise dpkt.NeedData
+
+
 class TLSUnknownHandshake(dpkt.Packet):
     __hdr__ = tuple()
 
 
-TLSCertificate = TLSUnknownHandshake
 TLSServerKeyExchange = TLSUnknownHandshake
 TLSCertificateRequest = TLSUnknownHandshake
 TLSServerHelloDone = TLSUnknownHandshake
