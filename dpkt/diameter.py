@@ -6,29 +6,22 @@ import struct
 import dpkt
 from decorators import deprecated
 
-# Diameter Base Protocol - RFC 3588
-# http://tools.ietf.org/html/rfc3588
-
-# Request/Answer Command Codes
-ABORT_SESSION = 274
-ACCOUTING = 271
-CAPABILITIES_EXCHANGE = 257
-DEVICE_WATCHDOG = 280
-DISCONNECT_PEER = 282
-RE_AUTH = 258
-SESSION_TERMINATION = 275
+# Diameter Base Protocol - RFC 6733
+# http://tools.ietf.org/html/rfc6733
 
 
 class Diameter(dpkt.Packet):
-    """Diameter.
-
-    TODO: Longer class information....
+    """Diameter Base Protocol Header.
+    This class is to parse diameter header and split AVPs above.
 
     Attributes:
         __hdr__: Header fields of Diameter.
-        TODO.
+        cmd_codes: Basic diameter command codes defined in rcf6733.
+                   Other commands should be implemented by overridding
+                   this attribute from another class specific to
+                   each application.
     """
-    
+
     __hdr__ = (
         ('v', 'B', 1),
         ('len', '3s', 0),
@@ -38,6 +31,16 @@ class Diameter(dpkt.Packet):
         ('hop_id', 'I', 0),
         ('end_id', 'I', 0)
     )
+
+    cmd_codes = {
+        'ABORT_SESSION': 274,
+        'ACCOUTING': 271,
+        'CAPABILITIES_EXCHANGE': 257,
+        'DEVICE_WATCHDOG': 280,
+        'DISCONNECT_PEER': 282,
+        'RE_AUTH': 258,
+        'SESSION_TERMINATION': 275
+    }
 
     @property
     def request_flag(self):
@@ -112,8 +115,17 @@ class Diameter(dpkt.Packet):
         self.data = self.avps = l
 
     def pack_hdr(self):
+        l = []
+        for d in self.data:
+            padlen = 0 if len(d) % 4 == 0 else 4 - (len(d) % 4)
+            padding = struct.pack(str(padlen) + 's', '')
+            l.append(str(d) + padding)
+        self.data = ''.join(l)
+
+        self.len = self.__hdr_len__ + len(str(self.data))
         self.len = chr((self.len >> 16) & 0xff) + chr((self.len >> 8) & 0xff) + chr(self.len & 0xff)
         self.cmd = chr((self.cmd >> 16) & 0xff) + chr((self.cmd >> 8) & 0xff) + chr(self.cmd & 0xff)
+
         return dpkt.Packet.pack_hdr(self)
 
     def __len__(self):
@@ -124,11 +136,73 @@ class Diameter(dpkt.Packet):
 
 
 class AVP(dpkt.Packet):
+    """Basic Diameter AVPs defined in rfc6733.
+
+    Attributes:
+        __hdr__: Header fields of Basic Diameter AVPs.
+        avp_codes: Basic AVP Codes defined in rfc6733.
+                   Other AVPs should be implemented by overridding
+                   this attribute from another class specific to
+                   each application.
+    """
+
     __hdr__ = (
         ('code', 'I', 0),
         ('flags', 'B', 0),
         ('len', '3s', 0),
     )
+
+    avp_codes = {
+        'ACCT_INTERIM_INTERVAL': 85,
+        'ACCT_REALTIME_REQUIRED': 483,
+        'ACCT_MULTISESSION_ID': 50,
+        'ACCT_RECORD_NUMBER': 485,
+        'ACCT_RECORD_TYPE': 480,
+        'ACCT_SESSION_ID': 44,
+        'ACCT_SUB_SESSION_ID': 287,
+        'ACCT_APPLICATION_ID': 259,
+        'AUTH_APPLICATION_ID': 258,
+        'AUTH_REQUEST_TYPE': 274,
+        'AUTH_LIFETIME': 291,
+        'AUTH_GRACE_PERIOD': 276,
+        'AUTH_SESSION_STATE': 277,
+        'RE_AUTH_REQUEST_TYPE': 285,
+        'CLASS': 25,
+        'DESTINATION_HOST': 293,
+        'DESTINATION_REALM': 283,
+        'DISCONNECT_CAUSE': 273,
+        'ERROR_MESSAGE': 281,
+        'ERROR_REPORTING_HOST': 294,
+        'EVENT_TIMESTAMP': 55,
+        'EXPERIMENTAL_RESULT': 297,
+        'EXPERIMENTAL_RESULT_CODE': 298,
+        'FAILED_AVP': 279,
+        'FIRMWARE_REVISION': 267,
+        'HOST_IP_ADDRESS': 257,
+        'INBAND_SECURITY_ID': 299,
+        'MULTI_ROUND_TIME_OUT': 272,
+        'ORIGIN_HOST': 264,
+        'ORIGIN_REALM': 296,
+        'ORIGIN_STATE_ID': 278,
+        'PRODUCT_NAME': 269,
+        'PROXY_HOST': 280,
+        'PROXY_INFO': 284,
+        'PROXY_STATE': 33,
+        'REDIRECT_HOST': 292,
+        'REDIRECT_HOST_USAGE': 261,
+        'REDIRECT_MAX_CACHE_TIME': 262,
+        'RESULT_CODE': 268,
+        'ROUTE_RECORD': 282,
+        'SESSION_ID': 263,
+        'SESSION_TIMEOUT': 27,
+        'SESSION_BINDING': 270,
+        'SESSION_SERVER_FAILOVER': 271,
+        'SUPPORTED_VENDOR_ID': 265,
+        'TERMINATION_CAUSE': 295,
+        'USER_NAME': 1,
+        'VENDOR_ID': 266,
+        'VENDOR_SPECIFIC_APPLICATION_ID': 260,
+    }
 
     @property
     def vendor_flag(self):
@@ -184,15 +258,18 @@ class AVP(dpkt.Packet):
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
         self.len = (ord(self.len[0]) << 16) | (ord(self.len[1]) << 8) | (ord(self.len[2]))
+        padlen = 0 if self.len % 4 == 0 else 4 - (self.len % 4)
 
         if self.vendor_flag:
             self.vendor = struct.unpack('>I', self.data[:4])[0]
-            self.data = self.data[4:self.len - self.__hdr_len__]
+            self.data = self.data[4:self.len + padlen - self.__hdr_len__]
         else:
-            self.data = self.data[:self.len - self.__hdr_len__]
+            self.data = self.data[:self.len + padlen - self.__hdr_len__]
 
     def pack_hdr(self):
+        self.len = self.__hdr_len__ + sum(map(len, str(self.data)))
         self.len = chr((self.len >> 16) & 0xff) + chr((self.len >> 8) & 0xff) + chr(self.len & 0xff)
+
         data = dpkt.Packet.pack_hdr(self)
         if self.vendor_flag:
             data += struct.pack('>I', self.vendor)
@@ -205,46 +282,78 @@ class AVP(dpkt.Packet):
         return length
 
 
-__s = '\x01\x00\x00\x28\x80\x00\x01\x18\x00\x00\x00\x00\x00\x00\x41\xc8\x00\x00\x00\x0c\x00\x00\x01\x08\x40\x00\x00\x0c\x68\x30\x30\x32\x00\x00\x01\x28\x40\x00\x00\x08'
-__t = '\x01\x00\x00\x2c\x80\x00\x01\x18\x00\x00\x00\x00\x00\x00\x41\xc8\x00\x00\x00\x0c\x00\x00\x01\x08\xc0\x00\x00\x10\xde\xad\xbe\xef\x68\x30\x30\x32\x00\x00\x01\x28\x40\x00\x00\x08'
+def test_pack_unpack():
+    """Packing test.
+    Creates 'Device-Watchdog-Request' message by inserting
+    each value manually, then unpack it and check if each value
+    is set as expected.
+    """
+    # set values and pack them.
+    d = Diameter(
+        cmd=280,
+        request_flag=1,
+        proxiable_flag=0,
+        app_id=0,
+        hop_id=1234567890,
+        end_id=2345678901,
+        )
 
+    avpdict = {
+        'avp_orighost': AVP(
+            code=264,
+            mandatory_flag=1,
+            vendor_flag=0,
+            ),
+        'avp_origrealm': AVP(
+            code=296,
+            mandatory_flag=1,
+            vendor_flag=0,
+            ),
+        'avp_origstateid': AVP(
+            code=278,
+            mandatory_flag=1,
+            vendor_flag=0,
+            ),
+        }
 
-def test_pack():
-    d = Diameter(__s)
-    assert (__s == str(d))
-    d = Diameter(__t)
-    assert (__t == str(d))
+    avpdict['avp_origstateid'].data = 'cafe'
+    avpdict['avp_orighost'].data = 'some00.node00.epc.mnc999.mcc999.3gppnetwork.org'
+    avpdict['avp_origrealm'].data = 'epc.mnc999.mcc999.3gppnetwork.org'
+    d.data = [str(v) for k, v in avpdict.iteritems()]
 
+    # unpack the packed payload and check the values.
+    d2 = Diameter(str(d))
+    assert (d2.cmd == d2.cmd_codes['DEVICE_WATCHDOG'])
+    assert (d2.request_flag == 1)
+    assert (d2.proxiable_flag == 0)
+    assert (d2.app_id == 0)
+    assert (d2.hop_id == 1234567890)
+    assert (d2.end_id == 2345678901)
 
-def test_unpack():
-    d = Diameter(__s)
-    assert (d.len == 40)
-    # assert (d.cmd == DEVICE_WATCHDOG_REQUEST)
-    assert (d.request_flag == 1)
-    assert (d.error_flag == 0)
-    assert (len(d.avps) == 2)
-
-    avp = d.avps[0]
-    # assert (avp.code == ORIGIN_HOST)
-    assert (avp.mandatory_flag == 1)
-    assert (avp.vendor_flag == 0)
-    assert (avp.len == 12)
-    assert (len(avp) == 12)
-    assert (avp.data == '\x68\x30\x30\x32')
-
-    # also test the optional vendor id support
-    d = Diameter(__t)
-    assert (d.len == 44)
-    avp = d.avps[0]
-    assert (avp.vendor_flag == 1)
-    assert (avp.len == 16)
-    assert (len(avp) == 16)
-    assert (avp.vendor == 3735928559)
-    assert (avp.data == '\x68\x30\x30\x32')
+    for i in xrange(len(d2.avps)):
+        avp = d2.avps[i]
+        # the difference between avp.len and len(avp) shows
+        # the avp has padding or not.
+        if avp.code == avp.avp_codes['ORIGIN_HOST']:
+            assert (avp.mandatory_flag == 1)
+            assert (avp.vendor_flag == 0)
+            assert (avp.len == 55)
+            assert (len(avp) == 56)
+            assert (avp.data == b'some00.node00.epc.mnc999.mcc999.3gppnetwork.org\x00')
+        if avp.code == avp.avp_codes['ORIGIN_REALM']:
+            assert (avp.mandatory_flag == 1)
+            assert (avp.vendor_flag == 0)
+            assert (avp.len == 41)
+            assert (len(avp) == 44)
+            assert (avp.data == b'epc.mnc999.mcc999.3gppnetwork.org\x00\x00\x00')
+        if avp.code == avp.avp_codes['ORIGIN_STATE_ID']:
+            assert (avp.mandatory_flag == 1)
+            assert (avp.vendor_flag == 0)
+            assert (avp.len == 12)
+            assert (len(avp) == 12)
+            assert (avp.data == 'cafe')
 
 
 if __name__ == '__main__':
-    test_pack()
-    test_unpack()
+    test_pack_unpack()
     print 'Tests Successful...'
-
