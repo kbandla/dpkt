@@ -120,7 +120,7 @@ class Diameter(dpkt.Packet):
             padlen = 0 if len(d) % 4 == 0 else 4 - (len(d) % 4)
             padding = struct.pack(str(padlen) + 's', '')
             l.append(str(d) + padding)
-        self.data = ''.join(l)
+        self.data = self.avps = b''.join(l)
 
         self.len = self.__hdr_len__ + len(str(self.data))
         self.len = chr((self.len >> 16) & 0xff) + chr((self.len >> 8) & 0xff) + chr(self.len & 0xff)
@@ -282,13 +282,22 @@ class AVP(dpkt.Packet):
         return length
 
 
-def test_pack_unpack():
+# list of DWR header, Origin-Host, Origin-Realm Origin-State-Id.
+__payloads = [
+    b'\x01\x00\x00\x84\x80\x00\x01\x18\x00\x00\x00\x00I\x96\x02\xd2\x8b\xd085',
+    b'\x00\x00\x01\x08@\x00\x007some00.node00.epc.mnc999.mcc999.3gppnetwork.org\x00',
+    b'\x00\x00\x01\x16@\x00\x00\x0cyeah',
+    b'\x00\x00\x01(@\x00\x00)epc.mnc999.mcc999.3gppnetwork.org\x00\x00\x00'
+    ]
+__s = b''.join(__payloads)
+
+
+def test_pack():
     """Packing test.
-    Creates 'Device-Watchdog-Request' message by inserting
-    each value manually, then unpack it and check if each value
-    is set as expected.
+    Create 'Device-Watchdog-Request' message by inserting values in
+    each field manually, then check the values are expectedly set and
+    the whole payload is built as the same as test payload bytearray above.
     """
-    # set values and pack them.
     d = Diameter(
         cmd=280,
         request_flag=1,
@@ -316,22 +325,35 @@ def test_pack_unpack():
             ),
         }
 
-    avpdict['avp_origstateid'].data = 'cafe'
+    avpdict['avp_origstateid'].data = 'yeah'
     avpdict['avp_orighost'].data = 'some00.node00.epc.mnc999.mcc999.3gppnetwork.org'
     avpdict['avp_origrealm'].data = 'epc.mnc999.mcc999.3gppnetwork.org'
     d.data = [str(v) for k, v in avpdict.iteritems()]
 
-    # unpack the packed payload and check the values.
-    d2 = Diameter(str(d))
-    assert (d2.cmd == d2.cmd_codes['DEVICE_WATCHDOG'])
-    assert (d2.request_flag == 1)
-    assert (d2.proxiable_flag == 0)
-    assert (d2.app_id == 0)
-    assert (d2.hop_id == 1234567890)
-    assert (d2.end_id == 2345678901)
+    assert (d.cmd == d.cmd_codes['DEVICE_WATCHDOG'])
+    assert (d.request_flag == 1)
+    assert (d.proxiable_flag == 0)
+    assert (d.app_id == 0)
+    assert (d.hop_id == 1234567890)
+    assert (d.end_id == 2345678901)
+    assert (__s == str(d))
 
-    for i in xrange(len(d2.avps)):
-        avp = d2.avps[i]
+
+def test_unpack():
+    """Packing test.
+    Unpack the payload bytearray above and check if the values are
+    expectedly decoded.
+    """
+    d = Diameter(__s)
+    assert (d.cmd == d.cmd_codes['DEVICE_WATCHDOG'])
+    assert (d.request_flag == 1)
+    assert (d.proxiable_flag == 0)
+    assert (d.app_id == 0)
+    assert (d.hop_id == 1234567890)
+    assert (d.end_id == 2345678901)
+
+    for i in xrange(len(d.avps)):
+        avp = d.avps[i]
         # the difference between avp.len and len(avp) shows
         # the avp has padding or not.
         if avp.code == avp.avp_codes['ORIGIN_HOST']:
@@ -351,9 +373,10 @@ def test_pack_unpack():
             assert (avp.vendor_flag == 0)
             assert (avp.len == 12)
             assert (len(avp) == 12)
-            assert (avp.data == 'cafe')
+            assert (avp.data == 'yeah')
 
 
 if __name__ == '__main__':
-    test_pack_unpack()
+    test_pack()
+    test_unpack()
     print 'Tests Successful...'
