@@ -28,9 +28,7 @@ SHUTDOWN_COMPLETE = 14
 
 class SCTP(dpkt.Packet):
     """Stream Control Transmission Protocol.
-
     TODO: Longer class information....
-
     Attributes:
         __hdr__: Header fields of SCTP.
         TODO.
