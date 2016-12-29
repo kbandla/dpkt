@@ -307,26 +307,32 @@ def test_pack():
         end_id=2345678901,
         )
 
-    avpdict = {
-        'avp_orighost': AVP(
+    # using OrderdDict to keep the order of AVPs.
+    avpdict = OrderedDict()
+    avps = (
+        ('avp_orighost', AVP(
             code=264,
             mandatory_flag=1,
             vendor_flag=0,
-            ),
-        'avp_origrealm': AVP(
-            code=296,
-            mandatory_flag=1,
-            vendor_flag=0,
-            ),
-        'avp_origstateid': AVP(
+            )
+        ),
+        ('avp_origstateid', AVP(
             code=278,
             mandatory_flag=1,
             vendor_flag=0,
-            ),
-        }
+            )
+        ),
+        ('avp_origrealm', AVP(
+            code=296,
+            mandatory_flag=1,
+            vendor_flag=0,
+            )
+        )
+    )
+    avpdict.update(avps)
 
-    avpdict['avp_origstateid'].data = 'yeah'
     avpdict['avp_orighost'].data = 'some00.node00.epc.mnc999.mcc999.3gppnetwork.org'
+    avpdict['avp_origstateid'].data = 'yeah'
     avpdict['avp_origrealm'].data = 'epc.mnc999.mcc999.3gppnetwork.org'
     d.data = [str(v) for k, v in avpdict.iteritems()]
 
@@ -337,7 +343,6 @@ def test_pack():
     assert (d.hop_id == 1234567890)
     assert (d.end_id == 2345678901)
     assert (__s == str(d))
-
 
 def test_unpack():
     """Packing test.
@@ -354,8 +359,6 @@ def test_unpack():
 
     for i in xrange(len(d.avps)):
         avp = d.avps[i]
-        # the difference between avp.len and len(avp) shows
-        # the avp has padding or not.
         if avp.code == avp.avp_codes['ORIGIN_HOST']:
             assert (avp.mandatory_flag == 1)
             assert (avp.vendor_flag == 0)
@@ -377,6 +380,8 @@ def test_unpack():
 
 
 if __name__ == '__main__':
+    from collections import OrderedDict
+
     test_pack()
     test_unpack()
     print 'Tests Successful...'
