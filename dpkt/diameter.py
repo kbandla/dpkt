@@ -115,8 +115,17 @@ class Diameter(dpkt.Packet):
         self.data = self.avps = l
 
     def pack_hdr(self):
+        l = []
+        for d in self.data:
+            padlen = 0 if len(d) % 4 == 0 else 4 - (len(d) % 4)
+            padding = struct.pack(str(padlen) + 's', '')
+            l.append(str(d) + padding)
+        self.data = self.avps = b''.join(l)
+
+        self.len = self.__hdr_len__ + len(str(self.data))
         self.len = chr((self.len >> 16) & 0xff) + chr((self.len >> 8) & 0xff) + chr(self.len & 0xff)
         self.cmd = chr((self.cmd >> 16) & 0xff) + chr((self.cmd >> 8) & 0xff) + chr(self.cmd & 0xff)
+
         return dpkt.Packet.pack_hdr(self)
 
     def __len__(self):
@@ -249,16 +258,18 @@ class AVP(dpkt.Packet):
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
         self.len = (ord(self.len[0]) << 16) | (ord(self.len[1]) << 8) | (ord(self.len[2]))
-        self.padlen = 0 if self.len % 4 == 0 else 4 - (self.len % 4)
+        padlen = 0 if self.len % 4 == 0 else 4 - (self.len % 4)
 
         if self.vendor_flag:
             self.vendor = struct.unpack('>I', self.data[:4])[0]
-            self.data = self.data[4:self.len + self.padlen - self.__hdr_len__]
+            self.data = self.data[4:self.len + padlen - self.__hdr_len__]
         else:
-            self.data = self.data[:self.len + self.padlen - self.__hdr_len__]
+            self.data = self.data[:self.len + padlen - self.__hdr_len__]
 
     def pack_hdr(self):
+        self.len = self.__hdr_len__ + sum(map(len, str(self.data)))
         self.len = chr((self.len >> 16) & 0xff) + chr((self.len >> 8) & 0xff) + chr(self.len & 0xff)
+
         data = dpkt.Packet.pack_hdr(self)
         if self.vendor_flag:
             data += struct.pack('>I', self.vendor)
@@ -271,93 +282,106 @@ class AVP(dpkt.Packet):
         return length
 
 
-# set of Diameter header, Vendor-Specific-Application-Id, Origin-Host, Origin-Realm.
-# each avp has different length of padding for testing all patterns.
-__test_bytearr = [
-    b'\x01\x00\x01\xbc\xc0\x00\x01<\x01\x00\x00#\xfbh=\xc9\xa0\x84eF',
-    b'\x00\x00\x01\x04@\x00\x00 \x00\x00\x01\n@\x00\x00\x0c\x00\x00('
-     '\xaf\x00\x00\x01\x02@\x00\x00\x0c\x01\x00\x00#',
-    b'\x00\x00\x01\x08@\x00\x007some00.node00.epc.mnc999.mcc999.'
-     '3gppnetwork.org\x00',
-    b'\x00\x00\x01\x07@\x00\x00Zsome00.node00.epc.mnc999.mcc999.'
-     '3gppnetwork.org;1234567890;987654321;1.1;123456789\x00\x00',
+# list of DWR header, Origin-Host, Origin-Realm Origin-State-Id.
+__payloads = [
+    b'\x01\x00\x00\x84\x80\x00\x01\x18\x00\x00\x00\x00I\x96\x02\xd2\x8b\xd085',
+    b'\x00\x00\x01\x08@\x00\x007some00.node00.epc.mnc999.mcc999.3gppnetwork.org\x00',
+    b'\x00\x00\x01\x16@\x00\x00\x0cyeah',
     b'\x00\x00\x01(@\x00\x00)epc.mnc999.mcc999.3gppnetwork.org\x00\x00\x00'
-]
-__test_payload = b''.join(__test_bytearr)
-
-# bytearray for testing the optional vendor id support.
-__vdr_id_payload = (
-    b'\x01\x00\x00\x2c\x80\x00\x01\x18\x00\x00\x00\x00\x00\x00\x41'
-     '\xc8\x00\x00\x00\x0c\x00\x00\x01\x08\xc0\x00\x00\x10\xde\xad'
-     '\xbe\xef\x68\x30\x30\x32\x00\x00\x01\x28\x40\x00\x00\x08'
-    )
+    ]
+__s = b''.join(__payloads)
 
 
 def test_pack():
-    d = Diameter(__test_payload)
-    assert (__test_payload == str(d))
-    d = Diameter(__vdr_id_payload)
-    assert (__vdr_id_payload == str(d))
+    """Packing test.
+    Create 'Device-Watchdog-Request' message by inserting values in
+    each field manually, then check the values are expectedly set and
+    the whole payload is built as the same as test payload bytearray above.
+    """
+    d = Diameter(
+        cmd=280,
+        request_flag=1,
+        proxiable_flag=0,
+        app_id=0,
+        hop_id=1234567890,
+        end_id=2345678901,
+        )
 
+    # using OrderdDict to keep the order of AVPs.
+    avpdict = OrderedDict()
+    avps = (
+        ('avp_orighost', AVP(
+            code=264,
+            mandatory_flag=1,
+            vendor_flag=0,
+            )
+        ),
+        ('avp_origstateid', AVP(
+            code=278,
+            mandatory_flag=1,
+            vendor_flag=0,
+            )
+        ),
+        ('avp_origrealm', AVP(
+            code=296,
+            mandatory_flag=1,
+            vendor_flag=0,
+            )
+        )
+    )
+    avpdict.update(avps)
+
+    avpdict['avp_orighost'].data = 'some00.node00.epc.mnc999.mcc999.3gppnetwork.org'
+    avpdict['avp_origstateid'].data = 'yeah'
+    avpdict['avp_origrealm'].data = 'epc.mnc999.mcc999.3gppnetwork.org'
+    d.data = [str(v) for k, v in avpdict.iteritems()]
+
+    assert (d.cmd == d.cmd_codes['DEVICE_WATCHDOG'])
+    assert (d.request_flag == 1)
+    assert (d.proxiable_flag == 0)
+    assert (d.app_id == 0)
+    assert (d.hop_id == 1234567890)
+    assert (d.end_id == 2345678901)
+    assert (__s == str(d))
 
 def test_unpack():
-    d = Diameter(__test_payload)
-    assert (d.len == 444)
-    assert (d.cmd == 316)  # "3GPP-Update-Location"
+    """Packing test.
+    Unpack the payload bytearray above and check if the values are
+    expectedly decoded.
+    """
+    d = Diameter(__s)
+    assert (d.cmd == d.cmd_codes['DEVICE_WATCHDOG'])
     assert (d.request_flag == 1)
-    assert (d.proxiable_flag == 1)
-    assert (d.error_flag == 0)
-    assert (d.app_id == 16777251)
-    assert (d.hop_id == 4217912777)
-    assert (d.end_id == 2693031238)
-    assert (len(d.avps) == 4)
+    assert (d.proxiable_flag == 0)
+    assert (d.app_id == 0)
+    assert (d.hop_id == 1234567890)
+    assert (d.end_id == 2345678901)
 
     for i in xrange(len(d.avps)):
         avp = d.avps[i]
-        if avp.code == avp.avp_codes['VENDOR_SPECIFIC_APPLICATION_ID']:
-            assert (avp.mandatory_flag == 1)
-            assert (avp.vendor_flag == 0)
-            assert (avp.len == 32)
-            assert (len(avp) == 32)
-            assert (avp.data == (
-                b'\x00\x00\x01\n@\x00\x00\x0c\x00\x00(\xaf\x00'
-                 '\x00\x01\x02@\x00\x00\x0c\x01\x00\x00#'
-                )
-            )
         if avp.code == avp.avp_codes['ORIGIN_HOST']:
             assert (avp.mandatory_flag == 1)
             assert (avp.vendor_flag == 0)
             assert (avp.len == 55)
             assert (len(avp) == 56)
             assert (avp.data == b'some00.node00.epc.mnc999.mcc999.3gppnetwork.org\x00')
-        if avp.code == avp.avp_codes['SESSION_ID']:
-            assert (avp.mandatory_flag == 1)
-            assert (avp.vendor_flag == 0)
-            assert (avp.len == 90)
-            assert (len(avp) == 92)
-            assert (avp.data == (
-                b'some00.node00.epc.mnc999.mcc999.3gppnetwork.org;'
-                 '1234567890;987654321;1.1;123456789\x00\x00'
-                )
-            )
         if avp.code == avp.avp_codes['ORIGIN_REALM']:
             assert (avp.mandatory_flag == 1)
             assert (avp.vendor_flag == 0)
             assert (avp.len == 41)
             assert (len(avp) == 44)
             assert (avp.data == b'epc.mnc999.mcc999.3gppnetwork.org\x00\x00\x00')
-
-    d = Diameter(__vdr_id_payload)
-    assert (d.len == 44)
-    avp = d.avps[0]
-    assert (avp.vendor_flag == 1)
-    assert (avp.len == 16)
-    assert (len(avp) == 16)
-    assert (avp.vendor == 3735928559)
-    assert (avp.data == '\x68\x30\x30\x32')
+        if avp.code == avp.avp_codes['ORIGIN_STATE_ID']:
+            assert (avp.mandatory_flag == 1)
+            assert (avp.vendor_flag == 0)
+            assert (avp.len == 12)
+            assert (len(avp) == 12)
+            assert (avp.data == 'yeah')
 
 
 if __name__ == '__main__':
+    from collections import OrderedDict
+
     test_pack()
     test_unpack()
     print 'Tests Successful...'
