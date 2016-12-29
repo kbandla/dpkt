@@ -307,34 +307,28 @@ def test_pack():
         end_id=2345678901,
         )
 
-    # using OrderdDict to keep the order of AVPs.
-    avpdict = OrderedDict()
-    avps = (
-        ('avp_orighost', AVP(
+    avplist = [
+        AVP(
             code=264,
             mandatory_flag=1,
             vendor_flag=0,
-            )
         ),
-        ('avp_origstateid', AVP(
+        AVP(
             code=278,
             mandatory_flag=1,
             vendor_flag=0,
-            )
         ),
-        ('avp_origrealm', AVP(
+        AVP(
             code=296,
             mandatory_flag=1,
             vendor_flag=0,
-            )
         )
-    )
-    avpdict.update(avps)
+    ]
 
-    avpdict['avp_orighost'].data = 'some00.node00.epc.mnc999.mcc999.3gppnetwork.org'
-    avpdict['avp_origstateid'].data = 'yeah'
-    avpdict['avp_origrealm'].data = 'epc.mnc999.mcc999.3gppnetwork.org'
-    d.data = [str(v) for k, v in avpdict.iteritems()]
+    avplist[0].data = 'some00.node00.epc.mnc999.mcc999.3gppnetwork.org'
+    avplist[1].data = 'yeah'
+    avplist[2].data = 'epc.mnc999.mcc999.3gppnetwork.org'
+    d.data = [str(x) for x in avplist]
 
     assert (d.cmd == d.cmd_codes['DEVICE_WATCHDOG'])
     assert (d.request_flag == 1)
@@ -380,8 +374,6 @@ def test_unpack():
 
 
 if __name__ == '__main__':
-    from collections import OrderedDict
-
     test_pack()
     test_unpack()
     print 'Tests Successful...'
