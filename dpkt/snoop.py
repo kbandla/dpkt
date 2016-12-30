@@ -3,7 +3,6 @@
 """Snoop file format."""
 from __future__ import absolute_import
 
-import sys
 import time
 
 from . import dpkt
@@ -37,7 +36,7 @@ class PktHdr(dpkt.Packet):
         __hdr__: Header fields of snoop packet header.
         TODO.
     """
-    
+
     __byte_order__ = '!'
     __hdr__ = (
         ('orig_len', 'I', 0),
@@ -58,7 +57,7 @@ class FileHdr(dpkt.Packet):
         __hdr__: Header fields of snoop file header.
         TODO.
     """
-    
+
     __byte_order__ = '!'
     __hdr__ = (
         ('magic', 'Q', SNOOP_MAGIC),
@@ -106,7 +105,7 @@ class Reader(object):
     Attributes:
         TODO.
     """
-    
+
     def __init__(self, fileobj):
         self.name = fileobj.name
         self.fd = fileobj.fileno()

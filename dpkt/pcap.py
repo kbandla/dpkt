@@ -170,7 +170,7 @@ class FileHdr(dpkt.Packet):
         __hdr__: Header fields of pcap file header.
         TODO.
     """
-    
+
     __hdr__ = (
         ('magic', 'I', TCPDUMP_MAGIC),
         ('v_major', 'H', PCAP_VERSION_MAJOR),
@@ -326,7 +326,7 @@ def test_pcap_endian():
 
 
 def test_reader():
-    data = (  # full libpcap file with one packet 
+    data = (  # full libpcap file with one packet
         b'\xd4\xc3\xb2\xa1\x02\x00\x04\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff\x00\x00\x01\x00\x00\x00'
         b'\xb2\x67\x4a\x42\xae\x91\x07\x00\x46\x00\x00\x00\x46\x00\x00\x00\x00\xc0\x9f\x32\x41\x8c\x00\xe0'
         b'\x18\xb1\x0c\xad\x08\x00\x45\x00\x00\x38\x00\x00\x40\x00\x40\x11\x65\x47\xc0\xa8\xaa\x08\xc0\xa8'

@@ -4,7 +4,6 @@
 from __future__ import print_function
 from __future__ import absolute_import
 
-import sys
 import struct
 
 from .compat import compat_ord
