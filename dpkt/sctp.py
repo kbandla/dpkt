@@ -37,7 +37,7 @@ class SCTP(dpkt.Packet):
         __hdr__: Header fields of SCTP.
         TODO.
     """
-    
+
     __hdr__ = (
         ('sport', 'H', 0),
         ('dport', 'H', 0),
@@ -57,9 +57,6 @@ class SCTP(dpkt.Packet):
     def __len__(self):
         return self.__hdr_len__ + sum(map(len, self.data))
 
-    def __str__(self):
-        return str(self.__bytes__())
-    
     def __bytes__(self):
         l = [bytes(x) for x in self.data]
         if self.sum == 0:

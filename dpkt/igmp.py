@@ -15,7 +15,7 @@ class IGMP(dpkt.Packet):
         __hdr__: Header fields of IGMP.
         TODO.
     """
-    
+
     __hdr__ = (
         ('type', 'B', 0),
         ('maxresp', 'B', 0),
@@ -23,9 +23,6 @@ class IGMP(dpkt.Packet):
         ('group', 'I', 0)
     )
 
-    def __str__(self):
-        return str(self.__bytes__())
-    
     def __bytes__(self):
         if not self.sum:
             self.sum = dpkt.in_cksum(dpkt.Packet.__bytes__(self))

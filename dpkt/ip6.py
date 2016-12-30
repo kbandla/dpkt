@@ -18,7 +18,7 @@ class IP6(dpkt.Packet):
         __hdr__: Header fields of IPv6.
         TODO.
     """
-    
+
     __hdr__ = (
         ('_v_fc_flow', 'I', 0x60000000),
         ('plen', 'H', 0),  # payload length (not including header)
@@ -121,9 +121,6 @@ class IP6(dpkt.Packet):
                 header_str += bytes(self.extension_hdrs[hdr])
         return header_str
 
-    def __str__(self):
-        return str(self.__bytes__())
-    
     def __bytes__(self):
         if (self.p == 6 or self.p == 17 or self.p == 58) and not self.data.sum:
             # XXX - set TCP, UDP, and ICMPv6 checksums

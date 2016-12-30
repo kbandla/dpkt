@@ -155,9 +155,6 @@ class _PcapngBlock(dpkt.Packet):
 
         hdr_buf = dpkt.Packet.pack_hdr(self)
         return hdr_buf[:-4] + opts_buf + hdr_buf[-4:]
-        
-    def __str__(self):
-        return str(self.__bytes__())
 
     def __len__(self):
         if not getattr(self, 'opts', None):
@@ -188,20 +185,17 @@ class PcapngOption(dpkt.Packet):
         if self.code == PCAPNG_OPT_COMMENT:
             self.text = self.data.decode('utf-8')
 
-    
+
     def __bytes__(self):
         #return dpkt.Packet.__bytes__(self)
         # encode comment
         if self.code == PCAPNG_OPT_COMMENT:
             text = getattr(self, 'text', self.data)
-            
+
             self.data = text.encode('utf-8') if not isinstance(text, bytes) else text
 
         self.len = len(self.data)
         return dpkt.Packet.pack_hdr(self) + _padded(self.data)
-    
-    def __str__(self):
-        return str(self.__bytes__())
 
     def __len__(self):
         return self.__hdr_len__ + len(self.data) + _padlen(self.data)
@@ -295,9 +289,6 @@ class EnhancedPacketBlock(_PcapngBlock):
 
         hdr_buf = dpkt.Packet.pack_hdr(self)
         return hdr_buf[:-4] + _padded(pkt_buf) + opts_buf + hdr_buf[-4:]
-    
-    def __str__(self):
-        return str(self.__bytes__())
 
     def __len__(self):
         opts_len = sum(len(o) for o in self.opts)
@@ -649,9 +640,9 @@ def test_epb():
 
 def test_simple_write_read():
     """test writing a basic pcapng and then reading it"""
-    try: 
-        from BytesIO import BytesIO 
-    except ImportError: 
+    try:
+        from BytesIO import BytesIO
+    except ImportError:
         from io import BytesIO
     fobj = BytesIO()
 
@@ -699,7 +690,7 @@ def test_custom_read_write():
         b'\x00\x00\x84\x00\x00\x00')
 
     from .compat import BytesIO
-    
+
     fobj = BytesIO(buf)
 
     # test reading

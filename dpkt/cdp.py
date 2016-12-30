@@ -36,7 +36,7 @@ class CDP(dpkt.Packet):
         __hdr__: Header fields of CDP.
         #TODO
     """
-    
+
     __hdr__ = (
         ('version', 'B', 2),
         ('ttl', 'B', 180),
@@ -82,9 +82,6 @@ class CDP(dpkt.Packet):
                 n = len(self.data)
             return self.__hdr_len__ + n
 
-        def __str__(self):
-            return str(self.__bytes__())
-        
         def __bytes__(self):
             self.len = len(self)
             if self.type == CDP_ADDRESS:
@@ -107,9 +104,6 @@ class CDP(dpkt.Packet):
     def __len__(self):
         return self.__hdr_len__ + sum(map(len, self.data))
 
-    def __str__(self):
-        return str(self.__bytes__())
-    
     def __bytes__(self):
         data = b''.join(map(bytes, self.data))
         if not self.sum:

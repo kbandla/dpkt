@@ -31,7 +31,7 @@ class TCP(dpkt.Packet):
         __hdr__: Header fields of TCP.
         TODO.
     """
-    
+
     __hdr__ = (
         ('sport', 'H', 0xdead),
         ('dport', 'H', 0),
@@ -65,9 +65,6 @@ class TCP(dpkt.Packet):
     def __len__(self):
         return self.__hdr_len__ + len(self.opts) + len(self.data)
 
-    def __str__(self):
-        return str(self.__bytes__())
-    
     def __bytes__(self):
         return self.pack_hdr() + bytes(self.opts) + bytes(self.data)
 

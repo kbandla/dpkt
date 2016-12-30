@@ -17,7 +17,7 @@ class VRRP(dpkt.Packet):
         __hdr__: Header fields of VRRP.
         TODO.
     """
-    
+
     __hdr__ = (
         ('_v_type', 'B', 0x21),
         ('vrid', 'B', 0),
@@ -74,9 +74,6 @@ class VRRP(dpkt.Packet):
     def __len__(self):
         return self.__hdr_len__ + (4 * self.count) + len(self.auth)
 
-    def __str__(self):
-        return str(self.__bytes__())
-    
     def __bytes__(self):
         data = b''.join(self.addrs) + self.auth
         if not self.sum:

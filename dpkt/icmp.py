@@ -83,7 +83,7 @@ class ICMP(dpkt.Packet):
         __hdr__: Header fields of ICMP.
         TODO.
     """
-    
+
     __hdr__ = (
         ('type', 'B', 8),
         ('code', 'B', 0),
@@ -123,9 +123,6 @@ class ICMP(dpkt.Packet):
         except (KeyError, dpkt.UnpackError):
             pass
 
-    def __str__(self):
-        return str(self.__bytes__())
-    
     def __bytes__(self):
         if not self.sum:
             self.sum = dpkt.in_cksum(dpkt.Packet.__str__(self))

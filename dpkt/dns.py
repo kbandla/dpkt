@@ -4,7 +4,6 @@
 from __future__ import print_function
 from __future__ import absolute_import
 
-import sys
 import struct
 import codecs
 
@@ -434,9 +433,6 @@ class DNS(dpkt.Packet):
         # XXX - cop out
         return len(str(self))
 
-    def __str__(self):
-        return str(self.__bytes__())
-    
     def __bytes__(self):
         # XXX - compress names on the fly
         self.label_ptrs = {}

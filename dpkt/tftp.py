@@ -4,7 +4,6 @@
 from __future__ import print_function
 from __future__ import absolute_import
 
-import sys
 import struct
 
 from . import dpkt
@@ -36,7 +35,7 @@ class TFTP(dpkt.Packet):
         __hdr__: Header fields of TFTP.
         TODO.
     """
-    
+
     __hdr__ = (('opcode', 'H', 1), )
 
     def unpack(self, buf):
@@ -57,9 +56,6 @@ class TFTP(dpkt.Packet):
     def __len__(self):
         return len(bytes(self))
 
-    def __str__(self):
-        return str(self.__bytes__())
-    
     def __bytes__(self):
         if self.opcode in (OP_RRQ, OP_WRQ):
             s = self.filename + b'\x00' + self.mode + b'\x00'
