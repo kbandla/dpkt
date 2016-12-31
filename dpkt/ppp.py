@@ -27,7 +27,7 @@ class PPP(dpkt.Packet):
         __hdr__: Header fields of PPP.
         TODO.
     """
-    
+
     __hdr__ = (
         ('addr', 'B', 0xff),
         ('cntrl', 'B', 3),

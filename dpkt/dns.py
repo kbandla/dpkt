@@ -82,7 +82,7 @@ def pack_name(name, off, label_ptrs):
                 if ptr < 0xc000:
                     label_ptrs[key] = ptr
             i = len(label)
-            buf += struct.pack("B",i) + label
+            buf += struct.pack("B", i) + label
         else:
             buf += struct.pack('>H', (0xc000 | ptr))
             break
@@ -566,7 +566,6 @@ def test_txt_response():
     assert my_rr.text == ['v=spf1 ptr ?all']
     assert str(my_dns) == str(buf)
     assert bytes(my_dns) == buf
-
 
 
 if __name__ == '__main__':
