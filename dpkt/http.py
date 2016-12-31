@@ -93,7 +93,8 @@ class Message(dpkt.Packet):
         else:
             self.headers = {}
             self.body = ''
-            for k, v in iteritems(self.__hdr_defaults__):
+            # NOTE: changing this to iteritems breaks py3 compatibility
+            for k, v in self.__hdr_defaults__.items():
                 setattr(self, k, v)
             for k, v in iteritems(kwargs):
                 setattr(self, k, v)
