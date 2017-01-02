@@ -30,9 +30,6 @@ class NetflowBase(dpkt.Packet):
     def __len__(self):
         return self.__hdr_len__ + (len(self.data[0]) * self.count)
 
-    def __str__(self):
-        return str(self.__bytes__())
-    
     def __bytes__(self):
         # for now, don't try to enforce any size limits
         self.count = len(self.data)
@@ -63,9 +60,6 @@ class NetflowBase(dpkt.Packet):
             # don't bother with data
             return self.__hdr_len__
 
-        def __str__(self):
-            return str(self.__bytes__())
-        
         def __bytes__(self):
             # don't bother with data
             return self.pack_hdr()
@@ -92,12 +86,12 @@ class Netflow1(NetflowBase):
         """Netflow v1 flow record.
 
         TODO: Longer class information....
-    
+
         Attributes:
             __hdr__: Header fields of Netflow Version 1 flow record.
             TODO.
         """
-        
+
         __hdr__ = (
             ('src_addr', 'I', 0),
             ('dst_addr', 'I', 0),
@@ -131,7 +125,7 @@ class Netflow5(NetflowBase):
         __hdr__: Header fields of Netflow Version 5.
         TODO.
     """
-    
+
     __hdr__ = NetflowBase.__hdr__ + (
         ('flow_sequence', 'I', 0),
         ('engine_type', 'B', 0),
@@ -143,12 +137,12 @@ class Netflow5(NetflowBase):
         """Netflow v5 flow record.
 
         TODO: Longer class information....
-    
+
         Attributes:
             __hdr__: Header fields of Netflow Version 5 flow record.
             TODO.
         """
-        
+
         __hdr__ = (
             ('src_addr', 'I', 0),
             ('dst_addr', 'I', 0),
@@ -173,7 +167,7 @@ class Netflow5(NetflowBase):
         )
 
 
-class Netflow6(NetflowBase):    
+class Netflow6(NetflowBase):
     """Netflow Version 6.
 
     XXX - unsupported by Cisco, but may be found in the field.
@@ -183,19 +177,19 @@ class Netflow6(NetflowBase):
         __hdr__: Header fields of Netflow Version 6.
         TODO.
     """
-    
+
     __hdr__ = Netflow5.__hdr__
 
     class NetflowRecord(NetflowBase.NetflowRecordBase):
         """Netflow v6 flow record.
 
         TODO: Longer class information....
-    
+
         Attributes:
             __hdr__: Header fields of Netflow Version 6 flow record.
             TODO.
         """
-        
+
         __hdr__ = (
             ('src_addr', 'I', 0),
             ('dst_addr', 'I', 0),
@@ -231,7 +225,7 @@ class Netflow7(NetflowBase):
         __hdr__: Header fields of Netflow Version 7.
         TODO.
     """
-    
+
     __hdr__ = NetflowBase.__hdr__ + (
         ('flow_sequence', 'I', 0),
         ('reserved', 'I', 0),
@@ -241,12 +235,12 @@ class Netflow7(NetflowBase):
         """Netflow v6 flow record.
 
         TODO: Longer class information....
-    
+
         Attributes:
             __hdr__: Header fields of Netflow Version 6 flow record.
             TODO.
         """
-        
+
         __hdr__ = (
             ('src_addr', 'I', 0),
             ('dst_addr', 'I', 0),

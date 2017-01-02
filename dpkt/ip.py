@@ -17,7 +17,7 @@ class IP(dpkt.Packet):
         __hdr__: Header fields of IP.
         TODO.
     """
-    
+
     __hdr__ = (
         ('_v_hl', 'B', (4 << 4) | (20 >> 2)),
         ('tos', 'B', 0),
@@ -32,10 +32,10 @@ class IP(dpkt.Packet):
     )
     _protosw = {}
     opts = b''
-    
+
     def __init__(self, *args, **kwargs):
         super(IP, self).__init__(*args, **kwargs)
-        
+
         # If IP packet is not initialized by string and the len field has
         # been rewritten.
         if not args and 'len' not in kwargs:
@@ -56,7 +56,7 @@ class IP(dpkt.Packet):
     @hl.setter
     def hl(self, hl):
         self._v_hl = (self._v_hl & 0xf0) | hl
-        
+
     @property
     def rf(self):
         return (self.off >> 15) & 0x1
@@ -64,7 +64,7 @@ class IP(dpkt.Packet):
     @rf.setter
     def rf(self, rf):
         self.off = (self.off & ~IP_RF) | (rf << 15)
-        
+
     @property
     def df(self):
         return (self.off >> 14) & 0x1
@@ -72,7 +72,7 @@ class IP(dpkt.Packet):
     @df.setter
     def df(self, df):
         self.off = (self.off & ~IP_DF) | (df << 14)
-        
+
     @property
     def mf(self):
         return (self.off >> 13) & 0x1
@@ -80,7 +80,7 @@ class IP(dpkt.Packet):
     @mf.setter
     def mf(self, mf):
         self.off = (self.off & ~IP_MF) | (mf << 13)
-        
+
     @property
     def offset(self):
         return (self.off & IP_OFFMASK) << 3
@@ -111,9 +111,6 @@ class IP(dpkt.Packet):
     def __len__(self):
         return self.__hdr_len__ + len(self.opts) + len(self.data)
 
-    def __str__(self):
-        return str(self.__bytes__())
-    
     def __bytes__(self):
         self.len = self.__len__()
         if self.sum == 0:
@@ -423,7 +420,7 @@ def test_frag():
     assert (ip.df == 1)
     assert (ip.mf == 0)
     assert (ip.offset == 0)
-    
+
     # test setters of fragmentation related attributes.
     ip.rf = 1
     ip.df = 0
@@ -433,8 +430,8 @@ def test_frag():
     assert (ip.df == 0)
     assert (ip.mf == 1)
     assert (ip.offset == 1480)
-    
-    
+
+
 if __name__ == '__main__':
     test_ip()
     test_hl()

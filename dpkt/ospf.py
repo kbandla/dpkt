@@ -19,7 +19,7 @@ class OSPF(dpkt.Packet):
         __hdr__: Header fields of OSPF.
         TODO.
     """
-    
+
     __hdr__ = (
         ('v', 'B', 0),
         ('type', 'B', 0),
@@ -31,9 +31,6 @@ class OSPF(dpkt.Packet):
         ('auth', '8s', '')
     )
 
-    def __str__(self):
-        return str(self.__bytes__())
-    
     def __bytes__(self):
         if not self.sum:
             self.sum = dpkt.in_cksum(dpkt.Packet.__bytes__(self))

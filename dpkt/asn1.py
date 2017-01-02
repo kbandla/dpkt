@@ -6,7 +6,6 @@ from __future__ import print_function
 
 import struct
 import time
-import sys
 
 from . import dpkt
 from .compat import compat_ord

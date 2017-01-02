@@ -4,7 +4,6 @@
 from __future__ import print_function
 from __future__ import absolute_import
 
-import sys
 import struct
 
 from . import dpkt
@@ -33,7 +32,7 @@ class Diameter(dpkt.Packet):
         __hdr__: Header fields of Diameter.
         TODO.
     """
-    
+
     __hdr__ = (
         ('v', 'B', 1),
         ('len', '3s', 0),
@@ -128,11 +127,8 @@ class Diameter(dpkt.Packet):
     def __len__(self):
         return self.__hdr_len__ + sum(map(len, self.data))
 
-    def __str__(self):
-        return str(self.__bytes__())
-        
     def __bytes__(self):
-        return self.pack_hdr() + b''.join(map(bytes, self.data)) 
+        return self.pack_hdr() + b''.join(map(bytes, self.data))
 
 class AVP(dpkt.Packet):
     __hdr__ = (
@@ -260,4 +256,3 @@ if __name__ == '__main__':
     test_pack()
     test_unpack()
     print('Tests Successful...')
-

@@ -22,7 +22,7 @@ class RIP(dpkt.Packet):
         __hdr__: Header fields of RIP.
         TODO.
     """
-    
+
     __hdr__ = (
         ('cmd', 'B', REQUEST),
         ('v', 'B', 2),
@@ -49,9 +49,6 @@ class RIP(dpkt.Packet):
         n += sum(map(len, self.rtes))
         return n
 
-    def __str__(self):
-        return str(self.__bytes__())
-    
     def __bytes__(self):
         auth = b''
         if self.auth:

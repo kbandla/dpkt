@@ -4,7 +4,6 @@
 from __future__ import print_function
 from __future__ import absolute_import
 
-import sys
 import struct
 
 from . import arp
@@ -110,7 +109,7 @@ class DHCP(dpkt.Packet):
         __hdr__: Header fields of DHCP.
         TODO.
     """
-    
+
     __hdr__ = (
         ('op', 'B', DHCP_OP_REQUEST),
         ('hrd', 'B', arp.ARP_HRD_ETH),  # just like ARP.hrd
@@ -140,9 +139,6 @@ class DHCP(dpkt.Packet):
         return self.__hdr_len__ + \
                sum([2 + len(o[1]) for o in self.opts]) + 1 + len(self.data)
 
-    def __str__(self):
-        return str(self.__bytes__())
-    
     def __bytes__(self):
         return self.pack_hdr() + self.pack_opts() + bytes(self.data)
 

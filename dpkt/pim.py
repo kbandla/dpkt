@@ -16,7 +16,7 @@ class PIM(dpkt.Packet):
         __hdr__: Header fields of PIM.
         TODO.
     """
-    
+
     __hdr__ = (
         ('_v_type', 'B', 0x20),
         ('rsvd', 'B', 0),
@@ -54,9 +54,6 @@ class PIM(dpkt.Packet):
     def _set_type(self, type): self.type = type
     # =================================================
 
-    def __str__(self):
-        return str(self.__bytes__())
-    
     def __bytes__(self):
         if not self.sum:
             self.sum = dpkt.in_cksum(dpkt.Packet.__bytes__(self))

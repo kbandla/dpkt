@@ -4,7 +4,6 @@
 from __future__ import print_function
 from __future__ import absolute_import
 
-import sys
 import struct
 import codecs
 
@@ -83,7 +82,7 @@ def pack_name(name, off, label_ptrs):
                 if ptr < 0xc000:
                     label_ptrs[key] = ptr
             i = len(label)
-            buf += struct.pack("B",i) + label
+            buf += struct.pack("B", i) + label
         else:
             buf += struct.pack('>H', (0xc000 | ptr))
             break
@@ -434,9 +433,6 @@ class DNS(dpkt.Packet):
         # XXX - cop out
         return len(str(self))
 
-    def __str__(self):
-        return str(self.__bytes__())
-    
     def __bytes__(self):
         # XXX - compress names on the fly
         self.label_ptrs = {}
@@ -570,7 +566,6 @@ def test_txt_response():
     assert my_rr.text == ['v=spf1 ptr ?all']
     assert str(my_dns) == str(buf)
     assert bytes(my_dns) == buf
-
 
 
 if __name__ == '__main__':

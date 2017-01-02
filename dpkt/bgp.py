@@ -133,7 +133,7 @@ class BGP(dpkt.Packet):
         __hdr__: Header fields of BGP.
         #TODO
     """
-    
+
     __hdr__ = (
         ('marker', '16s', '\xff' * 16),
         ('len', 'H', 0),
@@ -180,9 +180,6 @@ class BGP(dpkt.Packet):
         def __len__(self):
             return self.__hdr_len__ + sum(map(len, self.parameters))
 
-        def __str__(self):
-            return str(self.__bytes__())
-        
         def __bytes__(self):
             params = b''.join(map(bytes, self.parameters))
             self.param_len = len(params)
@@ -262,9 +259,6 @@ class BGP(dpkt.Packet):
             return 2 + sum(map(len, self.withdrawn)) + \
                    2 + sum(map(len, self.attributes)) + \
                    sum(map(len, self.announced))
-
-        def __str__(self):
-            return str(self.__bytes__())
 
         def __bytes__(self):
             return struct.pack('>H', sum(map(len, self.withdrawn))) + \
@@ -390,9 +384,6 @@ class BGP(dpkt.Packet):
                     attr_len = 1
                 return self.__hdr_len__ + attr_len + len(self.data)
 
-            def __str__(self):
-                return str(self.__bytes__())
-
             def __bytes__(self):
                 if self.extended_length:
                     attr_len_str = struct.pack('>H', self.len)
@@ -422,9 +413,6 @@ class BGP(dpkt.Packet):
                 def __len__(self):
                     return sum(map(len, self.data))
 
-                def __str__(self):
-                    return str(self.__bytes__())
-
                 def __bytes__(self):
                     return b''.join(map(bytes, self.data))
 
@@ -445,9 +433,6 @@ class BGP(dpkt.Packet):
 
                     def __len__(self):
                         return self.__hdr_len__ + 2 * len(self.path)
-
-                    def __str__(self):
-                        return str(self.__bytes__())
 
                     def __bytes__(self):
                         as_str = b''
@@ -477,9 +462,6 @@ class BGP(dpkt.Packet):
                 def __len__(self):
                     return 0
 
-                def __str__(self):
-                    return str(self.__bytes__())
-                
                 def __bytes__(self):
                     return b''
 
@@ -509,9 +491,6 @@ class BGP(dpkt.Packet):
 
                 def __len__(self):
                     return sum(map(len, self.data))
-
-                def __str__(self):
-                    return str(self.__bytes__())
 
                 def __bytes__(self):
                     return b''.join(map(bytes, self.data))
@@ -548,9 +527,6 @@ class BGP(dpkt.Packet):
 
                 def __len__(self):
                     return 4 * len(self.list)
-
-                def __str__(self):
-                    return str(self.__bytes__())
 
                 def __bytes__(self):
                     cluster_str = b''
@@ -604,9 +580,6 @@ class BGP(dpkt.Packet):
                            1 + sum(map(len, self.snpas)) + \
                            sum(map(len, self.announced))
 
-                def __str__(self):
-                    return str(self.__bytes__())
-
                 def __bytes__(self):
                     return self.pack_hdr() + \
                            struct.pack('B', len(self.next_hop)) + \
@@ -651,9 +624,6 @@ class BGP(dpkt.Packet):
                 def __len__(self):
                     return self.__hdr_len__ + sum(map(len, self.data))
 
-                def __str__(self):
-                    return str(self.__bytes__())
-                
                 def __bytes__(self):
                     return self.pack_hdr() + b''.join(map(bytes, self.data))
 
@@ -673,9 +643,6 @@ class BGP(dpkt.Packet):
 
         def __len__(self):
             return 0
-
-        def __str__(self):
-            return str(self.__bytes__())
 
         def __bytes__(self):
             return b''
@@ -715,9 +682,6 @@ class RouteIPV4(dpkt.Packet):
 
     def __len__(self):
         return self.__hdr_len__ + (self.len + 7) // 8
-    
-    def __str__(self):
-        return str(self.__bytes__())
 
     def __bytes__(self):
         return self.pack_hdr() + self.prefix[:(self.len + 7) // 8]
@@ -736,9 +700,6 @@ class RouteIPV6(dpkt.Packet):
 
     def __len__(self):
         return self.__hdr_len__ + (self.len + 7) // 8
-    
-    def __str__(self):
-        return str(self.__bytes__())
 
     def __bytes__(self):
         return self.pack_hdr() + self.prefix[:(self.len + 7) // 8]

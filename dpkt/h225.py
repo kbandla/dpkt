@@ -11,7 +11,7 @@ from . import tpkt
 
 
 # H225 Call Signaling
-# 
+#
 # Call messages and information elements (IEs) are defined by Q.931:
 # http://cvsup.de.openbsd.org/historic/comp/doc/standards/itu/Q/Q.931.ps.gz
 #
@@ -60,7 +60,7 @@ REPEAT_INDICATOR = 208
 MORE_DATA = 160
 SENDING_COMPLETE = 161
 
-# Variable Length Information Element IDs 
+# Variable Length Information Element IDs
 SEGMENTED_MESSAGE = 0
 BEARER_CAPABILITY = 4
 CAUSE = 8
@@ -104,7 +104,7 @@ class H225(dpkt.Packet):
         __hdr__: Header fields of H225.
         TODO.
     """
-    
+
     __hdr__ = (
         ('proto', 'B', 8),
         ('ref_len', 'B', 2)
@@ -140,9 +140,6 @@ class H225(dpkt.Packet):
 
     def __len__(self):
         return self.tpkt.__hdr_len__ + self.__hdr_len__ + sum(map(len, self.data))
-
-    def __str__(self):
-        return str(self.__bytes__())
 
     def __bytes__(self):
         return self.tpkt.pack_hdr() + self.pack_hdr() + self.ref_val + \
@@ -182,9 +179,6 @@ class H225(dpkt.Packet):
                 else:
                     n = 1
             return self.__hdr_len__ + self.len + n
-
-        def __str__(self):
-            return str(self.__bytes__())
 
         def __bytes__(self):
             if self.type & 0x80:

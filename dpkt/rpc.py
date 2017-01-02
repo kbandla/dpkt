@@ -43,7 +43,7 @@ class RPC(dpkt.Packet):
         __hdr__: Header fields of RPC.
         TODO.
     """
-    
+
     __hdr__ = (
         ('xid', 'I', 0),
         ('dir', 'I', CALL)
@@ -60,9 +60,6 @@ class RPC(dpkt.Packet):
         def __len__(self):
             return 8 + len(self.data)
 
-        def __str__(self):
-            return str(self.__bytes__())
-        
         def __bytes__(self):
             return self.pack_hdr() + struct.pack('>I', len(self.data)) + \
                    bytes(self.data)
@@ -84,9 +81,6 @@ class RPC(dpkt.Packet):
         def __len__(self):
             return len(str(self))  # XXX
 
-        def __str__(self):
-            return str(self.__bytes__())
-        
         def __bytes__(self):
             return dpkt.Packet.__bytes__(self) + \
                    bytes(getattr(self, 'cred', RPC.Auth())) + \
@@ -114,9 +108,6 @@ class RPC(dpkt.Packet):
                 else: n = 0
                 return len(self.verf) + 4 + n + len(self.data)
 
-            def __str__(self):
-                return str(self.__bytes__())
-            
             def __bytes__(self):
                 if self.stat == PROG_MISMATCH:
                     return bytes(self.verf) + struct.pack('>III', self.stat,
@@ -141,9 +132,6 @@ class RPC(dpkt.Packet):
                 else: n = 0
                 return 4 + n + len(self.data)
 
-            def __str__(self):
-                return str(self.__bytes__())
-            
             def __bytes__(self):
                 if self.stat == RPC_MISMATCH:
                     return struct.pack('>III', self.stat, self.low, self.high) + self.data

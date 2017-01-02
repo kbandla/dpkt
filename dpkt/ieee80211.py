@@ -4,7 +4,6 @@
 from __future__ import print_function
 from __future__ import absolute_import
 
-import sys
 import socket
 import struct
 
@@ -127,7 +126,7 @@ class IEEE80211(dpkt.Packet):
         __hdr__: Header fields of IEEE802.11.
         TODO.
     """
-    
+
     __hdr__ = (
         ('framectl', 'H', 0),
         ('duration', 'H', 0)
@@ -785,7 +784,7 @@ def test_80211_data():
     assert ieee.fcs == struct.unpack('I', b'\xac\x17\x00\x00')[0]
 
     from . import llc
-    
+
 
     llc_pkt = llc.LLC(ieee.data_frame.data)
     ip_pkt = llc_pkt.data

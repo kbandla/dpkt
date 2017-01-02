@@ -39,7 +39,7 @@ class RTP(Packet):
         __hdr__: Header fields of RTP.
         TODO.
     """
-    
+
     __hdr__ = (
         ('_type', 'H', 0x8000),
         ('seq', 'H', 0),
@@ -127,9 +127,6 @@ class RTP(Packet):
     def __len__(self):
         return self.__hdr_len__ + len(self.csrc) + len(self.data)
 
-    def __str__(self):
-        return str(self.__bytes__())
-    
     def __bytes__(self):
         return self.pack_hdr() + self.csrc + bytes(self.data)
 

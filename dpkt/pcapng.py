@@ -11,6 +11,7 @@ from time import time
 import sys
 
 from . import dpkt
+from .compat import BytesIO
 
 BYTE_ORDER_MAGIC = 0x1A2B3C4D
 BYTE_ORDER_MAGIC_LE = 0x4D3C2B1A
@@ -81,23 +82,23 @@ dltoff = {DLT_NULL: 4, DLT_EN10MB: 14, DLT_IEEE802: 22, DLT_ARCNET: 6,
 
 
 def _swap32b(i):
-    """swap endianness of an uint32"""
+    """Swap endianness of an uint32"""
     return struct_unpack('<I', struct_pack('>I', i))[0]
 
 
 def _align32b(i):
-    """return int `i` aligned to the 32-bit boundary"""
+    """Return int `i` aligned to the 32-bit boundary"""
     r = i % 4
     return i if not r else i + 4 - r
 
 
 def _padded(s):
-    """return bytes `s` padded with zeroes to align to the 32-bit boundary"""
+    """Return bytes `s` padded with zeroes to align to the 32-bit boundary"""
     return struct_pack('%ss' % _align32b(len(s)), s)
 
 
 def _padlen(s):
-    """return size of padding required to align str `s` to the 32-bit boundary"""
+    """Return size of padding required to align str `s` to the 32-bit boundary"""
     return _align32b(len(s)) - len(s)
 
 
@@ -155,9 +156,6 @@ class _PcapngBlock(dpkt.Packet):
 
         hdr_buf = dpkt.Packet.pack_hdr(self)
         return hdr_buf[:-4] + opts_buf + hdr_buf[-4:]
-        
-    def __str__(self):
-        return str(self.__bytes__())
 
     def __len__(self):
         if not getattr(self, 'opts', None):
@@ -188,20 +186,17 @@ class PcapngOption(dpkt.Packet):
         if self.code == PCAPNG_OPT_COMMENT:
             self.text = self.data.decode('utf-8')
 
-    
+
     def __bytes__(self):
         #return dpkt.Packet.__bytes__(self)
         # encode comment
         if self.code == PCAPNG_OPT_COMMENT:
             text = getattr(self, 'text', self.data)
-            
+
             self.data = text.encode('utf-8') if not isinstance(text, bytes) else text
 
         self.len = len(self.data)
         return dpkt.Packet.pack_hdr(self) + _padded(self.data)
-    
-    def __str__(self):
-        return str(self.__bytes__())
 
     def __len__(self):
         return self.__hdr_len__ + len(self.data) + _padlen(self.data)
@@ -295,9 +290,6 @@ class EnhancedPacketBlock(_PcapngBlock):
 
         hdr_buf = dpkt.Packet.pack_hdr(self)
         return hdr_buf[:-4] + _padded(pkt_buf) + opts_buf + hdr_buf[-4:]
-    
-    def __str__(self):
-        return str(self.__bytes__())
 
     def __len__(self):
         opts_len = sum(len(o) for o in self.opts)
@@ -338,7 +330,7 @@ class Writer(object):
         self.__f.write(bytes(idb))
 
     def _validate_block(self, arg_name, blk, expected_cls):
-        """check a user-defined block for correct type and endianness"""
+        """Check a user-defined block for correct type and endianness"""
         if not isinstance(blk, expected_cls):
             raise ValueError('{0}: expecting class {1}'.format(
                 arg_name, expected_cls.__name__))
@@ -540,7 +532,7 @@ class Reader(object):
 
 
 def test_shb():
-    """test SHB with options"""
+    """Test SHB with options"""
     buf = (
         b'\x0a\x0d\x0d\x0a\x58\x00\x00\x00\x4d\x3c\x2b\x1a\x01\x00\x00\x00\xff\xff\xff\xff\xff\xff'
         b'\xff\xff\x04\x00\x31\x00\x54\x53\x68\x61\x72\x6b\x20\x31\x2e\x31\x30\x2e\x30\x72\x63\x32'
@@ -578,7 +570,7 @@ def test_shb():
 
 
 def test_idb():
-    """test IDB with options"""
+    """Test IDB with options"""
     buf = (
         b'\x01\x00\x00\x00\x20\x00\x00\x00\x01\x00\x00\x00\xff\xff\x00\x00\x09\x00\x01\x00\x06\x00'
         b'\x00\x00\x00\x00\x00\x00\x20\x00\x00\x00')
@@ -610,7 +602,7 @@ def test_idb():
 
 
 def test_epb():
-    """test EPB with a non-ascii comment option"""
+    """Test EPB with a non-ascii comment option"""
     buf = (
         b'\x06\x00\x00\x00\x80\x00\x00\x00\x00\x00\x00\x00\x73\xe6\x04\x00\xbe\x37\xe2\x19\x4a\x00'
         b'\x00\x00\x4a\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x08\x00\x45\x00'
@@ -648,11 +640,7 @@ def test_epb():
 
 
 def test_simple_write_read():
-    """test writing a basic pcapng and then reading it"""
-    try: 
-        from BytesIO import BytesIO 
-    except ImportError: 
-        from io import BytesIO
+    """Test writing a basic pcapng and then reading it"""
     fobj = BytesIO()
 
     writer = Writer(fobj, snaplen=0x2000, linktype=DLT_LINUX_SLL)
@@ -677,7 +665,7 @@ def test_simple_write_read():
 
 
 def test_custom_read_write():
-    """test a full pcapng file with 1 ICMP packet"""
+    """Test a full pcapng file with 1 ICMP packet"""
     buf = (
         b'\x0a\x0d\x0d\x0a\x7c\x00\x00\x00\x4d\x3c\x2b\x1a\x01\x00\x00\x00\xff\xff\xff\xff\xff\xff'
         b'\xff\xff\x03\x00\x1e\x00\x36\x34\x2d\x62\x69\x74\x20\x57\x69\x6e\x64\x6f\x77\x73\x20\x38'
@@ -698,8 +686,6 @@ def test_custom_read_write():
         b'\x01\x00\x0f\x00\x64\x70\x6b\x74\x20\x69\x73\x20\x61\x77\x65\x73\x6f\x6d\x65\x00\x00\x00'
         b'\x00\x00\x84\x00\x00\x00')
 
-    from .compat import BytesIO
-    
     fobj = BytesIO(buf)
 
     # test reading

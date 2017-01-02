@@ -32,7 +32,7 @@ class GRE(dpkt.Packet):
         __hdr__: Header fields of GRE.
         TODO.
     """
-    
+
     __hdr__ = (
         ('flags', 'H', 0),
         ('p', 'H', 0x0800),  # ETH_TYPE_IP
@@ -124,9 +124,6 @@ class GRE(dpkt.Packet):
         opt_fmtlen = struct.calcsize(b''.join(self.opt_fields_fmts()[1]))
         return self.__hdr_len__ + opt_fmtlen + sum(map(len, self.sre)) + len(self.data)
 
-    def __str__(self):
-        return str(self.__bytes__())
-    
     def __bytes__(self):
         fields, fmts = self.opt_fields_fmts()
         if fields:

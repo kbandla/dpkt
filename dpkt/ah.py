@@ -17,7 +17,7 @@ class AH(dpkt.Packet):
         auth: Authentication body.
         data: Message data.
     """
-    
+
     __hdr__ = (
         ('nxt', 'B', 0),
         ('len', 'B', 0),  # payload length
@@ -42,8 +42,5 @@ class AH(dpkt.Packet):
     def __len__(self):
         return self.__hdr_len__ + len(self.auth) + len(self.data)
 
-    def __str__(self):
-        return str(self.__bytes__())
-    
     def __bytes__(self):
         return self.pack_hdr() + bytes(self.auth) + bytes(self.data)
