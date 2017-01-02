@@ -85,10 +85,14 @@ class Gzip(dpkt.Packet):
             self.data = self.data[2 + n:]
         if self.flags & GZIP_FNAME:
             n = self.data.find(b'\x00')
+            if n == -1:
+                raise dpkt.NeedData('Gzip end of file name not found')
             self.filename = self.data[:n].decode('utf-8')
             self.data = self.data[n + 1:]
         if self.flags & GZIP_FCOMMENT:
             n = self.data.find(b'\x00')
+            if n == -1:
+                raise dpkt.NeedData('Gzip end of comment not found')
             self.comment = self.data[:n]
             self.data = self.data[n + 1:]
         if self.flags & GZIP_FENCRYPT:
