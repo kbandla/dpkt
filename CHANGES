@@ -1,5 +1,5 @@
-dpkt-1.9:
-	- add support for Python 3.5. Python 2.7 is still supported.
+dpkt-1.9.0:
+	- add support for Python 3.4, 3.5. Python 2.6 and 2.7 are still supported.
 
 dpkt-1.8:
 	- fix a typo in vrrp.py
