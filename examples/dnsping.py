@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+from __future__ import print_function
+
 
 import random, socket
 import dpkt
@@ -25,7 +27,7 @@ class DNSPing(ping.Ping):
         return sock
 
     def gen_ping(self, opts):
-        for i in xrange(opts.count):
+        for i in range(opts.count):
             dns = dpkt.dns.DNS(id=i)
             if opts.norecurse:
                 dns.op &= ~dpkt.dns.DNS_RD
@@ -37,16 +39,16 @@ class DNSPing(ping.Ping):
             yield str(dns)
 
     def print_header(self, opts):
-        print 'DNSPING %s:' % opts.ip,
+        print('DNSPING %s:' % opts.ip, end='')
         if opts.hostname:
-            print 'Name: %s' % opts.hostname
+            print('Name: %s' % opts.hostname)
         else:
-            print 'Name: *.%s' % opts.zone
+            print('Name: *.%s' % opts.zone)
 
     def print_reply(self, opts, buf, rtt):
         dns = dpkt.dns.DNS(buf)
-        print '%d bytes from %s: id=%d time=%.3f ms' % \
-              (len(buf), opts.ip, dns.id, rtt * 1000)
+        print('%d bytes from %s: id=%d time=%.3f ms' % \
+              (len(buf), opts.ip, dns.id, rtt * 1000))
 
 
 if __name__ == '__main__':

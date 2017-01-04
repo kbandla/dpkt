@@ -1,10 +1,14 @@
 # $Id: diameter.py 23 2006-11-08 15:45:33Z dugsong $
 # -*- coding: utf-8 -*-
 """Diameter."""
+from __future__ import print_function
+from __future__ import absolute_import
 
 import struct
-import dpkt
-from decorators import deprecated
+
+from . import dpkt
+from .decorators import deprecated
+from .compat import compat_ord
 
 # Diameter Base Protocol - RFC 3588
 # http://tools.ietf.org/html/rfc3588
@@ -28,7 +32,7 @@ class Diameter(dpkt.Packet):
         __hdr__: Header fields of Diameter.
         TODO.
     """
-    
+
     __hdr__ = (
         ('v', 'B', 1),
         ('len', '3s', 0),
@@ -100,8 +104,12 @@ class Diameter(dpkt.Packet):
 
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
-        self.cmd = (ord(self.cmd[0]) << 16) | (ord(self.cmd[1]) << 8) | (ord(self.cmd[2]))
-        self.len = (ord(self.len[0]) << 16) | (ord(self.len[1]) << 8) | (ord(self.len[2]))
+        self.cmd = (compat_ord(self.cmd[0]) << 16) | \
+                    (compat_ord(self.cmd[1]) << 8) | \
+                    (compat_ord(self.cmd[2]))
+        self.len = (compat_ord(self.len[0]) << 16) | \
+                    (compat_ord(self.len[1]) << 8) | \
+                    (compat_ord(self.len[2]))
         self.data = self.data[:self.len - self.__hdr_len__]
 
         l = []
@@ -112,16 +120,15 @@ class Diameter(dpkt.Packet):
         self.data = self.avps = l
 
     def pack_hdr(self):
-        self.len = chr((self.len >> 16) & 0xff) + chr((self.len >> 8) & 0xff) + chr(self.len & 0xff)
-        self.cmd = chr((self.cmd >> 16) & 0xff) + chr((self.cmd >> 8) & 0xff) + chr(self.cmd & 0xff)
+        self.len = struct.pack("BBB", (self.len >> 16) & 0xff, (self.len >> 8) & 0xff, self.len & 0xff)
+        self.cmd = struct.pack("BBB", (self.cmd >> 16) & 0xff, (self.cmd >> 8) & 0xff, self.cmd & 0xff)
         return dpkt.Packet.pack_hdr(self)
 
     def __len__(self):
         return self.__hdr_len__ + sum(map(len, self.data))
 
-    def __str__(self):
-        return self.pack_hdr() + ''.join(map(str, self.data))
-
+    def __bytes__(self):
+        return self.pack_hdr() + b''.join(map(bytes, self.data))
 
 class AVP(dpkt.Packet):
     __hdr__ = (
@@ -183,7 +190,9 @@ class AVP(dpkt.Packet):
 
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
-        self.len = (ord(self.len[0]) << 16) | (ord(self.len[1]) << 8) | (ord(self.len[2]))
+        self.len = (compat_ord(self.len[0]) << 16) | \
+                    (compat_ord(self.len[1]) << 8) | \
+                    (compat_ord(self.len[2]))
 
         if self.vendor_flag:
             self.vendor = struct.unpack('>I', self.data[:4])[0]
@@ -192,28 +201,28 @@ class AVP(dpkt.Packet):
             self.data = self.data[:self.len - self.__hdr_len__]
 
     def pack_hdr(self):
-        self.len = chr((self.len >> 16) & 0xff) + chr((self.len >> 8) & 0xff) + chr(self.len & 0xff)
+        self.len = struct.pack("BBB", (self.len >> 16) & 0xff, (self.len >> 8) & 0xff, self.len & 0xff)
         data = dpkt.Packet.pack_hdr(self)
         if self.vendor_flag:
             data += struct.pack('>I', self.vendor)
         return data
 
     def __len__(self):
-        length = self.__hdr_len__ + sum(map(len, self.data))
+        length = self.__hdr_len__ + len(self.data)
         if self.vendor_flag:
             length += 4
         return length
 
 
-__s = '\x01\x00\x00\x28\x80\x00\x01\x18\x00\x00\x00\x00\x00\x00\x41\xc8\x00\x00\x00\x0c\x00\x00\x01\x08\x40\x00\x00\x0c\x68\x30\x30\x32\x00\x00\x01\x28\x40\x00\x00\x08'
-__t = '\x01\x00\x00\x2c\x80\x00\x01\x18\x00\x00\x00\x00\x00\x00\x41\xc8\x00\x00\x00\x0c\x00\x00\x01\x08\xc0\x00\x00\x10\xde\xad\xbe\xef\x68\x30\x30\x32\x00\x00\x01\x28\x40\x00\x00\x08'
+__s = b'\x01\x00\x00\x28\x80\x00\x01\x18\x00\x00\x00\x00\x00\x00\x41\xc8\x00\x00\x00\x0c\x00\x00\x01\x08\x40\x00\x00\x0c\x68\x30\x30\x32\x00\x00\x01\x28\x40\x00\x00\x08'
+__t = b'\x01\x00\x00\x2c\x80\x00\x01\x18\x00\x00\x00\x00\x00\x00\x41\xc8\x00\x00\x00\x0c\x00\x00\x01\x08\xc0\x00\x00\x10\xde\xad\xbe\xef\x68\x30\x30\x32\x00\x00\x01\x28\x40\x00\x00\x08'
 
 
 def test_pack():
     d = Diameter(__s)
-    assert (__s == str(d))
+    assert (__s == bytes(d))
     d = Diameter(__t)
-    assert (__t == str(d))
+    assert (__t == bytes(d))
 
 
 def test_unpack():
@@ -230,7 +239,7 @@ def test_unpack():
     assert (avp.vendor_flag == 0)
     assert (avp.len == 12)
     assert (len(avp) == 12)
-    assert (avp.data == '\x68\x30\x30\x32')
+    assert (avp.data == b'\x68\x30\x30\x32')
 
     # also test the optional vendor id support
     d = Diameter(__t)
@@ -240,11 +249,10 @@ def test_unpack():
     assert (avp.len == 16)
     assert (len(avp) == 16)
     assert (avp.vendor == 3735928559)
-    assert (avp.data == '\x68\x30\x30\x32')
+    assert (avp.data == b'\x68\x30\x30\x32')
 
 
 if __name__ == '__main__':
     test_pack()
     test_unpack()
-    print 'Tests Successful...'
-
+    print('Tests Successful...')

@@ -1,8 +1,9 @@
 # $Id: rfb.py 47 2008-05-27 02:10:00Z jon.oberheide $
 # -*- coding: utf-8 -*-
 """Remote Framebuffer Protocol."""
+from __future__ import absolute_import
 
-import dpkt
+from . import dpkt
 
 # Remote Framebuffer Protocol
 # http://www.realvnc.com/docs/rfbproto.pdf

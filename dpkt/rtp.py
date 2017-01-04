@@ -1,9 +1,10 @@
 # $Id: rtp.py 23 2006-11-08 15:45:33Z dugsong $
 # -*- coding: utf-8 -*-
 """Real-Time Transport Protocol."""
+from __future__ import absolute_import
 
-from dpkt import Packet
-from decorators import deprecated
+from .dpkt import Packet
+from .decorators import deprecated
 
 # version 1100 0000 0000 0000 ! 0xC000  14
 # p       0010 0000 0000 0000 ! 0x2000  13
@@ -38,14 +39,14 @@ class RTP(Packet):
         __hdr__: Header fields of RTP.
         TODO.
     """
-    
+
     __hdr__ = (
         ('_type', 'H', 0x8000),
         ('seq', 'H', 0),
         ('ts', 'I', 0),
         ('ssrc', 'I', 0),
     )
-    csrc = ''
+    csrc = b''
 
     @property
     def version(self): return (self._type & _VERSION_MASK) >> _VERSION_SHIFT
@@ -126,8 +127,8 @@ class RTP(Packet):
     def __len__(self):
         return self.__hdr_len__ + len(self.csrc) + len(self.data)
 
-    def __str__(self):
-        return self.pack_hdr() + self.csrc + str(self.data)
+    def __bytes__(self):
+        return self.pack_hdr() + self.csrc + bytes(self.data)
 
     def unpack(self, buf):
         super(RTP, self).unpack(buf)

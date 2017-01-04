@@ -1,8 +1,9 @@
 # $Id: udp.py 23 2006-11-08 15:45:33Z dugsong $
 # -*- coding: utf-8 -*-
 """User Datagram Protocol."""
+from __future__ import absolute_import
 
-import dpkt
+from . import dpkt
 
 UDP_HDR_LEN = 8
 UDP_PORT_MAX = 65535

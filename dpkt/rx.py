@@ -1,8 +1,9 @@
 # $Id: rx.py 23 2006-11-08 15:45:33Z jonojono $
 # -*- coding: utf-8 -*-
 """Rx Protocol."""
+from __future__ import absolute_import
 
-import dpkt
+from . import dpkt
 
 # Types
 DATA = 0x01

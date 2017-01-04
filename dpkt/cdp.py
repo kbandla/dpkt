@@ -1,9 +1,11 @@
 # $Id: cdp.py 23 2006-11-08 15:45:33Z dugsong $
 # -*- coding: utf-8 -*-
 """Cisco Discovery Protocol."""
+from __future__ import absolute_import
 
 import struct
-import dpkt
+
+from . import dpkt
 
 CDP_DEVID = 1  # string
 CDP_ADDRESS = 2
@@ -34,7 +36,7 @@ class CDP(dpkt.Packet):
         __hdr__: Header fields of CDP.
         #TODO
     """
-    
+
     __hdr__ = (
         ('version', 'B', 2),
         ('ttl', 'B', 180),
@@ -80,11 +82,11 @@ class CDP(dpkt.Packet):
                 n = len(self.data)
             return self.__hdr_len__ + n
 
-        def __str__(self):
+        def __bytes__(self):
             self.len = len(self)
             if self.type == CDP_ADDRESS:
                 s = struct.pack('>I', len(self.data)) + \
-                    ''.join(map(str, self.data))
+                    b''.join(map(bytes, self.data))
             else:
                 s = self.data
             return self.pack_hdr() + s
@@ -102,8 +104,8 @@ class CDP(dpkt.Packet):
     def __len__(self):
         return self.__hdr_len__ + sum(map(len, self.data))
 
-    def __str__(self):
-        data = ''.join(map(str, self.data))
+    def __bytes__(self):
+        data = b''.join(map(bytes, self.data))
         if not self.sum:
             self.sum = dpkt.in_cksum(self.pack_hdr() + data)
         return self.pack_hdr() + data
