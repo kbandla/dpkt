@@ -158,7 +158,7 @@ class PaddedFrame(Frame):
         if self.flags & HTTP2_FLAG_PADDED:
             if self.length == 0:
                 raise HTTP2Exception('Missing padding length in PADDED frame')
-            self.pad_length = struct.unpack('B', self.data[0])[0]
+            self.pad_length = struct.unpack('B', self.data[0:1])[0]
             if self.length <= self.pad_length:
                 raise HTTP2Exception('Missing padding bytes in PADDED frame')
             self.unpadded_data = self.data[1:-self.pad_length]
@@ -308,7 +308,7 @@ class FrameFactory(object):
     def __new__(cls, buf):
         if len(buf) < 4:
             raise dpkt.NeedData
-        t = struct.unpack('B', buf[3])[0]
+        t = struct.unpack('B', buf[3:4])[0]
         frame_type = FRAME_TYPES.get(t, None)
         if frame_type is None:
             raise HTTP2Exception('Invalid frame type: ' + hex(t))
