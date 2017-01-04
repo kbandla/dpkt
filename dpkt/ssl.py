@@ -2,11 +2,13 @@
 # Portion Copyright 2012 Google Inc. All rights reserved.
 # -*- coding: utf-8 -*-
 """Secure Sockets Layer / Transport Layer Security."""
+from __future__ import absolute_import
 
-import dpkt
-import ssl_ciphersuites
 import struct
 import binascii
+
+from . import dpkt
+from . import ssl_ciphersuites
 
 #
 # Note from April 2011: cde...@gmail.com added code that parses SSL3/TLS messages more in depth.
@@ -48,7 +50,7 @@ ssl3_versions_str = {
     TLS12_V: 'TLS 1.2'
 }
 
-SSL3_VERSION_BYTES = set(('\x03\x00', '\x03\x01', '\x03\x02', '\x03\x03'))
+SSL3_VERSION_BYTES = set((b'\x03\x00', b'\x03\x01', b'\x03\x02', b'\x03\x03'))
 
 
 # Alert levels
@@ -145,7 +147,7 @@ def parse_variable_array(buf, lenbytes):
     # first have to figure out how to parse length
     assert lenbytes <= 4  # pretty sure 4 is impossible, too
     size_format = _SIZE_FORMATS[lenbytes - 1]
-    padding = '\x00' if lenbytes == 3 else ''
+    padding = b'\x00' if lenbytes == 3 else b''
     # read off the length
     size = struct.unpack(size_format, padding + buf[:lenbytes])[0]
     # read the actual data
@@ -361,7 +363,7 @@ class TLSHandshake(dpkt.Packet):
 
     @property
     def length(self):
-        return struct.unpack('!I', '\x00' + self.length_bytes)[0]
+        return struct.unpack('!I', b'\x00' + self.length_bytes)[0]
 
 
 RECORD_TYPES = {
@@ -425,7 +427,7 @@ class TestTLSRecord(object):
     @classmethod
     def setup_class(cls):
         # add some extra data, to make sure length is parsed correctly
-        cls.p = TLSRecord('\x17\x03\x01\x00\x08abcdefghzzzzzzzzzzz')
+        cls.p = TLSRecord(b'\x17\x03\x01\x00\x08abcdefghzzzzzzzzzzz')
 
     def test_content_type(self):
         assert (self.p.type == 23)
@@ -437,18 +439,18 @@ class TestTLSRecord(object):
         assert (self.p.length == 8)
 
     def test_data(self):
-        assert (self.p.data == 'abcdefgh')
+        assert (self.p.data == b'abcdefgh')
 
     def test_initial_flags(self):
         assert (self.p.compressed == True)
         assert (self.p.encrypted == True)
 
     def test_repack(self):
-        p2 = TLSRecord(type=23, version=0x0301, data='abcdefgh')
+        p2 = TLSRecord(type=23, version=0x0301, data=b'abcdefgh')
         assert (p2.type == 23)
         assert (p2.version == 0x0301)
         assert (p2.length == 8)
-        assert (p2.data == 'abcdefgh')
+        assert (p2.data == b'abcdefgh')
         assert (p2.pack() == self.p.pack())
 
     def test_total_length(self):
@@ -457,7 +459,7 @@ class TestTLSRecord(object):
 
     def test_raises_need_data_when_buf_is_short(self):
         import pytest
-        pytest.raises(dpkt.NeedData, TLSRecord, '\x16\x03\x01\x00\x10abc')
+        pytest.raises(dpkt.NeedData, TLSRecord, b'\x16\x03\x01\x00\x10abc')
 
 
 class TestTLSChangeCipherSpec(object):
@@ -466,7 +468,7 @@ class TestTLSChangeCipherSpec(object):
 
     @classmethod
     def setup_class(cls):
-        cls.p = TLSChangeCipherSpec('\x01')
+        cls.p = TLSChangeCipherSpec(b'\x01')
 
     def test_parses(self):
         assert (self.p.type == 1)
@@ -487,7 +489,7 @@ class TestTLSAppData(object):
 class TestTLSHandshake(object):
     @classmethod
     def setup_class(cls):
-        cls.h = TLSHandshake('\x00\x00\x00\x01\xff')
+        cls.h = TLSHandshake(b'\x00\x00\x00\x01\xff')
 
     def test_created_inside_message(self):
         assert (isinstance(self.h.data, TLSHelloRequest) == True)
@@ -497,7 +499,7 @@ class TestTLSHandshake(object):
 
     def test_raises_need_data(self):
         import pytest
-        pytest.raises(dpkt.NeedData, TLSHandshake, '\x00\x00\x01\x01')
+        pytest.raises(dpkt.NeedData, TLSHandshake, b'\x00\x00\x01\x01')
 
 
 class TestClientHello(object):
@@ -507,16 +509,16 @@ class TestClientHello(object):
     @classmethod
     def setup_class(cls):
         cls.data = _hexdecode(
-            "01000199"  # handshake header
-            "0301"  # version
-            "5008220ce5e0e78b6891afe204498c9363feffbe03235a2d9e05b7d990eb708d"  # rand
-            "2009bc0192e008e6fa8fe47998fca91311ba30ddde14a9587dc674b11c3d3e5ed1"  # session id
+            b"01000199"  # handshake header
+            b"0301"  # version
+            b"5008220ce5e0e78b6891afe204498c9363feffbe03235a2d9e05b7d990eb708d"  # rand
+            b"2009bc0192e008e6fa8fe47998fca91311ba30ddde14a9587dc674b11c3d3e5ed1"  # session id
             # cipher suites
-            "005400ffc00ac0140088008700390038c00fc00500840035c007c009c011c0130045004400330032c00cc00ec002c0040096004100050004002fc008c01200160013c00dc003feff000ac006c010c00bc00100020001"
-            "0100"  # compresssion methods
+            b"005400ffc00ac0140088008700390038c00fc00500840035c007c009c011c0130045004400330032c00cc00ec002c0040096004100050004002fc008c01200160013c00dc003feff000ac006c010c00bc00100020001"
+            b"0100"  # compresssion methods
             # extensions
-            "00fc0000000e000c0000096c6f63616c686f7374000a00080006001700180019000b00020100002300d0a50b2e9f618a9ea9bf493ef49b421835cd2f6b05bbe1179d8edf70d58c33d656e8696d36d7e7e0b9d3ecc0e4de339552fa06c64c0fcb550a334bc43944e2739ca342d15a9ebbe981ac87a0d38160507d47af09bdc16c5f0ee4cdceea551539382333226048a026d3a90a0535f4a64236467db8fee22b041af986ad0f253bc369137cd8d8cd061925461d7f4d7895ca9a4181ab554dad50360ac31860e971483877c9335ac1300c5e78f3e56f3b8e0fc16358fcaceefd5c8d8aaae7b35be116f8832856ca61144fcdd95e071b94d0cf7233740000"
-            "FFFFFFFFFFFFFFFF")  # random garbage
+            b"00fc0000000e000c0000096c6f63616c686f7374000a00080006001700180019000b00020100002300d0a50b2e9f618a9ea9bf493ef49b421835cd2f6b05bbe1179d8edf70d58c33d656e8696d36d7e7e0b9d3ecc0e4de339552fa06c64c0fcb550a334bc43944e2739ca342d15a9ebbe981ac87a0d38160507d47af09bdc16c5f0ee4cdceea551539382333226048a026d3a90a0535f4a64236467db8fee22b041af986ad0f253bc369137cd8d8cd061925461d7f4d7895ca9a4181ab554dad50360ac31860e971483877c9335ac1300c5e78f3e56f3b8e0fc16358fcaceefd5c8d8aaae7b35be116f8832856ca61144fcdd95e071b94d0cf7233740000"
+            b"FFFFFFFFFFFFFFFF")  # random garbage
         cls.p = TLSHandshake(cls.data)
 
     def test_client_hello_constructed(self):
@@ -528,7 +530,7 @@ class TestClientHello(object):
     #       self.assertEqual(self.p.random_unixtime, 1342710284)
 
     def test_client_random_correct(self):
-        assert (self.p.data.random == _hexdecode('5008220ce5e0e78b6891afe204498c9363feffbe03235a2d9e05b7d990eb708d'))
+        assert (self.p.data.random == _hexdecode(b'5008220ce5e0e78b6891afe204498c9363feffbe03235a2d9e05b7d990eb708d'))
 
     def test_cipher_suite_length(self):
         # we won't bother testing the identity of each cipher suite in the list.
@@ -536,7 +538,7 @@ class TestClientHello(object):
         # self.assertEqual(len(self.p.ciphersuites), 42)
 
     def test_session_id(self):
-        assert (self.p.data.session_id == _hexdecode('09bc0192e008e6fa8fe47998fca91311ba30ddde14a9587dc674b11c3d3e5ed1'))
+        assert (self.p.data.session_id == _hexdecode(b'09bc0192e008e6fa8fe47998fca91311ba30ddde14a9587dc674b11c3d3e5ed1'))
 
     def test_compression_methods(self):
         assert (self.p.data.num_compression_methods == 1)
@@ -552,7 +554,7 @@ class TestServerHello(object):
     @classmethod
     def setup_class(cls):
         cls.data = _hexdecode(
-            '0200004d03015008220c8ec43c5462315a7c99f5d5b6bff009ad285b51dc18485f352e9fdecd2009bc0192e008e6fa8fe47998fca91311ba30ddde14a9587dc674b11c3d3e5ed10002000005ff01000100')
+            b'0200004d03015008220c8ec43c5462315a7c99f5d5b6bff009ad285b51dc18485f352e9fdecd2009bc0192e008e6fa8fe47998fca91311ba30ddde14a9587dc674b11c3d3e5ed10002000005ff01000100')
         cls.p = TLSHandshake(cls.data)
 
     def test_constructed(self):
@@ -562,7 +564,7 @@ class TestServerHello(object):
     #        self.assertEqual(self.p.random_unixtime, 1342710284)
 
     def test_random_correct(self):
-        assert (self.p.data.random == _hexdecode('5008220c8ec43c5462315a7c99f5d5b6bff009ad285b51dc18485f352e9fdecd'))
+        assert (self.p.data.random == _hexdecode(b'5008220c8ec43c5462315a7c99f5d5b6bff009ad285b51dc18485f352e9fdecd'))
 
     def test_cipher_suite(self):
         assert (ssl_ciphersuites.BY_CODE[self.p.data.cipher_suite].name == 'TLS_RSA_WITH_NULL_SHA')
@@ -577,12 +579,12 @@ class TestTLSMultiFactory(object):
 
     @classmethod
     def setup_class(cls):
-        cls.data = _hexdecode('1703010010'  # header 1
-                               'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'  # data 1
-                               '1703010010'  # header 2
-                               'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB'  # data 2
-                               '1703010010'  # header 3
-                               'CCCCCCCC')  # data 3 (incomplete)
+        cls.data = _hexdecode(b'1703010010'  # header 1
+                               b'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'  # data 1
+                               b'1703010010'  # header 2
+                               b'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB'  # data 2
+                               b'1703010010'  # header 3
+                               b'CCCCCCCC')  # data 3 (incomplete)
         cls.msgs, cls.bytes_parsed = tls_multi_factory(cls.data)
 
     def test_num_messages(self):
@@ -594,8 +596,8 @@ class TestTLSMultiFactory(object):
         assert (self.bytes_parsed == (5 + 16) * 2)
 
     def test_first_msg_data(self):
-        assert (self.msgs[0].data == _hexdecode('AA' * 16))
+        assert (self.msgs[0].data == _hexdecode(b'AA' * 16))
 
     def test_second_msg_data(self):
-        assert (self.msgs[1].data == _hexdecode('BB' * 16))
+        assert (self.msgs[1].data == _hexdecode(b'BB' * 16))
 

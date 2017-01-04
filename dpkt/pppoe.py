@@ -1,11 +1,14 @@
 # $Id: pppoe.py 23 2006-11-08 15:45:33Z dugsong $
 # -*- coding: utf-8 -*-
 """PPP-over-Ethernet."""
+from __future__ import absolute_import
 
-import dpkt
-import ppp
 import struct
-from decorators import deprecated
+import codecs
+
+from . import dpkt
+from . import ppp
+from .decorators import deprecated
 
 # RFC 2516 codes
 PPPoE_PADI = 0x09
@@ -102,25 +105,25 @@ class PPP(ppp.PPP):
             if self.p > 0xff:
                 return struct.pack('>H', self.p)
             return dpkt.Packet.pack_hdr(self)
-        except struct.error, e:
+        except struct.error as e:
             raise dpkt.PackError(str(e))
 
 
 def test_pppoe_discovery():
-    s = (b"11070000002801010000010300046413"
-         b"85180102000442524153010400103d0f"
-         b"0587062484f2df32b9ddfd77bd5b").decode('hex')
-
+    s = ("11070000002801010000010300046413"
+         "85180102000442524153010400103d0f"
+         "0587062484f2df32b9ddfd77bd5b")
+    s = codecs.decode(s, 'hex')
     p = PPPoE(s)
 
     assert p.code == PPPoE_PADO
     assert p.v == 1
     assert p.type == 1
 
-    s = (b"11190000002801010000010300046413"
-         b"85180102000442524153010400103d0f"
-         b"0587062484f2df32b9ddfd77bd5b").decode('hex')
-
+    s = ("11190000002801010000010300046413"
+         "85180102000442524153010400103d0f"
+         "0587062484f2df32b9ddfd77bd5b")
+    s = codecs.decode(s, 'hex')
     p = PPPoE(s)
 
     assert p.code == PPPoE_PADR
@@ -129,8 +132,8 @@ def test_pppoe_discovery():
 
 
 def test_pppoe_session():
-    s = b"11000011000cc0210101000a050605fcd459".decode('hex')
-
+    s = "11000011000cc0210101000a050605fcd459"
+    s = codecs.decode(s, 'hex')
     p = PPPoE(s)
 
     assert p.code == PPPoE_SESSION
@@ -140,11 +143,11 @@ def test_pppoe_session():
 
     assert p.data.pack_hdr() == b"\xc0\x21"
 
-    s = (b"110000110066005760000000003c3a40fc000000000000000000000000000001"
-         b"fc0000000002010000000000000100018100bf291f9700010102030405060708"
-         b"090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728"
-         b"292a2b2c2d2e2f3031323334").decode("hex")
-
+    s = ("110000110066005760000000003c3a40fc000000000000000000000000000001"
+         "fc0000000002010000000000000100018100bf291f9700010102030405060708"
+         "090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728"
+         "292a2b2c2d2e2f3031323334")
+    s = codecs.decode(s, 'hex')
     p = PPPoE(s)
     assert p.code == PPPoE_SESSION
     assert isinstance(p.ppp, PPP)

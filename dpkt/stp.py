@@ -1,8 +1,10 @@
 # $Id: stp.py 23 2006-11-08 15:45:33Z dugsong $
 # -*- coding: utf-8 -*-
 """Spanning Tree Protocol."""
+from __future__ import print_function
+from __future__ import absolute_import
 
-import dpkt
+from . import dpkt
 
 
 class STP(dpkt.Packet):
@@ -64,7 +66,7 @@ class STP(dpkt.Packet):
 
 
 def test_stp():
-    buf = '\x00\x00\x02\x02\x3e\x80\x00\x08\x00\x27\xad\xa3\x41\x00\x00\x00\x00\x80\x00\x08\x00\x27\xad\xa3\x41\x80\x01\x00\x00\x14\x00\x02\x00\x0f\x00\x00\x00\x00\x00\x02\x00\x14\x00'
+    buf = b'\x00\x00\x02\x02\x3e\x80\x00\x08\x00\x27\xad\xa3\x41\x00\x00\x00\x00\x80\x00\x08\x00\x27\xad\xa3\x41\x80\x01\x00\x00\x14\x00\x02\x00\x0f\x00\x00\x00\x00\x00\x02\x00\x14\x00'
     stp = STP(buf)
 
     assert stp.proto_id == 0
@@ -74,13 +76,13 @@ def test_stp():
     assert stp.hello == 2
     assert stp.fd == 15
 
-    assert str(stp) == buf
+    assert bytes(stp) == buf
 
     stp.fd = 100
-    assert stp.pack_hdr()[-2:] == '\x64\x00'  # 100 << 8
+    assert stp.pack_hdr()[-2:] == b'\x64\x00'  # 100 << 8
 
 
 if __name__ == '__main__':
     # Runs all the test associated with this class/file
     test_stp()
-    print 'Tests Successful...'
+    print('Tests Successful...')

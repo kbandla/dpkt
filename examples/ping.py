@@ -60,14 +60,14 @@ class Ping(object):
         except KeyboardInterrupt:
             pass
 
-        print '\n--- %s ping statistics ---' % opts.ip
-        print '%d packets transmitted, %d packets received, %.1f%% packet loss' % \
-              (sent, rcvd, (float(sent - rcvd) / sent) * 100)
+        print('\n--- %s ping statistics ---' % opts.ip)
+        print('%d packets transmitted, %d packets received, %.1f%% packet loss' % \
+              (sent, rcvd, (float(sent - rcvd) / sent) * 100))
         rtt_avg = rtt_sum / sent
         if rtt_min == 0xffff: rtt_min = 0
-        print 'round-trip min/avg/max/std-dev = %.3f/%.3f/%.3f/%.3f ms' % \
+        print('round-trip min/avg/max/std-dev = %.3f/%.3f/%.3f/%.3f ms' %
               (rtt_min * 1000, rtt_avg * 1000, rtt_max * 1000,
-               math.sqrt((rtt_sumsq / sent) - (rtt_avg * rtt_avg)) * 1000)
+               math.sqrt((rtt_sumsq / sent) - (rtt_avg * rtt_avg)) * 1000))
 
 
 class ICMPPing(Ping):
@@ -84,14 +84,14 @@ class ICMPPing(Ping):
         return sock
     
     def gen_ping(self, opts):
-        for i in xrange(opts.count):
+        for i in range(opts.count):
             icmp = dpkt.icmp.ICMP(
                 type=8, data=dpkt.icmp.ICMP.Echo(id=random.randint(0, 0xffff),
                                                  seq=i, data=opts.payload))
             yield str(icmp)
 
     def print_header(self, opts):
-        print 'PING %s: %d data bytes' % (opts.ip, len(opts.payload))
+        print('PING %s: %d data bytes' % (opts.ip, len(opts.payload)))
         
     def print_reply(self, opts, buf, rtt):
         ip = dpkt.ip.IP(buf)
@@ -99,9 +99,9 @@ class ICMPPing(Ping):
             # XXX - work around raw socket bug on MacOS X
             ip.data = ip.icmp = dpkt.icmp.ICMP(buf[20:])
             ip.len = len(ip.data)
-        print '%d bytes from %s: icmp_seq=%d ip_id=%d ttl=%d time=%.3f ms' % \
+        print('%d bytes from %s: icmp_seq=%d ip_id=%d ttl=%d time=%.3f ms' %
               (len(ip.icmp), opts.ip, ip.icmp.echo.seq, ip.id, ip.ttl,
-               rtt * 1000)
+               rtt * 1000))
 
 if __name__ == '__main__':
     p = ICMPPing()

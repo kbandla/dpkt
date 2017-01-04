@@ -1,15 +1,18 @@
 # $Id: gzip.py 23 2006-11-08 15:45:33Z dugsong $
 # -*- coding: utf-8 -*-
 """GNU zip."""
+from __future__ import print_function
+from __future__ import absolute_import
 
 import struct
 import zlib
-import dpkt
 import binascii
+
+from . import dpkt
 
 
 # RFC 1952
-GZIP_MAGIC = '\x1f\x8b'
+GZIP_MAGIC = b'\x1f\x8b'
 
 # Compression methods
 GZIP_MSTORED = 0
@@ -81,13 +84,13 @@ class Gzip(dpkt.Packet):
             self.extra = GzipExtra(self.data[2:2 + n])
             self.data = self.data[2 + n:]
         if self.flags & GZIP_FNAME:
-            n = self.data.find('\x00')
+            n = self.data.find(b'\x00')
             if n == -1:
                 raise dpkt.NeedData('Gzip end of file name not found')
-            self.filename = self.data[:n]
+            self.filename = self.data[:n].decode('utf-8')
             self.data = self.data[n + 1:]
         if self.flags & GZIP_FCOMMENT:
-            n = self.data.find('\x00')
+            n = self.data.find(b'\x00')
             if n == -1:
                 raise dpkt.NeedData('Gzip end of comment not found')
             self.comment = self.data[:n]
@@ -105,19 +108,19 @@ class Gzip(dpkt.Packet):
         l = []
         if self.extra:
             self.flags |= GZIP_FEXTRA
-            s = str(self.extra)
+            s = bytes(self.extra)
             l.append(struct.pack('<H', len(s)))
             l.append(s)
         if self.filename:
             self.flags |= GZIP_FNAME
             l.append(self.filename)
-            l.append('\x00')
+            l.append(b'\x00')
         if self.comment:
             self.flags |= GZIP_FCOMMENT
             l.append(self.comment)
-            l.append('\x00')
+            l.append(b'\x00')
         l.insert(0, super(Gzip, self).pack_hdr())
-        return ''.join(l)
+        return b''.join(l)
 
     def compress(self):
         """Compress self.data."""
@@ -139,11 +142,11 @@ class TestGzip(object):
 
     @classmethod
     def setup_class(cls):
-        cls.data = _hexdecode('1F8B' # magic
-                              '080880C185560003' # header
-                              '68656C6C6F2E74787400' # filename
-                              'F348CDC9C95728CF2FCA4951E40200' # data
-                              '41E4A9B20D000000') # checksum
+        cls.data = _hexdecode(b'1F8B' # magic
+                              b'080880C185560003' # header
+                              b'68656C6C6F2E74787400' # filename
+                              b'F348CDC9C95728CF2FCA4951E40200' # data
+                              b'41E4A9B20D000000') # checksum
         cls.p = Gzip(cls.data)
 
     def test_method(self):
@@ -163,14 +166,14 @@ class TestGzip(object):
         assert (self.p.os == GZIP_OS_UNIX)
 
     def test_filename(self):
-        assert (self.p.filename == "hello.txt")
+        assert (self.p.filename == "hello.txt") # always str (utf-8)
 
     def test_decompress(self):
-        assert (self.p.decompress() == "Hello world!\n")
+        assert (self.p.decompress() == b"Hello world!\n") # always bytes
 
 
 if __name__ == '__main__':
     import sys
 
     gz = Gzip(open(sys.argv[1]).read())
-    print `gz`, `gz.decompress()`
+    print(repr(gz), repr(gz.decompress()))

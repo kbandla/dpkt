@@ -1,16 +1,18 @@
 # $Id: pcap.py 77 2011-01-06 15:59:38Z dugsong $
 # -*- coding: utf-8 -*-
 """Libpcap file format."""
+from __future__ import print_function
+from __future__ import absolute_import
 
 import sys
 import time
-import dpkt
 from decimal import Decimal
 
+from . import dpkt
 
-TCPDUMP_MAGIC = 0xa1b2c3d4L
+TCPDUMP_MAGIC = 0xa1b2c3d4
 TCPDUMP_MAGIC_NANO = 0xa1b23c4d
-PMUDPCT_MAGIC = 0xd4c3b2a1L
+PMUDPCT_MAGIC = 0xd4c3b2a1
 PMUDPCT_MAGIC_NANO = 0x4d3cb2a1
 
 PCAP_VERSION_MAJOR = 2
@@ -168,7 +170,7 @@ class FileHdr(dpkt.Packet):
         __hdr__: Header fields of pcap file header.
         TODO.
     """
-    
+
     __hdr__ = (
         ('magic', 'I', TCPDUMP_MAGIC),
         ('v_major', 'H', PCAP_VERSION_MAJOR),
@@ -202,12 +204,12 @@ class Writer(object):
             fh = LEFileHdr(snaplen=snaplen, linktype=linktype, magic=magic)
         else:
             fh = FileHdr(snaplen=snaplen, linktype=linktype, magic=magic)
-        self.__f.write(str(fh))
+        self.__f.write(bytes(fh))
 
     def writepkt(self, pkt, ts=None):
         if ts is None:
             ts = time.time()
-        s = str(pkt)
+        s = bytes(pkt)
         n = len(s)
         sec = int(ts)
         usec = int(round(ts % 1 * 10 ** self._precision))
@@ -272,8 +274,8 @@ class Reader(object):
     def readpkts(self):
         return list(self)
 
-    def next(self):
-        return self.__iter.next()
+    def __next__(self):
+        return next(self.__iter)
 
     def dispatch(self, cnt, callback, *args):
         """Collect and process packets with a user callback.
@@ -291,7 +293,7 @@ class Reader(object):
         if cnt > 0:
             for _ in range(cnt):
                 try:
-                    ts, pkt = self.next()
+                    ts, pkt = next(iter(self))
                 except StopIteration:
                     break
                 callback(ts, pkt, *args)
@@ -316,8 +318,8 @@ class Reader(object):
 
 
 def test_pcap_endian():
-    be = '\xa1\xb2\xc3\xd4\x00\x02\x00\x04\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x60\x00\x00\x00\x01'
-    le = '\xd4\xc3\xb2\xa1\x02\x00\x04\x00\x00\x00\x00\x00\x00\x00\x00\x00\x60\x00\x00\x00\x01\x00\x00\x00'
+    be = b'\xa1\xb2\xc3\xd4\x00\x02\x00\x04\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x60\x00\x00\x00\x01'
+    le = b'\xd4\xc3\xb2\xa1\x02\x00\x04\x00\x00\x00\x00\x00\x00\x00\x00\x00\x60\x00\x00\x00\x01\x00\x00\x00'
     befh = FileHdr(be)
     lefh = LEFileHdr(le)
     assert (befh.linktype == lefh.linktype)
@@ -325,28 +327,20 @@ def test_pcap_endian():
 
 def test_reader():
     data = (  # full libpcap file with one packet
-        '\xd4\xc3\xb2\xa1\x02\x00\x04\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff\x00\x00\x01\x00\x00\x00'
-        '\xb2\x67\x4a\x42\xae\x91\x07\x00\x46\x00\x00\x00\x46\x00\x00\x00\x00\xc0\x9f\x32\x41\x8c\x00\xe0'
-        '\x18\xb1\x0c\xad\x08\x00\x45\x00\x00\x38\x00\x00\x40\x00\x40\x11\x65\x47\xc0\xa8\xaa\x08\xc0\xa8'
-        '\xaa\x14\x80\x1b\x00\x35\x00\x24\x85\xed'
+        b'\xd4\xc3\xb2\xa1\x02\x00\x04\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff\x00\x00\x01\x00\x00\x00'
+        b'\xb2\x67\x4a\x42\xae\x91\x07\x00\x46\x00\x00\x00\x46\x00\x00\x00\x00\xc0\x9f\x32\x41\x8c\x00\xe0'
+        b'\x18\xb1\x0c\xad\x08\x00\x45\x00\x00\x38\x00\x00\x40\x00\x40\x11\x65\x47\xc0\xa8\xaa\x08\xc0\xa8'
+        b'\xaa\x14\x80\x1b\x00\x35\x00\x24\x85\xed'
     )
 
-    # --- StringIO tests ---
+    # --- BytesIO tests ---
+    from .compat import BytesIO
 
-    # StringIO
-    import StringIO
-    fobj = StringIO.StringIO(data)
+    # BytesIO
+    fobj = BytesIO(data)
     reader = Reader(fobj)
-    assert reader.name == '<StringIO>'
-    _, buf1 = iter(reader).next()
-    assert buf1 == data[FileHdr.__hdr_len__ + PktHdr.__hdr_len__:]
-
-    # cStringIO
-    import cStringIO
-    fobj = cStringIO.StringIO(data)
-    reader = Reader(fobj)
-    assert reader.name == '<StringI>'
-    _, buf1 = iter(reader).next()
+    assert reader.name == '<BytesIO>'
+    _, buf1 = next(iter(reader))
     assert buf1 == data[FileHdr.__hdr_len__ + PktHdr.__hdr_len__:]
 
     # --- dispatch() tests ---
@@ -372,4 +366,4 @@ if __name__ == '__main__':
     test_pcap_endian()
     test_reader()
 
-    print 'Tests Successful...'
+    print('Tests Successful...')
