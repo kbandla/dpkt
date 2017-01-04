@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 """ATA over Ethernet ATA command"""
+from __future__ import print_function
+from __future__ import absolute_import
 
-import dpkt
+from . import dpkt
 
 
 class AOECFG(dpkt.Packet):
@@ -25,11 +27,11 @@ class AOECFG(dpkt.Packet):
 
 
 def test_aoecfg():
-    s = '\x01\x02\x03\x04\x05\x06\x11\x12\x13\x14\x15\x16\x88\xa2\x10\x00\x00\x01\x02\x01\x80\x00\x00\x00\x12\x34\x00\x00\x00\x00\x04\x00' + '\0xed' * 1024
+    s = b'\x01\x02\x03\x04\x05\x06\x11\x12\x13\x14\x15\x16\x88\xa2\x10\x00\x00\x01\x02\x01\x80\x00\x00\x00\x12\x34\x00\x00\x00\x00\x04\x00' + b'\0xed' * 1024
     aoecfg = AOECFG(s[14 + 10:])
     assert (aoecfg.bufcnt == 0x1234)
 
 
 if __name__ == '__main__':
     test_aoecfg()
-    print 'Tests Successful...'
+    print('Tests Successful...')

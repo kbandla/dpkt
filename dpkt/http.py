@@ -1,9 +1,11 @@
 # $Id: http.py 86 2013-03-05 19:25:19Z andrewflnr@gmail.com $
 # -*- coding: utf-8 -*-
 """Hypertext Transfer Protocol."""
+from __future__ import print_function
+from __future__ import absolute_import
 
-import cStringIO
-import dpkt
+from . import dpkt
+from .compat import StringIO, iteritems
 
 
 def parse_headers(f):
@@ -79,7 +81,7 @@ class Message(dpkt.Packet):
         __hdr__: Header fields of HTTP.
         TODO.
     """
-    
+
     __metaclass__ = type
     __hdr_defaults__ = {}
     headers = None
@@ -91,13 +93,14 @@ class Message(dpkt.Packet):
         else:
             self.headers = {}
             self.body = ''
-            for k, v in self.__hdr_defaults__.iteritems():
+            # NOTE: changing this to iteritems breaks py3 compatibility
+            for k, v in self.__hdr_defaults__.items():
                 setattr(self, k, v)
-            for k, v in kwargs.iteritems():
+            for k, v in iteritems(kwargs):
                 setattr(self, k, v)
 
-    def unpack(self, buf, is_body_allowed = True):
-        f = cStringIO.StringIO(buf)
+    def unpack(self, buf, is_body_allowed=True):
+        f = StringIO(buf)
         # Parse headers
         self.headers = parse_headers(f)
         # Parse body
@@ -107,7 +110,7 @@ class Message(dpkt.Packet):
         self.data = f.read()
 
     def pack_hdr(self):
-        return ''.join(['%s: %s\r\n' % t for t in self.headers.iteritems()])
+        return ''.join(['%s: %s\r\n' % t for t in iteritems(self.headers)])
 
     def __len__(self):
         return len(str(self))
@@ -125,7 +128,7 @@ class Request(Message):
         __hdr__: Header fields of HTTP request.
         TODO.
     """
-    
+
     __hdr_defaults__ = {
         'method': 'GET',
         'uri': '/',
@@ -147,7 +150,7 @@ class Request(Message):
     __proto = 'HTTP'
 
     def unpack(self, buf):
-        f = cStringIO.StringIO(buf)
+        f = StringIO(buf)
         line = f.readline()
         l = line.strip().split()
         if len(l) < 2:
@@ -179,7 +182,7 @@ class Response(Message):
         __hdr__: Header fields of HTTP Response.
         TODO.
     """
-    
+
     __hdr_defaults__ = {
         'version': '1.0',
         'status': '200',
@@ -188,7 +191,7 @@ class Response(Message):
     __proto = 'HTTP'
 
     def unpack(self, buf):
-        f = cStringIO.StringIO(buf)
+        f = StringIO(buf)
         line = f.readline()
         l = line.strip().split(None, 2)
         if len(l) < 2 or not l[0].startswith(self.__proto) or not l[1].isdigit():
@@ -202,7 +205,7 @@ class Response(Message):
         # a message is dependent on both the request method and the response
         # status code (section 6.1.1). All responses to the HEAD request method
         # MUST NOT include a message-body, even though the presence of entity-
-        # header fields might lead one to believe they do. All 1xx 
+        # header fields might lead one to believe they do. All 1xx
         # (informational), 204 (no content), and 304 (not modified) responses
         # MUST NOT include a message-body. All other responses do include a
         # message-body, although it MAY be of zero length.
@@ -265,8 +268,8 @@ def test_noreason_response():
     r = Response(s)
     assert r.reason == ''
     assert str(r) == s
-    
-    
+
+
 def test_body_forbidden_response():
     s = 'HTTP/1.1 304 Not Modified\r\n'\
         'Content-Type: text/css\r\n'\
@@ -293,10 +296,10 @@ def test_body_forbidden_response():
         msg = Response(s)
         s = msg.data
         result.append(msg)
-        
+
     # the second HTTP response should be an standalone message
-    assert len(result) == 2  
-    
+    assert len(result) == 2
+
 
 def test_request_version():
     s = """GET / HTTP/1.0\r\n\r\n"""
@@ -322,16 +325,17 @@ def test_request_version():
 def test_invalid_header():
     # valid header.
     s = 'POST /main/redirect/ab/1,295,,00.html HTTP/1.0\r\n' \
-    'Referer: http://www.email.com/login/snap/login.jhtml\r\n' \
-    'Connection: Keep-Alive\r\nUser-Agent: Mozilla/4.75 [en] (X11; U; OpenBSD 2.8 i386; Nav)\r\n' \
-    'Host: ltd.snap.com\r\n' \
-    'Accept: image/gif, image/x-xbitmap, image/jpeg, image/pjpeg, image/png, */*\r\n' \
-    'Accept-Encoding: gzip\r\n' \
-    'Accept-Language: en\r\n' \
-    'Accept-Charset: iso-8859-1,*,utf-8\r\n' \
-    'Content-type: application/x-www-form-urlencoded\r\n' \
-    'Content-length: 61\r\n\r\n' \
-    'sn=em&mn=dtest4&pw=this+is+atest&fr=true&login=Sign+in&od=www'
+        'Referer: http://www.email.com/login/snap/login.jhtml\r\n' \
+        'Connection: Keep-Alive\r\n' \
+        'User-Agent: Mozilla/4.75 [en] (X11; U; OpenBSD 2.8 i386; Nav)\r\n' \
+        'Host: ltd.snap.com\r\n' \
+        'Accept: image/gif, image/x-xbitmap, image/jpeg, image/pjpeg, image/png, */*\r\n' \
+        'Accept-Encoding: gzip\r\n' \
+        'Accept-Language: en\r\n' \
+        'Accept-Charset: iso-8859-1,*,utf-8\r\n' \
+        'Content-type: application/x-www-form-urlencoded\r\n' \
+        'Content-length: 61\r\n\r\n' \
+        'sn=em&mn=dtest4&pw=this+is+atest&fr=true&login=Sign+in&od=www'
     r = Request(s)
     assert r.method == 'POST'
     assert r.uri == '/main/redirect/ab/1,295,,00.html'
@@ -340,20 +344,21 @@ def test_invalid_header():
 
     # invalid header.
     s_weird_end = 'POST /main/redirect/ab/1,295,,00.html HTTP/1.0\r\n' \
-    'Referer: http://www.email.com/login/snap/login.jhtml\r\n' \
-    'Connection: Keep-Alive\r\nUser-Agent: Mozilla/4.75 [en] (X11; U; OpenBSD 2.8 i386; Nav)\r\n' \
-    'Host: ltd.snap.com\r\n' \
-    'Accept: image/gif, image/x-xbitmap, image/jpeg, image/pjpeg, image/png, */*\r\n' \
-    'Accept-Encoding: gzip\r\n' \
-    'Accept-Language: en\r\n' \
-    'Accept-Charset: iso-8859-1,*,utf-8\r\n' \
-    'Content-type: application/x-www-form-urlencoded\r\n' \
-    'Cookie: TrackID=1PWdcr3MO_C611BGW'
+        'Referer: http://www.email.com/login/snap/login.jhtml\r\n' \
+        'Connection: Keep-Alive\r\n' \
+        'User-Agent: Mozilla/4.75 [en] (X11; U; OpenBSD 2.8 i386; Nav)\r\n' \
+        'Host: ltd.snap.com\r\n' \
+        'Accept: image/gif, image/x-xbitmap, image/jpeg, image/pjpeg, image/png, */*\r\n' \
+        'Accept-Encoding: gzip\r\n' \
+        'Accept-Language: en\r\n' \
+        'Accept-Charset: iso-8859-1,*,utf-8\r\n' \
+        'Content-type: application/x-www-form-urlencoded\r\n' \
+        'Cookie: TrackID=1PWdcr3MO_C611BGW'
     r = Request(s_weird_end)
     assert r.method == 'POST'
     assert r.uri == '/main/redirect/ab/1,295,,00.html'
     assert r.headers['content-type'] == 'application/x-www-form-urlencoded'
-    
+
     # messy header.
     s_messy_header = 'aaaaaaaaa\r\nbbbbbbbbb'
     try:
@@ -378,4 +383,4 @@ if __name__ == '__main__':
     test_request_version()
     test_invalid_header()
     test_body_forbidden_response()
-    print 'Tests Successful...'
+    print('Tests Successful...')

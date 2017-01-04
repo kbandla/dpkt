@@ -1,9 +1,11 @@
 # $Id: rpc.py 23 2006-11-08 15:45:33Z dugsong $
 # -*- coding: utf-8 -*-
 """Remote Procedure Call."""
+from __future__ import absolute_import
 
 import struct
-import dpkt
+
+from . import dpkt
 
 # RPC.dir
 CALL = 0
@@ -41,7 +43,7 @@ class RPC(dpkt.Packet):
         __hdr__: Header fields of RPC.
         TODO.
     """
-    
+
     __hdr__ = (
         ('xid', 'I', 0),
         ('dir', 'I', CALL)
@@ -58,9 +60,9 @@ class RPC(dpkt.Packet):
         def __len__(self):
             return 8 + len(self.data)
 
-        def __str__(self):
+        def __bytes__(self):
             return self.pack_hdr() + struct.pack('>I', len(self.data)) + \
-                   str(self.data)
+                   bytes(self.data)
 
     class Call(dpkt.Packet):
         __hdr__ = (
@@ -79,11 +81,11 @@ class RPC(dpkt.Packet):
         def __len__(self):
             return len(str(self))  # XXX
 
-        def __str__(self):
-            return dpkt.Packet.__str__(self) + \
-                   str(getattr(self, 'cred', RPC.Auth())) + \
-                   str(getattr(self, 'verf', RPC.Auth())) + \
-                   str(self.data)
+        def __bytes__(self):
+            return dpkt.Packet.__bytes__(self) + \
+                   bytes(getattr(self, 'cred', RPC.Auth())) + \
+                   bytes(getattr(self, 'verf', RPC.Auth())) + \
+                   bytes(self.data)
 
     class Reply(dpkt.Packet):
         __hdr__ = (('stat', 'I', MSG_ACCEPTED), )
@@ -106,11 +108,11 @@ class RPC(dpkt.Packet):
                 else: n = 0
                 return len(self.verf) + 4 + n + len(self.data)
 
-            def __str__(self):
+            def __bytes__(self):
                 if self.stat == PROG_MISMATCH:
-                    return str(self.verf) + struct.pack('>III', self.stat,
+                    return bytes(self.verf) + struct.pack('>III', self.stat,
                                                         self.low, self.high) + self.data
-                return str(self.verf) + dpkt.Packet.__str__(self)
+                return bytes(self.verf) + dpkt.Packet.__bytes__(self)
 
         class Reject(dpkt.Packet):
             __hdr__ = (('stat', 'I', AUTH_ERROR), )
@@ -130,12 +132,12 @@ class RPC(dpkt.Packet):
                 else: n = 0
                 return 4 + n + len(self.data)
 
-            def __str__(self):
+            def __bytes__(self):
                 if self.stat == RPC_MISMATCH:
                     return struct.pack('>III', self.stat, self.low, self.high) + self.data
                 elif self.stat == AUTH_ERROR:
                     return struct.pack('>II', self.stat, self.why) + self.data
-                return dpkt.Packet.__str__(self)
+                return dpkt.Packet.__bytes__(self)
 
         def unpack(self, buf):
             dpkt.Packet.unpack(self, buf)
@@ -155,16 +157,16 @@ class RPC(dpkt.Packet):
 def unpack_xdrlist(cls, buf):
     l = []
     while buf:
-        if buf.startswith('\x00\x00\x00\x01'):
+        if buf.startswith(b'\x00\x00\x00\x01'):
             p = cls(buf[4:])
             l.append(p)
             buf = p.data
-        elif buf.startswith('\x00\x00\x00\x00'):
+        elif buf.startswith(b'\x00\x00\x00\x00'):
             break
         else:
-            raise dpkt.UnpackError, 'invalid XDR list'
+            raise dpkt.UnpackError('invalid XDR list')
     return l
 
 
 def pack_xdrlist(*args):
-    return '\x00\x00\x00\x01'.join(map(str, args)) + '\x00\x00\x00\x00'
+    return b'\x00\x00\x00\x01'.join(map(bytes, args)) + b'\x00\x00\x00\x00'
