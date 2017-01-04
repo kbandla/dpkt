@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 """Hypertext Transfer Protocol Version 2."""
 
-import dpkt
 import struct
+import codecs
+
+from . import dpkt
 
 
-HTTP2_PREFACE = '\x50\x52\x49\x20\x2a\x20\x48\x54\x54\x50\x2f\x32\x2e\x30\x0d\x0a\x0d\x0a\x53\x4d\x0d\x0a\x0d\x0a'
+HTTP2_PREFACE = b'\x50\x52\x49\x20\x2a\x20\x48\x54\x54\x50\x2f\x32\x2e\x30\x0d\x0a\x0d\x0a\x53\x4d\x0d\x0a\x0d\x0a'
 
 # Frame types
 HTTP2_FRAME_DATA = 0
@@ -355,128 +357,128 @@ class TestFrame(object):
     @classmethod
     def setup_class(cls):
         # First TLS AppData record sent by Firefox (decrypted)
-        record = ('505249202a20485454502f322e300d0a'
-                  '0d0a534d0d0a0d0a00000c0400000000'
-                  '00000400020000000500004000000004'
-                  '08000000000000bf0001000005020000'
-                  '00000300000000c80000050200000000'
-                  '05000000006400000502000000000700'
-                  '00000000000005020000000009000000'
-                  '070000000502000000000b0000000300').decode('hex')
+        record = codecs.decode('505249202a20485454502f322e300d0a'
+                               '0d0a534d0d0a0d0a00000c0400000000'
+                               '00000400020000000500004000000004'
+                               '08000000000000bf0001000005020000'
+                               '00000300000000c80000050200000000'
+                               '05000000006400000502000000000700'
+                               '00000000000005020000000009000000'
+                               '070000000502000000000b0000000300', 'hex')
         cls.frames, cls.i = frame_multi_factory(record, preface=True)
 
     def test_frame(self):
         import pytest
         # Too short
-        pytest.raises(dpkt.NeedData, Frame, '000001' # length
-                                            '0000' # type, flags
-                                            'deadbeef' # stream id
-                                            .decode('hex'))
+        pytest.raises(dpkt.NeedData, Frame, codecs.decode('000001' # length
+                                                          '0000' # type, flags
+                                                          'deadbeef' # stream id
+                                                          , 'hex'))
 
     def test_data(self):
         # Padded DATA frame
-        frame_data_padded = FrameFactory('000008' #length
-                                         '0008' # type, flags
-                                         '12345678' # stream id
-                                         '05' # pad length
-                                         'abcd' # data
-                                         '1122334455' # padding
-                                         .decode('hex'))
+        frame_data_padded = FrameFactory(codecs.decode('000008' #length
+                                                       '0008' # type, flags
+                                                       '12345678' # stream id
+                                                       '05' # pad length
+                                                       'abcd' # data
+                                                       '1122334455' # padding
+                                                       , 'hex'))
         assert (frame_data_padded.length == 8)
         assert (frame_data_padded.type == HTTP2_FRAME_DATA)
         assert (frame_data_padded.flags == HTTP2_FLAG_PADDED)
         assert (frame_data_padded.stream_id == 0x12345678)
-        assert (frame_data_padded.data == '\x05\xAB\xCD\x11\x22\x33\x44\x55')
+        assert (frame_data_padded.data == b'\x05\xAB\xCD\x11\x22\x33\x44\x55')
         assert (frame_data_padded.pad_length == 5)
-        assert (frame_data_padded.unpadded_data == '\xAB\xCD')
-        assert (frame_data_padded.payload == '\xAB\xCD')
+        assert (frame_data_padded.unpadded_data == b'\xAB\xCD')
+        assert (frame_data_padded.payload == b'\xAB\xCD')
 
         # empty DATA frame
-        frame_data_empty_end = FrameFactory('000000' #length
-                                            '0001' # type, flags
-                                            'deadbeef' # stream id
-                                            .decode('hex'))
+        frame_data_empty_end = FrameFactory(codecs.decode('000000' #length
+                                                          '0001' # type, flags
+                                                          'deadbeef' # stream id
+                                                          , 'hex'))
         assert (frame_data_empty_end.length == 0)
         assert (frame_data_empty_end.type == HTTP2_FRAME_DATA)
         assert (frame_data_empty_end.flags == HTTP2_FLAG_END_STREAM)
         assert (frame_data_empty_end.stream_id == 0xdeadbeef)
-        assert (frame_data_empty_end.data == '')
-        assert (frame_data_empty_end.unpadded_data == '')
-        assert (frame_data_empty_end.payload == '')
+        assert (frame_data_empty_end.data == b'')
+        assert (frame_data_empty_end.unpadded_data == b'')
+        assert (frame_data_empty_end.payload == b'')
 
         import pytest
         # Invalid padding
         with pytest.raises(HTTP2Exception) as e:
-            x = DataFrame('000000' # length
-                          '0008' # type, flags
-                          '12345678' # stream id
-                          '' # missing padding
-                          .decode('hex'))
+            x = DataFrame(codecs.decode('000000' # length
+                                        '0008' # type, flags
+                                        '12345678' # stream id
+                                        '' # missing padding
+                                        , 'hex'))
         assert (e.value.message == 'Missing padding length in PADDED frame')
 
         with pytest.raises(HTTP2Exception) as e:
-            x = DataFrame('000001' # length
-                          '0008' # type, flags
-                          '12345678' # stream id
-                          '01'
-                          '' # missing padding bytes
-                          .decode('hex'))
+            x = DataFrame(codecs.decode('000001' # length
+                                        '0008' # type, flags
+                                        '12345678' # stream id
+                                        '01'
+                                        '' # missing padding bytes
+                                        , 'hex'))
         assert (e.value.message == 'Missing padding bytes in PADDED frame')
 
     def test_headers(self):
-        frame_headers = FrameFactory('000003' # length
-                                     '0100' # type, flags
-                                     'deadbeef' # stream id
-                                     'f00baa' # block fragment
-                                     .decode('hex'))
+        frame_headers = FrameFactory(codecs.decode('000003' # length
+                                                   '0100' # type, flags
+                                                   'deadbeef' # stream id
+                                                   'f00baa' # block fragment
+                                                   , 'hex'))
         assert (frame_headers.length == 3)
         assert (frame_headers.type == HTTP2_FRAME_HEADERS)
         assert (frame_headers.flags == 0)
         assert (frame_headers.stream_id == 0xdeadbeef)
-        assert (frame_headers.data == '\xF0\x0B\xAA')
-        assert (frame_headers.unpadded_data == '\xF0\x0B\xAA')
-        assert (frame_headers.block_fragment == '\xF0\x0B\xAA')
+        assert (frame_headers.data == b'\xF0\x0B\xAA')
+        assert (frame_headers.unpadded_data == b'\xF0\x0B\xAA')
+        assert (frame_headers.block_fragment == b'\xF0\x0B\xAA')
 
-        frame_headers_prio = FrameFactory('000008' # length
-                                          '0120' # type, flags
-                                          'deadbeef' # stream id
-                                          'cafebabe10' # priority
-                                          'f00baa' # block fragment
-                                          .decode('hex'))
+        frame_headers_prio = FrameFactory(codecs.decode('000008' # length
+                                                        '0120' # type, flags
+                                                        'deadbeef' # stream id
+                                                        'cafebabe10' # priority
+                                                        'f00baa' # block fragment
+                                                        , 'hex'))
         assert (frame_headers_prio.length == 8)
         assert (frame_headers_prio.type == HTTP2_FRAME_HEADERS)
         assert (frame_headers_prio.flags == HTTP2_FLAG_PRIORITY)
         assert (frame_headers_prio.stream_id == 0xdeadbeef)
-        assert (frame_headers_prio.data == '\xCA\xFE\xBA\xBE\x10\xF0\x0B\xAA')
-        assert (frame_headers_prio.unpadded_data == '\xCA\xFE\xBA\xBE\x10\xF0\x0B\xAA')
+        assert (frame_headers_prio.data == b'\xCA\xFE\xBA\xBE\x10\xF0\x0B\xAA')
+        assert (frame_headers_prio.unpadded_data == b'\xCA\xFE\xBA\xBE\x10\xF0\x0B\xAA')
         assert (frame_headers_prio.priority.exclusive == True)
         assert (frame_headers_prio.priority.stream_dep == 0x4afebabe)
         assert (frame_headers_prio.priority.weight == 0x11)
-        assert (frame_headers_prio.block_fragment == '\xF0\x0B\xAA')
+        assert (frame_headers_prio.block_fragment == b'\xF0\x0B\xAA')
 
         import pytest
         # Invalid priority
         with pytest.raises(HTTP2Exception) as e:
-            x = HeadersFrame('000002' # length
-                             '0120' # type, flags
-                             'deadbeef' # stream id
-                             '1234' # invalid priority
-                             .decode('hex'))
+            x = HeadersFrame(codecs.decode('000002' # length
+                                           '0120' # type, flags
+                                           'deadbeef' # stream id
+                                           '1234' # invalid priority
+                                           , 'hex'))
         assert (e.value.message == 'Missing stream dependency in HEADERS frame with PRIORITY flag')
 
     def test_priority(self):
-        frame_priority = FrameFactory('000005' # length
-                                      '0200' # type, flags
-                                      'deadbeef' # stream id
-                                      'cafebabe' # stream dep
-                                      '12' # weight
-                                      .decode('hex'))
+        frame_priority = FrameFactory(codecs.decode('000005' # length
+                                                    '0200' # type, flags
+                                                    'deadbeef' # stream id
+                                                    'cafebabe' # stream dep
+                                                    '12' # weight
+                                                    , 'hex'))
         assert (frame_priority.length == 5)
         assert (frame_priority.type == HTTP2_FRAME_PRIORITY)
         assert (frame_priority.flags == 0)
         assert (frame_priority.stream_id == 0xdeadbeef)
-        assert (frame_priority.data == '\xCA\xFE\xBA\xBE\x12')
-        assert (frame_priority.priority.data == '')
+        assert (frame_priority.data == b'\xCA\xFE\xBA\xBE\x12')
+        assert (frame_priority.priority.data == b'')
         assert (frame_priority.priority.exclusive == True)
         assert (frame_priority.priority.stream_dep == 0x4afebabe)
         assert (frame_priority.priority.weight == 0x13)
@@ -484,49 +486,49 @@ class TestFrame(object):
         import pytest
         # Invalid length
         with pytest.raises(HTTP2Exception) as e:
-            x = PriorityFrame('000006' # length
-                              '0200' # type, flags
-                              'deadbeef' # stream id
-                              'cafebabe' # stream dep
-                              '12' # weight
-                              '00' # unexpected additional payload
-                              .decode('hex'))
+            x = PriorityFrame(codecs.decode('000006' # length
+                                            '0200' # type, flags
+                                            'deadbeef' # stream id
+                                            'cafebabe' # stream dep
+                                            '12' # weight
+                                            '00' # unexpected additional payload
+                                            , 'hex'))
         assert (e.value.message == 'Invalid number of bytes in PRIORITY frame')
 
     def test_rst_stream(self):
-        frame_rst = FrameFactory('000004' # length
-                                 '0300' # type, flags
-                                 'deadbeef' # stream id
-                                 '0000000c' # error code
-                                 .decode('hex'))
+        frame_rst = FrameFactory(codecs.decode('000004' # length
+                                               '0300' # type, flags
+                                               'deadbeef' # stream id
+                                               '0000000c' # error code
+                                               , 'hex'))
         assert (frame_rst.length == 4)
         assert (frame_rst.type == HTTP2_FRAME_RST_STREAM)
         assert (frame_rst.flags == 0)
         assert (frame_rst.stream_id == 0xdeadbeef)
-        assert (frame_rst.data == '\x00\x00\x00\x0c')
+        assert (frame_rst.data == b'\x00\x00\x00\x0c')
         assert (frame_rst.error_code == HTTP2_INADEQUATE_SECURITY)
 
         import pytest
         # Invalid length
         with pytest.raises(HTTP2Exception) as e:
-            x = RSTStreamFrame('000005' # length
-                               '0300' # type, flags
-                               'deadbeef' # stream id
-                               '0000000c' # error code
-                               '00' # unexpected additional payload
-                               .decode('hex'))
+            x = RSTStreamFrame(codecs.decode('000005' # length
+                                             '0300' # type, flags
+                                             'deadbeef' # stream id
+                                             '0000000c' # error code
+                                             '00' # unexpected additional payload
+                                             , 'hex'))
         assert (e.value.message == 'Invalid number of bytes in RST_STREAM frame (must be 4)')
 
     def test_settings(self):
-        frame_settings = FrameFactory('00000c' # length
-                                      '0400' # type, flags
-                                      '00000000' # stream id
-                                      # settings
-                                      '0004' # setting id
-                                      '00020000' # setting value
-                                      '0005' # setting id
-                                      '00004000' # setting value
-                                      .decode('hex'))
+        frame_settings = FrameFactory(codecs.decode('00000c' # length
+                                                    '0400' # type, flags
+                                                    '00000000' # stream id
+                                                    # settings
+                                                    '0004' # setting id
+                                                    '00020000' # setting value
+                                                    '0005' # setting id
+                                                    '00004000' # setting value
+                                                    , 'hex'))
         assert (frame_settings.length == 12)
         assert (frame_settings.type == HTTP2_FRAME_SETTINGS)
         assert (frame_settings.flags == 0)
@@ -538,10 +540,10 @@ class TestFrame(object):
         assert (frame_settings.settings[1].value == 0x4000)
 
         # Settings ack, with empty payload
-        frame_settings_ack = FrameFactory('000000' # length
-                                          '0401' # type, flags
-                                          '00000000' # stream id
-                                          .decode('hex'))
+        frame_settings_ack = FrameFactory(codecs.decode('000000' # length
+                                                        '0401' # type, flags
+                                                        '00000000' # stream id
+                                                        , 'hex'))
         assert (frame_settings_ack.length == 0)
         assert (frame_settings_ack.type == HTTP2_FRAME_SETTINGS)
         assert (frame_settings_ack.flags == HTTP2_FLAG_ACK)
@@ -551,91 +553,91 @@ class TestFrame(object):
         import pytest
         # Invalid length
         with pytest.raises(HTTP2Exception) as e:
-            x = SettingsFrame('000005' # length
-                              '0400' # type, flags
-                              'deadbeef' # stream id
-                              '1234567890' # invalid length
-                              .decode('hex'))
+            x = SettingsFrame(codecs.decode('000005' # length
+                                            '0400' # type, flags
+                                            'deadbeef' # stream id
+                                            '1234567890' # invalid length
+                                            , 'hex'))
         assert (e.value.message == 'Invalid number of bytes in SETTINGS frame (must be multiple of 6)')
 
     def test_push_promise(self):
-        frame_pp = FrameFactory('000007' # length
-                                '0500' # type, flags
-                                'deadbeef' # stream id
-                                'cafebabe' # promised id
-                                '123456' # some block fragment
-                                .decode('hex'))
+        frame_pp = FrameFactory(codecs.decode('000007' # length
+                                              '0500' # type, flags
+                                              'deadbeef' # stream id
+                                              'cafebabe' # promised id
+                                              '123456' # some block fragment
+                                              , 'hex'))
         assert (frame_pp.length == 7)
         assert (frame_pp.type == HTTP2_FRAME_PUSH_PROMISE)
         assert (frame_pp.flags == 0)
         assert (frame_pp.stream_id == 0xdeadbeef)
         assert (frame_pp.promised_id == 0xcafebabe)
-        assert (frame_pp.block_fragment == '\x12\x34\x56')
+        assert (frame_pp.block_fragment == b'\x12\x34\x56')
 
         import pytest
         # Invalid length
         with pytest.raises(HTTP2Exception) as e:
-            x = PushPromiseFrame('000003' # length
-                                 '0500' # type, flags
-                                 'deadbeef' # stream id
-                                 'cafeba' # missing promised id
-                                 .decode('hex'))
+            x = PushPromiseFrame(codecs.decode('000003' # length
+                                               '0500' # type, flags
+                                               'deadbeef' # stream id
+                                               'cafeba' # missing promised id
+                                               , 'hex'))
         assert (e.value.message == 'Missing promised stream ID in PUSH_PROMISE frame')
 
     def test_ping(self):
-        frame_ping = FrameFactory('000008' # length
-                                  '0600' # type, flags
-                                  'deadbeef' # stream id
-                                  'cafebabe12345678' # user data
-                                  .decode('hex'))
+        frame_ping = FrameFactory(codecs.decode('000008' # length
+                                                '0600' # type, flags
+                                                'deadbeef' # stream id
+                                                'cafebabe12345678' # user data
+                                                , 'hex'))
         assert (frame_ping.length == 8)
         assert (frame_ping.type == HTTP2_FRAME_PING)
         assert (frame_ping.flags == 0)
         assert (frame_ping.stream_id == 0xdeadbeef)
-        assert (frame_ping.data == '\xCA\xFE\xBA\xBE\x12\x34\x56\x78')
+        assert (frame_ping.data == b'\xCA\xFE\xBA\xBE\x12\x34\x56\x78')
 
         import pytest
         # Invalid length
         with pytest.raises(HTTP2Exception) as e:
-            x = PingFrame('000005' # length
-                          '0600' # type, flags
-                          'deadbeef' # stream id
-                          '1234567890' # invalid length
-                          .decode('hex'))
+            x = PingFrame(codecs.decode('000005' # length
+                                        '0600' # type, flags
+                                        'deadbeef' # stream id
+                                        '1234567890' # invalid length
+                                        , 'hex'))
         assert (e.value.message == 'Invalid number of bytes in PING frame (must be 8)')
 
     def test_goaway(self):
-        frame_goaway = FrameFactory('00000a' # length
-                                    '0700' # type, flags
-                                    'deadbeef' # stream id
-                                    '00000000' # last stream id
-                                    '00000000' # error code
-                                    'cafe' # debug data
-                                    .decode('hex'))
+        frame_goaway = FrameFactory(codecs.decode('00000a' # length
+                                                  '0700' # type, flags
+                                                  'deadbeef' # stream id
+                                                  '00000000' # last stream id
+                                                  '00000000' # error code
+                                                  'cafe' # debug data
+                                                  , 'hex'))
         assert (frame_goaway.length == 10)
         assert (frame_goaway.type == HTTP2_FRAME_GOAWAY)
         assert (frame_goaway.flags == 0)
         assert (frame_goaway.stream_id == 0xdeadbeef)
         assert (frame_goaway.last_stream_id == 0)
         assert (frame_goaway.error_code == HTTP2_NO_ERROR)
-        assert (frame_goaway.debug_data == '\xCA\xFE')
+        assert (frame_goaway.debug_data == b'\xCA\xFE')
 
         import pytest
         # Invalid length
         with pytest.raises(HTTP2Exception) as e:
-            x = GoAwayFrame('000005' # length
-                            '0700' # type, flags
-                            'deadbeef' # stream id
-                            '1234567890' # invalid length
-                            .decode('hex'))
+            x = GoAwayFrame(codecs.decode('000005' # length
+                                          '0700' # type, flags
+                                          'deadbeef' # stream id
+                                          '1234567890' # invalid length
+                                          , 'hex'))
         assert (e.value.message == 'Invalid number of bytes in GO_AWAY frame')
 
     def test_window_update(self):
-        frame_wu = FrameFactory('000004' # length
-                                '0800' # type, flags
-                                'deadbeef' # stream id
-                                '12345678' # window increment
-                                .decode('hex'))
+        frame_wu = FrameFactory(codecs.decode('000004' # length
+                                              '0800' # type, flags
+                                              'deadbeef' # stream id
+                                              '12345678' # window increment
+                                              , 'hex'))
         assert (frame_wu.length == 4)
         assert (frame_wu.type == HTTP2_FRAME_WINDOW_UPDATE)
         assert (frame_wu.flags == 0)
@@ -645,46 +647,47 @@ class TestFrame(object):
         import pytest
         # Invalid length
         with pytest.raises(HTTP2Exception) as e:
-            x = WindowUpdateFrame('000005' # length
-                                  '0800' # type, flags
-                                  'deadbeef' # stream id
-                                  '1234567890' # invalid length
-                                  .decode('hex'))
+            x = WindowUpdateFrame(codecs.decode('000005' # length
+                                                '0800' # type, flags
+                                                'deadbeef' # stream id
+                                                '1234567890' # invalid length
+                                                , 'hex'))
         assert (e.value.message == 'Invalid number of bytes in WINDOW_UPDATE frame (must be 4)')
 
     def test_continuation(self):
-        frame_cont = FrameFactory('000003' # length
-                                  '0900' # type, flags
-                                  'deadbeef' # stream id
-                                  'f00baa' # block fragment
-                                  .decode('hex'))
+        frame_cont = FrameFactory(codecs.decode('000003' # length
+                                                '0900' # type, flags
+                                                'deadbeef' # stream id
+                                                'f00baa' # block fragment
+                                                , 'hex'))
         assert (frame_cont.length == 3)
         assert (frame_cont.type == HTTP2_FRAME_CONTINUATION)
         assert (frame_cont.flags == 0)
         assert (frame_cont.stream_id == 0xdeadbeef)
-        assert (frame_cont.block_fragment == '\xF0\x0B\xAA')
+        assert (frame_cont.block_fragment == b'\xF0\x0B\xAA')
 
 
     def test_factory(self):
         import pytest
         # Too short
-        pytest.raises(dpkt.NeedData, FrameFactory, '000000'.decode('hex'))
+        pytest.raises(dpkt.NeedData, FrameFactory, codecs.decode('000000', 'hex'))
 
         # Invalid type
         with pytest.raises(HTTP2Exception) as e:
-            x = FrameFactory('000000' # length
-                             'abcd' # type, flags
-                             'deadbeef' # stream id
-                             .decode('hex'))
+            x = FrameFactory(codecs.decode('000000' # length
+                                           'abcd' # type, flags
+                                           'deadbeef' # stream id
+                                           , 'hex'))
         assert (e.value.message == 'Invalid frame type: 0xab')
 
     def test_preface(self):
         import pytest
         # Preface
-        pytest.raises(dpkt.NeedData, Preface, '505249202a20485454502f322e300d0a'.decode('hex'))
-        pytest.raises(dpkt.NeedData, Preface, ('00' * 23).decode('hex'))
+        pytest.raises(dpkt.NeedData, Preface,
+                codecs.decode('505249202a20485454502f322e300d0a', 'hex'))
+        pytest.raises(dpkt.NeedData, Preface, b'\x00' * 23)
         with pytest.raises(HTTP2Exception) as e:
-            x = Preface(('00' * 24).decode('hex'))
+            x = Preface(b'\x00' * 24)
         assert (e.value.message == 'Invalid HTTP/2 preface')
 
     def test_multi(self):
@@ -723,13 +726,17 @@ class TestFrame(object):
         assert (self.frames[5].stream_id == 9)
         assert (self.frames[6].stream_id == 11)
 
-        frames, i = frame_multi_factory('505249202a20485454502f322e300d0a'.decode('hex'), preface=True)
+        frames, i = frame_multi_factory(
+                codecs.decode('505249202a20485454502f322e300d0a', 'hex'),
+                preface=True)
         assert (len(frames) == 0)
         assert (i == 0)
 
         # Only preface was parsed
-        frames, i = frame_multi_factory('505249202a20485454502f322e300d0a'
-                                        '0d0a534d0d0a0d0a00000c0400000000'.decode('hex'), preface=True)
+        frames, i = frame_multi_factory(
+                codecs.decode('505249202a20485454502f322e300d0a'
+                              '0d0a534d0d0a0d0a00000c0400000000', 'hex'),
+                preface=True)
         assert (len(frames) == 0)
         assert (i == 24)
 
