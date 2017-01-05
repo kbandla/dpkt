@@ -425,7 +425,6 @@ def test_unpack():
             assert (avp.value == b'yeah')
             assert (avp.data == b'yeah')
         elif avp.code == 1402:
-            print(avp.code)
             assert (avp.mandatory_flag == 1)
             assert (avp.vendor_flag == 1)
             assert (avp.vendor == 10415)
