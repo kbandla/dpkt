@@ -16,32 +16,6 @@ long_description = open('README.rst').read()
 
 # Pull in the package
 package = __import__(package_name)
-
-
-class BuildDebPackage(Command):
-    """Build a Debian Package out of this Python Package"""
-    try:
-        import stdeb
-    except ImportError as exc:
-        print 'To build a Debian Package you must install stdeb (pip install stdeb)'
-
-    description = "Build a Debian Package out of this Python Package"
-    user_options = []
-
-    def initialize_options(self):
-        pass
-
-    def finalize_options(self):
-        pass
-
-    def run(self):
-        os.system('python setup.py sdist')
-        sdist_file = os.path.join(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'dist'),
-                                  package_name + '-' + package.__version__ + '.tar.gz')
-        print sdist_file
-        os.system('py2dsc-deb ' + sdist_file)
-
-
 package_version = package.__version__
 if "bdist_msi" in sys.argv:
     # The MSI build target does not support a 4 digit version, e.g. '1.2.3.4'
@@ -66,8 +40,8 @@ setup(name=package_name,
           'Natural Language :: English',
           'Programming Language :: Python :: 2.6',
           'Programming Language :: Python :: 2.7',
+          'Programming Language :: Python :: 3.5',
           'Programming Language :: Python :: Implementation :: CPython',
           'Programming Language :: Python :: Implementation :: PyPy',
-      ],
-      cmdclass={'debian': BuildDebPackage}
+      ]
 )

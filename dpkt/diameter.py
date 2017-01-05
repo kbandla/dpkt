@@ -2,9 +2,14 @@
 # -*- coding: utf-8 -*-
 """Diameter."""
 
+from __future__ import print_function
+from __future__ import absolute_import
+
 import struct
-import dpkt
-from decorators import deprecated
+
+from . import dpkt
+from .decorators import deprecated
+from .compat import compat_ord
 
 # Diameter Base Protocol - RFC 6733
 # http://tools.ietf.org/html/rfc6733
@@ -103,8 +108,12 @@ class Diameter(dpkt.Packet):
 
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
-        self.cmd = (ord(self.cmd[0]) << 16) | (ord(self.cmd[1]) << 8) | (ord(self.cmd[2]))
-        self.len = (ord(self.len[0]) << 16) | (ord(self.len[1]) << 8) | (ord(self.len[2]))
+        self.cmd = (compat_ord(self.cmd[0]) << 16) | \
+                    (compat_ord(self.cmd[1]) << 8) | \
+                    (compat_ord(self.cmd[2]))
+        self.len = (compat_ord(self.len[0]) << 16) | \
+                    (compat_ord(self.len[1]) << 8) | \
+                    (compat_ord(self.len[2]))
         self.data = self.data[:self.len - self.__hdr_len__]
 
         l = []
@@ -118,21 +127,18 @@ class Diameter(dpkt.Packet):
         l = []
         for d in self.data:
             padlen = 0 if len(d) % 4 == 0 else 4 - (len(d) % 4)
-            padding = struct.pack(str(padlen) + 's', '')
-            l.append(str(d) + padding)
+            padding = b'\x00' * padlen
+            l.append(bytes(d) + padding)
         self.data = self.avps = b''.join(l)
 
-        self.len = self.__hdr_len__ + len(str(self.data))
-        self.len = chr((self.len >> 16) & 0xff) + chr((self.len >> 8) & 0xff) + chr(self.len & 0xff)
-        self.cmd = chr((self.cmd >> 16) & 0xff) + chr((self.cmd >> 8) & 0xff) + chr(self.cmd & 0xff)
+        self.len = self.__hdr_len__ + len(bytes(self.data))
+        self.len = struct.pack("BBB", (self.len >> 16) & 0xff, (self.len >> 8) & 0xff, self.len & 0xff)
+        self.cmd = struct.pack("BBB", (self.cmd >> 16) & 0xff, (self.cmd >> 8) & 0xff, self.cmd & 0xff)
 
         return dpkt.Packet.pack_hdr(self)
 
     def __len__(self):
         return self.__hdr_len__ + sum(map(len, self.data))
-
-    def __str__(self):
-        return self.pack_hdr() + ''.join(map(str, self.data))
 
 
 class AVP(dpkt.Packet):
@@ -257,18 +263,22 @@ class AVP(dpkt.Packet):
 
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
-        self.len = (ord(self.len[0]) << 16) | (ord(self.len[1]) << 8) | (ord(self.len[2]))
+        self.len = (compat_ord(self.len[0]) << 16) | \
+                    (compat_ord(self.len[1]) << 8) | \
+                    (compat_ord(self.len[2]))
         padlen = 0 if self.len % 4 == 0 else 4 - (self.len % 4)
 
         if self.vendor_flag:
             self.vendor = struct.unpack('>I', self.data[:4])[0]
+            self.value = self.data[4:self.len - self.__hdr_len__]
             self.data = self.data[4:self.len + padlen - self.__hdr_len__]
         else:
+            self.value = self.data[:self.len - self.__hdr_len__]
             self.data = self.data[:self.len + padlen - self.__hdr_len__]
 
     def pack_hdr(self):
-        self.len = self.__hdr_len__ + sum(map(len, str(self.data)))
-        self.len = chr((self.len >> 16) & 0xff) + chr((self.len >> 8) & 0xff) + chr(self.len & 0xff)
+        self.len = self.__hdr_len__ + len(self.data)
+        self.len = struct.pack("BBB", (self.len >> 16) & 0xff, (self.len >> 8) & 0xff, self.len & 0xff)
 
         data = dpkt.Packet.pack_hdr(self)
         if self.vendor_flag:
@@ -276,20 +286,33 @@ class AVP(dpkt.Packet):
         return data
 
     def __len__(self):
-        length = self.__hdr_len__ + sum(map(len, self.data))
+        length = self.__hdr_len__ + len(self.data)
         if self.vendor_flag:
             length += 4
         return length
 
 
-# list of DWR header, Origin-Host, Origin-Realm Origin-State-Id.
-__payloads = [
-    b'\x01\x00\x00\x84\x80\x00\x01\x18\x00\x00\x00\x00I\x96\x02\xd2\x8b\xd085',
+# list of DWR header, Origin-Host, Origin-Realm, Origin-State-Id, Terminal-Information.
+# Note that Terminal-Information has IMEI and Software-Version as its children.
+__payloads_pack = [
+    b'\x01\x00\x00\xbc\x80\x00\x01\x18\x00\x00\x00\x00I\x96\x02\xd2\x8b\xd085',
     b'\x00\x00\x01\x08@\x00\x007some00.node00.epc.mnc999.mcc999.3gppnetwork.org\x00',
     b'\x00\x00\x01\x16@\x00\x00\x0cyeah',
-    b'\x00\x00\x01(@\x00\x00)epc.mnc999.mcc999.3gppnetwork.org\x00\x00\x00'
+    b'\x00\x00\x01(@\x00\x00)epc.mnc999.mcc999.3gppnetwork.org\x00\x00\x00',
+    b'\x00\x00\x05y\xc0\x00\x001\x00\x00(\xaf\x00\x00\x05z\xc0\x00\x00\x17\x00\x00(\xaf101234564567891',
+    b'\x00\x00\x05{\xc0\x00\x00\n\x00\x00(\xaf01\x00\x00\x00'
     ]
-__s = b''.join(__payloads)
+__s = b''.join(__payloads_pack)
+
+# list of DWR header, Origin-Host, Origin-Realm, Origin-State-Id, IMEI.
+__payloads_unpack = [
+    b'\x01\x00\x00\xbc\x80\x00\x01\x18\x00\x00\x00\x00I\x96\x02\xd2\x8b\xd085',
+    b'\x00\x00\x01\x08@\x00\x007some00.node00.epc.mnc999.mcc999.3gppnetwork.org\x00',
+    b'\x00\x00\x01\x16@\x00\x00\x0cyeah',
+    b'\x00\x00\x01(@\x00\x00)epc.mnc999.mcc999.3gppnetwork.org\x00\x00\x00',
+    b'\x00\x00\x05z\xc0\x00\x00\x1a\x00\x00(\xaf12345678901234\x00\x00'
+    ]
+__t = b''.join(__payloads_unpack)
 
 
 def test_pack():
@@ -322,13 +345,39 @@ def test_pack():
             code=296,
             mandatory_flag=1,
             vendor_flag=0,
+        ),
+        AVP(
+            code=1401,
+            mandatory_flag=1,
+            vendor_flag=1,
+            vendor=10415
         )
     ]
 
-    avplist[0].data = 'some00.node00.epc.mnc999.mcc999.3gppnetwork.org'
-    avplist[1].data = 'yeah'
-    avplist[2].data = 'epc.mnc999.mcc999.3gppnetwork.org'
-    d.data = [str(x) for x in avplist]
+    child_avplist = [
+        AVP(
+            code=1402,
+            mandatory_flag=1,
+            vendor_flag=1,
+            vendor=10415
+        ),
+        AVP(
+            code=1403,
+            mandatory_flag=1,
+            vendor_flag=1,
+            vendor=10415
+        )
+    ]
+
+    child_avplist[0].data = b'101234564567891'
+    child_avplist[1].data = b'01'
+
+    avplist[0].data = b'some00.node00.epc.mnc999.mcc999.3gppnetwork.org'
+    avplist[1].data = b'yeah'
+    avplist[2].data = b'epc.mnc999.mcc999.3gppnetwork.org'
+    avplist[3].data = b''.join([bytes(x) for x in child_avplist])
+
+    d.data = [bytes(x) for x in avplist]
 
     assert (d.cmd == d.cmd_codes['DEVICE_WATCHDOG'])
     assert (d.request_flag == 1)
@@ -336,14 +385,15 @@ def test_pack():
     assert (d.app_id == 0)
     assert (d.hop_id == 1234567890)
     assert (d.end_id == 2345678901)
-    assert (__s == str(d))
+    assert (__s == bytes(d))
+
 
 def test_unpack():
-    """Packing test.
+    """Unpacking test.
     Unpack the payload bytearray above and check if the values are
     expectedly decoded.
     """
-    d = Diameter(__s)
+    d = Diameter(__t)
     assert (d.cmd == d.cmd_codes['DEVICE_WATCHDOG'])
     assert (d.request_flag == 1)
     assert (d.proxiable_flag == 0)
@@ -351,29 +401,41 @@ def test_unpack():
     assert (d.hop_id == 1234567890)
     assert (d.end_id == 2345678901)
 
-    for i in xrange(len(d.avps)):
+    for i in range(len(d.avps)):
         avp = d.avps[i]
         if avp.code == avp.avp_codes['ORIGIN_HOST']:
             assert (avp.mandatory_flag == 1)
             assert (avp.vendor_flag == 0)
             assert (avp.len == 55)
             assert (len(avp) == 56)
+            assert (avp.value == b'some00.node00.epc.mnc999.mcc999.3gppnetwork.org')
             assert (avp.data == b'some00.node00.epc.mnc999.mcc999.3gppnetwork.org\x00')
-        if avp.code == avp.avp_codes['ORIGIN_REALM']:
+        elif avp.code == avp.avp_codes['ORIGIN_REALM']:
             assert (avp.mandatory_flag == 1)
             assert (avp.vendor_flag == 0)
             assert (avp.len == 41)
             assert (len(avp) == 44)
+            assert (avp.value == b'epc.mnc999.mcc999.3gppnetwork.org')
             assert (avp.data == b'epc.mnc999.mcc999.3gppnetwork.org\x00\x00\x00')
-        if avp.code == avp.avp_codes['ORIGIN_STATE_ID']:
+        elif avp.code == avp.avp_codes['ORIGIN_STATE_ID']:
             assert (avp.mandatory_flag == 1)
             assert (avp.vendor_flag == 0)
             assert (avp.len == 12)
             assert (len(avp) == 12)
-            assert (avp.data == 'yeah')
+            assert (avp.value == b'yeah')
+            assert (avp.data == b'yeah')
+        elif avp.code == 1402:
+            print(avp.code)
+            assert (avp.mandatory_flag == 1)
+            assert (avp.vendor_flag == 1)
+            assert (avp.vendor == 10415)
+            assert (avp.len == 26)
+            assert (len(avp) == 28)
+            assert (avp.value == b'12345678901234')
+            assert (avp.data == b'12345678901234\x00\x00')
 
 
 if __name__ == '__main__':
     test_pack()
     test_unpack()
-    print 'Tests Successful...'
+    print('Tests Successful...')

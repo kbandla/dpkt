@@ -1,10 +1,12 @@
 # $Id: netbios.py 23 2006-11-08 15:45:33Z dugsong $
 # -*- coding: utf-8 -*-
 """Network Basic Input/Output System."""
+from __future__ import absolute_import
 
 import struct
-import dpkt
-import dns
+
+from . import dpkt
+from . import dns
 
 
 def encode_name(name):
@@ -82,7 +84,8 @@ nbstat_svcs = {
 }
 
 
-def node_to_service_name((name, service, flags)):
+def node_to_service_name(name_service_flags):
+    name, service, flags = name_service_flags
     try:
         unique = int(flags & NS_NAME_G == 0)
         for namepfx, svcname in nbstat_svcs[(service, unique)]:
