@@ -1,13 +1,15 @@
 # $Id$
 # -*- coding: utf-8 -*-
 """Snoop file format."""
+from __future__ import absolute_import
 
-import sys, time
-import dpkt
+import time
+
+from . import dpkt
 
 # RFC 1761
 
-SNOOP_MAGIC = 0x736E6F6F70000000L
+SNOOP_MAGIC = 0x736E6F6F70000000
 
 SNOOP_VERSION = 2
 
@@ -34,7 +36,7 @@ class PktHdr(dpkt.Packet):
         __hdr__: Header fields of snoop packet header.
         TODO.
     """
-    
+
     __byte_order__ = '!'
     __hdr__ = (
         ('orig_len', 'I', 0),
@@ -55,7 +57,7 @@ class FileHdr(dpkt.Packet):
         __hdr__: Header fields of snoop file header.
         TODO.
     """
-    
+
     __byte_order__ = '!'
     __hdr__ = (
         ('magic', 'Q', SNOOP_MAGIC),
@@ -103,7 +105,7 @@ class Reader(object):
     Attributes:
         TODO.
     """
-    
+
     def __init__(self, fileobj):
         self.name = fileobj.name
         self.fd = fileobj.fileno()
@@ -131,7 +133,7 @@ class Reader(object):
     def dispatch(self, cnt, callback, *args):
         if cnt > 0:
             for i in range(cnt):
-                ts, pkt = self.next()
+                ts, pkt = next(self)
                 callback(ts, pkt, *args)
         else:
             for ts, pkt in self:

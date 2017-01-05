@@ -1,10 +1,13 @@
 # -*- coding: utf-8 -*-
 """Radiotap"""
+from __future__ import print_function
+from __future__ import absolute_import
 
-import dpkt
-import ieee80211
 import socket
-from decorators import deprecated
+
+from . import dpkt
+from . import ieee80211
+from .decorators import deprecated
 
 # Ref: http://www.radiotap.org
 # Fields Ref: http://www.radiotap.org/defined-fields/all
@@ -397,7 +400,7 @@ class Radiotap(dpkt.Packet):
         for name, present_bit, parser in field_decoder:
             if present_bit:
                 field = parser(buf)
-                field.data = ''
+                field.data = b''
                 setattr(self, name, field)
                 self.fields.append(field)
                 buf = buf[len(field):]
@@ -503,7 +506,7 @@ class Radiotap(dpkt.Packet):
 
 
 def test_Radiotap():
-    s = '\x00\x00\x00\x18\x6e\x48\x00\x00\x00\x02\x6c\x09\xa0\x00\xa8\x81\x02\x00\x00\x00\x00\x00\x00\x00'
+    s = b'\x00\x00\x00\x18\x6e\x48\x00\x00\x00\x02\x6c\x09\xa0\x00\xa8\x81\x02\x00\x00\x00\x00\x00\x00\x00'
     rad = Radiotap(s)
     assert(rad.version == 0)
     assert(rad.present_flags == 0x6e480000)
@@ -527,7 +530,7 @@ def test_Radiotap():
 
 
 def test_fcs():
-    s = '\x00\x00\x1a\x00\x2f\x48\x00\x00\x34\x8f\x71\x09\x00\x00\x00\x00\x10\x0c\x85\x09\xc0\x00\xcc\x01\x00\x00'
+    s = b'\x00\x00\x1a\x00\x2f\x48\x00\x00\x34\x8f\x71\x09\x00\x00\x00\x00\x10\x0c\x85\x09\xc0\x00\xcc\x01\x00\x00'
     rt = Radiotap(s)
     assert(rt.flags_present == 1)
     assert(rt.flags.fcs == 1)
@@ -536,4 +539,4 @@ def test_fcs():
 if __name__ == '__main__':
     test_Radiotap()
     test_fcs()
-    print 'Tests Successful...'
+    print('Tests Successful...')

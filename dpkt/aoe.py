@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 """ATA over Ethernet Protocol."""
+from __future__ import absolute_import
 
 import struct
-import dpkt
-from decorators import deprecated
 
+from . import dpkt
+from .decorators import deprecated
+from .compat import iteritems
 
 class AOE(dpkt.Packet):
     """ATA over Ethernet Protocol.
@@ -58,7 +60,7 @@ class AOE(dpkt.Packet):
     def pack_hdr(self):
         try:
             return dpkt.Packet.pack_hdr(self)
-        except struct.error, e:
+        except struct.error as e:
             raise dpkt.PackError(str(e))
 
     # Deprecated methods, will be removed in the future
@@ -86,7 +88,8 @@ AOE_FLAG_RSP = 1 << 3
 def __load_cmds():
     prefix = 'AOE_CMD_'
     g = globals()
-    for k, v in g.iteritems():
+
+    for k, v in iteritems(g):
         if k.startswith(prefix):
             name = 'aoe' + k[len(prefix):].lower()
             try:

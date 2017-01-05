@@ -1,9 +1,12 @@
 # -*- coding: utf-8 -*-
 
+from __future__ import print_function
+from __future__ import absolute_import
+
 import struct
-import dpkt
-import stp
-import ethernet
+
+from . import dpkt
+from . import stp
 
 
 class LLC(dpkt.Packet):
@@ -28,11 +31,11 @@ class LLC(dpkt.Packet):
         return self.dsap == self.ssap == 0xaa
 
     def unpack(self, buf):
-        from ethernet import Ethernet, ETH_TYPE_IP, ETH_TYPE_IPX
+        from .ethernet import Ethernet, ETH_TYPE_IP, ETH_TYPE_IPX
 
         dpkt.Packet.unpack(self, buf)
         if self.is_snap:
-            self.oui, self.type = struct.unpack('>IH', '\x00' + self.data[:5])
+            self.oui, self.type = struct.unpack('>IH', b'\x00' + self.data[:5])
             self.data = self.data[5:]
             try:
                 self.data = Ethernet.get_type(self.type)(self.data)
@@ -54,7 +57,7 @@ class LLC(dpkt.Packet):
             oui = getattr(self, 'oui', 0)
             _type = getattr(self, 'type', 0)
             if not _type and isinstance(self.data, dpkt.Packet):
-                from ethernet import Ethernet
+                from .ethernet import Ethernet
                 try:
                     _type = Ethernet.get_type_rev(self.data.__class__)
                 except KeyError:
@@ -67,28 +70,29 @@ class LLC(dpkt.Packet):
 
 
 def test_llc():
-    import ip
-    s = ('\xaa\xaa\x03\x00\x00\x00\x08\x00\x45\x00\x00\x28\x07\x27\x40\x00\x80\x06\x1d'
-         '\x39\x8d\xd4\x37\x3d\x3f\xf5\xd1\x69\xc0\x5f\x01\xbb\xb2\xd6\xef\x23\x38\x2b'
-         '\x4f\x08\x50\x10\x42\x04\xac\x17\x00\x00')
+    from . import ip
+    from . import ethernet
+    s = (b'\xaa\xaa\x03\x00\x00\x00\x08\x00\x45\x00\x00\x28\x07\x27\x40\x00\x80\x06\x1d'
+         b'\x39\x8d\xd4\x37\x3d\x3f\xf5\xd1\x69\xc0\x5f\x01\xbb\xb2\xd6\xef\x23\x38\x2b'
+         b'\x4f\x08\x50\x10\x42\x04\xac\x17\x00\x00')
     llc_pkt = LLC(s)
     ip_pkt = llc_pkt.data
     assert isinstance(ip_pkt, ip.IP)
     assert llc_pkt.type == ethernet.ETH_TYPE_IP
-    assert ip_pkt.dst == '\x3f\xf5\xd1\x69'
-    assert str(llc_pkt) == s
+    assert ip_pkt.dst == b'\x3f\xf5\xd1\x69'
+    assert str(llc_pkt) == str(s)
     assert len(llc_pkt) == len(s)
 
     # construction with SNAP header
     llc_pkt = LLC(ssap=0xaa, dsap=0xaa, data=ip.IP(s[8:]))
-    assert str(llc_pkt) == s
+    assert str(llc_pkt) == str(s)
 
     # no SNAP
     llc_pkt = LLC(ssap=6, dsap=6, data=ip.IP(s[8:]))
     assert isinstance(llc_pkt.data, ip.IP)
-    assert str(llc_pkt) == '\x06\x06\x03' + s[8:]
+    assert str(llc_pkt) == str(b'\x06\x06\x03' + s[8:])
 
 
 if __name__ == '__main__':
     test_llc()
-    print 'Tests Successful...'
+    print('Tests Successful...')

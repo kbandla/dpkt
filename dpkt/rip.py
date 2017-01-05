@@ -1,8 +1,10 @@
 # $Id: rip.py 23 2006-11-08 15:45:33Z dugsong $
 # -*- coding: utf-8 -*-
 """Routing Information Protocol."""
+from __future__ import print_function
+from __future__ import absolute_import
 
-import dpkt
+from . import dpkt
 
 # RIP v2 - RFC 2453
 # http://tools.ietf.org/html/rfc2453
@@ -20,7 +22,7 @@ class RIP(dpkt.Packet):
         __hdr__: Header fields of RIP.
         TODO.
     """
-    
+
     __hdr__ = (
         ('cmd', 'B', REQUEST),
         ('v', 'B', 2),
@@ -47,11 +49,11 @@ class RIP(dpkt.Packet):
         n += sum(map(len, self.rtes))
         return n
 
-    def __str__(self):
-        auth = ''
+    def __bytes__(self):
+        auth = b''
         if self.auth:
-            auth = str(self.auth)
-        return self.pack_hdr() + auth + ''.join(map(str, self.rtes))
+            auth = bytes(self.auth)
+        return self.pack_hdr() + auth + b''.join(map(bytes, self.rtes))
 
 
 class RTE(dpkt.Packet):
@@ -73,12 +75,12 @@ class Auth(dpkt.Packet):
     )
 
 
-__s = '\x02\x02\x00\x00\x00\x02\x00\x00\x01\x02\x03\x00\xff\xff\xff\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x02\x00\x00\xc0\xa8\x01\x08\xff\xff\xff\xfc\x00\x00\x00\x00\x00\x00\x00\x01'
+__s = b'\x02\x02\x00\x00\x00\x02\x00\x00\x01\x02\x03\x00\xff\xff\xff\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x02\x00\x00\xc0\xa8\x01\x08\xff\xff\xff\xfc\x00\x00\x00\x00\x00\x00\x00\x01'
 
 
 def test_rtp_pack():
     r = RIP(__s)
-    assert (__s == str(r))
+    assert (__s == bytes(r))
 
 
 def test_rtp_unpack():
@@ -95,4 +97,4 @@ def test_rtp_unpack():
 if __name__ == '__main__':
     test_rtp_pack()
     test_rtp_unpack()
-    print 'Tests Successful...'
+    print('Tests Successful...')
