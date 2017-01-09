@@ -6,6 +6,7 @@ This example is focused on the fields in the Ethernet Frame and IP packet
 import dpkt
 import datetime
 import socket
+from dpkt.compat import compat_ord
 
 
 def mac_addr(address):
@@ -16,7 +17,7 @@ def mac_addr(address):
        Returns:
            str: Printable/readable MAC address
     """
-    return ':'.join('%02x' % ord(b) for b in address)
+    return ':'.join('%02x' % compat_ord(b) for b in address)
 
 
 def inet_to_str(inet):
