@@ -9,6 +9,7 @@ NOTE: We are not reconstructing 'flows' so the request (and response if you trie
 import dpkt
 import datetime
 import socket
+from dpkt.compat import compat_ord
 
 
 def mac_addr(address):
@@ -19,7 +20,7 @@ def mac_addr(address):
        Returns:
            str: Printable/readable MAC address
     """
-    return ':'.join('%02x' % ord(b) for b in address)
+    return ':'.join('%02x' % compat_ord(b) for b in address)
 
 
 def inet_to_str(inet):
