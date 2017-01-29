@@ -5,7 +5,6 @@ from __future__ import print_function
 from __future__ import absolute_import
 
 from . import dpkt
-from . import ip
 
 # Types (icmp_type) and codes (icmp_code) -
 # http://www.iana.org/assignments/icmp-parameters
@@ -98,6 +97,7 @@ class ICMP(dpkt.Packet):
 
         def unpack(self, buf):
             dpkt.Packet.unpack(self, buf)
+            from . import ip
             self.data = self.ip = ip.IP(self.data)
 
     class Unreach(Quote):
