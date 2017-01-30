@@ -221,7 +221,7 @@ class Writer(object):
             ph = PktHdr(tv_sec=sec,
                         tv_usec=usec,
                         caplen=n, len=n)
-        self.__f.write(str(ph))
+        self.__f.write(bytes(ph))
         self.__f.write(s)
 
     def close(self):
@@ -253,7 +253,7 @@ class Reader(object):
             self.dloff = dltoff[self.__fh.linktype]
         else:
             self.dloff = 0
-        self._divisor = 1E6 if self.__fh.magic in (TCPDUMP_MAGIC, PMUDPCT_MAGIC) else Decimal(1E9)
+        self._divisor = 1E6 if self.__fh.magic in (TCPDUMP_MAGIC, PMUDPCT_MAGIC) else Decimal('1E9')
         self.snaplen = self.__fh.snaplen
         self.filter = ''
         self.__iter = iter(self)
@@ -362,8 +362,40 @@ def test_reader():
     assert reader.dispatch(1, lambda ts, pkt: None) == 0
 
 
+def test_writer_precision():
+    data = b'foo'
+    from .compat import BytesIO
+
+    # default precision
+    fobj = BytesIO()
+    writer = Writer(fobj)
+    writer.writepkt(data, ts=1454725786.526401)
+    fobj.flush()
+    fobj.seek(0)
+
+    reader = Reader(fobj)
+    ts, buf1 = next(iter(reader))
+    assert ts == 1454725786.526401
+    assert buf1 == b'foo'
+
+    # nano precision
+    from decimal import Decimal
+
+    fobj = BytesIO()
+    writer = Writer(fobj, nano=True)
+    writer.writepkt(data, ts=Decimal('1454725786.010203045'))
+    fobj.flush()
+    fobj.seek(0)
+
+    reader = Reader(fobj)
+    ts, buf1 = next(iter(reader))
+    assert ts == Decimal('1454725786.010203045')
+    assert buf1 == b'foo'
+
+
 if __name__ == '__main__':
     test_pcap_endian()
     test_reader()
+    test_writer_precision()
 
     print('Tests Successful...')
