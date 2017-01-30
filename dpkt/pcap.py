@@ -221,7 +221,7 @@ class Writer(object):
             ph = PktHdr(tv_sec=sec,
                         tv_usec=usec,
                         caplen=n, len=n)
-        self.__f.write(str(ph))
+        self.__f.write(bytes(ph))
         self.__f.write(s)
 
     def close(self):
@@ -253,7 +253,7 @@ class Reader(object):
             self.dloff = dltoff[self.__fh.linktype]
         else:
             self.dloff = 0
-        self._divisor = 1E6 if self.__fh.magic in (TCPDUMP_MAGIC, PMUDPCT_MAGIC) else Decimal(1E9)
+        self._divisor = 1E6 if self.__fh.magic in (TCPDUMP_MAGIC, PMUDPCT_MAGIC) else Decimal('1E9')
         self.snaplen = self.__fh.snaplen
         self.filter = ''
         self.__iter = iter(self)
