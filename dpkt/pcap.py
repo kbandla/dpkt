@@ -362,8 +362,40 @@ def test_reader():
     assert reader.dispatch(1, lambda ts, pkt: None) == 0
 
 
+def test_writer_precision():
+    data = b'foo'
+    from .compat import BytesIO
+
+    # default precision
+    fobj = BytesIO()
+    writer = Writer(fobj)
+    writer.writepkt(data, ts=1454725786.526401)
+    fobj.flush()
+    fobj.seek(0)
+
+    reader = Reader(fobj)
+    ts, buf1 = next(iter(reader))
+    assert ts == 1454725786.526401
+    assert buf1 == b'foo'
+
+    # nano precision
+    from decimal import Decimal
+
+    fobj = BytesIO()
+    writer = Writer(fobj, nano=True)
+    writer.writepkt(data, ts=Decimal('1454725786.010203045'))
+    fobj.flush()
+    fobj.seek(0)
+
+    reader = Reader(fobj)
+    ts, buf1 = next(iter(reader))
+    assert ts == Decimal('1454725786.010203045')
+    assert buf1 == b'foo'
+
+
 if __name__ == '__main__':
     test_pcap_endian()
     test_reader()
+    test_writer_precision()
 
     print('Tests Successful...')
