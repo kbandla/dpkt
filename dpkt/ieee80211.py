@@ -430,7 +430,7 @@ class IEEE80211(dpkt.Packet):
         setattr(self, name, field)
 
         if self.type == MGMT_TYPE:
-            self.ies = self.unpack_ies(field.data)
+            self.unpack_ies(field.data)
             if self.subtype in FRAMES_WITH_CAPABILITY:
                 self.capability = self.Capability(socket.ntohs(field.capability))
 
