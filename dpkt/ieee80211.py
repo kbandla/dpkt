@@ -415,8 +415,7 @@ class IEEE80211(dpkt.Packet):
             parser = decoder[self.type][self.subtype][1]
             name = decoder[self.type][self.subtype][0]
         except KeyError:
-            print("Key error:", self.type, self.subtype)
-            return
+            raise dpkt.UnpackError("KeyError: type=%s subtype=%s" % (self.type, self.subtype))
 
         if self.type == DATA_TYPE:
             # need to grab the ToDS/FromDS info
@@ -611,13 +610,18 @@ class IEEE80211(dpkt.Packet):
             dpkt.Packet.unpack(self, buf)
 
             action_parser = {
-                BLOCK_ACK: {BLOCK_ACK_CODE_REQUEST: ('block_ack_request', IEEE80211.BlockAckActionRequest),
-                            BLOCK_ACK_CODE_RESPONSE: ('block_ack_response', IEEE80211.BlockAckActionResponse),
-                            },
+                BLOCK_ACK: {
+                    BLOCK_ACK_CODE_REQUEST: ('block_ack_request', IEEE80211.BlockAckActionRequest),
+                    BLOCK_ACK_CODE_RESPONSE: ('block_ack_response', IEEE80211.BlockAckActionResponse),
+                },
             }
 
-            decoder = action_parser[self.category][self.code][1]
-            field_name = action_parser[self.category][self.code][0]
+            try:
+                decoder = action_parser[self.category][self.code][1]
+                field_name = action_parser[self.category][self.code][0]
+            except KeyError:
+                raise dpkt.UnpackError("KeyError: category=%s code=%s" % (self.category, self.code))
+
             field = decoder(self.data)
             setattr(self, field_name, field)
             self.data = field.data
@@ -733,6 +737,7 @@ class IEEE80211(dpkt.Packet):
             ('atim', 'H', 0)
         )
 
+
 def test_802211_ack():
     s = b'\xd4\x00\x00\x00\x00\x12\xf0\xb6\x1c\xa4\xff\xff\xff\xff'
     ieee = IEEE80211(s, fcs=True)
@@ -784,8 +789,6 @@ def test_80211_data():
     assert ieee.fcs == struct.unpack('I', b'\xac\x17\x00\x00')[0]
 
     from . import llc
-
-
     llc_pkt = llc.LLC(ieee.data_frame.data)
     ip_pkt = llc_pkt.data
     assert ip_pkt.dst == b'\x3f\xf5\xd1\x69'
