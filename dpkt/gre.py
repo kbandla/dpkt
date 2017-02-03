@@ -7,6 +7,7 @@ import struct
 import codecs
 
 from . import dpkt
+from . import ethernet
 from .decorators import deprecated
 from .compat import compat_izip
 
@@ -37,7 +38,6 @@ class GRE(dpkt.Packet):
         ('flags', 'H', 0),
         ('p', 'H', 0x0800),  # ETH_TYPE_IP
     )
-    _protosw = {}
     sre = ()
 
     @property
@@ -134,11 +134,6 @@ class GRE(dpkt.Packet):
         else:
             opt_s = b''
         return self.pack_hdr() + opt_s + b''.join(map(bytes, self.sre)) + bytes(self.data)
-
-# XXX - auto-load GRE dispatch table from Ethernet dispatch table
-from . import ethernet
-
-GRE._protosw.update(ethernet.Ethernet._typesw)
 
 
 def test_gre_v1():
