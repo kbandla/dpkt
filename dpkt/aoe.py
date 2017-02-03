@@ -99,5 +99,7 @@ def __load_cmds():
                 continue
 
 
-if not AOE._cmdsw:
-    __load_cmds()
+def _mod_init():
+    """Post-initialization called when all dpkt modules are fully loaded"""
+    if not AOE._cmdsw:
+        __load_cmds()

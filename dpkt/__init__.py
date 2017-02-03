@@ -1,6 +1,7 @@
 """fast, simple packet creation and parsing."""
 from __future__ import absolute_import
 from __future__ import division
+import sys
 
 __author__ = 'Dug Song'
 __author_email__ = 'dugsong@monkey.org'
@@ -74,3 +75,10 @@ from . import tpkt
 from . import udp
 from . import vrrp
 from . import yahoo
+
+# Note: list() is used to get a copy of the dict in order to avoid
+# "RuntimeError: dictionary changed size during iteration"
+# exception in Python 3 caused by _mod_init() funcs that load another modules
+for name, mod in list(sys.modules.items()):
+    if name.startswith('dpkt.') and hasattr(mod, '_mod_init'):
+        mod._mod_init()

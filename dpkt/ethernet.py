@@ -250,8 +250,11 @@ def __load_types():
     # add any special cases below
     Ethernet.set_type(ETH_TYPE_TEB, Ethernet)
 
-if not Ethernet._typesw:
-    __load_types()
+
+def _mod_init():
+    """Post-initialization called when all dpkt modules are fully loaded"""
+    if not Ethernet._typesw:
+        __load_types()
 
 
 # Misc protocols
