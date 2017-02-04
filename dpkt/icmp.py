@@ -151,7 +151,7 @@ def test_icmp():
         data=ICMP.Echo(
             id=1,
             seq=0x03d6,
-            data='ABCDEFGHIJKLMNOPQRSTUVWABCDEFGHI'
+            data=b'ABCDEFGHIJKLMNOPQRSTUVWABCDEFGHI'
         )
     )
     assert bytes(p) == s
