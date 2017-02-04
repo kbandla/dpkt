@@ -103,7 +103,8 @@ class ICMP(dpkt.Packet):
     class Unreach(Quote):
         __hdr__ = (('pad', 'H', 0), ('mtu', 'H', 0))
 
-    class Quench(Quote): pass
+    class Quench(Quote):
+        pass
 
     class Redirect(Quote):
         __hdr__ = (('gw', 'I', 0),)
@@ -111,7 +112,8 @@ class ICMP(dpkt.Packet):
     class ParamProbe(Quote):
         __hdr__ = (('ptr', 'B', 0), ('pad1', 'B', 0), ('pad2', 'H', 0))
 
-    class TimeExceed(Quote): pass
+    class TimeExceed(Quote):
+        pass
 
     _typesw = {0: Echo, 3: Unreach, 4: Quench, 5: Redirect, 8: Echo, 11: TimeExceed}
 
@@ -130,9 +132,30 @@ class ICMP(dpkt.Packet):
 
 
 def test_icmp():
-    s = b'\x03\x0a\x6b\x19\x00\x00\x00\x00\x45\x00\x00\x28\x94\x1f\x00\x00\xe3\x06\x99\xb4\x23\x2b\x24\x00\xde\x8e\x84\x42\xab\xd1\x00\x50\x00\x35\xe1\x29\x20\xd9\x00\x00\x00\x22\x9b\xf0\xe2\x04\x65\x6b'
+    s = (
+        b'\x03\x0a\x6b\x19\x00\x00\x00\x00\x45\x00\x00\x28\x94\x1f\x00\x00\xe3\x06\x99\xb4\x23\x2b'
+        b'\x24\x00\xde\x8e\x84\x42\xab\xd1\x00\x50\x00\x35\xe1\x29\x20\xd9\x00\x00\x00\x22\x9b\xf0'
+        b'\xe2\x04\x65\x6b'
+    )
     r = ICMP(s)
-    assert (bytes(r) == s)
+    assert bytes(r) == s
+
+    # construction
+    s = (
+        b'\x00\x00\x53\x87\x00\x01\x03\xd6\x41\x42\x43\x44\x45\x46\x47\x48\x49\x4a\x4b\x4c\x4d\x4e'
+        b'\x4f\x50\x51\x52\x53\x54\x55\x56\x57\x41\x42\x43\x44\x45\x46\x47\x48\x49'
+    )
+    p = ICMP(
+        type=0,
+        sum=0x5387,
+        data=ICMP.Echo(
+            id=1,
+            seq=0x03d6,
+            data=b'ABCDEFGHIJKLMNOPQRSTUVWABCDEFGHI'
+        )
+    )
+    assert bytes(p) == s
+
 
 if __name__ == '__main__':
     test_icmp()
