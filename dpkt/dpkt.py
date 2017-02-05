@@ -213,9 +213,6 @@ def test_utils():
     __buf = b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\t\n\x0b\x0c\r\x0e'
     __hd = '  0000:  00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e     ...............'
     h = hexdump(__buf)
-    print(h)
     assert (h == __hd)
-    # assert(h == 'hoge')
     c = in_cksum(__buf)
     assert (c == 51150)
-
