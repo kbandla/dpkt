@@ -9,7 +9,7 @@ import socket
 import struct
 import array
 
-from .compat import compat_izip, iteritems
+from .compat import compat_ord, compat_izip, iteritems
 
 
 class Error(Exception):
@@ -194,7 +194,7 @@ def in_cksum_add(s, buf):
     cnt = (n // 2) * 2
     a = array.array('H', buf[:cnt])
     if cnt != n:
-        a.append(struct.unpack('H', buf[-1] + '\x00')[0])
+        a.append(compat_ord(buf[-1]))
     return s + sum(a)
 
 
