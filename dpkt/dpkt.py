@@ -173,7 +173,7 @@ class Packet(_MetaPacket("Temp", (object,), {})):
         self.data = buf[self.__hdr_len__:]
 
 # XXX - ''.join([(len(`chr(x)`)==3) and chr(x) or '.' for x in range(256)])
-__vis_filter = """................................ !"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[.]^_`abcdefghijklmnopqrstuvwxyz{|}~................................................................................................................................."""
+__vis_filter = b'................................ !"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[.]^_`abcdefghijklmnopqrstuvwxyz{|}~.................................................................................................................................'
 
 
 def hexdump(buf, length=16):
@@ -182,8 +182,8 @@ def hexdump(buf, length=16):
     res = []
     while buf:
         line, buf = buf[:length], buf[length:]
-        hexa = ' '.join(['%02x' % ord(x) for x in line])
-        line = line.translate(__vis_filter)
+        hexa = ' '.join(['%02x' % compat_ord(x) for x in line])
+        line = line.translate(__vis_filter).decode('utf-8')
         res.append('  %04d:  %-*s %s' % (n, length * 3, hexa, line))
         n += length
     return '\n'.join(res)
@@ -207,3 +207,15 @@ def in_cksum_done(s):
 def in_cksum(buf):
     """Return computed Internet checksum."""
     return in_cksum_done(in_cksum_add(0, buf))
+
+
+def test_utils():
+    __buf = b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\t\n\x0b\x0c\r\x0e'
+    __hd = '  0000:  00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e     ...............'
+    h = hexdump(__buf)
+    print(h)
+    assert (h == __hd)
+    # assert(h == 'hoge')
+    c = in_cksum(__buf)
+    assert (c == 51150)
+
