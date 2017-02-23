@@ -5,6 +5,7 @@ from __future__ import print_function
 from __future__ import absolute_import
 
 from . import dpkt
+from . import ip
 from .decorators import deprecated
 from .compat import compat_ord
 
@@ -28,10 +29,7 @@ class IP6(dpkt.Packet):
         ('dst', '16s', '')
     )
 
-    # XXX - to be shared with IP.  We cannot refer to the ip module
-    # right now because ip.__load_protos() expects the IP6 class to be
-    # defined.
-    _protosw = None
+    _protosw = ip.IP._protosw
 
     @property
     def v(self):
@@ -141,16 +139,6 @@ class IP6(dpkt.Packet):
     @classmethod
     def get_proto(cls, p):
         return cls._protosw[p]
-
-
-from . import ip
-# We are most likely still in the middle of ip.__load_protos() which
-# implicitly loads this module through __import__(), so the content of
-# ip.IP._protosw is still incomplete at the moment.  By sharing the
-# same dictionary by reference as opposed to making a copy, when
-# ip.__load_protos() finishes, we will also automatically get the most
-# up-to-date dictionary.
-IP6._protosw = ip.IP._protosw
 
 
 class IP6ExtensionHeader(dpkt.Packet):

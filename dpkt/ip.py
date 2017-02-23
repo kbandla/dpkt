@@ -356,8 +356,10 @@ def __load_protos():
                 continue
 
 
-if not IP._protosw:
-    __load_protos()
+def _mod_init():
+    """Post-initialization called when all dpkt modules are fully loaded"""
+    if not IP._protosw:
+        __load_protos()
 
 
 def test_ip():
