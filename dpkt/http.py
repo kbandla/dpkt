@@ -110,7 +110,7 @@ class Message(dpkt.Packet):
         self.data = f.read()
 
     def pack_hdr(self):
-        return b''.join([b'%s: %s\r\n' % t for t in iteritems(self.headers)])
+        return b''.join([b': '.join(t) + b'\r\n' for t in iteritems(self.headers)])
 
     def __len__(self):
         return len(str(self))
