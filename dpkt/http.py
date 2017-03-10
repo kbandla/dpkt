@@ -373,6 +373,30 @@ def test_invalid_header():
         assert False
 
 
+def test_gzip_response():
+    import zlib
+    # valid response, compressed using gzip
+    s = b'HTTP/1.0 200 OK\r\n' \
+        b'Server: SimpleHTTP/0.6 Python/2.7.12\r\n' \
+        b'Date: Fri, 10 Mar 2017 20:43:08 GMT\r\n' \
+        b'Content-type: text/plain\r\n' \
+        b'Content-Encoding: gzip\r\n' \
+        b'Content-Length: 68\r\n' \
+        b'Last-Modified: Fri, 10 Mar 2017 20:40:43 GMT\r\n\r\n' \
+        b'\x1f\x8b\x08\x00\x00\x00\x00\x00\x02\x03\x0b\xc9\xc8,V\x00\xa2D' \
+        b'\x85\xb2\xd4\xa2J\x85\xe2\xdc\xc4\x9c\x1c\x85\xb4\xcc\x9cT\x85\x92' \
+        b'|\x85\x92\xd4\xe2\x12\x85\xf4\xaa\xcc\x02\x85\xa2\xd4\xe2\x82\xfc' \
+        b'\xbc\xe2\xd4b=.\x00\x01(m\xad2\x00\x00\x00'
+    r = Response(s)
+    assert r.version == b'1.0'
+    assert r.status == b'200'
+    assert r.reason == b'OK'
+    # Make a zlib compressor with the appropriate gzip options
+    decompressor = zlib.decompressobj(16 + zlib.MAX_WBITS)
+    body = decompressor.decompress(r.body)
+    assert body.startswith(b'This is a very small file')
+
+
 if __name__ == '__main__':
     # Runs all the test associated with this class/file
     test_parse_request()
