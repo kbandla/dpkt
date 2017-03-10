@@ -5,7 +5,7 @@ from __future__ import print_function
 from __future__ import absolute_import
 
 from . import dpkt
-from .compat import StringIO, iteritems
+from .compat import BytesIO, iteritems
 
 
 def parse_headers(f):
@@ -22,11 +22,11 @@ def parse_headers(f):
         line = f.readline().strip()
         if not line:
             break
-        l = line.split(':', 1)
+        l = line.split(b':', 1)
         if len(l[0].split()) != 1:
             raise dpkt.UnpackError('invalid header: %r' % line)
         k = l[0].lower()
-        v = len(l) != 1 and l[1].lstrip() or ''
+        v = len(l) != 1 and l[1].lstrip() or b''
         if k in d:
             if not type(d[k]) is list:
                 d[k] = [d[k]]
@@ -38,7 +38,7 @@ def parse_headers(f):
 
 def parse_body(f, headers):
     """Return HTTP body parsed from a file object, given HTTP header dict."""
-    if headers.get('transfer-encoding', '').lower() == 'chunked':
+    if headers.get(b'transfer-encoding', b'').lower() == b'chunked':
         l = []
         found_end = False
         while 1:
@@ -58,17 +58,17 @@ def parse_body(f, headers):
                 break
         if not found_end:
             raise dpkt.NeedData('premature end of chunked body')
-        body = ''.join(l)
-    elif 'content-length' in headers:
-        n = int(headers['content-length'])
+        body = b''.join(l)
+    elif b'content-length' in headers:
+        n = int(headers[b'content-length'])
         body = f.read(n)
         if len(body) != n:
             raise dpkt.NeedData('short body (missing %d bytes)' % (n - len(body)))
-    elif 'content-type' in headers:
+    elif b'content-type' in headers:
         body = f.read()
     else:
         # XXX - need to handle HTTP/0.9
-        body = ''
+        body = b''
     return body
 
 
@@ -92,7 +92,7 @@ class Message(dpkt.Packet):
             self.unpack(args[0])
         else:
             self.headers = {}
-            self.body = ''
+            self.body = b''
             # NOTE: changing this to iteritems breaks py3 compatibility
             for k, v in self.__hdr_defaults__.items():
                 setattr(self, k, v)
@@ -100,7 +100,7 @@ class Message(dpkt.Packet):
                 setattr(self, k, v)
 
     def unpack(self, buf, is_body_allowed=True):
-        f = StringIO(buf)
+        f = BytesIO(buf)
         # Parse headers
         self.headers = parse_headers(f)
         # Parse body
@@ -110,13 +110,13 @@ class Message(dpkt.Packet):
         self.data = f.read()
 
     def pack_hdr(self):
-        return ''.join(['%s: %s\r\n' % t for t in iteritems(self.headers)])
+        return b''.join([b': '.join(t) + b'\r\n' for t in iteritems(self.headers)])
 
     def __len__(self):
         return len(str(self))
 
     def __str__(self):
-        return '%s\r\n%s' % (self.pack_hdr(), self.body)
+        return '%s\r\n%s' % (self.pack_hdr().decode("ascii"), self.body.decode("ascii"))
 
 
 class Request(Message):
@@ -130,27 +130,27 @@ class Request(Message):
     """
 
     __hdr_defaults__ = {
-        'method': 'GET',
-        'uri': '/',
-        'version': '1.0',
+        'method': b'GET',
+        'uri': b'/',
+        'version': b'1.0',
     }
     __methods = dict.fromkeys((
-        'GET', 'PUT', 'ICY',
-        'COPY', 'HEAD', 'LOCK', 'MOVE', 'POLL', 'POST',
-        'BCOPY', 'BMOVE', 'MKCOL', 'TRACE', 'LABEL', 'MERGE',
-        'DELETE', 'SEARCH', 'UNLOCK', 'REPORT', 'UPDATE', 'NOTIFY',
-        'BDELETE', 'CONNECT', 'OPTIONS', 'CHECKIN',
-        'PROPFIND', 'CHECKOUT', 'CCM_POST',
-        'SUBSCRIBE', 'PROPPATCH', 'BPROPFIND',
-        'BPROPPATCH', 'UNCHECKOUT', 'MKACTIVITY',
-        'MKWORKSPACE', 'UNSUBSCRIBE', 'RPC_CONNECT',
-        'VERSION-CONTROL',
-        'BASELINE-CONTROL'
+        b'GET', b'PUT', b'ICY',
+        b'COPY', b'HEAD', b'LOCK', b'MOVE', b'POLL', b'POST',
+        b'BCOPY', b'BMOVE', b'MKCOL', b'TRACE', b'LABEL', b'MERGE',
+        b'DELETE', b'SEARCH', b'UNLOCK', b'REPORT', b'UPDATE', b'NOTIFY',
+        b'BDELETE', b'CONNECT', b'OPTIONS', b'CHECKIN',
+        b'PROPFIND', b'CHECKOUT', b'CCM_POST',
+        b'SUBSCRIBE', b'PROPPATCH', b'BPROPFIND',
+        b'BPROPPATCH', b'UNCHECKOUT', b'MKACTIVITY',
+        b'MKWORKSPACE', b'UNSUBSCRIBE', b'RPC_CONNECT',
+        b'VERSION-CONTROL',
+        b'BASELINE-CONTROL'
     ))
-    __proto = 'HTTP'
+    __proto = b'HTTP'
 
     def unpack(self, buf):
-        f = StringIO(buf)
+        f = BytesIO(buf)
         line = f.readline()
         l = line.strip().split()
         if len(l) < 2:
@@ -159,7 +159,7 @@ class Request(Message):
             raise dpkt.UnpackError('invalid http method: %r' % l[0])
         if len(l) == 2:
             # HTTP/0.9 does not specify a version in the request line
-            self.version = '0.9'
+            self.version = b'0.9'
         else:
             if not l[2].startswith(self.__proto):
                 raise dpkt.UnpackError('invalid http version: %r' % l[2])
@@ -169,8 +169,8 @@ class Request(Message):
         Message.unpack(self, f.read())
 
     def __str__(self):
-        return '%s %s %s/%s\r\n' % (self.method, self.uri, self.__proto,
-                                    self.version) + Message.__str__(self)
+        return '%s %s %s/%s\r\n' % (self.method.decode("ascii"), self.uri.decode("ascii"), self.__proto.decode("ascii"),
+                                    self.version.decode("ascii")) + Message.__str__(self)
 
 
 class Response(Message):
@@ -184,21 +184,21 @@ class Response(Message):
     """
 
     __hdr_defaults__ = {
-        'version': '1.0',
-        'status': '200',
-        'reason': 'OK'
+        'version': b'1.0',
+        'status': b'200',
+        'reason': b'OK'
     }
-    __proto = 'HTTP'
+    __proto = b'HTTP'
 
     def unpack(self, buf):
-        f = StringIO(buf)
+        f = BytesIO(buf)
         line = f.readline()
         l = line.strip().split(None, 2)
         if len(l) < 2 or not l[0].startswith(self.__proto) or not l[1].isdigit():
             raise dpkt.UnpackError('invalid response: %r' % line)
         self.version = l[0][len(self.__proto) + 1:]
         self.status = l[1]
-        self.reason = l[2] if len(l) > 2 else ''
+        self.reason = l[2] if len(l) > 2 else b''
         # RFC Sec 4.3.
         # http://www.w3.org/Protocols/rfc2616/rfc2616-sec4.html#sec4.3.
         # For response messages, whether or not a message-body is included with
@@ -213,17 +213,17 @@ class Response(Message):
         Message.unpack(self, f.read(), is_body_allowed)
 
     def __str__(self):
-        return '%s/%s %s %s\r\n' % (self.__proto, self.version, self.status,
-                                    self.reason) + Message.__str__(self)
+        return '%s/%s %s %s\r\n' % (self.__proto.decode("ascii"), self.version.decode("ascii"), self.status.decode("ascii"),
+                                    self.reason.decode("ascii")) + Message.__str__(self)
 
 
 def test_parse_request():
-    s = """POST /main/redirect/ab/1,295,,00.html HTTP/1.0\r\nReferer: http://www.email.com/login/snap/login.jhtml\r\nConnection: Keep-Alive\r\nUser-Agent: Mozilla/4.75 [en] (X11; U; OpenBSD 2.8 i386; Nav)\r\nHost: ltd.snap.com\r\nAccept: image/gif, image/x-xbitmap, image/jpeg, image/pjpeg, image/png, */*\r\nAccept-Encoding: gzip\r\nAccept-Language: en\r\nAccept-Charset: iso-8859-1,*,utf-8\r\nContent-type: application/x-www-form-urlencoded\r\nContent-length: 61\r\n\r\nsn=em&mn=dtest4&pw=this+is+atest&fr=true&login=Sign+in&od=www"""
+    s = b"""POST /main/redirect/ab/1,295,,00.html HTTP/1.0\r\nReferer: http://www.email.com/login/snap/login.jhtml\r\nConnection: Keep-Alive\r\nUser-Agent: Mozilla/4.75 [en] (X11; U; OpenBSD 2.8 i386; Nav)\r\nHost: ltd.snap.com\r\nAccept: image/gif, image/x-xbitmap, image/jpeg, image/pjpeg, image/png, */*\r\nAccept-Encoding: gzip\r\nAccept-Language: en\r\nAccept-Charset: iso-8859-1,*,utf-8\r\nContent-type: application/x-www-form-urlencoded\r\nContent-length: 61\r\n\r\nsn=em&mn=dtest4&pw=this+is+atest&fr=true&login=Sign+in&od=www"""
     r = Request(s)
-    assert r.method == 'POST'
-    assert r.uri == '/main/redirect/ab/1,295,,00.html'
-    assert r.body == 'sn=em&mn=dtest4&pw=this+is+atest&fr=true&login=Sign+in&od=www'
-    assert r.headers['content-type'] == 'application/x-www-form-urlencoded'
+    assert r.method == b'POST'
+    assert r.uri == b'/main/redirect/ab/1,295,,00.html'
+    assert r.body == b'sn=em&mn=dtest4&pw=this+is+atest&fr=true&login=Sign+in&od=www'
+    assert r.headers[b'content-type'] == b'application/x-www-form-urlencoded'
     try:
         Request(s[:60])
         assert 'invalid headers parsed!'
@@ -234,63 +234,63 @@ def test_parse_request():
 def test_format_request():
     r = Request()
     assert str(r) == 'GET / HTTP/1.0\r\n\r\n'
-    r.method = 'POST'
-    r.uri = '/foo/bar/baz.html'
-    r.headers['content-type'] = 'text/plain'
-    r.headers['content-length'] = '5'
-    r.body = 'hello'
+    r.method = b'POST'
+    r.uri = b'/foo/bar/baz.html'
+    r.headers[b'content-type'] = b'text/plain'
+    r.headers[b'content-length'] = b'5'
+    r.body = b'hello'
     s = str(r)
     assert s.startswith('POST /foo/bar/baz.html HTTP/1.0\r\n')
     assert s.endswith('\r\n\r\nhello')
     assert '\r\ncontent-length: 5\r\n' in s
     assert '\r\ncontent-type: text/plain\r\n' in s
-    r = Request(str(r))
+    r = Request(str(r).encode("ascii"))
     assert str(r) == s
 
 
 def test_chunked_response():
-    s = """HTTP/1.1 200 OK\r\nCache-control: no-cache\r\nPragma: no-cache\r\nContent-Type: text/javascript; charset=utf-8\r\nContent-Encoding: gzip\r\nTransfer-Encoding: chunked\r\nSet-Cookie: S=gmail=agg:gmail_yj=v2s:gmproxy=JkU; Domain=.google.com; Path=/\r\nServer: GFE/1.3\r\nDate: Mon, 12 Dec 2005 22:33:23 GMT\r\n\r\na\r\n\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\x00\r\n152\r\nm\x91MO\xc4 \x10\x86\xef\xfe\n\x82\xc9\x9eXJK\xe9\xb6\xee\xc1\xe8\x1e6\x9e4\xf1\xe0a5\x86R\xda\x12Yh\x80\xba\xfa\xef\x85\xee\x1a/\xf21\x99\x0c\xef0<\xc3\x81\xa0\xc3\x01\xe6\x10\xc1<\xa7eYT5\xa1\xa4\xac\xe1\xdb\x15:\xa4\x9d\x0c\xfa5K\x00\xf6.\xaa\xeb\x86\xd5y\xcdHY\x954\x8e\xbc*h\x8c\x8e!L7Y\xe6\'\xeb\x82WZ\xcf>8\x1ed\x87\x851X\xd8c\xe6\xbc\x17Z\x89\x8f\xac \x84e\xde\n!]\x96\x17i\xb5\x02{{\xc2z0\x1e\x0f#7\x9cw3v\x992\x9d\xfc\xc2c8\xea[/EP\xd6\xbc\xce\x84\xd0\xce\xab\xf7`\'\x1f\xacS\xd2\xc7\xd2\xfb\x94\x02N\xdc\x04\x0f\xee\xba\x19X\x03TtW\xd7\xb4\xd9\x92\n\xbcX\xa7;\xb0\x9b\'\x10$?F\xfd\xf3CzPt\x8aU\xef\xb8\xc8\x8b-\x18\xed\xec<\xe0\x83\x85\x08!\xf8"[\xb0\xd3j\x82h\x93\xb8\xcf\xd8\x9b\xba\xda\xd0\x92\x14\xa4a\rc\reM\xfd\x87=X;h\xd9j;\xe0db\x17\xc2\x02\xbd\xb0F\xc2in#\xfb:\xb6\xc4x\x15\xd6\x9f\x8a\xaf\xcf)\x0b^\xbc\xe7i\x11\x80\x8b\x00D\x01\xd8/\x82x\xf6\xd8\xf7J(\xae/\x11p\x1f+\xc4p\t:\xfe\xfd\xdf\xa3Y\xfa\xae4\x7f\x00\xc5\xa5\x95\xa1\xe2\x01\x00\x00\r\n0\r\n\r\n"""
+    s = b"""HTTP/1.1 200 OK\r\nCache-control: no-cache\r\nPragma: no-cache\r\nContent-Type: text/javascript; charset=utf-8\r\nContent-Encoding: gzip\r\nTransfer-Encoding: chunked\r\nSet-Cookie: S=gmail=agg:gmail_yj=v2s:gmproxy=JkU; Domain=.google.com; Path=/\r\nServer: GFE/1.3\r\nDate: Mon, 12 Dec 2005 22:33:23 GMT\r\n\r\na\r\n\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\x00\r\n152\r\nm\x91MO\xc4 \x10\x86\xef\xfe\n\x82\xc9\x9eXJK\xe9\xb6\xee\xc1\xe8\x1e6\x9e4\xf1\xe0a5\x86R\xda\x12Yh\x80\xba\xfa\xef\x85\xee\x1a/\xf21\x99\x0c\xef0<\xc3\x81\xa0\xc3\x01\xe6\x10\xc1<\xa7eYT5\xa1\xa4\xac\xe1\xdb\x15:\xa4\x9d\x0c\xfa5K\x00\xf6.\xaa\xeb\x86\xd5y\xcdHY\x954\x8e\xbc*h\x8c\x8e!L7Y\xe6\'\xeb\x82WZ\xcf>8\x1ed\x87\x851X\xd8c\xe6\xbc\x17Z\x89\x8f\xac \x84e\xde\n!]\x96\x17i\xb5\x02{{\xc2z0\x1e\x0f#7\x9cw3v\x992\x9d\xfc\xc2c8\xea[/EP\xd6\xbc\xce\x84\xd0\xce\xab\xf7`\'\x1f\xacS\xd2\xc7\xd2\xfb\x94\x02N\xdc\x04\x0f\xee\xba\x19X\x03TtW\xd7\xb4\xd9\x92\n\xbcX\xa7;\xb0\x9b\'\x10$?F\xfd\xf3CzPt\x8aU\xef\xb8\xc8\x8b-\x18\xed\xec<\xe0\x83\x85\x08!\xf8"[\xb0\xd3j\x82h\x93\xb8\xcf\xd8\x9b\xba\xda\xd0\x92\x14\xa4a\rc\reM\xfd\x87=X;h\xd9j;\xe0db\x17\xc2\x02\xbd\xb0F\xc2in#\xfb:\xb6\xc4x\x15\xd6\x9f\x8a\xaf\xcf)\x0b^\xbc\xe7i\x11\x80\x8b\x00D\x01\xd8/\x82x\xf6\xd8\xf7J(\xae/\x11p\x1f+\xc4p\t:\xfe\xfd\xdf\xa3Y\xfa\xae4\x7f\x00\xc5\xa5\x95\xa1\xe2\x01\x00\x00\r\n0\r\n\r\n"""
     r = Response(s)
-    assert r.version == '1.1'
-    assert r.status == '200'
-    assert r.reason == 'OK'
+    assert r.version == b'1.1'
+    assert r.status == b'200'
+    assert r.reason == b'OK'
 
 
 def test_multicookie_response():
-    s = """HTTP/1.x 200 OK\r\nSet-Cookie: first_cookie=cookie1; path=/; domain=.example.com\r\nSet-Cookie: second_cookie=cookie2; path=/; domain=.example.com\r\nContent-Length: 0\r\n\r\n"""
+    s = b"""HTTP/1.x 200 OK\r\nSet-Cookie: first_cookie=cookie1; path=/; domain=.example.com\r\nSet-Cookie: second_cookie=cookie2; path=/; domain=.example.com\r\nContent-Length: 0\r\n\r\n"""
     r = Response(s)
-    assert type(r.headers['set-cookie']) is list
-    assert len(r.headers['set-cookie']) == 2
+    assert type(r.headers[b'set-cookie']) is list
+    assert len(r.headers[b'set-cookie']) == 2
 
 
 def test_noreason_response():
-    s = """HTTP/1.1 200 \r\n\r\n"""
+    s = b"""HTTP/1.1 200 \r\n\r\n"""
     r = Response(s)
-    assert r.reason == ''
-    assert str(r) == s
+    assert r.reason == b''
+    assert str(r) == s.decode("ascii")
 
 
 def test_body_forbidden_response():
-    s = 'HTTP/1.1 304 Not Modified\r\n'\
-        'Content-Type: text/css\r\n'\
-        'Last-Modified: Wed, 14 Jan 2009 16:42:11 GMT\r\n'\
-        'ETag: "3a7-496e15e3"\r\n'\
-        'Cache-Control: private, max-age=414295\r\n'\
-        'Date: Wed, 22 Sep 2010 17:55:54 GMT\r\n'\
-        'Connection: keep-alive\r\n'\
-        'Vary: Accept-Encoding\r\n\r\n'\
-        'HTTP/1.1 200 OK\r\n'\
-        'Server: Sun-ONE-Web-Server/6.1\r\n'\
-        'ntCoent-length: 257\r\n'\
-        'Content-Type: application/x-javascript\r\n'\
-        'Last-Modified: Wed, 06 Jan 2010 19:34:06 GMT\r\n'\
-        'ETag: "101-4b44e5ae"\r\n'\
-        'Accept-Ranges: bytes\r\n'\
-        'Content-Encoding: gzip\r\n'\
-        'Cache-Control: private, max-age=439726\r\n'\
-        'Date: Wed, 22 Sep 2010 17:55:54 GMT\r\n'\
-        'Connection: keep-alive\r\n'\
-        'Vary: Accept-Encoding\r\n'
+    s = b'HTTP/1.1 304 Not Modified\r\n'\
+        b'Content-Type: text/css\r\n'\
+        b'Last-Modified: Wed, 14 Jan 2009 16:42:11 GMT\r\n'\
+        b'ETag: "3a7-496e15e3"\r\n'\
+        b'Cache-Control: private, max-age=414295\r\n'\
+        b'Date: Wed, 22 Sep 2010 17:55:54 GMT\r\n'\
+        b'Connection: keep-alive\r\n'\
+        b'Vary: Accept-Encoding\r\n\r\n'\
+        b'HTTP/1.1 200 OK\r\n'\
+        b'Server: Sun-ONE-Web-Server/6.1\r\n'\
+        b'ntCoent-length: 257\r\n'\
+        b'Content-Type: application/x-javascript\r\n'\
+        b'Last-Modified: Wed, 06 Jan 2010 19:34:06 GMT\r\n'\
+        b'ETag: "101-4b44e5ae"\r\n'\
+        b'Accept-Ranges: bytes\r\n'\
+        b'Content-Encoding: gzip\r\n'\
+        b'Cache-Control: private, max-age=439726\r\n'\
+        b'Date: Wed, 22 Sep 2010 17:55:54 GMT\r\n'\
+        b'Connection: keep-alive\r\n'\
+        b'Vary: Accept-Encoding\r\n'
     result = []
     while s:
         msg = Response(s)
@@ -302,19 +302,19 @@ def test_body_forbidden_response():
 
 
 def test_request_version():
-    s = """GET / HTTP/1.0\r\n\r\n"""
+    s = b"""GET / HTTP/1.0\r\n\r\n"""
     r = Request(s)
-    assert r.method == 'GET'
-    assert r.uri == '/'
-    assert r.version == '1.0'
+    assert r.method == b'GET'
+    assert r.uri == b'/'
+    assert r.version == b'1.0'
 
-    s = """GET /\r\n\r\n"""
+    s = b"""GET /\r\n\r\n"""
     r = Request(s)
-    assert r.method == 'GET'
-    assert r.uri == '/'
-    assert r.version == '0.9'
+    assert r.method == b'GET'
+    assert r.uri == b'/'
+    assert r.version == b'0.9'
 
-    s = """GET / CHEESE/1.0\r\n\r\n"""
+    s = b"""GET / CHEESE/1.0\r\n\r\n"""
     try:
         Request(s)
         assert "invalid protocol version parsed!"
@@ -324,43 +324,43 @@ def test_request_version():
 
 def test_invalid_header():
     # valid header.
-    s = 'POST /main/redirect/ab/1,295,,00.html HTTP/1.0\r\n' \
-        'Referer: http://www.email.com/login/snap/login.jhtml\r\n' \
-        'Connection: Keep-Alive\r\n' \
-        'User-Agent: Mozilla/4.75 [en] (X11; U; OpenBSD 2.8 i386; Nav)\r\n' \
-        'Host: ltd.snap.com\r\n' \
-        'Accept: image/gif, image/x-xbitmap, image/jpeg, image/pjpeg, image/png, */*\r\n' \
-        'Accept-Encoding: gzip\r\n' \
-        'Accept-Language: en\r\n' \
-        'Accept-Charset: iso-8859-1,*,utf-8\r\n' \
-        'Content-type: application/x-www-form-urlencoded\r\n' \
-        'Content-length: 61\r\n\r\n' \
-        'sn=em&mn=dtest4&pw=this+is+atest&fr=true&login=Sign+in&od=www'
+    s = b'POST /main/redirect/ab/1,295,,00.html HTTP/1.0\r\n' \
+        b'Referer: http://www.email.com/login/snap/login.jhtml\r\n' \
+        b'Connection: Keep-Alive\r\n' \
+        b'User-Agent: Mozilla/4.75 [en] (X11; U; OpenBSD 2.8 i386; Nav)\r\n' \
+        b'Host: ltd.snap.com\r\n' \
+        b'Accept: image/gif, image/x-xbitmap, image/jpeg, image/pjpeg, image/png, */*\r\n' \
+        b'Accept-Encoding: gzip\r\n' \
+        b'Accept-Language: en\r\n' \
+        b'Accept-Charset: iso-8859-1,*,utf-8\r\n' \
+        b'Content-type: application/x-www-form-urlencoded\r\n' \
+        b'Content-length: 61\r\n\r\n' \
+        b'sn=em&mn=dtest4&pw=this+is+atest&fr=true&login=Sign+in&od=www'
     r = Request(s)
-    assert r.method == 'POST'
-    assert r.uri == '/main/redirect/ab/1,295,,00.html'
-    assert r.body == 'sn=em&mn=dtest4&pw=this+is+atest&fr=true&login=Sign+in&od=www'
-    assert r.headers['content-type'] == 'application/x-www-form-urlencoded'
+    assert r.method == b'POST'
+    assert r.uri == b'/main/redirect/ab/1,295,,00.html'
+    assert r.body == b'sn=em&mn=dtest4&pw=this+is+atest&fr=true&login=Sign+in&od=www'
+    assert r.headers[b'content-type'] == b'application/x-www-form-urlencoded'
 
     # invalid header.
-    s_weird_end = 'POST /main/redirect/ab/1,295,,00.html HTTP/1.0\r\n' \
-        'Referer: http://www.email.com/login/snap/login.jhtml\r\n' \
-        'Connection: Keep-Alive\r\n' \
-        'User-Agent: Mozilla/4.75 [en] (X11; U; OpenBSD 2.8 i386; Nav)\r\n' \
-        'Host: ltd.snap.com\r\n' \
-        'Accept: image/gif, image/x-xbitmap, image/jpeg, image/pjpeg, image/png, */*\r\n' \
-        'Accept-Encoding: gzip\r\n' \
-        'Accept-Language: en\r\n' \
-        'Accept-Charset: iso-8859-1,*,utf-8\r\n' \
-        'Content-type: application/x-www-form-urlencoded\r\n' \
-        'Cookie: TrackID=1PWdcr3MO_C611BGW'
+    s_weird_end = b'POST /main/redirect/ab/1,295,,00.html HTTP/1.0\r\n' \
+        b'Referer: http://www.email.com/login/snap/login.jhtml\r\n' \
+        b'Connection: Keep-Alive\r\n' \
+        b'User-Agent: Mozilla/4.75 [en] (X11; U; OpenBSD 2.8 i386; Nav)\r\n' \
+        b'Host: ltd.snap.com\r\n' \
+        b'Accept: image/gif, image/x-xbitmap, image/jpeg, image/pjpeg, image/png, */*\r\n' \
+        b'Accept-Encoding: gzip\r\n' \
+        b'Accept-Language: en\r\n' \
+        b'Accept-Charset: iso-8859-1,*,utf-8\r\n' \
+        b'Content-type: application/x-www-form-urlencoded\r\n' \
+        b'Cookie: TrackID=1PWdcr3MO_C611BGW'
     r = Request(s_weird_end)
-    assert r.method == 'POST'
-    assert r.uri == '/main/redirect/ab/1,295,,00.html'
-    assert r.headers['content-type'] == 'application/x-www-form-urlencoded'
+    assert r.method == b'POST'
+    assert r.uri == b'/main/redirect/ab/1,295,,00.html'
+    assert r.headers[b'content-type'] == b'application/x-www-form-urlencoded'
 
     # messy header.
-    s_messy_header = 'aaaaaaaaa\r\nbbbbbbbbb'
+    s_messy_header = b'aaaaaaaaa\r\nbbbbbbbbb'
     try:
         r = Request(s_messy_header)
     except dpkt.UnpackError:
@@ -371,6 +371,30 @@ def test_invalid_header():
         assert False
     else:
         assert False
+
+
+def test_gzip_response():
+    import zlib
+    # valid response, compressed using gzip
+    s = b'HTTP/1.0 200 OK\r\n' \
+        b'Server: SimpleHTTP/0.6 Python/2.7.12\r\n' \
+        b'Date: Fri, 10 Mar 2017 20:43:08 GMT\r\n' \
+        b'Content-type: text/plain\r\n' \
+        b'Content-Encoding: gzip\r\n' \
+        b'Content-Length: 68\r\n' \
+        b'Last-Modified: Fri, 10 Mar 2017 20:40:43 GMT\r\n\r\n' \
+        b'\x1f\x8b\x08\x00\x00\x00\x00\x00\x02\x03\x0b\xc9\xc8,V\x00\xa2D' \
+        b'\x85\xb2\xd4\xa2J\x85\xe2\xdc\xc4\x9c\x1c\x85\xb4\xcc\x9cT\x85\x92' \
+        b'|\x85\x92\xd4\xe2\x12\x85\xf4\xaa\xcc\x02\x85\xa2\xd4\xe2\x82\xfc' \
+        b'\xbc\xe2\xd4b=.\x00\x01(m\xad2\x00\x00\x00'
+    r = Response(s)
+    assert r.version == b'1.0'
+    assert r.status == b'200'
+    assert r.reason == b'OK'
+    # Make a zlib compressor with the appropriate gzip options
+    decompressor = zlib.decompressobj(16 + zlib.MAX_WBITS)
+    body = decompressor.decompress(r.body)
+    assert body.startswith(b'This is a very small file')
 
 
 if __name__ == '__main__':
