@@ -151,20 +151,12 @@ def test_rtp():
 
     # the following tests RTP header setters
     rtp = RTP()
-    rtp.version = 2
-    rtp.p = 0
-    rtp.x = 0
-    rtp.cc = 0
-    rtp.m = 0
+    rtp.m = 1
     rtp.pt = 3
     rtp.seq = 1234
     rtp.ts = 5678
     rtp.ssrc = 0xabcdef01
-    assert (rtp.version == 2)
-    assert (rtp.p == 0)
-    assert (rtp.x == 0)
-    assert (rtp.cc == 0)
-    assert (rtp.m == 0)
+    assert (rtp.m == 1)
     assert (rtp.pt == 3)
     assert (rtp.seq == 1234)
     assert (rtp.ts == 5678)
