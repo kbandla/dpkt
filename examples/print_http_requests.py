@@ -82,7 +82,7 @@ def print_http_requests(pcap):
             print('HTTP request: %s\n' % repr(request))
 
             # Check for Header spanning acrossed TCP segments
-            if not tcp.data.endswith('\r\n'):
+            if not tcp.data.endswith(b'\r\n'):
                 print('\nHEADER TRUNCATED! Reassemble TCP segments!\n')
 
 
