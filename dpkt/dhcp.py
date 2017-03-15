@@ -122,9 +122,9 @@ class DHCP(dpkt.Packet):
         ('yiaddr', 'I', 0),
         ('siaddr', 'I', 0),
         ('giaddr', 'I', 0),
-        ('chaddr', '16s', 16 * '\x00'),
-        ('sname', '64s', 64 * '\x00'),
-        ('file', '128s', 128 * '\x00'),
+        ('chaddr', '16s', 16 * b'\x00'),
+        ('sname', '64s', 64 * b'\x00'),
+        ('file', '128s', 128 * b'\x00'),
         ('magic', 'I', DHCP_MAGIC),
     )
     opts = (
@@ -177,6 +177,11 @@ def test_dhcp():
     dhcp = DHCP(s)
     assert (s == bytes(dhcp))
 
+    # Test default construction
+    dhcp = DHCP()
+    assert isinstance(dhcp.chaddr, bytes)
+    assert isinstance(dhcp.sname, bytes)
+    assert isinstance(dhcp.file, bytes)
 
 if __name__ == '__main__':
     test_dhcp()
