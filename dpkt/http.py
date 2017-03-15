@@ -3,6 +3,11 @@
 """Hypertext Transfer Protocol."""
 from __future__ import print_function
 from __future__ import absolute_import
+try:
+    from collections import OrderedDict
+except ImportError:
+    # Python 2.6
+    OrderedDict = dict
 
 from . import dpkt
 from .compat import BytesIO, iteritems
@@ -10,7 +15,7 @@ from .compat import BytesIO, iteritems
 
 def parse_headers(f):
     """Return dict of HTTP headers parsed from a file object."""
-    d = {}
+    d = OrderedDict()
     while 1:
         # The following logic covers two kinds of loop exit criteria.
         # 1) If the header is valid, when we reached the end of the header,
@@ -91,7 +96,7 @@ class Message(dpkt.Packet):
         if args:
             self.unpack(args[0])
         else:
-            self.headers = {}
+            self.headers = OrderedDict()
             self.body = b''
             self.data = b''
             # NOTE: changing this to iteritems breaks py3 compatibility
