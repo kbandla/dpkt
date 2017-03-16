@@ -6,7 +6,6 @@
 [![coveralls](http://img.shields.io/coveralls/kbandla/dpkt.svg)](https://coveralls.io/r/kbandla/dpkt)
 [![landscape](https://landscape.io/github/kbandla/dpkt/master/landscape.svg)](https://landscape.io/github/kbandla/dpkt/master)
 [![version](http://img.shields.io/pypi/v/dpkt.svg)](https://pypi.python.org/pypi/dpkt)
-[![downloads](https://img.shields.io/pypi/dm/dpkt.svg)](https://pypi.python.org/pypi/dpkt)
 
 [![wheel](https://img.shields.io/pypi/wheel/dpkt.svg)](https://pypi.python.org/pypi/dpkt)
 [![supported-versions](https://img.shields.io/pypi/pyversions/dpkt.svg)](https://pypi.python.org/pypi/dpkt)

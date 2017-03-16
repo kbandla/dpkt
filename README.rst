@@ -3,8 +3,8 @@
 dpkt
 ====
 
-| |travis| |coveralls| |landscape| |downloads| 
-| |version| |wheel| |supported-versions| |supported-implementations|
+| |travis| |coveralls| |landscape| |version|
+| |wheel| |supported-versions| |supported-implementations|
 
 .. |travis| image:: http://img.shields.io/travis/kbandla/dpkt.svg
     :alt: Travis-CI Build Status
@@ -20,10 +20,6 @@ dpkt
 
 .. |version| image:: http://img.shields.io/pypi/v/dpkt.svg
     :alt: PyPI Package latest release
-    :target: https://pypi.python.org/pypi/dpkt
-
-.. |downloads| image:: http://img.shields.io/pypi/dm/dpkt.svg
-    :alt: PyPI Package monthly downloads
     :target: https://pypi.python.org/pypi/dpkt
 
 .. |wheel| image:: https://img.shields.io/pypi/wheel/dpkt.svg 
