@@ -46,6 +46,7 @@ class CDP(dpkt.Packet):
     class Address(dpkt.Packet):
         # XXX - only handle NLPID/IP for now
         __hdr__ = (
+            ('numberadd', 'L', 1) , # number of address
             ('ptype', 'B', 1),  # protocol type (NLPID)
             ('plen', 'B', 1),  # protocol length
             ('p', 'B', 0xcc),  # IP
@@ -65,30 +66,14 @@ class CDP(dpkt.Packet):
         def unpack(self, buf):
             dpkt.Packet.unpack(self, buf)
             self.data = self.data[:self.len - 4]
-            if self.type == CDP_ADDRESS:
-                n = struct.unpack('>I', self.data[:4])[0]
-                buf = self.data[4:]
-                l = []
-                for i in range(n):
-                    a = CDP.Address(buf)
-                    l.append(a)
-                    buf = buf[len(a):]
-                self.data = l
 
         def __len__(self):
-            if self.type == CDP_ADDRESS:
-                n = 4 + sum(map(len, self.data))
-            else:
-                n = len(self.data)
+            n = len(self.data)
             return self.__hdr_len__ + n
 
         def __bytes__(self):
             self.len = len(self)
-            if self.type == CDP_ADDRESS:
-                s = struct.pack('>I', len(self.data)) + \
-                    b''.join(map(bytes, self.data))
-            else:
-                s = self.data
+            s = self.data
             return self.pack_hdr() + s
 
     def unpack(self, buf):
@@ -102,7 +87,7 @@ class CDP(dpkt.Packet):
         self.data = l
 
     def __len__(self):
-        return self.__hdr_len__ + sum(map(len, self.data))
+        return self.__hdr_len__ + len(self.data)
 
     def __bytes__(self):
         data = b''.join(map(bytes, self.data))
