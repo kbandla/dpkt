@@ -6,7 +6,7 @@ from dpkt import cdp, ethernet, pcap
 
 #test cdp packet sending if TEST_PACKET_SEND == True
 #else test cdp pcap reading
-TEST_PACKET_SEND = True #False
+TEST_PACKET_SEND = False
 
 TEST_PCAP_READ = 'cdp.pcap'
 
@@ -53,11 +53,11 @@ def main():
         for ts, buf in the_pcap:
             eth = ethernet.Ethernet(buf)
             address = cdp.CDP.Address(eth.data.data.data[1].data)
-            print 'Address numberadd : '+str(address.numberadd)
-            print 'Address ptype : '+str(address.ptype)
-            print 'Address plen : '+str(address.plen)
-            print 'Address p : '+str(address.p)
-            print 'Address alen : '+str(address.alen)
+            print('Address numberadd : '+str(address.numberadd))
+            print('Address ptype : '+str(address.ptype))
+            print('Address plen : '+str(address.plen))
+            print('Address p : '+str(address.p))
+            print('Address alen : '+str(address.alen))
         f.close()
 
 if __name__=='__main__':
