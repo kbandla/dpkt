@@ -111,18 +111,18 @@ def testExceptions():
     try:
         flap = FLAP(testdata)
     except dpkt.UnpackError as e:
-        assert e.message == 'invalid FLAP header'
+        assert str(e) == 'invalid FLAP header'
     testdata = b'*\x02\x12\x34\x00\xff'
     try:
         flap = FLAP(testdata)
     except dpkt.NeedData as e:
-        assert e.message == '0 left, 255 needed'
+        assert str(e) == '0 left, 255 needed'
     try:
         t, l, v, _ = tlv(b'x')
     except dpkt.UnpackError as e:
-        assert e.message == 'invalid type, length fields'
+        assert str(e) == 'invalid type, length fields'
 
     try:
         t, l, v, _ = tlv(b'\x00\x01\x00\xff')
     except dpkt.NeedData as e:
-        assert e.message == '0 left, 255 needed'
+        assert str(e) == '0 left, 255 needed'
