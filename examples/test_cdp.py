@@ -6,7 +6,7 @@ from dpkt import cdp, ethernet, pcap
 
 #test cdp packet sending if TEST_PACKET_SEND == True
 #else test cdp pcap reading
-TEST_PACKET_SEND = False
+TEST_PACKET_SEND = True
 
 TEST_PCAP_READ = 'cdp.pcap'
 

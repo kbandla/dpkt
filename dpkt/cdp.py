@@ -87,7 +87,7 @@ class CDP(dpkt.Packet):
         self.data = l
 
     def __len__(self):
-        return self.__hdr_len__ + len(self.data)
+        return self.__hdr_len__ + sum(map(len, self.data))
 
     def __bytes__(self):
         data = b''.join(map(bytes, self.data))
