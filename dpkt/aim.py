@@ -118,11 +118,11 @@ def testExceptions():
     except dpkt.NeedData as e:
         assert e.message == '0 left, 255 needed'
     try:
-        t, l = tlv('x')
+        t, l, _ = tlv('x')
     except dpkt.UnpackError as e:
         assert e.message == 'invalid type, length fields'
 
     try:
-        t, l = tlv('\x00\x01\x00\xff')
+        t, l, _ = tlv('\x00\x01\x00\xff')
     except dpkt.NeedData as e:
-            assert e.message == '0 left, 255 needed'
+        assert e.message == '0 left, 255 needed'
