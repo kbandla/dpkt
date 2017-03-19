@@ -159,8 +159,16 @@ def test_parse_opts():
     opts = parse_opts(buf)
     assert opts == [None]
 
+def test_offset():
+    tcpheader = TCP(b'\x01\xbb\xc0\xd7\xb6\x56\xa8\xb9\xd1\xac\xaa\xb1\x50\x18\x40\x00\x56\xf8\x00\x00')
+    assert tcpheader.off == 5
+
+    # test setting header offset
+    tcpheader.off = 8
+    assert bytes(tcpheader) == b'\x01\xbb\xc0\xd7\xb6\x56\xa8\xb9\xd1\xac\xaa\xb1\x80\x18\x40\x00\x56\xf8\x00\x00'
 
 if __name__ == '__main__':
     # Runs all the test associated with this class/file
     test_parse_opts()
+    test_offset()
     print('Tests Successful...')
