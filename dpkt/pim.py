@@ -58,3 +58,13 @@ class PIM(dpkt.Packet):
         if not self.sum:
             self.sum = dpkt.in_cksum(dpkt.Packet.__bytes__(self))
         return dpkt.Packet.__bytes__(self)
+
+def test_pim():
+    pimdata =  PIM(b'\x20\x00\x9f\xf4\x00\x01\x00\x02\x00\x69')
+    assert pimdata.v == 2
+    assert pimdata.type == 0
+
+    # test setters
+    pimdata.v = 3
+    pimdata.type = 1
+    assert bytes(pimdata) == b'\x31\x00\x9f\xf4\x00\x01\x00\x02\x00\x69'
