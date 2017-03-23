@@ -305,41 +305,6 @@ class BGP(dpkt.Packet):
             def extended_length(self, e):
                 self.flags = (self.flags & ~0x10) | ((e & 0x1) << 4)
 
-            # Deprecated methods, will be removed in the future
-            # ======================================================
-            @deprecated('optional')
-            def _get_o(self):
-                return self.optional
-
-            @deprecated('optional')
-            def _set_o(self, o):
-                self.optional = o
-
-            @deprecated('transitive')
-            def _get_t(self):
-                return self.transitive
-
-            @deprecated('transitive')
-            def _set_t(self, t):
-                self.transitive = t
-
-            @deprecated('partial')
-            def _get_p(self):
-                return self.partial
-
-            @deprecated('partial')
-            def _set_p(self, p):
-                self.partial = p
-
-            @deprecated('extended_length')
-            def _get_e(self):
-                return self.extended_length
-
-            @deprecated('extended_length')
-            def _set_e(self, e):
-                self.extended_length = e
-            # ======================================================
-
             def unpack(self, buf):
                 dpkt.Packet.unpack(self, buf)
 

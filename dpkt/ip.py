@@ -89,25 +89,6 @@ class IP(dpkt.Packet):
     def offset(self, offset):
         self.off = (self.off & ~IP_OFFMASK) | (offset >> 3)
 
-    # Deprecated methods, will be removed in the future
-    # =================================================
-    @deprecated('v')
-    def _get_v(self):
-        return self.v
-
-    @deprecated('v')
-    def _set_v(self, v):
-        self.v = v
-
-    @deprecated('hl')
-    def _get_hl(self):
-        return self.hl
-
-    @deprecated('hl')
-    def _set_hl(self, hl):
-        self.hl = hl
-    # =================================================
-
     def __len__(self):
         return self.__hdr_len__ + len(self.opts) + len(self.data)
 

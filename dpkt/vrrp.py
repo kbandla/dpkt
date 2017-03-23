@@ -46,21 +46,6 @@ class VRRP(dpkt.Packet):
     def type(self, v):
         self._v_type = (self._v_type & 0xf0) | (v & 0x0f)
 
-    # Deprecated methods, will be removed in the future
-    # =================================================
-    @deprecated('v')
-    def _get_v(self): return self.v
-
-    @deprecated('v')
-    def _set_v(self, v): self.v = v
-
-    @deprecated('type')
-    def _get_type(self): return self.type
-
-    @deprecated('type')
-    def _set_type(self, v): self.type = v
-    # =================================================
-
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
         l = []

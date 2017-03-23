@@ -225,65 +225,6 @@ class DNS(dpkt.Packet):
     def rcode(self, v):
         self.op = (self.op & ~0xf) | (v & 0xf)
 
-    # Deprecated methods, will be removed in the future
-    # ======================================================
-    @deprecated('qr')
-    def get_qr(self):
-        return self.qr
-
-    @deprecated('qr')
-    def set_qr(self, v):
-        self.qr = v
-
-    @deprecated('opcode')
-    def get_opcode(self):
-        return self.opcode
-
-    @deprecated('opcode')
-    def set_opcode(self, v):
-        self.opcode = v
-
-    @deprecated('aa')
-    def get_aa(self):
-        return self.aa
-
-    @deprecated('aa')
-    def set_aa(self, v):
-        self.aa = v
-
-    @deprecated('rd')
-    def get_rd(self):
-        return self.rd
-
-    @deprecated('rd')
-    def set_rd(self, v):
-        self.rd = v
-
-    @deprecated('ra')
-    def get_ra(self):
-        return self.ra
-
-    @deprecated('ra')
-    def set_ra(self, v):
-        self.ra = v
-
-    @deprecated('zero')
-    def get_zero(self):
-        return self.zero
-
-    @deprecated('zero')
-    def set_zero(self, v):
-        self.zero = v
-
-    @deprecated('rcode')
-    def get_rcode(self):
-        return self.rcode
-
-    @deprecated('rcode')
-    def set_rcode(self, v):
-        self.rcode = v
-    # ======================================================
-
     class Q(dpkt.Packet):
         """DNS question."""
         __hdr__ = (
@@ -488,29 +429,6 @@ def test_pack_name():
     # Empty name is \0
     x = pack_name('', 0, {})
     assert x == b'\0'
-
-
-def test_deprecated_methods():
-    """Test deprecated methods. Note: when they are removed so should this test"""
-    s = b'g\x02\x81\x80\x00\x01\x00\x01\x00\x03\x00\x00\x011\x011\x03211\x03141\x07in-addr\x04arpa\x00\x00\x0c\x00\x01\xc0\x0c\x00\x0c\x00\x01\x00\x00\r6\x00$\x07default\nv-umce-ifs\x05umnet\x05umich\x03edu\x00\xc0\x0e\x00\x02\x00\x01\x00\x00\r6\x00\r\x06shabby\x03ifs\xc0O\xc0\x0e\x00\x02\x00\x01\x00\x00\r6\x00\x0f\x0cfish-license\xc0m\xc0\x0e\x00\x02\x00\x01\x00\x00\r6\x00\x0b\x04dns2\x03itd\xc0O'
-    my_dns = DNS(s)
-    my_dns.get_aa()
-    my_dns.get_opcode()
-    qr = my_dns.get_qr()
-    my_dns.set_qr(qr)
-    qr2 = my_dns.get_qr()
-    assert qr == qr2
-
-
-def test_deprecated_method_performance():
-    """Test the performance hit for the deprecation decorator"""
-    from timeit import Timer
-
-    s = b'g\x02\x81\x80\x00\x01\x00\x01\x00\x03\x00\x00\x011\x011\x03211\x03141\x07in-addr\x04arpa\x00\x00\x0c\x00\x01\xc0\x0c\x00\x0c\x00\x01\x00\x00\r6\x00$\x07default\nv-umce-ifs\x05umnet\x05umich\x03edu\x00\xc0\x0e\x00\x02\x00\x01\x00\x00\r6\x00\r\x06shabby\x03ifs\xc0O\xc0\x0e\x00\x02\x00\x01\x00\x00\r6\x00\x0f\x0cfish-license\xc0m\xc0\x0e\x00\x02\x00\x01\x00\x00\r6\x00\x0b\x04dns2\x03itd\xc0O'
-    my_dns = DNS(s)
-    t1 = Timer(lambda: my_dns.aa).timeit(10000)
-    t2 = Timer(my_dns.get_aa).timeit(10000)
-    print('Performance of dns.aa vs. dns.get_aa(): %f %f' % (t1, t2))
 
 
 def test_random_data():
