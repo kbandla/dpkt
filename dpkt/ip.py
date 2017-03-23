@@ -373,6 +373,8 @@ def test_ip():
     ip.data = u
     ip.len += len(u)
     assert (bytes(ip) == s)
+    assert (ip.v == 4)
+    assert (ip.hl == 5)
 
     ip = IP(s)
     assert (bytes(ip) == s)
