@@ -53,15 +53,6 @@ class TCP(dpkt.Packet):
     def off(self, off):
         self._off = (off << 4) | (self._off & 0xf)
 
-    # Deprecated methods, will be removed in the future
-    # =================================================
-    @deprecated('off')
-    def _get_off(self): return self.off
-
-    @deprecated('off')
-    def _set_off(self, off): self.off = off
-    # =================================================
-
     def __len__(self):
         return self.__hdr_len__ + len(self.opts) + len(self.data)
 
@@ -159,8 +150,16 @@ def test_parse_opts():
     opts = parse_opts(buf)
     assert opts == [None]
 
+def test_offset():
+    tcpheader = TCP(b'\x01\xbb\xc0\xd7\xb6\x56\xa8\xb9\xd1\xac\xaa\xb1\x50\x18\x40\x00\x56\xf8\x00\x00')
+    assert tcpheader.off == 5
+
+    # test setting header offset
+    tcpheader.off = 8
+    assert bytes(tcpheader) == b'\x01\xbb\xc0\xd7\xb6\x56\xa8\xb9\xd1\xac\xaa\xb1\x80\x18\x40\x00\x56\xf8\x00\x00'
 
 if __name__ == '__main__':
     # Runs all the test associated with this class/file
     test_parse_opts()
+    test_offset()
     print('Tests Successful...')

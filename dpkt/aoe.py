@@ -18,7 +18,7 @@ class AOE(dpkt.Packet):
         __hdr__: Header fields of AOE.
         data: Message data.
     """
-    
+
     __hdr__ = (
         ('ver_fl', 'B', 0x10),
         ('err', 'B', 0),
@@ -62,22 +62,6 @@ class AOE(dpkt.Packet):
             return dpkt.Packet.pack_hdr(self)
         except struct.error as e:
             raise dpkt.PackError(str(e))
-
-    # Deprecated methods, will be removed in the future
-    # =================================================
-    @deprecated('ver')
-    def _get_ver(self): return self.ver
-
-    @deprecated('ver')
-    def _set_ver(self, ver): self.ver = ver
-
-    @deprecated('fl')
-    def _get_fl(self): return self.fl
-
-    @deprecated('fl')
-    def _set_fl(self, fl): self.fl = fl
-    # =================================================
-
 
 
 AOE_CMD_ATA = 0

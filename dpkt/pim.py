@@ -39,22 +39,17 @@ class PIM(dpkt.Packet):
     def type(self, type):
         self._v_type = (self._v_type & 0xf0) | type
 
-    # Deprecated methods, will be removed in the future
-    # =================================================
-    @deprecated('v')
-    def _get_v(self): return self.v
-
-    @deprecated('v')
-    def _set_v(self, v): self.v = v
-
-    @deprecated('type')
-    def _get_type(self): return self.type
-
-    @deprecated('type')
-    def _set_type(self, type): self.type = type
-    # =================================================
-
     def __bytes__(self):
         if not self.sum:
             self.sum = dpkt.in_cksum(dpkt.Packet.__bytes__(self))
         return dpkt.Packet.__bytes__(self)
+
+def test_pim():
+    pimdata =  PIM(b'\x20\x00\x9f\xf4\x00\x01\x00\x02\x00\x69')
+    assert pimdata.v == 2
+    assert pimdata.type == 0
+
+    # test setters
+    pimdata.v = 3
+    pimdata.type = 1
+    assert bytes(pimdata) == b'\x31\x00\x9f\xf4\x00\x01\x00\x02\x00\x69'

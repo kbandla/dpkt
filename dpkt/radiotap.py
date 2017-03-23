@@ -89,7 +89,7 @@ class Radiotap(dpkt.Packet):
         __hdr__: Header fields of Radiotap.
         TODO.
     """
-    
+
     __hdr__ = (
         ('version', 'B', 0),
         ('pad', 'B', 0),
@@ -233,145 +233,6 @@ class Radiotap(dpkt.Packet):
     def ext_present(self, val):
         self.present_flags |= val << _EXT_SHIFT
 
-    # Deprecated methods, will be removed in the future
-    # =================================================
-    @deprecated('tsft_present')
-    def _get_tsft_present(self):
-        return self.tsft_present
-
-    @deprecated('tsft_present')
-    def _set_tsft_present(self, val):
-        self.tsft_present = val
-
-    @deprecated('flags_present')
-    def _get_flags_present(self):
-        return self.flags_present
-
-    @deprecated('flags_present')
-    def _set_flags_present(self, val):
-        self.flags_present = val
-
-    @deprecated('rate_present')
-    def _get_rate_present(self):
-        return self.rate_present
-
-    @deprecated('rate_present')
-    def _set_rate_present(self, val):
-        self.rate_present = val
-
-    @deprecated('channel_present')
-    def _get_channel_present(self):
-        return self.channel_present
-
-    @deprecated('channel_present')
-    def _set_channel_present(self, val):
-        self.channel_present = val
-
-    @deprecated('fhss_present')
-    def _get_fhss_present(self):
-        return self.fhss_present
-
-    @deprecated('fhss_present')
-    def _set_fhss_present(self, val):
-        self.fhss_present = val
-
-    @deprecated('ant_sig_present')
-    def _get_ant_sig_present(self):
-        return self.ant_sig_present
-
-    @deprecated('ant_sig_present')
-    def _set_ant_sig_present(self, val):
-        self.ant_sig_present = val
-
-    @deprecated('ant_noise_present')
-    def _get_ant_noise_present(self):
-        return self.ant_noise_present
-
-    @deprecated('ant_noise_present')
-    def _set_ant_noise_present(self, val):
-        self.ant_noise_present = val
-
-    @deprecated('lock_qual_present')
-    def _get_lock_qual_present(self):
-        return self.lock_qual_present
-
-    @deprecated('lock_qual_present')
-    def _set_lock_qual_present(self, val):
-        self.lock_qual_present = val
-
-    @deprecated('tx_attn_present')
-    def _get_tx_attn_present(self):
-        return self.tx_attn_present
-
-    @deprecated('tx_attn_present')
-    def _set_tx_attn_present(self, val):
-        self.tx_attn_present = val
-
-    @deprecated('db_tx_attn_present')
-    def _get_db_tx_attn_present(self):
-        return self.db_tx_attn_present
-
-    @deprecated('db_tx_attn_present')
-    def _set_db_tx_attn_present(self, val):
-        self.db_tx_attn_present = val
-
-    @deprecated('dbm_tx_power_present')
-    def _get_dbm_power_present(self):
-        return self.dbm_tx_power_present
-
-    @deprecated('dbm_tx_power_present')
-    def _set_dbm_power_present(self, val):
-        self.dbm_tx_power_present = val
-
-    @deprecated('ant_present')
-    def _get_ant_present(self):
-        return self.ant_present
-
-    @deprecated('ant_present')
-    def _set_ant_present(self, val):
-        self.ant_present = val
-
-    @deprecated('db_ant_sig_present')
-    def _get_db_ant_sig_present(self):
-        return self.db_ant_sig_present
-
-    @deprecated('db_ant_sig_present')
-    def _set_db_ant_sig_present(self, val):
-        self.db_ant_sig_present = val
-
-    @deprecated('db_ant_noise_present')
-    def _get_db_ant_noise_present(self):
-        return self.db_ant_noise_present
-
-    @deprecated('db_ant_noise_present')
-    def _set_db_ant_noise_present(self, val):
-        self.db_ant_noise_present = val
-
-    @deprecated('rx_flags_present')
-    def _get_rx_flags_present(self):
-        return self.rx_flags_present
-
-    @deprecated('rx_flags_present')
-    def _set_rx_flags_present(self, val):
-        self.rx_flags_present = val
-
-    @deprecated('chanplus_present')
-    def _get_chanplus_present(self):
-        return self.chanplus_present
-
-    @deprecated('chanplus_present')
-    def _set_chanplus_present(self, val):
-        self.chanplus_present = val
-
-    @deprecated('ext_present')
-    def _get_ext_present(self):
-        return self.ext_present
-
-    @deprecated('ext_present')
-    def _set_ext_present(self, val):
-        self.ext_present = val
-    # =================================================
-
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
         self.data = buf[socket.ntohs(self.length):]
@@ -450,14 +311,6 @@ class Radiotap(dpkt.Packet):
         @fcs.setter
         def fcs(self, v): (v << _FCS_SHIFT) | (self.val & ~_FCS_MASK)
 
-        # Deprecated methods, will be removed in the future
-        # =================================================
-        @deprecated('fcs')
-        def _get_fcs_present(self): return self.fcs
-
-        @deprecated('fcs')
-        def _set_fcs_present(self, v): self.fcs = v
-        # =================================================
 
     class LockQuality(dpkt.Packet):
         __hdr__ = (
