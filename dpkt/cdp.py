@@ -44,8 +44,6 @@ class CDP(dpkt.Packet):
         ('sum', 'H', 0)
     )
 
-    #keep here the TLV classes whose header is different from the generic TLV header (example : TLV_Addresses)
-    tlv_types = {CDP_ADDRESS: 'TLV_Addresses'}
 
     class TLV(dpkt.Packet):
         '''When constructing the packet, len is not mandatory : if not provided, then self.data must be this exact TLV payload'''
@@ -101,7 +99,7 @@ class CDP(dpkt.Packet):
             #find the right TLV according to Type value
             tlv_find_type = self.TLV(buf).type
             #if this TLV is not in tlv_types, use the default TLV class
-            tlv = getattr(self, self.tlv_types.get(tlv_find_type, 'TLV'))(buf)
+            tlv = self.tlv_types.get(tlv_find_type, self.TLV)(buf)
             l.append(bytes(tlv))
             buf = buf[len(tlv):]
         self.tlvs = l
@@ -115,6 +113,9 @@ class CDP(dpkt.Packet):
         if not self.sum:
             self.sum = dpkt.in_cksum(self.pack_hdr() + data)
         return self.pack_hdr() + data
+
+    #keep here the TLV classes whose header is different from the generic TLV header (example : TLV_Addresses)
+    tlv_types = {CDP_ADDRESS: TLV_Addresses}
 
 
 def test_cdp():
