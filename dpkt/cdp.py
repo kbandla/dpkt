@@ -8,6 +8,7 @@ import struct
 from . import dpkt
 
 
+
 CDP_DEVID = 1  # string
 CDP_ADDRESS = 2
 CDP_PORTID = 3  # string
