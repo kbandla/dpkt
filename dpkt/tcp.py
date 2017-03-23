@@ -53,15 +53,6 @@ class TCP(dpkt.Packet):
     def off(self, off):
         self._off = (off << 4) | (self._off & 0xf)
 
-    # Deprecated methods, will be removed in the future
-    # =================================================
-    @deprecated('off')
-    def _get_off(self): return self.off
-
-    @deprecated('off')
-    def _set_off(self, off): self.off = off
-    # =================================================
-
     def __len__(self):
         return self.__hdr_len__ + len(self.opts) + len(self.data)
 

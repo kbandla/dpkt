@@ -55,33 +55,6 @@ class IP6(dpkt.Packet):
     def flow(self, v):
         self._v_fc_flow = (self._v_fc_flow & ~0xfffff) | (v & 0xfffff)
 
-    # Deprecated methods, will be removed in the future
-    # =================================================
-    @deprecated('v')
-    def _get_v(self):
-        return self.v
-
-    @deprecated('v')
-    def _set_v(self, v):
-        self.v = v
-
-    @deprecated('fc')
-    def _get_fc(self):
-        return self.fc
-
-    @deprecated('fc')
-    def _set_fc(self, v):
-        self.fc = v
-
-    @deprecated('flow')
-    def _get_flow(self):
-        return self.flow
-
-    @deprecated('flow')
-    def _set_flow(self, v):
-        self.flow = v
-    # =================================================
-
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
         self.extension_hdrs = {}
@@ -211,15 +184,6 @@ class IP6RoutingHeader(IP6ExtensionHeader):
     def sl_bits(self, v):
         self.rsvd_sl_bits = (self.rsvd_sl_bits & ~0xfffff) | (v & 0xfffff)
 
-    # Deprecated methods, will be removed in the future
-    # =================================================
-    @deprecated('sl_bits')
-    def _get_sl_bits(self): return self.sl_bits
-
-    @deprecated('sl_bits')
-    def _set_sl_bits(self, v): self.sl_bits = v
-    # =================================================
-
     def unpack(self, buf):
         hdr_size = 8
         addr_size = 16
@@ -266,21 +230,6 @@ class IP6FragmentHeader(IP6ExtensionHeader):
     @m_flag.setter
     def m_flag(self, v):
         self.frag_off_resv_m = (self.frag_off_resv_m & ~0xfffe) | v
-
-    # Deprecated methods, will be removed in the future
-    # =================================================
-    @deprecated('frag_off')
-    def _get_frag_off(self): return self.frag_off
-
-    @deprecated('frag_off')
-    def _set_frag_off(self, v): self.frag_off = v
-
-    @deprecated('m_flag')
-    def _get_m_flag(self): return self.m_flag
-
-    @deprecated('m_flag')
-    def _set_m_flag(self, v): self.m_flag = v
-    # =================================================
 
 
 class IP6AHHeader(IP6ExtensionHeader):

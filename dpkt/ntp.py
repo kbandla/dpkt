@@ -34,7 +34,7 @@ class NTP(dpkt.Packet):
         __hdr__: Header fields of NTP.
         TODO.
     """
-    
+
     __hdr__ = (
         ('flags', 'B', 0),
         ('stratum', 'B', 0),
@@ -73,26 +73,6 @@ class NTP(dpkt.Packet):
     def mode(self, mode):
         self.flags = (self.flags & ~0x7) | (mode & 0x7)
 
-    # Deprecated methods, will be removed in the future
-    # =================================================
-    @deprecated('v')
-    def _get_v(self): return self.v
-
-    @deprecated('v')
-    def _set_v(self, v): self.v = v
-
-    @deprecated('li')
-    def _get_li(self): return self.li
-
-    @deprecated('li')
-    def _set_li(self, li): self.li = li
-
-    @deprecated('mode')
-    def _get_mode(self): return self.mode
-
-    @deprecated('mode')
-    def _set_mode(self, mode): self.mode = mode
-    # =================================================
 
 __s = b'\x24\x02\x04\xef\x00\x00\x00\x84\x00\x00\x33\x27\xc1\x02\x04\x02\xc8\x90\xec\x11\x22\xae\x07\xe5\xc8\x90\xf9\xd9\xc0\x7e\x8c\xcd\xc8\x90\xf9\xd9\xda\xc5\xb0\x78\xc8\x90\xf9\xd9\xda\xc6\x8a\x93'
 

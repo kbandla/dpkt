@@ -28,7 +28,7 @@ class PPPoE(dpkt.Packet):
         __hdr__: Header fields of PPPoE.
         TODO.
     """
-    
+
     __hdr__ = (
         ('_v_type', 'B', 0x11),
         ('code', 'B', 0),
@@ -51,21 +51,6 @@ class PPPoE(dpkt.Packet):
     @type.setter
     def type(self, t):
         self._v_type = (self._v_type & 0xf0) | t
-
-    # Deprecated methods, will be removed in the future
-    # =================================================
-    @deprecated('v')
-    def _get_v(self): return self.v
-
-    @deprecated('v')
-    def _set_v(self, v): self.v = v
-
-    @deprecated('type')
-    def _get_type(self): return self.type
-
-    @deprecated('type')
-    def _set_type(self, t): self.type = t
-    # =================================================
 
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)

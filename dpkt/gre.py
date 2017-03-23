@@ -56,21 +56,6 @@ class GRE(dpkt.Packet):
     def recur(self, v):
         self.flags = (self.flags & ~0xe0) | ((v & 0x7) << 5)
 
-    # Deprecated methods, will be removed in the future
-    # =================================================
-    @deprecated('v')
-    def get_v(self): return self.v
-
-    @deprecated('v')
-    def set_v(self, v): self.v = v
-
-    @deprecated('recur')
-    def get_recur(self): return self.recur
-
-    @deprecated('recur')
-    def set_recur(self, v): self.recur = v
-    # =================================================
-
     class SRE(dpkt.Packet):
         __hdr__ = [
             ('family', 'H', 0),
