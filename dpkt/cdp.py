@@ -103,10 +103,11 @@ class CDP(dpkt.Packet):
             tlv = getattr(self, self.tlv_types.get(tlv_find_type, 'TLV'))(buf)
             l.append(bytes(tlv))
             buf = buf[len(tlv):]
+        self.tlvs = l
         self.data = b''.join(l)
 
     def __len__(self):
-        return self.__hdr_len__ + sum(map(len, self.data))
+        return self.__hdr_len__ + len(self.data)
 
     def __bytes__(self):
         data = bytes(self.data)
@@ -117,6 +118,7 @@ class CDP(dpkt.Packet):
 
 def test_cdp():
     import socket
+    from . import ethernet
 
     ss = (b'\x02\xb4\xdf\x93\x00\x01\x00\x09\x63\x69\x73\x63\x6f\x00\x02\x00\x11\x00\x00\x00\x01\x01\x01\xcc\x00\x04\xc0\xa8\x01\x67')
     rr1 = CDP(ss)
@@ -130,7 +132,18 @@ def test_cdp():
     rr2 = CDP(data=data)
     assert bytes(rr2) == ss    
 
-
+    s = (b'\x01\x00\x0c\xcc\xcc\xcc\xc4\x022k\x00\x00\x01T\xaa\xaa\x03\x00\x00\x0c \x00\x02\xb4,B'
+         b'\x00\x01\x00\x06R2\x00\x05\x00\xffCisco IOS Software, 3700 Software (C3745-ADVENTERPRI'
+         b'SEK9_SNA-M), Version 12.4(25d), RELEASE SOFTWARE (fc1)\nTechnical Support: http://www.'
+         b'cisco.com/techsupport\nCopyright (c) 1986-2010 by Cisco Systems, Inc.\nCompiled Wed 18'
+         b'-Aug-10 08:18 by prod_rel_team\x00\x06\x00\x0eCisco 3745\x00\x02\x00\x11\x00\x00\x00\x01'
+         b'\x01\x01\xcc\x00\x04\n\x00\x00\x02\x00\x03\x00\x13FastEthernet0/0\x00\x04\x00\x08\x00'
+         b'\x00\x00)\x00\t\x00\x04\x00\x0b\x00\x05\x00')
+    eth = ethernet.Ethernet(s)
+    assert isinstance(eth.data.data, CDP)
+    assert len(eth.data.data.tlvs) == 8  # number of CDP TLVs; ensures they are decoded
+    assert str(eth) == str(s)
+    assert len(eth) == len(s)
 
 if __name__ == '__main__':
     test_cdp()
