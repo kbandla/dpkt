@@ -14,7 +14,7 @@ import binascii
 # Jul 2012: afleenor@google.com modified and extended SSL support further.
 #
 
-
+# SSL 2.0 is deprecated in RFC 6176
 class SSL2(dpkt.Packet):
     __hdr__ = (
         ('len', 'H', 0),
@@ -33,6 +33,30 @@ class SSL2(dpkt.Packet):
             self.msg = self.data[1:1 + n]
             self.pad = self.data[1 + n:1 + n + padlen]
             self.data = self.data[1 + n + padlen:]
+
+
+# SSL 3.0 is deprecated in RFC 7568
+# Use class TLS for >= SSL 3.0
+class TLS(dpkt.Packet):
+    __hdr__ = (
+        ('type', 'B', ''),
+        ('version', 'H', ''),
+        ('length', 'H', ''),
+    )
+
+    def __init__(self, *args, **kwargs):
+        self.records = []
+        dpkt.Packet.__init__(self, *args, **kwargs)
+
+
+    def unpack(self, buf):
+        dpkt.Packet.unpack(self, buf)
+        pointer = 0
+        while len(self.data[pointer:]) > 0:
+            end = pointer + 5 + struct.unpack("!H", buf[pointer+3:pointer+5])[0]
+            self.records.append(TLSRecord(buf[pointer:end]))
+            pointer = end
+            self.data = self.data[pointer:]
 
 
 # SSLv3/TLS versions
@@ -176,25 +200,6 @@ def parse_extensions(buf):
 
 class SSL3Exception(Exception):
     pass
-
-
-class TLS(dpkt.Packet):
-    __hdr__ = tuple()
-
-    def __init__(self, *args, **kwargs):
-        self.records = []
-        dpkt.Packet.__init__(self, *args, **kwargs)
-        self.length = len(self.data)
-
-
-    def unpack(self, buf):
-        dpkt.Packet.unpack(self, buf)
-        pointer = 0
-        while len(self.data[pointer:]) > 0:
-            end = pointer + 5 + struct.unpack("!H", buf[pointer+3:pointer+5])[0]
-            self.records.append(TLSRecord(buf[pointer:end]))
-            pointer = end
-            self.data = self.data[pointer:]
 
 
 class TLSRecord(dpkt.Packet):
