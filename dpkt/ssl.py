@@ -41,7 +41,7 @@ class TLS(dpkt.Packet):
     __hdr__ = (
         ('type', 'B', ''),
         ('version', 'H', ''),
-        ('length', 'H', ''),
+        ('len', 'H', ''),
     )
 
     def __init__(self, *args, **kwargs):
