@@ -127,7 +127,7 @@ class ICMP(dpkt.Packet):
 
     def __bytes__(self):
         if not self.sum:
-            self.sum = dpkt.in_cksum(dpkt.Packet.__str__(self))
+            self.sum = dpkt.in_cksum(dpkt.Packet.__bytes__(self))
         return dpkt.Packet.__bytes__(self)
 
 
@@ -155,6 +155,18 @@ def test_icmp():
         )
     )
     assert bytes(p) == s
+
+    # test checksum
+    p = ICMP(
+        type=0,
+        data=ICMP.Echo(
+            id=1,
+            seq=0x03d6,
+            data=b'ABCDEFGHIJKLMNOPQRSTUVWABCDEFGHI'
+        )
+    )
+    assert bytes(p) == s
+    assert p.sum == 0x5387
 
 
 if __name__ == '__main__':
