@@ -16,7 +16,7 @@ matrix:
 before_install:
   - python --version
   - virtualenv --version
-  - pip install -U setuptools
+  - pip install six
   - pip --version
   - uname -a
   - lsb_release -a
