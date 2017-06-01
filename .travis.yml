@@ -16,11 +16,11 @@ matrix:
 before_install:
   - python --version
   - virtualenv --version
-  - pip install six
   - pip --version
   - uname -a
   - lsb_release -a
 install:
+  - pip install six
   - pip install tox
 script:
   - tox -e $TOXENV
