@@ -198,7 +198,7 @@ class Writer(object):
 
     def __init__(self, fileobj, snaplen=1500, linktype=DLT_EN10MB, nano=False):
         if fileobj.mode != 'wb':
-            raise ValueError('PCAP file not in binary mode (rb)')
+            raise ValueError('PCAP file NOT in binary mode (wb)')
         self.__f = fileobj
         self._precision = 9 if nano else 6
         magic = TCPDUMP_MAGIC_NANO if nano else TCPDUMP_MAGIC
