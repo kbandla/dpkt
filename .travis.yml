@@ -20,7 +20,7 @@ before_install:
   - uname -a
   - lsb_release -a
 install:
-  - pip install six
+  - pip install -U setuptools
   - pip install tox
 script:
   - tox -e $TOXENV
