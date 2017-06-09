@@ -56,7 +56,7 @@ class TestDeprecatedDecorator(object):
             out = StringIO()
             sys.stderr = out
             self.deprecated_decorator()
-            try: # This isn't working under pytest in Python 2.6.9
+            try: # This isn't working under newest version of pytest
                 assert ('DeprecationWarning: Call to deprecated method deprecated_decorator' in out.getvalue())
                 out.truncate(0)  # clean the buffer
                 self.old_method()
