@@ -141,7 +141,7 @@ class Packet(_MetaPacket("Temp", (object,), {})):
         return str(self.__bytes__())
     
     def __bytes__(self):
-        return self.pack_hdr() + bytes(self.data)
+        return self.pack_hdr() + self.data.encode('utf-8')
 
     def pack_hdr(self):
         """Return packed header string."""
