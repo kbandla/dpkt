@@ -293,8 +293,7 @@ class TLSClientHello(dpkt.Packet):
         compression_methods, parsed = parse_variable_array(
             self.data[pointer:], 1)
         pointer += parsed
-        self.num_compression_methods = parsed - 1
-        self.compression_methods = map(ord, compression_methods)
+        self.compression_methods = struct.unpack('{0}B'.format(len(compression_methods)), compression_methods)
         # Parse extensions if present
         if len(self.data[pointer:]) >= 6:
             self.extensions = parse_extensions(self.data[pointer:])
@@ -604,7 +603,7 @@ class TestClientHello(object):
         assert (self.p.data.session_id == _hexdecode(b'09bc0192e008e6fa8fe47998fca91311ba30ddde14a9587dc674b11c3d3e5ed1'))
 
     def test_compression_methods(self):
-        assert (self.p.data.num_compression_methods == 1)
+        assert (list(self.p.data.compression_methods) == [0x00, ])
 
     def test_total_length(self):
         assert (len(self.p) == 413)
