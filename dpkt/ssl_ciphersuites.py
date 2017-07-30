@@ -92,11 +92,21 @@ class CipherSuite(object):
         'SHA384': 48,
     }
 
-    # TODO: add RC4_40, RC4_128, RC2_40, IDEA, DES40, DES, 3DES_EDE,
-    #   CAMELLIA_128, CAMELLIA_256, SEED, ARIA_128, ARIA_256, CHACHA20
     BLOCK_SIZES = {
+        '3DES_EDE': 8,
         'AES_128': 16,
         'AES_256': 16,
+        'ARIA': 16,
+        'CAMELLIA_128': 16,
+        'CAMELLIA_256': 16,
+        'CHACHA20': 64,
+        'DES': 8,
+        'DES40': 8,
+        'IDEA': 8,
+        'RC2_40': 8,
+        'RC4_40': None,
+        'RC4_128': None,
+        'SEED': 16,
     }
 
     @property
