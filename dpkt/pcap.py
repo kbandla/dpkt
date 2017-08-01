@@ -225,7 +225,7 @@ class Writer(object):
         self.__f.write(s)
 
     def flush(self):
-        if(self.__f != None):
+        if self.__f != None:
             self.__f.flush()
 
     def close(self):
