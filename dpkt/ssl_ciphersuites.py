@@ -518,6 +518,12 @@ CIPHERSUITES = [
     CipherSuite(0xc0af, 'ECDHE', 'ECDSA  ', 'AES_256 ', 'CCM_8', ''),
 
     # Unassigned: 0xc0b0-0xcca7
+    CipherSuite(0xcc13, 'ECDHE', 'RSA    ', 'CHACHA20', 'POLY1305', 'SHA256',
+        'OLD_TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256'),
+    CipherSuite(0xcc14, 'ECDHE', 'ECDSA  ', 'CHACHA20', 'POLY1305', 'SHA256',
+        'OLD_TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256'),
+    CipherSuite(0xcc15, 'DHE  ', 'RSA    ', 'CHACHA20', 'POLY1305', 'SHA256',
+        'OLD_TLS_DHE_RSA_WITH_CHACHA20_POLY1305_SHA256'),
 
     # RFC7905
     CipherSuite(0xcca8, 'ECDHE', 'RSA    ', 'CHACHA20', 'POLY1305', 'SHA256'),
@@ -578,6 +584,7 @@ class TestCipherSuites(object):
         assert (BY_CODE[0xc09d].kx == 'RSA')
         assert (BY_CODE[0xc0a2].kx == 'DHE')
         assert (BY_CODE[0xc0ad].kx == 'ECDHE')
+        assert (BY_CODE[0xcc13].kx == 'ECDHE')
         assert (BY_CODE[0xcca8].kx == 'ECDHE')
         assert (BY_CODE[0xccae].kx == 'RSA')
 
@@ -609,6 +616,7 @@ class TestCipherSuites(object):
         assert (BY_CODE[0xc09d].auth == 'RSA')
         assert (BY_CODE[0xc0a2].auth == 'RSA')
         assert (BY_CODE[0xc0ad].auth == 'ECDSA')
+        assert (BY_CODE[0xcc14].auth == 'ECDSA')
         assert (BY_CODE[0xcca8].auth == 'RSA')
         assert (BY_CODE[0xccae].auth == 'PSK')
 
@@ -648,4 +656,5 @@ class TestCipherSuites(object):
         assert (BY_CODE[0xc0ad].name == 'TLS_ECDHE_ECDSA_WITH_AES_256_CCM')
         assert (BY_CODE[0xcca8].name == 'TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256')
         assert (BY_CODE[0xccae].name == 'TLS_RSA_PSK_WITH_CHACHA20_POLY1305_SHA256')
+        assert (BY_CODE[0xcc15].name == 'OLD_TLS_DHE_RSA_WITH_CHACHA20_POLY1305_SHA256')
 
