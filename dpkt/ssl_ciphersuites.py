@@ -119,6 +119,14 @@ class CipherSuite(object):
         """In bytes. Default to 1."""
         return self.BLOCK_SIZES.get(self.cipher, 1)
 
+    @property
+    def pfs(self):
+        return self.kx in ('DHE', 'ECDHE')
+
+    @property
+    def aead(self):
+        return self.mode in ('CCM', 'CCM_8', 'GCM')
+
 # master list of CipherSuite Objects
 # Full list from IANA:
 #   https://www.iana.org/assignments/tls-parameters/tls-parameters.xhtml
@@ -630,6 +638,17 @@ class TestCipherSuites(object):
         assert (BY_CODE[0xcc14].auth == 'ECDSA')
         assert (BY_CODE[0xcca8].auth == 'RSA')
         assert (BY_CODE[0xccae].auth == 'PSK')
+
+    def test_pfs(self):
+        assert (BY_NAME('TLS_RSA_WITH_RC4_128_SHA').pfs == False)
+        assert (BY_NAME('TLS_DHE_DSS_WITH_AES_256_CBC_SHA256').pfs == True)
+        assert (BY_NAME('TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA').pfs == True)
+
+    def test_aead(self):
+        assert (BY_NAME('TLS_RSA_WITH_AES_128_CBC_SHA256').aead == False)
+        assert (BY_NAME('TLS_RSA_WITH_AES_256_CCM').aead == True)
+        assert (BY_NAME('TLS_DHE_RSA_WITH_AES_128_CCM_8').aead == True)
+        assert (BY_NAME('TLS_DHE_PSK_WITH_AES_256_GCM_SHA384').aead == True)
 
     def test_by_name_and_code(self):
         # Special cases:
