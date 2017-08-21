@@ -127,6 +127,10 @@ class CipherSuite(object):
     def aead(self):
         return self.mode in ('CCM', 'CCM_8', 'GCM')
 
+    @property
+    def anonymous(self):
+        return self.auth.startswith('anon')
+
 # master list of CipherSuite Objects
 # Full list from IANA:
 #   https://www.iana.org/assignments/tls-parameters/tls-parameters.xhtml
@@ -649,6 +653,11 @@ class TestCipherSuites(object):
         assert (BY_NAME('TLS_RSA_WITH_AES_256_CCM').aead == True)
         assert (BY_NAME('TLS_DHE_RSA_WITH_AES_128_CCM_8').aead == True)
         assert (BY_NAME('TLS_DHE_PSK_WITH_AES_256_GCM_SHA384').aead == True)
+
+    def test_anonymous(self):
+        assert (BY_NAME('TLS_RSA_WITH_RC4_128_SHA').anonymous == False)
+        assert (BY_NAME('TLS_DH_anon_WITH_AES_128_CBC_SHA').anonymous == True)
+        assert (BY_NAME('TLS_DH_anon_EXPORT_WITH_DES40_CBC_SHA').anonymous == True)
 
     def test_by_name_and_code(self):
         # Special cases:
