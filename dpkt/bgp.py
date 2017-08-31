@@ -62,11 +62,13 @@ NO_PEER = 0xffffff04
 # Common AFI types
 AFI_IPV4 = 1
 AFI_IPV6 = 2
+AFI_L2VPN = 25
 
 # Multiprotocol SAFI types
 SAFI_UNICAST = 1
 SAFI_MULTICAST = 2
 SAFI_UNICAST_MULTICAST = 3
+SAFI_EVPN = 70
 
 # OPEN Message Optional Parameters
 AUTHENTICATION = 1
@@ -528,6 +530,8 @@ class BGP(dpkt.Packet):
                         Route = RouteIPV4
                     elif self.afi == AFI_IPV6:
                         Route = RouteIPV6
+                    elif self.afi == AFI_L2VPN:
+                        Route = RouteEVPN
                     else:
                         Route = RouteGeneric
 
@@ -575,6 +579,8 @@ class BGP(dpkt.Packet):
                         Route = RouteIPV4
                     elif self.afi == AFI_IPV6:
                         Route = RouteIPV6
+                    elif self.afi == AFI_L2VPN:
+                        Route = RouteEVPN
                     else:
                         Route = RouteGeneric
 
@@ -668,6 +674,54 @@ class RouteIPV6(dpkt.Packet):
 
     def __bytes__(self):
         return self.pack_hdr() + self.prefix[:(self.len + 7) // 8]
+
+
+class RouteEVPN(dpkt.Packet):
+    __hdr__ = (
+        ('type', 'B', 0),
+        ('len', 'B', 0),
+        ('rd', 'Q', 0),
+    )
+
+    def unpack(self, buf):
+        dpkt.Packet.unpack(self, buf)
+        self.data = self.data[:self.len]
+        tmp = self.data
+        print(self.type)
+        print(self.len)
+        print(self.rd)
+
+        # Get route information.
+        if self.type != 0x3:
+            self.esi = tmp[:10]
+            tmp = tmp[10:]
+
+        if self.type != 0x4:
+            self.eth_id = tmp[:4]
+            tmp = tmp[4:]
+
+        if self.type == 0x2:
+            self.mac_address_length = tmp[0]
+            self.mac_address = tmp[1:7]
+            tmp = tmp[7:]
+
+        if self.type != 0x1:
+            self.ip_address_length = tmp[0]
+            self.ip_address = tmp[1:5]
+            tmp = tmp[5:]
+
+        if self.type == 0x5:
+            self.gateway_ip_address = tmp[:4]
+            tmp = tmp[4:]
+
+        if self.type in [0x1, 0x2, 0x5]:
+            self.mpls_label_stack = tmp[:3]
+
+    def __len__(self):
+        return (self.__hdr_len__ - 8) + self.len
+
+    def __bytes__(self):
+        return self.pack_hdr() + self.data
 
 
 __bgp1 = b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x13\x04'
