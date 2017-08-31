@@ -687,9 +687,6 @@ class RouteEVPN(dpkt.Packet):
         dpkt.Packet.unpack(self, buf)
         self.data = self.data[:self.len]
         tmp = self.data
-        print(self.type)
-        print(self.len)
-        print(self.rd)
 
         # Get route information.
         if self.type != 0x3:
