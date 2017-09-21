@@ -49,4 +49,4 @@ class TestEDP(object):
         assert (self.p.mid == 0)
 
     def test_mac(self):
-        assert (self.p.mac == "\x08\x00'-\x90\xed")
+        assert (self.p.mac == b"\x08\x00'-\x90\xed")
