@@ -49,7 +49,9 @@ ETH_TYPE_PPPoE_DISC = 0x8863  # PPP Over Ethernet Discovery Stage
 ETH_TYPE_PPPoE = 0x8864  # PPP Over Ethernet Session Stage
 ETH_TYPE_LLDP = 0x88CC  # Link Layer Discovery Protocol
 ETH_TYPE_TEB = 0x6558  # Transparent Ethernet Bridging
-
+ETH_TYPE_8021ad = 0x88a8 # 802.1ad
+ETH_TYPE_QINQ1 = 0x9100 # Legacy QinQ
+ETH_TYPE_QINQ2 = 0x9200 # Legacy QinQ
 
 class Ethernet(dpkt.Packet):
     """Ethernet.
@@ -78,18 +80,30 @@ class Ethernet(dpkt.Packet):
                 self._unpack_data(self.data)
 
     def _unpack_data(self, buf):
-        if self.type == ETH_TYPE_8021Q:
-            self.vlan_tags = []
+        self.inner_type = None
+        if self.type == ETH_TYPE_8021ad or self.type == ETH_TYPE_QINQ1 \
+            or self.type == ETH_TYPE_QINQ2:
 
-            # support up to 2 tags (double tagging aka QinQ)
+            # 802.1ad and QinQ support up to 2 tags
             for _ in range(2):
                 tag = VLANtag8021Q(buf)
                 buf = buf[tag.__hdr_len__:]
                 self.vlan_tags.append(tag)
-                self.type = tag.type
-                if self.type != ETH_TYPE_8021Q:
+                self.inner_type = tag.type
+                if tag.type != ETH_TYPE_8021Q:
                     break
+
             # backward compatibility, use the 1st tag
+            self.vlanid, self.priority, self.cfi = self.vlan_tags[0].as_tuple()
+
+        elif self.type == ETH_TYPE_8021Q:
+            self.vlan_tags = []
+            tag = VLANtag8021Q(buf)
+            buf = buf[tag.__hdr_len__:]
+            self.vlan_tags.append(tag)
+            self.inner_type = tag.type
+
+            # backward compatibility
             self.vlanid, self.priority, self.cfi = self.vlan_tags[0].as_tuple()
 
         elif self.type == ETH_TYPE_MPLS or self.type == ETH_TYPE_MPLS_MCAST:
@@ -104,10 +118,10 @@ class Ethernet(dpkt.Packet):
                 self.labels.append(lbl.as_tuple())
                 if lbl.s:  # bottom of stack
                     break
-            self.type = ETH_TYPE_IP
+            self.inner_type = ETH_TYPE_IP
 
         try:
-            self.data = self._typesw[self.type](buf)
+            self.data = self._typesw[self.inner_type or self.type](buf)
             setattr(self, self.data.__class__.__name__.lower(), self.data)
         except (KeyError, dpkt.UnpackError):
             self.data = buf
