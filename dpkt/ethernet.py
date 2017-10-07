@@ -80,31 +80,26 @@ class Ethernet(dpkt.Packet):
                 self._unpack_data(self.data)
 
     def _unpack_data(self, buf):
-        self.inner_type = None
+        innermost_type = None
         if self.type == ETH_TYPE_8021ad or self.type == ETH_TYPE_QINQ1 \
             or self.type == ETH_TYPE_QINQ2:
 
             # 802.1ad and QinQ support up to 2 tags
+            self.vlan_tags = []
             for _ in range(2):
                 tag = VLANtag8021Q(buf)
                 buf = buf[tag.__hdr_len__:]
                 self.vlan_tags.append(tag)
-                self.inner_type = tag.type
+                innermost_type = tag.type
                 if tag.type != ETH_TYPE_8021Q:
                     break
-
-            # backward compatibility, use the 1st tag
-            self.vlanid, self.priority, self.cfi = self.vlan_tags[0].as_tuple()
 
         elif self.type == ETH_TYPE_8021Q:
             self.vlan_tags = []
             tag = VLANtag8021Q(buf)
             buf = buf[tag.__hdr_len__:]
             self.vlan_tags.append(tag)
-            self.inner_type = tag.type
-
-            # backward compatibility
-            self.vlanid, self.priority, self.cfi = self.vlan_tags[0].as_tuple()
+            innermost_type = tag.type
 
         elif self.type == ETH_TYPE_MPLS or self.type == ETH_TYPE_MPLS_MCAST:
             self.labels = []  # old list containing labels as tuples
@@ -118,10 +113,10 @@ class Ethernet(dpkt.Packet):
                 self.labels.append(lbl.as_tuple())
                 if lbl.s:  # bottom of stack
                     break
-            self.inner_type = ETH_TYPE_IP
+            innermost_type = ETH_TYPE_IP
 
         try:
-            self.data = self._typesw[self.inner_type or self.type](buf)
+            self.data = self._typesw[innermost_type or self.type](buf)
             setattr(self, self.data.__class__.__name__.lower(), self.data)
         except (KeyError, dpkt.UnpackError):
             self.data = buf
@@ -138,7 +133,6 @@ class Ethernet(dpkt.Packet):
             tag = VLANtagISL(buf)
             buf = buf[tag.__hdr_len__:]
             self.vlan_tags = [tag]
-            self.vlan = tag.id  # backward compatibility
             self.unpack(buf)
 
         elif self.data.startswith(b'\xff\xff'):
@@ -162,54 +156,42 @@ class Ethernet(dpkt.Packet):
 
     def pack_hdr(self):
         tags_buf =  b''
-        new_type = self.type
         is_isl = False  # ISL wraps Ethernet, this determines order of packing
-
-        # initial type is based on next layer, pointed by self.data;
-        # try to find an ETH_TYPE matching the data class
-        if isinstance(self.data, dpkt.Packet):
-            new_type = self._typesw_rev.get(self.data.__class__, new_type)
 
         if getattr(self, 'mpls_labels', None):
             # mark all labels with s=0, last one with s=1
             for lbl in self.mpls_labels:
                 lbl.s = 0
             lbl.s = 1
-
-            # set encapsulation type
-            if not (self.type == ETH_TYPE_MPLS or self.type == ETH_TYPE_MPLS_MCAST):
-                new_type = ETH_TYPE_MPLS
             tags_buf = b''.join(lbl.pack_hdr() for lbl in self.mpls_labels)
 
         elif getattr(self, 'vlan_tags', None):
-            # set encapsulation types
-            t1 = self.vlan_tags[0]
             if len(self.vlan_tags) == 1:
-                if isinstance(t1, VLANtag8021Q):
-                    t1.type = self.type
-                    new_type = ETH_TYPE_8021Q
-                elif isinstance(t1, VLANtagISL):
-                    t1.type = 0  # 0 means Ethernet
+                if isinstance(self.vlan_tags[0], VLANtagISL):
                     is_isl = True
             elif len(self.vlan_tags) == 2:
-                t2 = self.vlan_tags[1]
-                if isinstance(t1, VLANtag8021Q) and isinstance(t2, VLANtag8021Q):
-                    t2.type = self.type
-                    new_type = t1.type = ETH_TYPE_8021Q
+                if isinstance(self.vlan_tags[0], VLANtagISL):
+                    raise dpkt.PackError('maximum is 1 VLAN tag for ISL')
             else:
                 raise dpkt.PackError('maximum is 2 VLAN tags per Ethernet frame')
             tags_buf = b''.join(tag.pack_hdr() for tag in self.vlan_tags)
 
+        # Overwrite outermost etype if set to default and we can find a better one
+        if self.type == ETH_TYPE_IP and isinstance(self.data, dpkt.Packet):
+            self.type = self._typesw_rev.get(self.data.__class__, ETH_TYPE_IP)
+
         # if self.data is LLC then this is IEEE 802.3 Ethernet and self.type
         # then actually encodes the length of data
         if isinstance(self.data, llc.LLC):
-            new_type = len(self.data)
-
-        hdr_buf = dpkt.Packet.pack_hdr(self)[:-2] + struct.pack('>H', new_type)
-        if not is_isl:
-            return hdr_buf + tags_buf
+            hdr_buf = dpkt.Packet.pack_hdr(self)[:-2] + struct.pack('>H', len(self.data))
         else:
+            hdr_buf = dpkt.Packet.pack_hdr(self)[:-2] + struct.pack('>H', self.type)
+
+        if is_isl:
             return tags_buf + hdr_buf
+        else:
+            return hdr_buf + tags_buf
+
 
     def __str__(self):
         tail = b''
@@ -249,6 +231,42 @@ class Ethernet(dpkt.Packet):
     def get_type_rev(cls, k):
         return cls._typesw_rev[k]
 
+    # Property functions needed for backwards compatibility
+    def get_vlanid(self):
+        return self.vlan_tags[0].id
+
+    def set_vlanid(self, v):
+        self.vlan_tags[0].id = v
+
+    def del_vlanid(self):
+        self.vlan_tags = []
+
+    def get_priority(self):
+        return self.vlan_tags[0].pri
+
+    def set_priority(self, v):
+        self.vlan_tags[0].pri = v
+
+    def del_priority(self):
+        self.vlan_tags = []
+
+    def get_cfi(self):
+        if isinstance(self.vlan_tags[0], VLANtagISL):
+            return None
+        else:
+            return self.vlan_tags[0].cfi
+
+    def set_cfi(self, v):
+        if isinstance(self.vlan_tags[0], VLANtag8021Q):
+            self.vlan_tags[0].cfi = v
+
+    def del_cfi(self):
+        self.vlan_tags = []
+
+    vlan = property(get_vlanid, set_vlanid, del_vlanid)
+    vlanid = property(get_vlanid, set_vlanid, del_vlanid)
+    priority = property(get_priority, set_priority, del_priority)
+    cfi = property(get_cfi, set_cfi, del_cfi)
 
 # XXX - auto-load Ethernet dispatch table from ETH_TYPE_* definitions
 def __load_types():
@@ -393,6 +411,7 @@ def test_eth_init_with_data():
     eth2 = Ethernet(
         dst=b'PQRSTU', src=b'ABCDEF',
         data=arp.ARP(sha=b'123456', spa=b'abcd', tha=b'7890ab', tpa=b'wxyz'))
+
     assert str(eth1) == str(eth2)
     assert len(eth1) == len(eth2)
 
@@ -452,25 +471,26 @@ def test_eth_802dot1q():
     assert len(eth) == len(s)
 
     # construction with kwargs
-    eth2 = Ethernet(src=eth.src, dst=eth.dst, vlan_tags=eth.vlan_tags, data=eth.data)
+    eth2 = Ethernet(src=eth.src, dst=eth.dst, type=ETH_TYPE_8021Q, vlan_tags=eth.vlan_tags, data=eth.data)
     assert str(eth2) == str(s)
 
     # construction w/o the tag
     del eth.vlan_tags, eth.cfi, eth.vlanid, eth.priority
+    eth.type = ETH_TYPE_IP
     assert str(eth) == str(s[:12] + b'\x08\x00' + s[18:])
 
-
+# TODO: Add test cases for ethertypes other than 802.1ad(e.g, Cisco QinQ 1&2)
 def test_eth_802dot1q_stacked():  # 2 VLAN tags
     from . import arp
     from . import ip
-    s = (b'\x00\x1b\xd4\x1b\xa4\xd8\x00\x13\xc3\xdf\xae\x18\x81\x00\x00\x76\x81\x00\x00\x0a\x08\x00'
+    s = (b'\x00\x1b\xd4\x1b\xa4\xd8\x00\x13\xc3\xdf\xae\x18\x88\xa8\x00\x76\x81\x00\x00\x0a\x08\x00'
          b'\x45\x00\x00\x64\x00\x0f\x00\x00\xff\x01\x92\x9b\x0a\x76\x0a\x01\x0a\x76\x0a\x02\x08\x00'
          b'\xce\xb7\x00\x03\x00\x00\x00\x00\x00\x00\x00\x1f\xaf\x70\xab\xcd\xab\xcd\xab\xcd\xab\xcd'
          b'\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd'
          b'\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd'
          b'\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd')
     eth = Ethernet(s)
-    assert eth.type == ETH_TYPE_IP
+    assert eth.type == ETH_TYPE_8021ad
     assert len(eth.vlan_tags) == 2
     assert eth.vlan_tags[0].id == 118
     assert eth.vlan_tags[1].id == 10
@@ -485,15 +505,16 @@ def test_eth_802dot1q_stacked():  # 2 VLAN tags
     assert len(eth) == len(s)
 
     # construction with kwargs
-    eth2 = Ethernet(src=eth.src, dst=eth.dst, vlan_tags=eth.vlan_tags, data=eth.data)
+    eth2 = Ethernet(src=eth.src, dst=eth.dst, type=ETH_TYPE_8021ad, vlan_tags=eth.vlan_tags, data=eth.data)
     assert str(eth2) == str(s)
 
     # construction w/o the tags
     del eth.vlan_tags, eth.cfi, eth.vlanid, eth.priority
+    eth.type = ETH_TYPE_IP
     assert str(eth) == str(s[:12] + b'\x08\x00' + s[22:])
 
     # 2 VLAN tags + ARP
-    s = (b'\xff\xff\xff\xff\xff\xff\xca\x03\x0d\xb4\x00\x1c\x81\x00\x00\x64\x81\x00\x00\xc8\x08\x06'
+    s = (b'\xff\xff\xff\xff\xff\xff\xca\x03\x0d\xb4\x00\x1c\x88\xa8\x00\x64\x81\x00\x00\xc8\x08\x06'
          b'\x00\x01\x08\x00\x06\x04\x00\x01\xca\x03\x0d\xb4\x00\x1c\xc0\xa8\x02\xc8\x00\x00\x00\x00'
          b'\x00\x00\xc0\xa8\x02\xfe\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00')
     eth = Ethernet(s)
@@ -524,11 +545,12 @@ def test_eth_mpls_stacked():  # 2 MPLS labels
     assert len(eth) == len(s)
 
     # construction with kwargs
-    eth2 = Ethernet(src=eth.src, dst=eth.dst, mpls_labels=eth.mpls_labels, data=eth.data)
+    eth2 = Ethernet(src=eth.src, dst=eth.dst, type=ETH_TYPE_MPLS, mpls_labels=eth.mpls_labels, data=eth.data)
     assert str(eth2) == str(s)
 
     # construction w/o labels
     del eth.labels, eth.mpls_labels
+    eth.type = ETH_TYPE_IP
     assert str(eth) == str(s[:12] + b'\x08\x00' + s[22:])
 
 
