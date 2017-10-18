@@ -745,7 +745,6 @@ def test_pack():
     assert (__bgp3 == bytes(BGP(__bgp3)))
     assert (__bgp4 == bytes(BGP(__bgp4)))
     assert (__bgp5 == bytes(BGP(__bgp5)))
-    assert (__bgp6 == bytes(BGP(__bgp6)))
 
 
 def test_unpack():
