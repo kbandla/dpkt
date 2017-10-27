@@ -199,30 +199,47 @@ class Writer(object):
     def __init__(self, fileobj, snaplen=1500, linktype=DLT_EN10MB, nano=False):
         self.__f = fileobj
         self._precision = 9 if nano else 6
+        self._precision_multiplier = 10**self._precision
+
         magic = TCPDUMP_MAGIC_NANO if nano else TCPDUMP_MAGIC
         if sys.byteorder == 'little':
             fh = LEFileHdr(snaplen=snaplen, linktype=linktype, magic=magic)
+            self._PktHdr = LEPktHdr()
         else:
             fh = FileHdr(snaplen=snaplen, linktype=linktype, magic=magic)
+            self._PktHdr = PktHdr()
+
+        self._pack_hdr = self._PktHdr._pack_hdr
         self.__f.write(bytes(fh))
 
     def writepkt(self, pkt, ts=None):
+        """ Write pkt and optional ts to file """
         if ts is None:
             ts = time.time()
         s = bytes(pkt)
-        n = len(s)
-        sec = int(ts)
-        usec = int(round(ts % 1 * 10 ** self._precision))
-        if sys.byteorder == 'little':
-            ph = LEPktHdr(tv_sec=sec,
-                          tv_usec=usec,
-                          caplen=n, len=n)
-        else:
-            ph = PktHdr(tv_sec=sec,
-                        tv_usec=usec,
-                        caplen=n, len=n)
-        self.__f.write(bytes(ph))
-        self.__f.write(s)
+        self.writepkt_time(s, ts)
+
+    def writepkt_time(self, pkt, ts):
+        """ Write pkt and mandatory ts to file """
+        self.writepkts([(ts, pkt)])
+
+    def writepkts(self, pkts):
+        """
+        Take an iterable of (ts, pkt), and write to file.
+        """
+        fd = self.__f
+        pack_hdr = self._pack_hdr
+        precision_multiplier = self._precision_multiplier
+
+        for ts, pkt in pkts:
+            n = len(pkt)
+            sec = int(ts)
+            usec = round(ts % 1 * precision_multiplier)
+
+            ph = pack_hdr(sec, usec, n, n)
+
+            fd.write(ph)
+            fd.write(pkt)
 
     def close(self):
         self.__f.close()
@@ -392,10 +409,47 @@ def test_writer_precision():
     assert ts == Decimal('1454725786.010203045')
     assert buf1 == b'foo'
 
+def test_writepkt_time():
+    from .compat import BytesIO
+
+    ts = 1454725786.526401
+    pkt = b"fooo"
+
+    fobj = BytesIO()
+    writer = Writer(fobj)
+    writer.writepkt_time(pkt, ts)
+    fobj.flush()
+    fobj.seek(0)
+
+    ts_in, pkt_in = next(iter(Reader(fobj)))
+    assert ts == ts_in
+    assert pkt == pkt_in
+
+def test_writepkts():
+    from .compat import BytesIO
+
+    data = [
+        (1454725786.526401, b"fooo"),
+        (1454725787.526401, b"barr"),
+        (3243204320.093211, b"grill"),
+        (1454725789.526401, b"lol"),
+    ]
+
+    fobj = BytesIO()
+    writer = Writer(fobj)
+    writer.writepkts(data)
+    fobj.flush()
+    fobj.seek(0)
+
+    for idx, (ts, buf) in enumerate(Reader(fobj)):
+        assert ts == data[idx][0]
+        assert buf == data[idx][1]
 
 if __name__ == '__main__':
     test_pcap_endian()
     test_reader()
     test_writer_precision()
+    test_writepkt_time()
+    test_writepkts()
 
     print('Tests Successful...')
