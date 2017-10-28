@@ -379,76 +379,102 @@ def test_reader():
     assert reader.dispatch(1, lambda ts, pkt: None) == 0
 
 
-def test_writer_precision():
-    data = b'foo'
-    from .compat import BytesIO
+class WriterTestWrap:
+    """
+    Decorate a writer test function with an instance of this class.
 
-    # default precision
-    fobj = BytesIO()
-    writer = Writer(fobj)
-    writer.writepkt(data, ts=1454725786.526401)
-    fobj.flush()
-    fobj.seek(0)
+    The test will be provided with a writer object, which it shoud write some pkts to.
 
-    reader = Reader(fobj)
-    ts, buf1 = next(iter(reader))
-    assert ts == 1454725786.526401
-    assert buf1 == b'foo'
+    After the test has run, the BytesIO object will be passed to a Reader, which will compare each pkt to the return value of the test.
+    """
+    def __init__(self, *args, **kwargs):
+        self.args = args
+        self.kwargs = kwargs
 
-    # nano precision
-    from decimal import Decimal
+    def __call__(self, f, *args, **kwargs):
+        def wrapper(*args, **kwargs):
+            from .compat import BytesIO
+            fobj = BytesIO()
+            f.__globals__['writer'] = Writer(fobj, **self.kwargs.get('writer', {}))
+            f.__globals__['fobj'] = fobj
+            pkts = f(*args, **kwargs)
+            fobj.flush()
+            fobj.seek(0)
 
-    fobj = BytesIO()
-    writer = Writer(fobj, nano=True)
-    writer.writepkt(data, ts=Decimal('1454725786.010203045'))
-    fobj.flush()
-    fobj.seek(0)
+            assert pkts
+            for (ts_out, pkt_out), (ts_in, pkt_in) in zip(pkts, iter(Reader(fobj))):
+              assert ts_out == ts_in
+              assert pkt_out == pkt_in
+        return wrapper
 
-    reader = Reader(fobj)
-    ts, buf1 = next(iter(reader))
-    assert ts == Decimal('1454725786.010203045')
-    assert buf1 == b'foo'
+@WriterTestWrap()
+def test_writer_precision_normal():
+    ts, pkt = 1454725786.526401, b'foo'
+    writer.writepkt(pkt, ts=ts)
+    return [(ts, pkt)]
 
+@WriterTestWrap(writer={'nano': True})
+def test_writer_precision_nano():
+    ts, pkt = Decimal('1454725786.010203045'), b'foo'
+    writer.writepkt(pkt, ts=ts)
+    return [(ts, pkt)]
+
+@WriterTestWrap(writer={'nano': False})
+def test_writer_precision_nano_fail():
+    """ if writer is not set to nano, supplying this timestamp should be truncated """
+    ts, pkt = (Decimal('1454725786.010203045'), b'foo')
+    writer.writepkt(pkt, ts=ts)
+    return [(1454725786.010203, pkt)]
+
+@WriterTestWrap()
+def test_writepkt_no_time():
+    ts, pkt = 1454725786.526401, b'foooo'
+    _tmp = time.time
+    time.time = lambda: ts
+    writer.writepkt(pkt)
+    time.time = _tmp
+    return [(ts, pkt)]
+
+@WriterTestWrap(writer={'snaplen': 10})
+def test_writepkt_snaplen():
+    ts, pkt = 1454725786.526401, b'foooo'
+    writer.writepkt(pkt, ts)
+    return [(ts, pkt)]
+
+@WriterTestWrap()
+def test_writepkt_with_time():
+    ts, pkt = 1454725786.526401, b'foooo'
+    writer.writepkt(pkt, ts)
+    return [(ts, pkt)]
+
+@WriterTestWrap()
 def test_writepkt_time():
-    from .compat import BytesIO
-
-    ts = 1454725786.526401
-    pkt = b"fooo"
-
-    fobj = BytesIO()
-    writer = Writer(fobj)
+    ts, pkt = 1454725786.526401, b'foooo'
     writer.writepkt_time(pkt, ts)
-    fobj.flush()
-    fobj.seek(0)
+    return [(ts, pkt)]
 
-    ts_in, pkt_in = next(iter(Reader(fobj)))
-    assert ts == ts_in
-    assert pkt == pkt_in
-
+@WriterTestWrap()
 def test_writepkts():
-    from .compat import BytesIO
-
-    data = [
+    """ writing multiple packets from a list """
+    pkts = [
         (1454725786.526401, b"fooo"),
         (1454725787.526401, b"barr"),
         (3243204320.093211, b"grill"),
         (1454725789.526401, b"lol"),
     ]
 
-    fobj = BytesIO()
-    writer = Writer(fobj)
-    writer.writepkts(data)
-    fobj.flush()
-    fobj.seek(0)
-
-    for idx, (ts, buf) in enumerate(Reader(fobj)):
-        assert ts == data[idx][0]
-        assert buf == data[idx][1]
+    writer.writepkts(pkts)
+    return pkts
 
 if __name__ == '__main__':
-    test_pcap_endian()
     test_reader()
-    test_writer_precision()
+    test_pcap_endian()
+    test_writer_precision_normal()
+    test_writer_precision_nano()
+    test_writer_precision_nano_fail()
+    test_writepkt_snaplen()
+    test_writepkt_no_time()
+    test_writepkt_with_time()
     test_writepkt_time()
     test_writepkts()
 
