@@ -11,7 +11,7 @@ from time import time
 import sys
 
 from . import dpkt
-from .compat import BytesIO
+from .compat import BytesIO, intround
 
 BYTE_ORDER_MAGIC = 0x1A2B3C4D
 BYTE_ORDER_MAGIC_LE = 0x4D3C2B1A
@@ -354,9 +354,9 @@ class Writer(object):
             self._validate_block('pkt', pkt, EnhancedPacketBlock)
 
             if ts is not None:  # ts as an argument gets precedence
-                ts = int(round(ts * 1e6))
+                ts = intround(ts * 1e6)
             elif pkt.ts_high == pkt.ts_low == 0:
-                ts = int(round(time() * 1e6))
+                ts = intround(time() * 1e6)
 
             if ts is not None:
                 pkt.ts_high = ts >> 32

@@ -9,6 +9,7 @@ import time
 from decimal import Decimal
 
 from . import dpkt
+from .compat import intround
 
 TCPDUMP_MAGIC = 0xa1b2c3d4
 TCPDUMP_MAGIC_NANO = 0xa1b23c4d
@@ -236,7 +237,7 @@ class Writer(object):
         for ts, pkt in pkts:
             n = len(pkt)
             sec = int(ts)
-            usec = round(ts % 1 * precision_multiplier)
+            usec = intround(ts % 1 * precision_multiplier)
 
             ph = pack_hdr(sec, usec, n, n)
 
