@@ -396,21 +396,22 @@ class WriterTestWrap:
     def __call__(self, f, *args, **kwargs):
         def wrapper(*args, **kwargs):
             from .compat import BytesIO
-            fobj = BytesIO()
-            _sysle = Writer._Writer__le
-            Writer._Writer__le = self.kwargs.get('writer_littleendian', _sysle)
-            f.__globals__['writer'] = Writer(fobj, **self.kwargs.get('writer', {}))
-            f.__globals__['fobj'] = fobj
-            pkts = f(*args, **kwargs)
-            fobj.flush()
-            fobj.seek(0)
+            for little_endian in [True, False]:
+                fobj = BytesIO()
+                _sysle = Writer._Writer__le
+                Writer._Writer__le = little_endian
+                f.__globals__['writer'] = Writer(fobj, **self.kwargs.get('writer', {}))
+                f.__globals__['fobj'] = fobj
+                pkts = f(*args, **kwargs)
+                fobj.flush()
+                fobj.seek(0)
 
-            assert pkts
-            for (ts_out, pkt_out), (ts_in, pkt_in) in zip(pkts, iter(Reader(fobj))):
-                assert ts_out == ts_in
-                assert pkt_out == pkt_in
-            writer.close()
-            Writer._Writer__le = _sysle
+                assert pkts
+                for (ts_out, pkt_out), (ts_in, pkt_in) in zip(pkts, iter(Reader(fobj))):
+                    assert ts_out == ts_in
+                    assert pkt_out == pkt_in
+                writer.close()
+                Writer._Writer__le = _sysle
         return wrapper
 
 @WriterTestWrap()
@@ -453,12 +454,6 @@ def test_writepkt_with_time():
     writer.writepkt(pkt, ts)
     return [(ts, pkt)]
 
-@WriterTestWrap(writer_littleendian=False)
-def test_writepkt_be():
-    ts, pkt = 1454725786.526401, b'foooo'
-    writer.writepkt_time(pkt, ts)
-    return [(ts, pkt)]
-
 @WriterTestWrap()
 def test_writepkt_time():
     ts, pkt = 1454725786.526401, b'foooo'
@@ -488,7 +483,6 @@ if __name__ == '__main__':
     test_writepkt_no_time()
     test_writepkt_with_time()
     test_writepkt_time()
-    test_writepkt_be()
     test_writepkts()
 
     print('Tests Successful...')
