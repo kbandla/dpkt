@@ -196,13 +196,15 @@ class Writer(object):
         TODO.
     """
 
+    __le = sys.byteorder == 'little'
+
     def __init__(self, fileobj, snaplen=1500, linktype=DLT_EN10MB, nano=False):
         self.__f = fileobj
         self._precision = 9 if nano else 6
         self._precision_multiplier = 10**self._precision
 
         magic = TCPDUMP_MAGIC_NANO if nano else TCPDUMP_MAGIC
-        if sys.byteorder == 'little':
+        if self.__le:
             fh = LEFileHdr(snaplen=snaplen, linktype=linktype, magic=magic)
             self._PktHdr = LEPktHdr()
         else:
@@ -395,6 +397,8 @@ class WriterTestWrap:
         def wrapper(*args, **kwargs):
             from .compat import BytesIO
             fobj = BytesIO()
+            _sysle = Writer._Writer__le
+            Writer._Writer__le = self.kwargs.get('writer_littleendian', _sysle)
             f.__globals__['writer'] = Writer(fobj, **self.kwargs.get('writer', {}))
             f.__globals__['fobj'] = fobj
             pkts = f(*args, **kwargs)
@@ -405,6 +409,7 @@ class WriterTestWrap:
             for (ts_out, pkt_out), (ts_in, pkt_in) in zip(pkts, iter(Reader(fobj))):
               assert ts_out == ts_in
               assert pkt_out == pkt_in
+            Writer._Writer__le = _sysle
         return wrapper
 
 @WriterTestWrap()
@@ -447,6 +452,12 @@ def test_writepkt_with_time():
     writer.writepkt(pkt, ts)
     return [(ts, pkt)]
 
+@WriterTestWrap(writer_littleendian=False)
+def test_writepkt_be():
+    ts, pkt = 1454725786.526401, b'foooo'
+    writer.writepkt_time(pkt, ts)
+    return [(ts, pkt)]
+
 @WriterTestWrap()
 def test_writepkt_time():
     ts, pkt = 1454725786.526401, b'foooo'
@@ -476,6 +487,7 @@ if __name__ == '__main__':
     test_writepkt_no_time()
     test_writepkt_with_time()
     test_writepkt_time()
+    test_writepkt_be()
     test_writepkts()
 
     print('Tests Successful...')
