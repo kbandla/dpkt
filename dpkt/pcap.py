@@ -407,8 +407,9 @@ class WriterTestWrap:
 
             assert pkts
             for (ts_out, pkt_out), (ts_in, pkt_in) in zip(pkts, iter(Reader(fobj))):
-              assert ts_out == ts_in
-              assert pkt_out == pkt_in
+                assert ts_out == ts_in
+                assert pkt_out == pkt_in
+            writer.close()
             Writer._Writer__le = _sysle
         return wrapper
 
