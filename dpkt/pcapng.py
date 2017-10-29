@@ -694,6 +694,13 @@ class TestData:
             PcapngOptionLE()
         ])
 
+        self.valid_idb_be = InterfaceDescriptionBlock(snaplen=0x40000, opts=[
+            PcapngOption(code=2, data=b'\\Device\\NPF_{3BBF21A7-91AE-4DDB-AB2C-C782999C22D5}'),
+            PcapngOption(code=9, data=b'\x06'),
+            PcapngOption(code=12, data=b'64-bit Windows 8.1, build 9600'),
+            PcapngOption()
+        ])
+
 
         self.valid_pcapng = (
             b'\x0a\x0d\x0d\x0a\x7c\x00\x00\x00\x4d\x3c\x2b\x1a\x01\x00\x00\x00\xff\xff\xff\xff\xff\xff'
@@ -718,6 +725,16 @@ class TestData:
         self.valid_pkts = [
             (1442984653.210838, b"\x08\x00'\x96\xcb|RT\x00\x125\x02\x08\x00E\x00\x00<\xa4@\x00\x00\x1f\x01'\xa2\xc0\xa8\x03(\n\x00\x02\x0f\x00\x00V\xf0\x00\x01\x00mABCDEFGHIJKLMNOPQRSTUVWABCDEFGHI")
         ]
+
+        self.valid_epb_be = EnhancedPacketBlock(opts=[
+            PcapngOption(code=1, text=b'dpkt is awesome'),
+            PcapngOption()
+        ], pkt_data=(
+            b'\x08\x00\x27\x96\xcb\x7c\x52\x54\x00\x12\x35\x02\x08\x00\x45\x00\x00\x3c\xa4\x40\x00\x00'
+            b'\x1f\x01\x27\xa2\xc0\xa8\x03\x28\x0a\x00\x02\x0f\x00\x00\x56\xf0\x00\x01\x00\x6d\x41\x42'
+            b'\x43\x44\x45\x46\x47\x48\x49\x4a\x4b\x4c\x4d\x4e\x4f\x50\x51\x52\x53\x54\x55\x56\x57\x41'
+            b'\x42\x43\x44\x45\x46\x47\x48\x49'
+        ))
 
         self.valid_epb_le = EnhancedPacketBlockLE(opts=[
             PcapngOptionLE(code=1, text=b'dpkt is awesome'),
@@ -1067,6 +1084,15 @@ def test_pcapng_block_unpack():
     buf = b'012345678901'
     try:
         block.unpack(buf)
+    except Exception as e:
+        assert isinstance(e, dpkt.NeedData)
+
+def test_epb_unpack():
+    """ EnhancedPacketBlocks can only unpack data >64 bytes, the length of their header """
+    shb, idb, epb = TestData().shb_idb_epb_be
+    buf = b'quite-long-but-not-long-enough-at-least-32'
+    try:
+        epb.unpack(buf)
     except Exception as e:
         assert isinstance(e, dpkt.NeedData)
 
