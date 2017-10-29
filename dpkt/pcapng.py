@@ -1075,6 +1075,17 @@ def test_pcapng_block_len_no_opts():
     block = _PcapngBlock()
     assert len(block) == 12
 
+def test_reader_file_descriptor():
+    pcapng = TestData().valid_pcapng
+    import tempfile
+    with tempfile.TemporaryFile() as fobj:
+        fobj.write(pcapng)
+        fobj.seek(0)
+
+        reader = Reader(fobj)
+        assert reader.fd == fobj.fileno()
+        assert reader.fileno() == fobj.fileno()
+
 def test_posttest():
     """ Check that PostTest wrapper doesn't fail silently """
     @PostTest()
