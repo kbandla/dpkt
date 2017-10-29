@@ -1096,12 +1096,26 @@ def test_epb_unpack():
     except Exception as e:
         assert isinstance(e, dpkt.NeedData)
 
+def test_epb_unpack_length_mismatch():
+    """ Force calculated len to be 0 when unpacking epb, this should fail when unpacking """
+    shb, idb, epb = TestData().shb_idb_epb_be
+    
+    unpackme = bytes(epb)
+    unpackme = unpackme[:-4] + b'\x00'*4
+    try:
+        epb.unpack(unpackme)
+    except Exception as e:
+        assert isinstance(e, dpkt.UnpackError)
+        assert str(e) == 'length fields do not match'
+
+
 def test_pcapng_block_len_no_opts():
     """ _PcapngBlock should return its own header __len__ if it has no opts """
     block = _PcapngBlock()
     assert len(block) == 12
 
 def test_reader_file_descriptor():
+    """ Reader has .fd and .fileno() convenience members. Compare them to the actual fobj that was passed in """
     pcapng = TestData().valid_pcapng
     import tempfile
     with tempfile.TemporaryFile() as fobj:
