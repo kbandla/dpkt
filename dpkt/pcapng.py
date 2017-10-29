@@ -1069,3 +1069,8 @@ def test_pcapng_block_unpack():
         block.unpack(buf)
     except Exception as e:
         assert isinstance(e, dpkt.NeedData)
+
+def test_pcapng_block_len_no_opts():
+    """ _PcapngBlock should return its own header __len__ if it has no opts """
+    block = _PcapngBlock()
+    assert len(block) == 12
