@@ -196,11 +196,13 @@ class Writer(object):
         TODO.
     """
 
+    __le = (sys.byteorder == 'little')
+
     def __init__(self, fileobj, snaplen=1500, linktype=DLT_EN10MB, nano=False):
         self.__f = fileobj
         self._precision = 9 if nano else 6
         magic = TCPDUMP_MAGIC_NANO if nano else TCPDUMP_MAGIC
-        if sys.byteorder == 'little':
+        if self.__le:
             fh = LEFileHdr(snaplen=snaplen, linktype=linktype, magic=magic)
         else:
             fh = FileHdr(snaplen=snaplen, linktype=linktype, magic=magic)
@@ -213,7 +215,7 @@ class Writer(object):
         n = len(s)
         sec = int(ts)
         usec = int(round(ts % 1 * 10 ** self._precision))
-        if sys.byteorder == 'little':
+        if self.__le:
             ph = LEPktHdr(tv_sec=sec,
                           tv_usec=usec,
                           caplen=n, len=n)
