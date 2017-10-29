@@ -532,3 +532,27 @@ def test_loop():
 
     reader = Reader(fobj)
     reader.loop(callback)
+
+def test_reader_file_descriptor():
+    """ Reader has .fd and .fileno() convenience members. Compare them to the actual fobj that was passed in """
+    pcap = TestData().valid_pcap
+    import tempfile
+    with tempfile.TemporaryFile() as fobj:
+        fobj.write(pcap)
+        fobj.seek(0)
+
+        reader = Reader(fobj)
+        assert reader.fd == fobj.fileno()
+        assert reader.fileno() == fobj.fileno()
+
+def test_posttest():
+    """ Check that PostTest wrapper doesn't fail silently """
+    @PostTest()
+    @pre_test
+    def fun():
+        pass
+
+    try:
+        a = fun()
+    except Exception as e:
+        assert str(e) == 'No test type specified' 
