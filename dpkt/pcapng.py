@@ -735,83 +735,75 @@ def test_simple_write_read():
     fobj.close()
 
 
-def test_custom_read_write():
-    """Test a full pcapng file with 1 ICMP packet"""
-    buf = (
-        b'\x0a\x0d\x0d\x0a\x7c\x00\x00\x00\x4d\x3c\x2b\x1a\x01\x00\x00\x00\xff\xff\xff\xff\xff\xff'
-        b'\xff\xff\x03\x00\x1e\x00\x36\x34\x2d\x62\x69\x74\x20\x57\x69\x6e\x64\x6f\x77\x73\x20\x38'
-        b'\x2e\x31\x2c\x20\x62\x75\x69\x6c\x64\x20\x39\x36\x30\x30\x00\x00\x04\x00\x34\x00\x44\x75'
-        b'\x6d\x70\x63\x61\x70\x20\x31\x2e\x31\x32\x2e\x37\x20\x28\x76\x31\x2e\x31\x32\x2e\x37\x2d'
-        b'\x30\x2d\x67\x37\x66\x63\x38\x39\x37\x38\x20\x66\x72\x6f\x6d\x20\x6d\x61\x73\x74\x65\x72'
-        b'\x2d\x31\x2e\x31\x32\x29\x00\x00\x00\x00\x7c\x00\x00\x00\x01\x00\x00\x00\x7c\x00\x00\x00'
-        b'\x01\x00\x00\x00\x00\x00\x04\x00\x02\x00\x32\x00\x5c\x44\x65\x76\x69\x63\x65\x5c\x4e\x50'
-        b'\x46\x5f\x7b\x33\x42\x42\x46\x32\x31\x41\x37\x2d\x39\x31\x41\x45\x2d\x34\x44\x44\x42\x2d'
-        b'\x41\x42\x32\x43\x2d\x43\x37\x38\x32\x39\x39\x39\x43\x32\x32\x44\x35\x7d\x00\x00\x09\x00'
-        b'\x01\x00\x06\x00\x00\x00\x0c\x00\x1e\x00\x36\x34\x2d\x62\x69\x74\x20\x57\x69\x6e\x64\x6f'
-        b'\x77\x73\x20\x38\x2e\x31\x2c\x20\x62\x75\x69\x6c\x64\x20\x39\x36\x30\x30\x00\x00\x00\x00'
-        b'\x00\x00\x7c\x00\x00\x00\x06\x00\x00\x00\x84\x00\x00\x00\x00\x00\x00\x00\x63\x20\x05\x00'
-        b'\xd6\xc4\xab\x0b\x4a\x00\x00\x00\x4a\x00\x00\x00\x08\x00\x27\x96\xcb\x7c\x52\x54\x00\x12'
-        b'\x35\x02\x08\x00\x45\x00\x00\x3c\xa4\x40\x00\x00\x1f\x01\x27\xa2\xc0\xa8\x03\x28\x0a\x00'
-        b'\x02\x0f\x00\x00\x56\xf0\x00\x01\x00\x6d\x41\x42\x43\x44\x45\x46\x47\x48\x49\x4a\x4b\x4c'
-        b'\x4d\x4e\x4f\x50\x51\x52\x53\x54\x55\x56\x57\x41\x42\x43\x44\x45\x46\x47\x48\x49\x00\x00'
-        b'\x01\x00\x0f\x00\x64\x70\x6b\x74\x20\x69\x73\x20\x61\x77\x65\x73\x6f\x6d\x65\x00\x00\x00'
-        b'\x00\x00\x84\x00\x00\x00')
-
-    fobj = BytesIO(buf)
-
-    # test reading
-    reader = Reader(fobj)
-    assert reader.snaplen == 0x40000
-    assert reader.datalink() == DLT_EN10MB
-
-    assert reader.idb.opts[0].data.decode('utf-8') == '\\Device\\NPF_{3BBF21A7-91AE-4DDB-AB2C-C782999C22D5}'
-    assert reader.idb.opts[2].data.decode('utf-8') == '64-bit Windows 8.1, build 9600'
-
-    ts, buf1 = next(iter(reader))
-    assert ts == 1442984653.2108380
-    assert len(buf1) == 74
-
-    assert buf1.startswith(b'\x08\x00\x27\x96')
-    assert buf1.endswith(b'FGHI')
-    fobj.close()
-
-    # test pcapng customized writing
-    shb = SectionHeaderBlockLE(opts=[
-        PcapngOptionLE(code=3, data=b'64-bit Windows 8.1, build 9600'),
-        PcapngOptionLE(code=4, data=b'Dumpcap 1.12.7 (v1.12.7-0-g7fc8978 from master-1.12)'),
-        PcapngOptionLE()
-    ])
-    idb = InterfaceDescriptionBlockLE(snaplen=0x40000, opts=[
-        PcapngOptionLE(code=2, data=b'\\Device\\NPF_{3BBF21A7-91AE-4DDB-AB2C-C782999C22D5}'),
-        PcapngOptionLE(code=9, data=b'\x06'),
-        PcapngOptionLE(code=12, data=b'64-bit Windows 8.1, build 9600'),
-        PcapngOptionLE()
-    ])
-    epb = EnhancedPacketBlockLE(opts=[
-        PcapngOptionLE(code=1, text=b'dpkt is awesome'),
-        PcapngOptionLE()
-    ], pkt_data=(
-        b'\x08\x00\x27\x96\xcb\x7c\x52\x54\x00\x12\x35\x02\x08\x00\x45\x00\x00\x3c\xa4\x40\x00\x00'
-        b'\x1f\x01\x27\xa2\xc0\xa8\x03\x28\x0a\x00\x02\x0f\x00\x00\x56\xf0\x00\x01\x00\x6d\x41\x42'
-        b'\x43\x44\x45\x46\x47\x48\x49\x4a\x4b\x4c\x4d\x4e\x4f\x50\x51\x52\x53\x54\x55\x56\x57\x41'
-        b'\x42\x43\x44\x45\x46\x47\x48\x49'
-    ))
+def test_pcapng_header():
+    """ Reading an empty file will fail as the header length is incorrect """
     fobj = BytesIO()
-    writer = Writer(fobj, shb=shb, idb=idb)
-    writer.writepkt(epb, ts=1442984653.210838)
-    assert fobj.getvalue() == buf
-    fobj.close()
 
-    # same with timestamps defined inside EPB
-    epb.ts_high = 335971
-    epb.ts_low = 195806422
+    try:
+        reader = Reader(fobj)
+    except Exception as e:
+        assert isinstance(e, ValueError)
 
-    fobj = BytesIO()
-    writer = Writer(fobj, shb=shb, idb=idb)
-    writer.writepkt(epb)
-    assert fobj.getvalue() == buf
-    fobj.close()
+class TestData:
+    def __init__(self):
+        self.valid_shb = SectionHeaderBlockLE(opts=[
+            PcapngOptionLE(code=3, data=b'64-bit Windows 8.1, build 9600'),
+            PcapngOptionLE(code=4, data=b'Dumpcap 1.12.7 (v1.12.7-0-g7fc8978 from master-1.12)'),
+            PcapngOptionLE()
+        ])
 
+        self.valid_idb = InterfaceDescriptionBlockLE(snaplen=0x40000, opts=[
+            PcapngOptionLE(code=2, data=b'\\Device\\NPF_{3BBF21A7-91AE-4DDB-AB2C-C782999C22D5}'),
+            PcapngOptionLE(code=9, data=b'\x06'),
+            PcapngOptionLE(code=12, data=b'64-bit Windows 8.1, build 9600'),
+            PcapngOptionLE()
+        ])
+
+
+        self.valid_pcapng = (
+            b'\x0a\x0d\x0d\x0a\x7c\x00\x00\x00\x4d\x3c\x2b\x1a\x01\x00\x00\x00\xff\xff\xff\xff\xff\xff'
+            b'\xff\xff\x03\x00\x1e\x00\x36\x34\x2d\x62\x69\x74\x20\x57\x69\x6e\x64\x6f\x77\x73\x20\x38'
+            b'\x2e\x31\x2c\x20\x62\x75\x69\x6c\x64\x20\x39\x36\x30\x30\x00\x00\x04\x00\x34\x00\x44\x75'
+            b'\x6d\x70\x63\x61\x70\x20\x31\x2e\x31\x32\x2e\x37\x20\x28\x76\x31\x2e\x31\x32\x2e\x37\x2d'
+            b'\x30\x2d\x67\x37\x66\x63\x38\x39\x37\x38\x20\x66\x72\x6f\x6d\x20\x6d\x61\x73\x74\x65\x72'
+            b'\x2d\x31\x2e\x31\x32\x29\x00\x00\x00\x00\x7c\x00\x00\x00\x01\x00\x00\x00\x7c\x00\x00\x00'
+            b'\x01\x00\x00\x00\x00\x00\x04\x00\x02\x00\x32\x00\x5c\x44\x65\x76\x69\x63\x65\x5c\x4e\x50'
+            b'\x46\x5f\x7b\x33\x42\x42\x46\x32\x31\x41\x37\x2d\x39\x31\x41\x45\x2d\x34\x44\x44\x42\x2d'
+            b'\x41\x42\x32\x43\x2d\x43\x37\x38\x32\x39\x39\x39\x43\x32\x32\x44\x35\x7d\x00\x00\x09\x00'
+            b'\x01\x00\x06\x00\x00\x00\x0c\x00\x1e\x00\x36\x34\x2d\x62\x69\x74\x20\x57\x69\x6e\x64\x6f'
+            b'\x77\x73\x20\x38\x2e\x31\x2c\x20\x62\x75\x69\x6c\x64\x20\x39\x36\x30\x30\x00\x00\x00\x00'
+            b'\x00\x00\x7c\x00\x00\x00\x06\x00\x00\x00\x84\x00\x00\x00\x00\x00\x00\x00\x63\x20\x05\x00'
+            b'\xd6\xc4\xab\x0b\x4a\x00\x00\x00\x4a\x00\x00\x00\x08\x00\x27\x96\xcb\x7c\x52\x54\x00\x12'
+            b'\x35\x02\x08\x00\x45\x00\x00\x3c\xa4\x40\x00\x00\x1f\x01\x27\xa2\xc0\xa8\x03\x28\x0a\x00'
+            b'\x02\x0f\x00\x00\x56\xf0\x00\x01\x00\x6d\x41\x42\x43\x44\x45\x46\x47\x48\x49\x4a\x4b\x4c'
+            b'\x4d\x4e\x4f\x50\x51\x52\x53\x54\x55\x56\x57\x41\x42\x43\x44\x45\x46\x47\x48\x49\x00\x00'
+            b'\x01\x00\x0f\x00\x64\x70\x6b\x74\x20\x69\x73\x20\x61\x77\x65\x73\x6f\x6d\x65\x00\x00\x00'
+            b'\x00\x00\x84\x00\x00\x00')
+
+        self.valid_pkts = [
+            (1442984653.210838, b"\x08\x00'\x96\xcb|RT\x00\x125\x02\x08\x00E\x00\x00<\xa4@\x00\x00\x1f\x01'\xa2\xc0\xa8\x03(\n\x00\x02\x0f\x00\x00V\xf0\x00\x01\x00mABCDEFGHIJKLMNOPQRSTUVWABCDEFGHI")
+        ]
+
+        self.valid_epb = EnhancedPacketBlockLE(opts=[
+            PcapngOptionLE(code=1, text=b'dpkt is awesome'),
+            PcapngOptionLE()
+        ], pkt_data=(
+            b'\x08\x00\x27\x96\xcb\x7c\x52\x54\x00\x12\x35\x02\x08\x00\x45\x00\x00\x3c\xa4\x40\x00\x00'
+            b'\x1f\x01\x27\xa2\xc0\xa8\x03\x28\x0a\x00\x02\x0f\x00\x00\x56\xf0\x00\x01\x00\x6d\x41\x42'
+            b'\x43\x44\x45\x46\x47\x48\x49\x4a\x4b\x4c\x4d\x4e\x4f\x50\x51\x52\x53\x54\x55\x56\x57\x41'
+            b'\x42\x43\x44\x45\x46\x47\x48\x49'
+        ))
+
+def pre_test(f):
+    def wrapper(*args, **kwargs):
+        fobj = BytesIO()
+        f.__globals__['fobj'] = fobj
+        ret = f(*args, **kwargs)
+        fobj.flush()
+        fobj.seek(0)
+
+        return ret
+    return wrapper
 
 class WriterTestWrap:
     """
@@ -845,7 +837,194 @@ class WriterTestWrap:
 
                 writer.close()
                 Writer._Writer__le = _sysle
+                del f.__globals__['writer']
+                del f.__globals__['fobj']
         return wrapper
+
+
+class PostTest:
+    def __init__(self, *args, **kwargs):
+        self.args = args
+        self.kwargs = kwargs
+
+    def __call__(self, f, *args, **kwargs):
+        def wrapper(*args, **kwargs):
+            ret = f(*args, **kwargs)
+            fobj = f.__globals__['fobj']
+            test_type = self.kwargs['test']
+            if test_type == 'assertion':
+                isexception = False
+                try:
+                    Reader(fobj)
+                except Exception as e:
+                    isexception = True
+                    assert isinstance(e, self.kwargs['type'])
+                    assert str(e) == self.kwargs['msg']
+                assert isexception, "No assertion raised!"
+
+            elif test_type == 'compare_property':
+                prop = self.kwargs['property']
+                reader = Reader(fobj)
+                assert bytes(ret) == bytes(getattr(reader, prop))
+            elif test_type == 'compare_method':
+                method = self.kwargs['method']
+                reader = Reader(fobj)
+                comp = getattr(reader, method)()
+                assert comp == ret
+            else:
+                raise Exception("No test type specified")
+        return wrapper
+
+@PostTest(test='assertion', type=ValueError, msg='invalid pcapng header: not a SHB')
+@pre_test
+def test_shb_header():
+    shb = TestData().valid_shb
+    shb.type = 123456666
+    fobj.write(bytes(shb))
+
+@PostTest(test='assertion', type=ValueError, msg='unknown endianness')
+@pre_test
+def test_shb_bom():
+    shb = TestData().valid_shb
+    shb.bom = 12345666
+    fobj.write(bytes(shb))
+
+@PostTest(test='assertion', type=ValueError, msg='unknown pcapng version 123.45')
+@pre_test
+def test_shb_version():
+    shb = TestData().valid_shb
+    shb.v_major = 123
+    shb.v_minor = 45
+    fobj.write(bytes(shb))
+
+@PostTest(test='assertion', type=ValueError, msg='IDB not found')
+@pre_test
+def test_no_idb():
+    shb = TestData().valid_shb
+    fobj.write(bytes(shb)+b'aaaa')
+
+@PostTest(test='compare_property', property='idb')
+@pre_test
+def test_idb_opt_offset():
+    """ Test that the timestamp offset is correctly written and read """
+    shb = TestData().valid_shb
+    idb = TestData().valid_idb
+    idb.opts.insert(0, PcapngOptionLE(
+        code=PCAPNG_OPT_IF_TSOFFSET,
+        data=struct_pack('<q', 123456666))
+    )
+    fobj.write(bytes(shb)+bytes(idb))
+    return idb
+
+@PostTest(test='compare_property', property='dloff')
+@pre_test
+def test_idb_linktype():
+    """ Test that if the idb.linktype is not in dloff, dloff is set to 0 """
+    shb = TestData().valid_shb
+    idb = TestData().valid_idb
+    idb.linktype = 3456
+    fobj.write(bytes(shb)+bytes(idb))
+    return 0
+
+@pre_test
+def test_filter():
+    buf = TestData().valid_pcapng
+    fobj.write(buf)
+    fobj.flush()
+    fobj.seek(0)
+    reader = Reader(fobj)
+    try:
+        reader.setfilter(None, None)
+    except Exception as e:
+        assert isinstance(e, NotImplementedError)
+
+@PostTest(test='compare_method', method='readpkts')
+@pre_test
+def test_readpkts():
+    fobj.write(TestData().valid_pcapng)
+    return TestData().valid_pkts
+
+@PostTest(test='compare_method', method='next')
+@pre_test
+def test_next():
+    fobj.write(TestData().valid_pcapng)
+    return TestData().valid_pkts[0]
+
+@pre_test
+def test_dispatch():
+    fobj.write(TestData().valid_pcapng)
+    fobj.flush()
+    fobj.seek(0)
+
+    def callback(timestamp, pkt, *args):
+        assert (timestamp, pkt) == TestData().valid_pkts[0]
+
+    reader = Reader(fobj)
+    assert 1 == reader.dispatch(0, callback)
+
+@pre_test
+def test_loop():
+    fobj.write(TestData().valid_pcapng)
+    fobj.flush()
+    fobj.seek(0)
+
+    def callback(timestamp, pkt, *args):
+        assert (timestamp, pkt) == TestData().valid_pkts[0]
+
+    reader = Reader(fobj)
+    reader.loop(callback)
+
+def test_idb_opt_err():
+    """ Test that options end with opt_endofopt """
+    idb = TestData().valid_idb
+    del idb.opts[-1]
+    try:
+        bytes(idb)
+    except Exception as e:
+        assert isinstance(e, dpkt.PackError)
+        assert str(e) == 'options must end with opt_endofopt'
+
+def test_custom_read_write():
+    """Test a full pcapng file with 1 ICMP packet"""
+    buf = TestData().valid_pcapng
+    fobj = BytesIO(buf)
+
+    # test reading
+    reader = Reader(fobj)
+    assert reader.snaplen == 0x40000
+    assert reader.datalink() == DLT_EN10MB
+
+    assert reader.idb.opts[0].data.decode('utf-8') == '\\Device\\NPF_{3BBF21A7-91AE-4DDB-AB2C-C782999C22D5}'
+    assert reader.idb.opts[2].data.decode('utf-8') == '64-bit Windows 8.1, build 9600'
+
+    ts, buf1 = next(iter(reader))
+    assert ts == 1442984653.2108380
+    assert len(buf1) == 74
+
+    assert buf1.startswith(b'\x08\x00\x27\x96')
+    assert buf1.endswith(b'FGHI')
+    fobj.close()
+
+    # test pcapng customized writing
+    shb = TestData().valid_shb
+    idb = TestData().valid_idb
+    epb = TestData().valid_epb
+
+    fobj = BytesIO()
+    writer = Writer(fobj, shb=shb, idb=idb)
+    writer.writepkt(epb, ts=1442984653.210838)
+    assert fobj.getvalue() == buf
+    fobj.close()
+
+    # same with timestamps defined inside EPB
+    epb.ts_high = 335971
+    epb.ts_low = 195806422
+
+    fobj = BytesIO()
+    writer = Writer(fobj, shb=shb, idb=idb)
+    writer.writepkt(epb)
+    assert fobj.getvalue() == buf
+    fobj.close()
 
 @WriterTestWrap()
 def test_writepkt_no_time():
@@ -902,6 +1081,19 @@ if __name__ == '__main__':
     test_epb()
     test_simple_write_read()
     test_custom_read_write()
+    test_pcapng_header()
+    test_shb_header()
+    test_shb_bom()
+    test_shb_version()
+    test_no_idb()
+    test_idb_opt_offset()
+    test_idb_opt_err()
+    test_idb_linktype()
+    test_filter()
+    test_readpkts()
+    test_next()
+    test_dispatch()
+    test_loop()
     test_writepkt_snaplen()
     test_writepkt_no_time()
     test_writepkt_with_time()
