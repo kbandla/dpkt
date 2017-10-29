@@ -675,13 +675,19 @@ def test_pcapng_header():
 
 class TestData:
     def __init__(self):
-        self.valid_shb = SectionHeaderBlockLE(opts=[
+        self.valid_shb_le = SectionHeaderBlockLE(opts=[
             PcapngOptionLE(code=3, data=b'64-bit Windows 8.1, build 9600'),
             PcapngOptionLE(code=4, data=b'Dumpcap 1.12.7 (v1.12.7-0-g7fc8978 from master-1.12)'),
             PcapngOptionLE()
         ])
 
-        self.valid_idb = InterfaceDescriptionBlockLE(snaplen=0x40000, opts=[
+        self.valid_shb_be = SectionHeaderBlock(opts=[
+            PcapngOption(code=3, data=b'64-bit Windows 8.1, build 9600'),
+            PcapngOption(code=4, data=b'Dumpcap 1.12.7 (v1.12.7-0-g7fc8978 from master-1.12)'),
+            PcapngOption()
+        ])
+
+        self.valid_idb_le = InterfaceDescriptionBlockLE(snaplen=0x40000, opts=[
             PcapngOptionLE(code=2, data=b'\\Device\\NPF_{3BBF21A7-91AE-4DDB-AB2C-C782999C22D5}'),
             PcapngOptionLE(code=9, data=b'\x06'),
             PcapngOptionLE(code=12, data=b'64-bit Windows 8.1, build 9600'),
@@ -713,7 +719,7 @@ class TestData:
             (1442984653.210838, b"\x08\x00'\x96\xcb|RT\x00\x125\x02\x08\x00E\x00\x00<\xa4@\x00\x00\x1f\x01'\xa2\xc0\xa8\x03(\n\x00\x02\x0f\x00\x00V\xf0\x00\x01\x00mABCDEFGHIJKLMNOPQRSTUVWABCDEFGHI")
         ]
 
-        self.valid_epb = EnhancedPacketBlockLE(opts=[
+        self.valid_epb_le = EnhancedPacketBlockLE(opts=[
             PcapngOptionLE(code=1, text=b'dpkt is awesome'),
             PcapngOptionLE()
         ], pkt_data=(
@@ -751,6 +757,8 @@ class WriterTestWrap:
             from .compat import BytesIO
             for little_endian in [True, False]:
                 fobj = BytesIO()
+                _sysle = Writer._Writer__le
+                Writer._Writer__le = little_endian
                 f.__globals__['writer'] = Writer(fobj, **self.kwargs.get('writer', {}))
                 f.__globals__['fobj'] = fobj
                 pkts = f(*args, **kwargs)
@@ -763,6 +771,7 @@ class WriterTestWrap:
                     assert pkt_out == pkt_in
 
                 writer.close()
+                Writer._Writer__le = _sysle
                 del f.__globals__['writer']
                 del f.__globals__['fobj']
         return wrapper
@@ -804,21 +813,21 @@ class PostTest:
 @PostTest(test='assertion', type=ValueError, msg='invalid pcapng header: not a SHB')
 @pre_test
 def test_shb_header():
-    shb = TestData().valid_shb
+    shb = TestData().valid_shb_le
     shb.type = 123456666
     fobj.write(bytes(shb))
 
 @PostTest(test='assertion', type=ValueError, msg='unknown endianness')
 @pre_test
 def test_shb_bom():
-    shb = TestData().valid_shb
+    shb = TestData().valid_shb_le
     shb.bom = 12345666
     fobj.write(bytes(shb))
 
 @PostTest(test='assertion', type=ValueError, msg='unknown pcapng version 123.45')
 @pre_test
 def test_shb_version():
-    shb = TestData().valid_shb
+    shb = TestData().valid_shb_le
     shb.v_major = 123
     shb.v_minor = 45
     fobj.write(bytes(shb))
@@ -826,15 +835,15 @@ def test_shb_version():
 @PostTest(test='assertion', type=ValueError, msg='IDB not found')
 @pre_test
 def test_no_idb():
-    shb = TestData().valid_shb
+    shb = TestData().valid_shb_le
     fobj.write(bytes(shb)+b'aaaa')
 
 @PostTest(test='compare_property', property='idb')
 @pre_test
 def test_idb_opt_offset():
     """ Test that the timestamp offset is correctly written and read """
-    shb = TestData().valid_shb
-    idb = TestData().valid_idb
+    shb = TestData().valid_shb_le
+    idb = TestData().valid_idb_le
     idb.opts.insert(0, PcapngOptionLE(
         code=PCAPNG_OPT_IF_TSOFFSET,
         data=struct_pack('<q', 123456666))
@@ -846,11 +855,17 @@ def test_idb_opt_offset():
 @pre_test
 def test_idb_linktype():
     """ Test that if the idb.linktype is not in dloff, dloff is set to 0 """
-    shb = TestData().valid_shb
-    idb = TestData().valid_idb
+    shb = TestData().valid_shb_le
+    idb = TestData().valid_idb_le
     idb.linktype = 3456
     fobj.write(bytes(shb)+bytes(idb))
     return 0
+
+def test_repr():
+    """ check the __repr__ method for Packet subclass """
+    real = repr(TestData().valid_shb_le)
+    comp = "SectionHeaderBlockLE(opts=[PcapngOptionLE(code=3, data=b'64-bit Windows 8.1, build 9600'), PcapngOptionLE(code=4, data=b'Dumpcap 1.12.7 (v1.12.7-0-g7fc8978 from master-1.12)'), PcapngOptionLE(opt_endofopt)])"
+    assert real == comp
 
 @pre_test
 def test_filter():
@@ -902,7 +917,7 @@ def test_loop():
 
 def test_idb_opt_err():
     """ Test that options end with opt_endofopt """
-    idb = TestData().valid_idb
+    idb = TestData().valid_idb_le
     del idb.opts[-1]
     try:
         bytes(idb)
@@ -932,9 +947,9 @@ def test_custom_read_write():
     fobj.close()
 
     # test pcapng customized writing
-    shb = TestData().valid_shb
-    idb = TestData().valid_idb
-    epb = TestData().valid_epb
+    shb = TestData().valid_shb_le
+    idb = TestData().valid_idb_le
+    epb = TestData().valid_epb_le
 
     fobj = BytesIO()
     writer = Writer(fobj, shb=shb, idb=idb)
@@ -951,6 +966,49 @@ def test_custom_read_write():
     writer.writepkt(epb)
     assert fobj.getvalue() == buf
     fobj.close()
+
+@pre_test
+def test_writer_validate_instance():
+    """ System endianness and shb endianness should match"""
+    shb = 10
+
+    try:
+        writer = Writer(fobj, shb=shb)
+    except Exception as e:
+        assert isinstance(e, ValueError)
+        assert str(e) == 'shb: expecting class SectionHeaderBlock'
+
+@pre_test
+def test_writer_validate_le():
+    """ System endianness and shb endianness should match"""
+    shb = TestData().valid_shb_be
+    _sysle = Writer._Writer__le
+
+    Writer._Writer__le = True
+
+    try:
+        writer = Writer(fobj, shb=shb)
+    except Exception as e:
+        assert isinstance(e, ValueError)
+        assert str(e) == 'shb: expecting class SectionHeaderBlockLE on a little-endian system'
+
+    Writer._Writer__le = _sysle
+
+@pre_test
+def test_writer_validate_be():
+    """ System endianness and shb endianness should match"""
+    shb = TestData().valid_shb_le
+    _sysle = Writer._Writer__le
+
+    Writer._Writer__le = False
+
+    try:
+        writer = Writer(fobj, shb=shb)
+    except Exception as e:
+        assert isinstance(e, ValueError)
+        assert str(e) == 'shb: expecting class SectionHeaderBlock on a big-endian system'
+
+    Writer._Writer__le = _sysle
 
 @WriterTestWrap()
 def test_writepkt_no_time():
