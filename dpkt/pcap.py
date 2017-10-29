@@ -391,7 +391,7 @@ class PostTest:
                     assert isinstance(e, self.kwargs['type'])
                     assert str(e) == self.kwargs['msg']
                 else:
-                    assert False, "An exception should have been thrown here"
+                    raise Exception("An exception should have been thrown here")
 
             elif test_type == 'compare_property':
                 assert ret is not None, "You must return something to compare"
@@ -569,7 +569,7 @@ def test_reader_file_descriptor():
         assert reader.fileno() == fobj.fileno()
 
 def test_posttest():
-    """ Check that PostTest wrapper doesn't fail silently """
+    """ Check that PostTest wrapper doesn't fail silently if there is no test type """
     @PostTest()
     @pre_test
     def fun():
@@ -582,6 +582,8 @@ def test_posttest():
     else:
         assert False, "An exception should have been thrown here"
 
+def test_posttest_assertion():
+    """ Check PostTest doesn't fail silently if no exceptions are thrown """
     @PostTest(test='assertion')
     @pre_test
     def fun():
@@ -589,7 +591,7 @@ def test_posttest():
 
     try:
         a = fun()
-    except AssertionError as e:
+    except Exception as e:
         assert str(e) == 'An exception should have been thrown here'
     else:
         assert False, "An exception should have been thrown here"
