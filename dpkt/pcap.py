@@ -319,6 +319,7 @@ class Reader(object):
             yield (hdr.tv_sec + (hdr.tv_usec / self._divisor), buf)
 
 
+#### TESTS
 def test_pcap_endian():
     be = b'\xa1\xb2\xc3\xd4\x00\x02\x00\x04\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x60\x00\x00\x00\x01'
     le = b'\xd4\xc3\xb2\xa1\x02\x00\x04\x00\x00\x00\x00\x00\x00\x00\x00\x00\x60\x00\x00\x00\x01\x00\x00\x00'
@@ -364,40 +365,75 @@ def test_reader():
     assert reader.dispatch(1, lambda ts, pkt: None) == 0
 
 
-def test_writer_precision():
-    data = b'foo'
-    from .compat import BytesIO
+class WriterTestWrap:
+    """
+    Decorate a writer test function with an instance of this class.
 
-    # default precision
-    fobj = BytesIO()
-    writer = Writer(fobj)
-    writer.writepkt(data, ts=1454725786.526401)
-    fobj.flush()
-    fobj.seek(0)
+    The test will be provided with a writer object, which it shoud write some pkts to.
 
-    reader = Reader(fobj)
-    ts, buf1 = next(iter(reader))
-    assert ts == 1454725786.526401
-    assert buf1 == b'foo'
+    After the test has run, the BytesIO object will be passed to a Reader, which will compare each pkt to the return value of the test.
+    """
+    def __init__(self, *args, **kwargs):
+        self.args = args
+        self.kwargs = kwargs
 
-    # nano precision
-    from decimal import Decimal
+    def __call__(self, f, *args, **kwargs):
+        def wrapper(*args, **kwargs):
+            from .compat import BytesIO
+            for little_endian in [True, False]:
+                fobj = BytesIO()
+                _sysle = Writer._Writer__le
+                Writer._Writer__le = little_endian
+                f.__globals__['writer'] = Writer(fobj, **self.kwargs.get('writer', {}))
+                f.__globals__['fobj'] = fobj
+                pkts = f(*args, **kwargs)
+                fobj.flush()
+                fobj.seek(0)
 
-    fobj = BytesIO()
-    writer = Writer(fobj, nano=True)
-    writer.writepkt(data, ts=Decimal('1454725786.010203045'))
-    fobj.flush()
-    fobj.seek(0)
+                assert pkts
+                for (ts_out, pkt_out), (ts_in, pkt_in) in zip(pkts, iter(Reader(fobj))):
+                    assert ts_out == ts_in
+                    assert pkt_out == pkt_in
+                writer.close()
+                Writer._Writer__le = _sysle
+        return wrapper
 
-    reader = Reader(fobj)
-    ts, buf1 = next(iter(reader))
-    assert ts == Decimal('1454725786.010203045')
-    assert buf1 == b'foo'
+@WriterTestWrap()
+def test_writer_precision_normal():
+    ts, pkt = 1454725786.526401, b'foo'
+    writer.writepkt(pkt, ts=ts)
+    return [(ts, pkt)]
 
+@WriterTestWrap(writer={'nano': True})
+def test_writer_precision_nano():
+    ts, pkt = Decimal('1454725786.010203045'), b'foo'
+    writer.writepkt(pkt, ts=ts)
+    return [(ts, pkt)]
 
-if __name__ == '__main__':
-    test_pcap_endian()
-    test_reader()
-    test_writer_precision()
+@WriterTestWrap(writer={'nano': False})
+def test_writer_precision_nano_fail():
+    """ if writer is not set to nano, supplying this timestamp should be truncated """
+    ts, pkt = (Decimal('1454725786.010203045'), b'foo')
+    writer.writepkt(pkt, ts=ts)
+    return [(1454725786.010203, pkt)]
 
-    print('Tests Successful...')
+@WriterTestWrap()
+def test_writepkt_no_time():
+    ts, pkt = 1454725786.526401, b'foooo'
+    _tmp = time.time
+    time.time = lambda: ts
+    writer.writepkt(pkt)
+    time.time = _tmp
+    return [(ts, pkt)]
+
+@WriterTestWrap(writer={'snaplen': 10})
+def test_writepkt_snaplen():
+    ts, pkt = 1454725786.526401, b'foooo'
+    writer.writepkt(pkt, ts)
+    return [(ts, pkt)]
+
+@WriterTestWrap()
+def test_writepkt_with_time():
+    ts, pkt = 1454725786.526401, b'foooo'
+    writer.writepkt(pkt, ts)
+    return [(ts, pkt)]
