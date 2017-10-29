@@ -542,7 +542,7 @@ class Reader(object):
         return self.idb.linktype
 
     def setfilter(self, value, optimize=1):
-        return NotImplementedError
+        raise NotImplementedError
 
     def readpkts(self):
         return list(self)
