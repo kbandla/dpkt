@@ -984,6 +984,23 @@ def test_writer_validate_instance():
         assert str(e) == 'shb: expecting class SectionHeaderBlock'
 
 @pre_test
+def test_writepkt_epb_ts():
+    """ writepkt should assign ts_high/low for epb if they are 0 """
+    global time
+    shb, idb, epb = TestData().shb_idb_epb_le
+    writer = Writer(fobj, shb=shb, idb=idb)
+    epb.ts_high = epb.ts_low = 0
+    ts = 1454725786.526401
+    _time = time
+    time = lambda: ts
+    writer.writepkt(epb)
+    time = _time
+
+    ts_high, ts_low = 338704, 3183502017
+    assert epb.ts_high == ts_high
+    assert epb.ts_low == ts_low
+
+@pre_test
 def test_writer_validate_le():
     """ System endianness and shb endianness should match"""
     shb = TestData().valid_shb_be
