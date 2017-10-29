@@ -271,7 +271,7 @@ class Reader(object):
         return self.__fh.linktype
 
     def setfilter(self, value, optimize=1):
-        return NotImplementedError
+        raise NotImplementedError
 
     def readpkts(self):
         return list(self)
