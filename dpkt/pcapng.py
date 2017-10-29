@@ -892,12 +892,10 @@ def test_repr():
     """
     real = repr(TestData().valid_shb_le)
 
-    if sys.version_info < (3,):
-        comp = "SectionHeaderBlockLE(opts=[PcapngOptionLE(code=3, data='64-bit Windows 8.1, build 9600'), PcapngOptionLE(code=4, data='Dumpcap 1.12.7 (v1.12.7-0-g7fc8978 from master-1.12)'), PcapngOptionLE(opt_endofopt)])"
-    else:
-        comp = "SectionHeaderBlockLE(opts=[PcapngOptionLE(code=3, data=b'64-bit Windows 8.1, build 9600'), PcapngOptionLE(code=4, data=b'Dumpcap 1.12.7 (v1.12.7-0-g7fc8978 from master-1.12)'), PcapngOptionLE(opt_endofopt)])"
+    python2 = "SectionHeaderBlockLE(opts=[PcapngOptionLE(code=3, data='64-bit Windows 8.1, build 9600'), PcapngOptionLE(code=4, data='Dumpcap 1.12.7 (v1.12.7-0-g7fc8978 from master-1.12)'), PcapngOptionLE(opt_endofopt)])"
+    python3 = "SectionHeaderBlockLE(opts=[PcapngOptionLE(code=3, data=b'64-bit Windows 8.1, build 9600'), PcapngOptionLE(code=4, data=b'Dumpcap 1.12.7 (v1.12.7-0-g7fc8978 from master-1.12)'), PcapngOptionLE(opt_endofopt)])"
 
-    assert real == comp
+    assert real in [python2, python3]
 
 @pre_test
 def test_filter():
