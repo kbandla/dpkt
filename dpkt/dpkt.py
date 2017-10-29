@@ -216,3 +216,22 @@ def test_utils():
     assert (h == __hd)
     c = in_cksum(__buf)
     assert (c == 51150)
+
+def test_getitem():
+    """ create a Packet subclass and access its properties """ 
+    class Foo(Packet):
+        __hdr__ = (
+            ('foo', 'I', 1), 
+            ('bar', 'H', 2), 
+        )
+
+    foo = Foo(foo=2, bar=3)
+    assert foo.foo == 2
+    assert foo['foo'] == 2
+    assert foo.bar == 3
+    assert foo['bar'] == 3
+
+    try:
+        foo['grill']
+    except Exception as e:
+        assert isinstance(e, KeyError)
