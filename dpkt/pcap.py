@@ -382,14 +382,14 @@ class PostTest:
             fobj = f.__globals__['fobj']
             test_type = self.kwargs.get('test')
             if test_type == 'assertion':
-                isexception = False
                 try:
                     Reader(fobj)
                 except Exception as e:
                     isexception = True
                     assert isinstance(e, self.kwargs['type'])
                     assert str(e) == self.kwargs['msg']
-                assert isexception, "No assertion raised!"
+                else:
+                    assert False, "An exception should have been thrown here"
 
             elif test_type == 'compare_property':
                 prop = self.kwargs['property']
@@ -556,3 +556,5 @@ def test_posttest():
         a = fun()
     except Exception as e:
         assert str(e) == 'No test type specified' 
+    else:
+        assert False, "An exception should have been thrown here"
