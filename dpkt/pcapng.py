@@ -869,9 +869,17 @@ def test_idb_linktype():
     return 0
 
 def test_repr():
-    """ check the __repr__ method for Packet subclass """
+    """ check the __repr__ method for Packet subclass.
+    
+    The __repr__ method currently includes the b'' in the string. This means that python2 and python3 will differ.
+    """
     real = repr(TestData().valid_shb_le)
-    comp = "SectionHeaderBlockLE(opts=[PcapngOptionLE(code=3, data=b'64-bit Windows 8.1, build 9600'), PcapngOptionLE(code=4, data=b'Dumpcap 1.12.7 (v1.12.7-0-g7fc8978 from master-1.12)'), PcapngOptionLE(opt_endofopt)])"
+
+    if sys.version_info < (3,):
+        comp = "SectionHeaderBlockLE(opts=[PcapngOptionLE(code=3, data='64-bit Windows 8.1, build 9600'), PcapngOptionLE(code=4, data='Dumpcap 1.12.7 (v1.12.7-0-g7fc8978 from master-1.12)'), PcapngOptionLE(opt_endofopt)])"
+    else:
+        comp = "SectionHeaderBlockLE(opts=[PcapngOptionLE(code=3, data=b'64-bit Windows 8.1, build 9600'), PcapngOptionLE(code=4, data=b'Dumpcap 1.12.7 (v1.12.7-0-g7fc8978 from master-1.12)'), PcapngOptionLE(opt_endofopt)])"
+
     assert real == comp
 
 @pre_test
