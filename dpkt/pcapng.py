@@ -1061,3 +1061,11 @@ def test_writepkt_with_time():
     ts, pkt = 1454725786.526401, b'foooo'
     writer.writepkt(pkt, ts)
     return [(ts, pkt)]
+
+def test_pcapng_block_unpack():
+    block = _PcapngBlock()
+    buf = b'012345678901'
+    try:
+        block.unpack(buf)
+    except Exception as e:
+        assert isinstance(e, dpkt.NeedData)
