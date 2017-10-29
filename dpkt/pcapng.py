@@ -793,7 +793,7 @@ class PostTest:
         def wrapper(*args, **kwargs):
             ret = f(*args, **kwargs)
             fobj = f.__globals__['fobj']
-            test_type = self.kwargs['test']
+            test_type = self.kwargs.get('test')
             if test_type == 'assertion':
                 isexception = False
                 try:
@@ -1074,3 +1074,15 @@ def test_pcapng_block_len_no_opts():
     """ _PcapngBlock should return its own header __len__ if it has no opts """
     block = _PcapngBlock()
     assert len(block) == 12
+
+def test_posttest():
+    """ Check that PostTest wrapper doesn't fail silently """
+    @PostTest()
+    @pre_test
+    def fun():
+        pass
+
+    try:
+        a = fun()
+    except Exception as e:
+        assert str(e) == 'No test type specified' 
