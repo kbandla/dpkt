@@ -1031,31 +1031,3 @@ def test_writepkt_with_time():
     ts, pkt = 1454725786.526401, b'foooo'
     writer.writepkt(pkt, ts)
     return [(ts, pkt)]
-
-if __name__ == '__main__':
-    # TODO: big endian unit tests; could not find any examples..
-
-    test_shb()
-    test_idb()
-    test_epb()
-    test_simple_write_read()
-    test_custom_read_write()
-    test_pcapng_header()
-    test_shb_header()
-    test_shb_bom()
-    test_shb_version()
-    test_no_idb()
-    test_idb_opt_offset()
-    test_idb_opt_err()
-    test_idb_linktype()
-    test_filter()
-    test_readpkts()
-    test_next()
-    test_dispatch()
-    test_loop()
-    test_writepkt_snaplen()
-    test_writepkt_no_time()
-    test_writepkt_with_time()
-    repr(PcapngOptionLE())
-
-    print('Tests Successful...')
