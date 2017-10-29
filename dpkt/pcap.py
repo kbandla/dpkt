@@ -332,6 +332,8 @@ class TestData:
         self.valid_pkts = [
             (1112172466.496046, b'\x00\xc0\x9f2A\x8c\x00\xe0\x18\xb1\x0c\xad\x08\x00E\x00\x008\x00\x00@\x00@\x11eG\xc0\xa8\xaa\x08\xc0\xa8\xaa\x14\x80\x1b\x005\x00$\x85\xed')
         ]
+        self.valid_filehdr_le = b'\xd4\xc3\xb2\xa1\x02\x00\x04\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff\x00\x00\x01\x00\x00\x00'
+
 def test_pcap_endian():
     be = b'\xa1\xb2\xc3\xd4\x00\x02\x00\x04\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x60\x00\x00\x00\x01'
     le = b'\xd4\xc3\xb2\xa1\x02\x00\x04\x00\x00\x00\x00\x00\x00\x00\x00\x00\x60\x00\x00\x00\x01\x00\x00\x00'
@@ -392,16 +394,18 @@ class PostTest:
                     assert False, "An exception should have been thrown here"
 
             elif test_type == 'compare_property':
+                assert ret is not None, "You must return something to compare"
                 prop = self.kwargs['property']
                 reader = Reader(fobj)
                 assert bytes(ret) == bytes(getattr(reader, prop))
             elif test_type == 'compare_method':
+                assert ret is not None, "You must return something to compare"
                 method = self.kwargs['method']
                 reader = Reader(fobj)
                 comp = getattr(reader, method)()
                 assert comp == ret
             else:
-                raise Exception("No test type specified")
+                raise Exception("No valid test type specified")
         return wrapper
 
 def pre_test(f):
@@ -489,6 +493,25 @@ def test_writepkt_with_time():
     writer.writepkt(pkt, ts)
     return [(ts, pkt)]
 
+@PostTest(test='assertion', type=ValueError, msg='invalid tcpdump header')
+@pre_test
+def test_magic():
+    """ check that a valueerror is thrown if the fileheader contains invalid magic (illusion?) """
+    fh = FileHdr(TestData().valid_filehdr_le)
+    fh.magic = 12345666
+
+    fobj.write(bytes(fh))
+
+@PostTest(test='compare_property', property='dloff')
+@pre_test
+def test_linktype():
+    """ If linktype is not recognised, use 0 """
+    fh = FileHdr(TestData().valid_filehdr_le)
+    fh.linktype = 12345666
+
+    fobj.write(bytes(fh))
+    return 0
+    
 @pre_test
 def test_filter():
     buf = TestData().valid_pcap
@@ -555,6 +578,18 @@ def test_posttest():
     try:
         a = fun()
     except Exception as e:
-        assert str(e) == 'No test type specified' 
+        assert str(e) == 'No valid test type specified'
+    else:
+        assert False, "An exception should have been thrown here"
+
+    @PostTest(test='assertion')
+    @pre_test
+    def fun():
+        fobj.write(TestData().valid_pcap)
+
+    try:
+        a = fun()
+    except AssertionError as e:
+        assert str(e) == 'An exception should have been thrown here'
     else:
         assert False, "An exception should have been thrown here"
