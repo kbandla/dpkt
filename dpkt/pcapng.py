@@ -304,6 +304,8 @@ class Writer(object):
 
     """Simple pcapng dumpfile writer."""
 
+    __le = sys.byteorder == 'little'
+
     def __init__(self, fileobj, snaplen=1500, linktype=DLT_EN10MB, shb=None, idb=None):
         """
         Create a pcapng dumpfile writer for the given fileobj.
@@ -312,7 +314,6 @@ class Writer(object):
         idb can be an instance of InterfaceDescriptionBlock(LE)
         """
         self.__f = fileobj
-        self.__le = sys.byteorder == 'little'
 
         if shb:
             self._validate_block('shb', shb, SectionHeaderBlock)
