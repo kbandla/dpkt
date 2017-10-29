@@ -320,6 +320,18 @@ class Reader(object):
 
 
 #### TESTS
+class TestData:
+    def __init__(self):
+        # full libpcap file with one packet
+        self.valid_pcap = (
+            b'\xd4\xc3\xb2\xa1\x02\x00\x04\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff\x00\x00\x01\x00\x00\x00'
+            b'\xb2\x67\x4a\x42\xae\x91\x07\x00\x46\x00\x00\x00\x46\x00\x00\x00\x00\xc0\x9f\x32\x41\x8c\x00\xe0'
+            b'\x18\xb1\x0c\xad\x08\x00\x45\x00\x00\x38\x00\x00\x40\x00\x40\x11\x65\x47\xc0\xa8\xaa\x08\xc0\xa8'
+            b'\xaa\x14\x80\x1b\x00\x35\x00\x24\x85\xed'
+        )
+        self.valid_pkts = [
+            (1112172466.496046, b'\x00\xc0\x9f2A\x8c\x00\xe0\x18\xb1\x0c\xad\x08\x00E\x00\x008\x00\x00@\x00@\x11eG\xc0\xa8\xaa\x08\xc0\xa8\xaa\x14\x80\x1b\x005\x00$\x85\xed')
+        ]
 def test_pcap_endian():
     be = b'\xa1\xb2\xc3\xd4\x00\x02\x00\x04\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x60\x00\x00\x00\x01'
     le = b'\xd4\xc3\xb2\xa1\x02\x00\x04\x00\x00\x00\x00\x00\x00\x00\x00\x00\x60\x00\x00\x00\x01\x00\x00\x00'
@@ -329,16 +341,10 @@ def test_pcap_endian():
 
 
 def test_reader():
-    data = (  # full libpcap file with one packet
-        b'\xd4\xc3\xb2\xa1\x02\x00\x04\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff\x00\x00\x01\x00\x00\x00'
-        b'\xb2\x67\x4a\x42\xae\x91\x07\x00\x46\x00\x00\x00\x46\x00\x00\x00\x00\xc0\x9f\x32\x41\x8c\x00\xe0'
-        b'\x18\xb1\x0c\xad\x08\x00\x45\x00\x00\x38\x00\x00\x40\x00\x40\x11\x65\x47\xc0\xa8\xaa\x08\xc0\xa8'
-        b'\xaa\x14\x80\x1b\x00\x35\x00\x24\x85\xed'
-    )
 
     # --- BytesIO tests ---
     from .compat import BytesIO
-
+    data = TestData().valid_pcap
     # BytesIO
     fobj = BytesIO(data)
     reader = Reader(fobj)
@@ -364,6 +370,51 @@ def test_reader():
     assert reader.dispatch(1, lambda ts, pkt: None) == 1
     assert reader.dispatch(1, lambda ts, pkt: None) == 0
 
+
+class PostTest:
+    def __init__(self, *args, **kwargs):
+        self.args = args
+        self.kwargs = kwargs
+
+    def __call__(self, f, *args, **kwargs):
+        def wrapper(*args, **kwargs):
+            ret = f(*args, **kwargs)
+            fobj = f.__globals__['fobj']
+            test_type = self.kwargs.get('test')
+            if test_type == 'assertion':
+                isexception = False
+                try:
+                    Reader(fobj)
+                except Exception as e:
+                    isexception = True
+                    assert isinstance(e, self.kwargs['type'])
+                    assert str(e) == self.kwargs['msg']
+                assert isexception, "No assertion raised!"
+
+            elif test_type == 'compare_property':
+                prop = self.kwargs['property']
+                reader = Reader(fobj)
+                assert bytes(ret) == bytes(getattr(reader, prop))
+            elif test_type == 'compare_method':
+                method = self.kwargs['method']
+                reader = Reader(fobj)
+                comp = getattr(reader, method)()
+                assert comp == ret
+            else:
+                raise Exception("No test type specified")
+        return wrapper
+
+def pre_test(f):
+    from .compat import BytesIO
+    def wrapper(*args, **kwargs):
+        fobj = BytesIO()
+        f.__globals__['fobj'] = fobj
+        ret = f(*args, **kwargs)
+        fobj.flush()
+        fobj.seek(0)
+
+        return ret
+    return wrapper
 
 class WriterTestWrap:
     """
@@ -437,3 +488,47 @@ def test_writepkt_with_time():
     ts, pkt = 1454725786.526401, b'foooo'
     writer.writepkt(pkt, ts)
     return [(ts, pkt)]
+
+@pre_test
+def test_filter():
+    buf = TestData().valid_pcap
+    fobj.write(buf)
+    fobj.flush()
+    fobj.seek(0)
+    reader = Reader(fobj)
+    try:
+        reader.setfilter(None, None)
+    except Exception as e:
+        assert isinstance(e, NotImplementedError)
+    else:
+        assert False, "An exception should have been thrown here"
+
+@PostTest(test='compare_method', method='readpkts')
+@pre_test
+def test_readpkts():
+    fobj.write(TestData().valid_pcap)
+    return TestData().valid_pkts
+
+@pre_test
+def test_dispatch():
+    fobj.write(TestData().valid_pcap)
+    fobj.flush()
+    fobj.seek(0)
+
+    def callback(timestamp, pkt, *args):
+        assert (timestamp, pkt) == TestData().valid_pkts[0]
+
+    reader = Reader(fobj)
+    assert 1 == reader.dispatch(0, callback)
+
+@pre_test
+def test_loop():
+    fobj.write(TestData().valid_pcap)
+    fobj.flush()
+    fobj.seek(0)
+
+    def callback(timestamp, pkt, *args):
+        assert (timestamp, pkt) == TestData().valid_pkts[0]
+
+    reader = Reader(fobj)
+    reader.loop(callback)
