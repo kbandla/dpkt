@@ -729,6 +729,13 @@ class TestData:
             b'\x42\x43\x44\x45\x46\x47\x48\x49'
         ))
 
+    @property
+    def shb_idb_epb_le(self):
+        return self.valid_shb_le, self.valid_idb_le, self.valid_epb_le
+
+    @property
+    def shb_idb_epb_be(self):
+        return self.valid_shb_be, self.valid_idb_be, self.valid_epb_be
 def pre_test(f):
     def wrapper(*args, **kwargs):
         fobj = BytesIO()
@@ -947,9 +954,7 @@ def test_custom_read_write():
     fobj.close()
 
     # test pcapng customized writing
-    shb = TestData().valid_shb_le
-    idb = TestData().valid_idb_le
-    epb = TestData().valid_epb_le
+    shb, idb, epb = TestData().shb_idb_epb_le
 
     fobj = BytesIO()
     writer = Writer(fobj, shb=shb, idb=idb)
