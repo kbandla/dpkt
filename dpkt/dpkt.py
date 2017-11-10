@@ -222,3 +222,50 @@ def test_utils():
     assert (h == __hd)
     c = in_cksum(__buf)
     assert (c == 51150)
+
+def test_getitem():
+    """ create a Packet subclass and access its properties """
+    class Foo(Packet):
+        __hdr__ = (
+            ('foo', 'I', 1),
+            ('bar', 'H', 2),
+        )
+
+    foo = Foo(foo=2, bar=3)
+    assert foo.foo == 2
+    assert foo['foo'] == 2
+    assert foo.bar == 3
+    assert foo['bar'] == 3
+
+    try:
+        foo['grill']
+    except Exception as e:
+        assert isinstance(e, KeyError)
+
+def test_pack_hdr_overflow():
+    """ Try to fit too much data into struct packing """
+    class Foo(Packet):
+        __hdr__ = (
+            ('foo', 'I', 1),
+            ('bar', 'I', (1, 2)),
+        )
+
+    foo = Foo(foo=2**32)
+    try:
+        bytes(foo)
+    except PackError:
+        pass
+    else:
+        assert False, "There should have been an exception raised"
+
+def test_pack_hdr_tuple():
+    """ Test the unpacking of a tuple for a single format string """
+    class Foo(Packet):
+        __hdr__ = (
+            ('bar', 'II', (1, 2)),
+        )
+
+    foo = Foo()
+    b = bytes(foo)
+    assert b == b'\x00\x00\x00\x01\x00\x00\x00\x02'
+
