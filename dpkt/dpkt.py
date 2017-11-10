@@ -154,7 +154,7 @@ class Packet(_MetaPacket("Temp", (object,), {})):
             return self._pack_hdr(
               *[getattr(self, k) for k in self.__hdr_fields__]
             )
-        except struct.error:
+        except (TypeError, struct.error):
             vals = []
             for k in self.__hdr_fields__:
                 v = getattr(self, k)
