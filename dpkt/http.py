@@ -3,14 +3,8 @@
 """Hypertext Transfer Protocol."""
 from __future__ import print_function
 from __future__ import absolute_import
-try:
-    from collections import OrderedDict
-except ImportError:
-    # Python 2.6
-    OrderedDict = dict
-
 from . import dpkt
-from .compat import BytesIO, iteritems
+from .compat import BytesIO, iteritems, OrderedDict
 
 
 def parse_headers(f):
@@ -30,6 +24,7 @@ def parse_headers(f):
         l = line.split(':', 1)
         if len(l[0].split()) != 1:
             raise dpkt.UnpackError('invalid header: %r' % line)
+
         k = l[0].lower()
         v = len(l) != 1 and l[1].lstrip() or ''
         if k in d:

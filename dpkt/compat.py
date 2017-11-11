@@ -9,6 +9,12 @@ else:
         return char
 
 try:
+    from collections import OrderedDict
+except ImportError:
+    # Python 2.6
+    OrderedDict = dict
+
+try:
     from itertools import izip
     compat_izip = izip
 except ImportError:
