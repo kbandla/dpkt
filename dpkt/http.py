@@ -443,7 +443,8 @@ def test_premature_end():
         b"HTTP/1.1 200 OK\r\n"
         b"Transfer-Encoding: chunked\r\n"
         b"\r\n"
-        b"a\r\n"
+        b"2\r\n"
+        b"abcd"
     )
     r = Response(s)
 
