@@ -256,6 +256,7 @@ class PostTest:
                 assert isexception, "No assertion raised!"
 
             else:
+                ret = f(*args, **kwargs)
                 raise Exception("No test type specified")
         return wrapper
 
