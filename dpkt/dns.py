@@ -541,3 +541,142 @@ def test_txt_response():
     assert my_rr.text == ['v=spf1 ptr ?all']
     assert str(my_dns) == str(buf)
     assert bytes(my_dns) == buf
+
+def test_rdata_rdata():
+    rr = DNS.RR(
+        name='zc.akadns.org',
+        ttl=123446,
+        rdata=b'?\xf1\xc76',
+    )
+    packdata = rr.pack_rdata(0, {})
+    correct = b'?\xf1\xc76'
+    assert packdata == correct
+
+def test_rdata_A():
+    rr = DNS.RR(
+        name='zc.akadns.org',
+        ttl=123446,
+        ip=b'?\xf1\xc76',
+        type=DNS_A,
+    )
+    packdata = rr.pack_rdata(0, {})
+    correct = b'?\xf1\xc76'
+    assert packdata == correct
+
+def test_rdata_NS():
+    rr = DNS.RR(
+        nsname='zc.akadns.org',
+        ttl=123446,
+        ip=b'?\xf1\xc76',
+        type=DNS_NS,
+    )
+    packdata = rr.pack_rdata(0, {})
+    correct = b'\x02zc\x06akadns\x03org\x00'
+    assert packdata == correct
+
+def test_rdata_CNAME():
+    rr = DNS.RR(
+        cname='zc.akadns.org',
+        ttl=123446,
+        ip=b'?\xf1\xc76',
+        type=DNS_CNAME,
+    )
+    packdata = rr.pack_rdata(0, {})
+    correct = b'\x02zc\x06akadns\x03org\x00'
+    assert packdata == correct
+
+def test_rdata_PTR():
+    rr = DNS.RR(
+        ptrname='default.v-umce-ifs.umnet.umich.edu',
+        ttl=1236,
+        ip=b'?\xf1\xc76',
+        type=DNS_PTR,
+    )
+    packdata = rr.pack_rdata(0, {})
+    correct = b'\x07default\nv-umce-ifs\x05umnet\x05umich\x03edu\x00'
+    assert packdata == correct
+
+def test_rdata_SOA():
+    rr = DNS.RR(
+        mname='blah.google.com',
+        rname='moo.blah.com',
+        serial=12345666,
+        refresh=123463,
+        retry=209834,
+        minimum=9000,
+        expire=28341,
+        type=DNS_SOA,
+    )
+    packdata = rr.pack_rdata(0, {})
+    correct = b'\x04blah\x06google\x03com\x00\x03moo\x04blah\xc0\x0c\x00\xbcaB\x00\x01\xe2G\x00\x033\xaa\x00\x00n\xb5\x00\x00#('
+    assert packdata == correct
+
+def test_rdata_MX():
+    rr = DNS.RR(
+        type=DNS_MX,
+        preference=2124,
+        mxname='mail.google.com',
+    )
+
+    packdata = rr.pack_rdata(0, {})
+    correct = b'\x08L\x04mail\x06google\x03com\x00'
+    assert packdata == correct
+
+def test_rdata_TXT():
+    rr = DNS.RR(
+        type=DNS_TXT,
+        text=[b'v=spf1 ptr ?all', b'a=something']
+    )
+
+    packdata = rr.pack_rdata(0, {})
+    correct = b'\x0fv=spf1 ptr ?all\x0ba=something'
+    assert packdata == correct
+
+def test_rdata_HINFO():
+    rr = DNS.RR(
+        type=DNS_HINFO,
+        text=[b'v=spf1 ptr ?all', b'a=something']
+    )
+
+    packdata = rr.pack_rdata(0, {})
+    correct = b'\x0fv=spf1 ptr ?all\x0ba=something'
+    assert packdata == correct
+
+def test_rdata_AAAA():
+    ip6=b'&\x07\xf8\xb0@\x0c\x0c\x03\x00\x00\x00\x00\x00\x00\x00\x1a'
+    rr = DNS.RR(
+        type=DNS_AAAA,
+        ip6=ip6,
+    )
+
+    packdata = rr.pack_rdata(0, {})
+    correct = ip6
+    assert packdata == correct
+
+def test_rdata_SRV():
+    rr = DNS.RR(
+        type=DNS_SRV,
+        ttl=86400,
+        priority=0,
+        weight=5,
+        port=5060,
+        srvname='_sip._tcp.example.com',
+    )
+
+    packdata = rr.pack_rdata(0, {})
+    correct = b'\x00\x00\x00\x05\x13\xc4\x04_sip\x04_tcp\x07example\x03com\x00'
+    assert packdata == correct
+
+def test_rdata_OPT():
+    rr = DNS.RR(
+        type=DNS_OPT,
+    )
+
+    # TODO: This is hardcoded to return b''. Is this intentional?
+    packdata = rr.pack_rdata(0, {})
+    correct = b''
+    assert packdata == correct
+
+@TryExceptException(dpkt.PackError)
+def test_rdata_FAIL():
+    DNS.RR(type=12345666).pack_rdata(0, {})
