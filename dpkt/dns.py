@@ -622,26 +622,6 @@ def test_rdata_MX():
     correct = b'\x08L\x04mail\x06google\x03com\x00'
     assert packdata == correct
 
-def test_rdata_TXT():
-    rr = DNS.RR(
-        type=DNS_TXT,
-        text=[b'v=spf1 ptr ?all', b'a=something']
-    )
-
-    packdata = rr.pack_rdata(0, {})
-    correct = b'\x0fv=spf1 ptr ?all\x0ba=something'
-    assert packdata == correct
-
-def test_rdata_HINFO():
-    rr = DNS.RR(
-        type=DNS_HINFO,
-        text=[b'v=spf1 ptr ?all', b'a=something']
-    )
-
-    packdata = rr.pack_rdata(0, {})
-    correct = b'\x0fv=spf1 ptr ?all\x0ba=something'
-    assert packdata == correct
-
 def test_rdata_AAAA():
     ip6=b'&\x07\xf8\xb0@\x0c\x0c\x03\x00\x00\x00\x00\x00\x00\x00\x1a'
     rr = DNS.RR(
