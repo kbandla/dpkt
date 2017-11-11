@@ -276,8 +276,12 @@ class DNS(dpkt.Packet):
                 return struct.pack('>H', self.preference) + \
                        pack_name(self.mxname, off + 2, label_ptrs)
             elif self.type == DNS_TXT or self.type == DNS_HINFO:
-                return b''.join(['%s%s' % (chr(len(x)), x)
-                                for x in self.text])
+                return b''.join(
+                    b'%s%s' % (
+                        struct.pack('B', len(element)), 
+                        element,
+                    ) for element in self.text
+                )
             elif self.type == DNS_AAAA:
                 return self.ip6
             elif self.type == DNS_SRV:
@@ -484,6 +488,28 @@ def test_txt_response():
     assert my_rr.text == ['v=spf1 ptr ?all']
     assert str(my_dns) == str(buf)
     assert bytes(my_dns) == buf
+
+def test_rdata_TXT():
+    rr = DNS.RR(
+        type=DNS_TXT,
+        text=[b'v=spf1 ptr ?all', b'a=something']
+    )
+
+    packdata = rr.pack_rdata(0, {})
+    correct = b'\x0fv=spf1 ptr ?all\x0ba=something'
+
+    assert packdata == correct
+
+def test_rdata_HINFO():
+    rr = DNS.RR(
+        type=DNS_HINFO,
+        text=[b'v=spf1 ptr ?all', b'a=something']
+    )
+
+    packdata = rr.pack_rdata(0, {})
+    correct = b'\x0fv=spf1 ptr ?all\x0ba=something'
+
+    assert packdata == correct
 
 
 if __name__ == '__main__':
