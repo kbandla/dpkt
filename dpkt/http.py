@@ -50,8 +50,10 @@ def parse_body(f, headers):
             if n == 0:
                 found_end = True
             buf = f.read(n)
+
             if f.readline().strip():
                 break
+
             if n and len(buf) == n:
                 l.append(buf)
             else:
@@ -485,9 +487,33 @@ def test_invalid_response_code():
     r = Response(s)
 
 def test_response_str():
-    s = b'HTTP/1.0 200 OK\r\n' \
-        b'Server: SimpleHTTP/0.6 Python/2.7.12\r\n' \
-        b'Date: Fri, 10 Mar 2017 20:43:08 GMT\r\n' \
+    s = (
+        b'HTTP/1.0 200 OK\r\n'
+        b'Server: SimpleHTTP/0.6 Python/2.7.12\r\n'
+        b'Date: Fri, 10 Mar 2017 20:43:08 GMT\r\n'
         b'Content-type: text/plain\r\n'
-    r = Response(s)
-    assert s == bytes(s)
+    )
+
+    # the headers are processed to lowercase keys
+    resp = [
+        'HTTP/1.0 200 OK',
+        'server: SimpleHTTP/0.6 Python/2.7.12',
+        'date: Fri, 10 Mar 2017 20:43:08 GMT',
+        'content-type: text/plain',
+        '',
+        '',
+    ]
+
+    r_str = str(Response(s))
+
+    s_arr = sorted(resp)
+    resp_arr = sorted(r_str.split('\r\n'))
+
+    for line1, line2 in zip(s_arr, resp_arr):
+        assert line1 == line2
+
+def test_request_str():
+    s = b'GET / HTTP/1.0\r\n'
+    r = Request(s)
+    req = 'GET / HTTP/1.0\r\n\r\n'
+    assert req == str(r)
