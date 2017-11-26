@@ -220,7 +220,19 @@ class Writer(object):
         if ts is None:
             ts = time.time()
         s = bytes(pkt)
-        self.writepkt_time(s, ts)
+
+        pack_hdr = self._pack_hdr
+        precision_multiplier = self._precision_multiplier
+
+        n = len(pkt)
+        sec = int(ts)
+        usec = intround(ts % 1 * precision_multiplier)
+
+        ph = pack_hdr(sec, usec, n, n)
+
+        fd = self.__f
+        fd.write(ph)
+        fd.write(pkt)
 
     def writepkt_time(self, pkt, ts):
         """ Write pkt and mandatory ts to file """
