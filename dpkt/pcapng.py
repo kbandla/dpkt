@@ -96,7 +96,7 @@ def _padded(s):
     return struct_pack('%ss' % _align32b(len(s)), s)
 
 def _padded_tolen(s, tolen):
-    """Return bytes `s` padded with zeroes to align to the 32-bit boundary"""
+    """Return bytes `s` padded with `tolen` zeroes to align to the 32-bit boundary"""
     return struct_pack('%ss' % tolen, s)
 
 def _padlen(s):
@@ -415,7 +415,6 @@ class Writer(object):
         """
         Take an iterable of (ts, pkt), and write to file.
         """
-
         kls = self._kls()
         ph = kls._pack_hdr
         fd = self.__f

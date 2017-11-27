@@ -29,20 +29,11 @@ if sys.version_info < (3,):
         return d.iteritems(**kw)
 
     def intround(num):
-        """ 
-        python3 will return an int if you round to 0 decimal places
-        
-        don't waste cycles by calling two functions in python3 when one will do
-        """
         return int(round(num))
 
 else:
     def iteritems(d, **kw):
         return iter(d.items(**kw))
 
-    """ 
-    python3 will return an int if you round to 0 decimal places
-    
-    don't waste cycles by calling two functions in python3 when one will do
-    """
+    # python3 will return an int if you round to 0 decimal places
     intround = round

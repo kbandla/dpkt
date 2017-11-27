@@ -101,7 +101,7 @@ class Packet(_MetaPacket("Temp", (object,), {})):
                 setattr(self, k, v)
 
         if hasattr(self, '__hdr_fmt__'):
-          self._pack_hdr = partial(struct.pack, self.__hdr_fmt__)
+            self._pack_hdr = partial(struct.pack, self.__hdr_fmt__)
 
     def __len__(self):
         return self.__hdr_len__ + len(self.data)
@@ -152,7 +152,7 @@ class Packet(_MetaPacket("Temp", (object,), {})):
         """Return packed header string."""
         try:
             return self._pack_hdr(
-              *[getattr(self, k) for k in self.__hdr_fields__]
+                *[getattr(self, k) for k in self.__hdr_fields__]
             )
         except struct.error:
             vals = []
