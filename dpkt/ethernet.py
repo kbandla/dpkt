@@ -31,6 +31,7 @@ ETH_MTU = (ETH_LEN_MAX - ETH_HDR_LEN - ETH_CRC_LEN)
 ETH_MIN = (ETH_LEN_MIN - ETH_HDR_LEN - ETH_CRC_LEN)
 
 # Ethernet payload types - http://standards.ieee.org/regauth/ethertype
+ETH_TYPE_EDP = 0x00bb  # Extreme Networks Discovery Protocol
 ETH_TYPE_PUP = 0x0200  # PUP protocol
 ETH_TYPE_IP = 0x0800  # IP protocol
 ETH_TYPE_ARP = 0x0806  # address resolution protocol

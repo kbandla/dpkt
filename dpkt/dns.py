@@ -372,7 +372,7 @@ class DNS(dpkt.Packet):
 
     def __len__(self):
         # XXX - cop out
-        return len(str(self))
+        return len(bytes(self))
 
     def __bytes__(self):
         # XXX - compress names on the fly
@@ -484,6 +484,10 @@ def test_txt_response():
     assert my_rr.text == ['v=spf1 ptr ?all']
     assert str(my_dns) == str(buf)
     assert bytes(my_dns) == buf
+
+def test_dns_len():
+    my_dns = DNS()
+    assert len(my_dns) == 12
 
 
 if __name__ == '__main__':

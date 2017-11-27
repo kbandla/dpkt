@@ -151,7 +151,8 @@ class StartMediaTransmission(dpkt.Packet):
     __hdr__ = (
         ('conference_id', 'I', 0),
         ('passthruparty_id', 'I', 0),
-        ('remote_ip', '4s', ''),
+        ('ipv4_or_ipv6', 'I', 0),
+        ('remote_ip', '16s', ''),
         ('remote_port', 'I', 0),
         ('ms_packet', 'I', 0),
         ('payload_capability', 'I', 4),  # 4: G.711 u-law 64k
@@ -159,6 +160,7 @@ class StartMediaTransmission(dpkt.Packet):
         ('silence_suppression', 'I', 0),
         ('max_frames_per_pkt', 'I', 1),
         ('g723_bitrate', 'I', 0),
+        ('call_reference', 'I', 0)
     )
 
 
