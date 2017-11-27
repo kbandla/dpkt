@@ -154,10 +154,17 @@ class _PcapngBlock(dpkt.Packet):
 
     def __bytes__(self):
         opts_buf = self._do_pack_options()
-        self.len = self._len = self.__hdr_len__ + len(opts_buf)
 
-        hdr_buf = dpkt.Packet.pack_hdr(self)
-        return hdr_buf[:-4] + opts_buf + hdr_buf[-4:]
+        n = len(opts_buf) + self.__hdr_len__
+        self.len = n
+        self._len = n
+
+        hdr_buf = self._pack_hdr(
+            self.type,
+            n,
+            n,
+        )
+        return b''.join([hdr_buf[:-4], opts_buf, hdr_buf[-4:]])
 
     def __len__(self):
         if not getattr(self, 'opts', None):
@@ -188,9 +195,7 @@ class PcapngOption(dpkt.Packet):
         if self.code == PCAPNG_OPT_COMMENT:
             self.text = self.data.decode('utf-8')
 
-
     def __bytes__(self):
-        #return dpkt.Packet.__bytes__(self)
         # encode comment
         if self.code == PCAPNG_OPT_COMMENT:
             text = getattr(self, 'text', self.data)
@@ -198,7 +203,11 @@ class PcapngOption(dpkt.Packet):
             self.data = text.encode('utf-8') if not isinstance(text, bytes) else text
 
         self.len = len(self.data)
-        return dpkt.Packet.pack_hdr(self) + _padded(self.data)
+        hdr = self._pack_hdr(
+            self.code,
+            self.len,
+        )
+        return hdr + _padded(self.data)
 
     def __len__(self):
         return self.__hdr_len__ + len(self.data) + _padlen(self.data)
@@ -228,6 +237,23 @@ class SectionHeaderBlock(_PcapngBlock):
         #( options, variable size )
         ('_len', 'I', 28)
     )
+    def __bytes__(self):
+        opts_buf = self._do_pack_options()
+
+        n = len(opts_buf) + self.__hdr_len__
+        self.len = n
+        self._len = n
+
+        hdr_buf = self._pack_hdr(
+            self.type,
+            n,
+            self.bom,
+            self.v_major,
+            self.v_minor,
+            self.sec_len,
+            n,
+        )
+        return b''.join([hdr_buf[:-4], opts_buf, hdr_buf[-4:]])
 
 
 class SectionHeaderBlockLE(SectionHeaderBlock):
@@ -247,6 +273,23 @@ class InterfaceDescriptionBlock(_PcapngBlock):
         #( options, variable size )
         ('_len', 'I', 20)
     )
+
+    def __bytes__(self):
+        opts_buf = self._do_pack_options()
+
+        n = len(opts_buf) + self.__hdr_len__
+        self.len = n
+        self._len = n
+
+        hdr_buf = self._pack_hdr(
+            self.type,
+            n,
+            self.linktype,
+            self._reserved,
+            self.snaplen,
+            n,
+        )
+        return b''.join([hdr_buf[:-4], opts_buf, hdr_buf[-4:]])
 
 
 class InterfaceDescriptionBlockLE(InterfaceDescriptionBlock):
@@ -297,15 +340,15 @@ class EnhancedPacketBlock(_PcapngBlock):
         self._len = n
 
         hdr_buf = self._pack_hdr(
-                self.type,
-                n,
-                self.iface_id,
-                self.ts_high,
-                self.ts_low,
-                pkt_len,
-                pkt_len,
-                n
-            )
+            self.type,
+            n,
+            self.iface_id,
+            self.ts_high,
+            self.ts_low,
+            pkt_len,
+            pkt_len,
+            n
+        )
 
         return b''.join([hdr_buf[:-4], _padded(pkt_buf), opts_buf, hdr_buf[-4:]])
 
@@ -367,8 +410,9 @@ class Writer(object):
         """
         Write a single packet with an optional timestamp.
 
-        pkt can be a buffer or an instance of EnhancedPacketBlock(LE)
-        ts is a Unix timestamp in seconds since Epoch (e.g. 1454725786.99)
+        Args:
+            pkt: buffer or instance of EnhancedPacketBlock(LE)
+            ts: Unix timestamp in seconds since Epoch (e.g. 1454725786.99)
         """
         if isinstance(pkt, EnhancedPacketBlock):
             self._validate_block('pkt', pkt, EnhancedPacketBlock)
@@ -394,8 +438,9 @@ class Writer(object):
         """
         Write a single packet with a mandatory timestamp.
 
-        pkt must be a buffer
-        ts is a Unix timestamp in seconds since Epoch (e.g. 1454725786.99)
+        Args:
+            pkt: a buffer
+            ts: Unix timestamp in seconds since Epoch (e.g. 1454725786.99)
         """
         ts = intround(ts * 1e6)  # to int microseconds
 
@@ -444,7 +489,12 @@ class Writer(object):
                 pkt_len,
                 n
             )
-            buf = b''.join([hdr_buf[:-4], _padded_tolen(pkt, pkt_len_align), opts_buf, hdr_buf[-4:]])
+            buf = b''.join([
+                hdr_buf[:-4],
+                _padded_tolen(pkt, pkt_len_align),
+                opts_buf,
+                hdr_buf[-4:]
+            ])
             fd.write(buf)
 
     def close(self):
@@ -635,6 +685,7 @@ def test_shb():
     assert bytes(shb.opts[1]) == b'\x00\x00\x00\x00'
 
     # block packing
+    assert bytes(shb) == bytes(buf)
     assert str(shb) == str(buf)
     assert len(shb) == len(buf)
 
@@ -667,6 +718,7 @@ def test_idb():
     assert bytes(idb.opts[1]) == b'\x00\x00\x00\x00'
 
     # block packing
+    assert bytes(idb) == bytes(buf)
     assert str(idb) == str(buf)
     assert len(idb) == len(buf)
 
@@ -705,6 +757,7 @@ def test_epb():
     assert bytes(epb.opts[1]) == b'\x00\x00\x00\x00'
 
     # block packing
+    assert bytes(epb) == bytes(buf)
     assert str(epb) == str(buf)
     assert len(epb) == len(buf)
 
