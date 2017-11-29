@@ -219,8 +219,8 @@ class Writer(object):
         """Write single packet and optional timestamp to file.
 
         Args:
-            pkt: Some `bytes` to write to the file
-            ts: Timestamp in seconds. Defaults to current time.
+            pkt: `bytes` will be called on this and written to file.
+            ts (float): Timestamp in seconds. Defaults to current time.
         """
         if ts is None:
             ts = time.time()
@@ -231,8 +231,8 @@ class Writer(object):
         """Write single packet and its timestamp to file.
 
         Args:
-            pkt: Some `bytes` to write to the file
-            ts: Timestamp in seconds
+            pkt (bytes): Some `bytes` to write to the file
+            ts (float): Timestamp in seconds
         """
         n = len(pkt)
         sec = int(ts)

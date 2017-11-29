@@ -159,11 +159,7 @@ class _PcapngBlock(dpkt.Packet):
         self.len = n
         self._len = n
 
-        hdr_buf = self._pack_hdr(
-            self.type,
-            n,
-            n,
-        )
+        hdr_buf = self._pack_hdr(self.type, n, n)
         return b''.join([hdr_buf[:-4], opts_buf, hdr_buf[-4:]])
 
     def __len__(self):
@@ -203,10 +199,7 @@ class PcapngOption(dpkt.Packet):
             self.data = text.encode('utf-8') if not isinstance(text, bytes) else text
 
         self.len = len(self.data)
-        hdr = self._pack_hdr(
-            self.code,
-            self.len,
-        )
+        hdr = self._pack_hdr(self.code, self.len)
         return hdr + _padded(self.data)
 
     def __len__(self):
