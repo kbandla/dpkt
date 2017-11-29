@@ -224,8 +224,8 @@ class Writer(object):
         """
         if ts is None:
             ts = time.time()
-        s = bytes(pkt)
-        self.writepkt_time(pkt, ts)
+
+        self.writepkt_time(bytes(pkt), ts)
 
     def writepkt_time(self, pkt, ts):
         """Write single packet and its timestamp to file.
