@@ -518,6 +518,12 @@ CIPHERSUITES = [
     CipherSuite(0xc0af, 'ECDHE', 'ECDSA  ', 'AES_256 ', 'CCM_8', ''),
 
     # Unassigned: 0xc0b0-0xcca7
+    CipherSuite(0xcc13, 'ECDHE', 'RSA    ', 'CHACHA20', 'POLY1305', 'SHA256',
+        'OLD_TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256'),
+    CipherSuite(0xcc14, 'ECDHE', 'ECDSA  ', 'CHACHA20', 'POLY1305', 'SHA256',
+        'OLD_TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256'),
+    CipherSuite(0xcc15, 'DHE  ', 'RSA    ', 'CHACHA20', 'POLY1305', 'SHA256',
+        'OLD_TLS_DHE_RSA_WITH_CHACHA20_POLY1305_SHA256'),
 
     # RFC7905
     CipherSuite(0xcca8, 'ECDHE', 'RSA    ', 'CHACHA20', 'POLY1305', 'SHA256'),
@@ -541,6 +547,7 @@ BY_CODE = dict(
 BY_NAME_DICT = None
 def BY_NAME(name):
     # We initialize the dictionary only on the first call
+    global BY_NAME_DICT
     if BY_NAME_DICT is None:
         BY_NAME_DICT = dict((suite.name, suite) for suite in CIPHERSUITES)
     return BY_NAME_DICT[name]
@@ -578,6 +585,7 @@ class TestCipherSuites(object):
         assert (BY_CODE[0xc09d].kx == 'RSA')
         assert (BY_CODE[0xc0a2].kx == 'DHE')
         assert (BY_CODE[0xc0ad].kx == 'ECDHE')
+        assert (BY_CODE[0xcc13].kx == 'ECDHE')
         assert (BY_CODE[0xcca8].kx == 'ECDHE')
         assert (BY_CODE[0xccae].kx == 'RSA')
 
@@ -609,43 +617,44 @@ class TestCipherSuites(object):
         assert (BY_CODE[0xc09d].auth == 'RSA')
         assert (BY_CODE[0xc0a2].auth == 'RSA')
         assert (BY_CODE[0xc0ad].auth == 'ECDSA')
+        assert (BY_CODE[0xcc14].auth == 'ECDSA')
         assert (BY_CODE[0xcca8].auth == 'RSA')
         assert (BY_CODE[0xccae].auth == 'PSK')
 
-    def test_name(self):
+    def test_by_name_and_code(self):
         # Special cases:
         # - explicit name
-        assert (BY_CODE[0x00ff].name == 'TLS_EMPTY_RENEGOTIATION_INFO')
+        assert (BY_CODE[0x00ff] == BY_NAME('TLS_EMPTY_RENEGOTIATION_INFO'))
         # - explicit encoding (DES_40 + CBC = DES_CBC_40)
-        assert (BY_CODE[0x0026].name == 'TLS_KRB5_EXPORT_WITH_DES_CBC_40_SHA')
+        assert (BY_CODE[0x0026] == BY_NAME('TLS_KRB5_EXPORT_WITH_DES_CBC_40_SHA'))
 
         # A test from each RFC
-        assert (BY_CODE[0x0005].name == 'TLS_RSA_WITH_RC4_128_SHA')
-        assert (BY_CODE[0x0021].name == 'TLS_KRB5_WITH_IDEA_CBC_SHA')
-        assert (BY_CODE[0x002d].name == 'TLS_DHE_PSK_WITH_NULL_SHA')
-        assert (BY_CODE[0x0034].name == 'TLS_DH_anon_WITH_AES_128_CBC_SHA')
-        assert (BY_CODE[0x003c].name == 'TLS_RSA_WITH_AES_128_CBC_SHA256')
-        assert (BY_CODE[0x0042].name == 'TLS_DH_DSS_WITH_CAMELLIA_128_CBC_SHA')
-        assert (BY_CODE[0x006a].name == 'TLS_DHE_DSS_WITH_AES_256_CBC_SHA256')
-        assert (BY_CODE[0x0084].name == 'TLS_RSA_WITH_CAMELLIA_256_CBC_SHA')
-        assert (BY_CODE[0x0091].name == 'TLS_DHE_PSK_WITH_AES_256_CBC_SHA')
-        assert (BY_CODE[0x0098].name == 'TLS_DH_RSA_WITH_SEED_CBC_SHA')
-        assert (BY_CODE[0x00ab].name == 'TLS_DHE_PSK_WITH_AES_256_GCM_SHA384')
-        assert (BY_CODE[0x00b0].name == 'TLS_PSK_WITH_NULL_SHA256')
-        assert (BY_CODE[0x00bb].name == 'TLS_DH_DSS_WITH_CAMELLIA_128_CBC_SHA256')
-        assert (BY_CODE[0xc008].name == 'TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA')
-        assert (BY_CODE[0xc016].name == 'TLS_ECDH_anon_WITH_RC4_128_SHA')
-        assert (BY_CODE[0xc01d].name == 'TLS_SRP_SHA_WITH_AES_128_CBC_SHA')
-        assert (BY_CODE[0xc027].name == 'TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256')
-        assert (BY_CODE[0xc036].name == 'TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA')
-        assert (BY_CODE[0xc045].name == 'TLS_DHE_RSA_WITH_ARIA_256_CBC_SHA384')
-        assert (BY_CODE[0xc052].name == 'TLS_DHE_RSA_WITH_ARIA_128_GCM_SHA256')
-        assert (BY_CODE[0xc068].name == 'TLS_RSA_PSK_WITH_ARIA_128_CBC_SHA256')
-        assert (BY_CODE[0xc074].name == 'TLS_ECDH_ECDSA_WITH_CAMELLIA_128_CBC_SHA256')
-        assert (BY_CODE[0xc08d].name == 'TLS_ECDH_RSA_WITH_CAMELLIA_256_GCM_SHA384')
-        assert (BY_CODE[0xc09d].name == 'TLS_RSA_WITH_AES_256_CCM')
-        assert (BY_CODE[0xc0a2].name == 'TLS_DHE_RSA_WITH_AES_128_CCM_8')
-        assert (BY_CODE[0xc0ad].name == 'TLS_ECDHE_ECDSA_WITH_AES_256_CCM')
-        assert (BY_CODE[0xcca8].name == 'TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256')
-        assert (BY_CODE[0xccae].name == 'TLS_RSA_PSK_WITH_CHACHA20_POLY1305_SHA256')
-
+        assert (BY_CODE[0x0005] == BY_NAME('TLS_RSA_WITH_RC4_128_SHA'))
+        assert (BY_CODE[0x0021] == BY_NAME('TLS_KRB5_WITH_IDEA_CBC_SHA'))
+        assert (BY_CODE[0x002d] == BY_NAME('TLS_DHE_PSK_WITH_NULL_SHA'))
+        assert (BY_CODE[0x0034] == BY_NAME('TLS_DH_anon_WITH_AES_128_CBC_SHA'))
+        assert (BY_CODE[0x003c] == BY_NAME('TLS_RSA_WITH_AES_128_CBC_SHA256'))
+        assert (BY_CODE[0x0042] == BY_NAME('TLS_DH_DSS_WITH_CAMELLIA_128_CBC_SHA'))
+        assert (BY_CODE[0x006a] == BY_NAME('TLS_DHE_DSS_WITH_AES_256_CBC_SHA256'))
+        assert (BY_CODE[0x0084] == BY_NAME('TLS_RSA_WITH_CAMELLIA_256_CBC_SHA'))
+        assert (BY_CODE[0x0091] == BY_NAME('TLS_DHE_PSK_WITH_AES_256_CBC_SHA'))
+        assert (BY_CODE[0x0098] == BY_NAME('TLS_DH_RSA_WITH_SEED_CBC_SHA'))
+        assert (BY_CODE[0x00ab] == BY_NAME('TLS_DHE_PSK_WITH_AES_256_GCM_SHA384'))
+        assert (BY_CODE[0x00b0] == BY_NAME('TLS_PSK_WITH_NULL_SHA256'))
+        assert (BY_CODE[0x00bb] == BY_NAME('TLS_DH_DSS_WITH_CAMELLIA_128_CBC_SHA256'))
+        assert (BY_CODE[0xc008] == BY_NAME('TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA'))
+        assert (BY_CODE[0xc016] == BY_NAME('TLS_ECDH_anon_WITH_RC4_128_SHA'))
+        assert (BY_CODE[0xc01d] == BY_NAME('TLS_SRP_SHA_WITH_AES_128_CBC_SHA'))
+        assert (BY_CODE[0xc027] == BY_NAME('TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256'))
+        assert (BY_CODE[0xc036] == BY_NAME('TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA'))
+        assert (BY_CODE[0xc045] == BY_NAME('TLS_DHE_RSA_WITH_ARIA_256_CBC_SHA384'))
+        assert (BY_CODE[0xc052] == BY_NAME('TLS_DHE_RSA_WITH_ARIA_128_GCM_SHA256'))
+        assert (BY_CODE[0xc068] == BY_NAME('TLS_RSA_PSK_WITH_ARIA_128_CBC_SHA256'))
+        assert (BY_CODE[0xc074] == BY_NAME('TLS_ECDH_ECDSA_WITH_CAMELLIA_128_CBC_SHA256'))
+        assert (BY_CODE[0xc08d] == BY_NAME('TLS_ECDH_RSA_WITH_CAMELLIA_256_GCM_SHA384'))
+        assert (BY_CODE[0xc09d] == BY_NAME('TLS_RSA_WITH_AES_256_CCM'))
+        assert (BY_CODE[0xc0a2] == BY_NAME('TLS_DHE_RSA_WITH_AES_128_CCM_8'))
+        assert (BY_CODE[0xc0ad] == BY_NAME('TLS_ECDHE_ECDSA_WITH_AES_256_CCM'))
+        assert (BY_CODE[0xcca8] == BY_NAME('TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256'))
+        assert (BY_CODE[0xccae] == BY_NAME('TLS_RSA_PSK_WITH_CHACHA20_POLY1305_SHA256'))
+        assert (BY_CODE[0xcc15] == BY_NAME('OLD_TLS_DHE_RSA_WITH_CHACHA20_POLY1305_SHA256'))

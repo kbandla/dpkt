@@ -106,7 +106,7 @@ class GRE(dpkt.Packet):
             pass
 
     def __len__(self):
-        opt_fmtlen = struct.calcsize(b''.join(self.opt_fields_fmts()[1]))
+        opt_fmtlen = struct.calcsize(''.join(self.opt_fields_fmts()[1]))
         return self.__hdr_len__ + opt_fmtlen + sum(map(len, self.sre)) + len(self.data)
 
     def __bytes__(self):
@@ -133,6 +133,7 @@ def test_gre_v1():
     assert g.callid == 6016
     assert g.len == 103
     assert g.data == b"A" * 103
+    assert len(g) == len(s)
 
     s = codecs.decode("3001880a00b2001100083ab8", 'hex') + b"A" * 178
     g = GRE(s)
@@ -143,7 +144,12 @@ def test_gre_v1():
     assert g.callid == 17
     assert g.len == 178
     assert g.data == b"A" * 178
+    assert len(g) == len(s)
 
+def test_gre_len():
+    gre = GRE()
+    assert len(gre) == 4
 
 if __name__ == '__main__':
     test_gre_v1()
+    test_gre_len()

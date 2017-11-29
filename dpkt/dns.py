@@ -374,7 +374,7 @@ class DNS(dpkt.Packet):
 
     def __len__(self):
         # XXX - cop out
-        return len(str(self))
+        return len(bytes(self))
 
     def __bytes__(self):
         # XXX - compress names on the fly
@@ -508,6 +508,11 @@ def test_rdata_HINFO():
     correct = b'\x0fv=spf1 ptr ?all\x0ba=something'
 
     assert packdata == correct
+
+
+def test_dns_len():
+    my_dns = DNS()
+    assert len(my_dns) == 12
 
 
 if __name__ == '__main__':
