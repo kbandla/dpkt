@@ -58,6 +58,7 @@ class IP6(dpkt.Packet):
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
         self.extension_hdrs = {}
+        self.all_extension_headers=[]
 
         if self.plen:
             buf = self.data[:self.plen]
@@ -69,6 +70,7 @@ class IP6(dpkt.Packet):
         while next_ext_hdr in ext_hdrs:
             ext = ext_hdrs_cls[next_ext_hdr](buf)
             self.extension_hdrs[next_ext_hdr] = ext
+            self.all_extension_headers.append(ext)
             buf = buf[ext.length:]
             next_ext_hdr = getattr(ext, 'nxt', None)
 
