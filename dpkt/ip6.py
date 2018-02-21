@@ -6,7 +6,6 @@ from __future__ import absolute_import
 
 from . import dpkt
 from . import ip
-from .decorators import deprecated
 from .compat import compat_ord
 
 
@@ -58,7 +57,7 @@ class IP6(dpkt.Packet):
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
         self.extension_hdrs = {}
-        self.all_extension_headers=[]
+        self.all_extension_headers = []
 
         if self.plen:
             buf = self.data[:self.plen]
@@ -69,9 +68,11 @@ class IP6(dpkt.Packet):
 
         while next_ext_hdr in ext_hdrs:
             ext = ext_hdrs_cls[next_ext_hdr](buf)
+
             self.extension_hdrs[next_ext_hdr] = ext
             self.all_extension_headers.append(ext)
             buf = buf[ext.length:]
+
             next_ext_hdr = getattr(ext, 'nxt', None)
 
         # set the payload protocol id
@@ -85,10 +86,12 @@ class IP6(dpkt.Packet):
             self.data = buf
 
     def headers_str(self):
-        """Output extension headers in order defined in RFC1883 (except dest opts)"""
+        # If all_extension_headers is available, return the headers as they originally appeared
+        if self.all_extension_headers:
+            return b''.join(bytes(ext) for ext in self.all_extension_headers)
 
+        # Output extension headers in order defined in RFC1883 (except dest opts)
         header_str = b""
-
         for hdr in ext_hdrs:
             if hdr in self.extension_hdrs:
                 header_str += bytes(self.extension_hdrs[hdr])
@@ -159,6 +162,7 @@ class IP6OptsHeader(IP6ExtensionHeader):
             index += opt_length + 2
 
         self.options = options
+        self.data = buf[2:self.length]  # keep raw data with all pad options, but not the following data
 
 
 class IP6HopOptsHeader(IP6OptsHeader):
@@ -349,6 +353,23 @@ def test_ip6_extension_headers():
     assert (len(ip.extension_hdrs) == 5)
 
 
+def test_ip6_all_extension_headers():  # https://github.com/kbandla/dpkt/pull/403
+    s = (b'\x60\x00\x00\x00\x00\x47\x3c\x40\xfe\xd0\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01'
+         b'\x00\x02\xfe\xd0\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x01\x3c\x00\x01\x04'
+         b'\x00\x00\x00\x00\x3c\x00\x01\x04\x00\x00\x00\x00\x2c\x00\x01\x04\x00\x00\x00\x00\x2c\x00'
+         b'\x00\x00\x00\x00\x00\x00\x3c\x00\x00\x00\x00\x00\x00\x00\x2c\x00\x01\x04\x00\x00\x00\x00'
+         b'\x3a\x00\x00\x00\x00\x00\x00\x00\x80\x00\xd8\xe5\x0c\x1a\x00\x00\x50\x61\x79\x4c\x6f\x61'
+         b'\x64')
+    _ip = IP6(s)
+    assert _ip.p == 58  # ICMPv6
+    hdrs = _ip.all_extension_headers
+    assert len(hdrs) == 7
+    assert isinstance(hdrs[0], IP6DstOptsHeader)
+    assert isinstance(hdrs[3], IP6FragmentHeader)
+    assert isinstance(hdrs[5], IP6DstOptsHeader)
+    assert bytes(_ip) == s
+
+
 if __name__ == '__main__':
     test_ipg()
     test_ip6_routing_header()
@@ -357,4 +378,5 @@ if __name__ == '__main__':
     test_ip6_ah_header()
     test_ip6_esp_header()
     test_ip6_extension_headers()
+    test_ip6_all_extension_headers()
     print('Tests Successful...')
