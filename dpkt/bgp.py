@@ -62,11 +62,13 @@ NO_PEER = 0xffffff04
 # Common AFI types
 AFI_IPV4 = 1
 AFI_IPV6 = 2
+AFI_L2VPN = 25
 
 # Multiprotocol SAFI types
 SAFI_UNICAST = 1
 SAFI_MULTICAST = 2
 SAFI_UNICAST_MULTICAST = 3
+SAFI_EVPN = 70
 
 # OPEN Message Optional Parameters
 AUTHENTICATION = 1
@@ -528,6 +530,8 @@ class BGP(dpkt.Packet):
                         Route = RouteIPV4
                     elif self.afi == AFI_IPV6:
                         Route = RouteIPV6
+                    elif self.afi == AFI_L2VPN:
+                        Route = RouteEVPN
                     else:
                         Route = RouteGeneric
 
@@ -575,6 +579,8 @@ class BGP(dpkt.Packet):
                         Route = RouteIPV4
                     elif self.afi == AFI_IPV6:
                         Route = RouteIPV6
+                    elif self.afi == AFI_L2VPN:
+                        Route = RouteEVPN
                     else:
                         Route = RouteGeneric
 
@@ -670,10 +676,67 @@ class RouteIPV6(dpkt.Packet):
         return self.pack_hdr() + self.prefix[:(self.len + 7) // 8]
 
 
+class RouteEVPN(dpkt.Packet):
+    __hdr__ = (
+        ('type', 'B', 0),
+        ('len', 'B', 0),
+    )
+
+    def unpack(self, buf):
+        dpkt.Packet.unpack(self, buf)
+        self.data = self.data[:self.len]
+        tmp = self.data
+
+        # Get route distinguisher.
+        self.rd = tmp[:8]
+        tmp = tmp[8:]
+
+        # Get route information.
+        if self.type != 0x3:
+            self.esi = tmp[:10]
+            tmp = tmp[10:]
+
+        if self.type != 0x4:
+            self.eth_id = tmp[:4]
+            tmp = tmp[4:]
+
+        if self.type == 0x2:
+            self.mac_address_length = ord(tmp[0])
+            if self.mac_address_length > 0:
+                self.mac_address = tmp[1:7]
+                tmp = tmp[7:]
+            else:
+                self.mac_address = None
+                tmp = tmp[1:]
+
+        if self.type != 0x1:
+            self.ip_address_length = ord(tmp[0])
+            if self.ip_address_length > 0:
+                self.ip_address = tmp[1:5]
+                tmp = tmp[5:]
+            else:
+                self.ip_address = None
+                tmp = tmp[1:]
+
+        if self.type == 0x5:
+            self.gateway_ip_address = tmp[:4]
+            tmp = tmp[4:]
+
+        if self.type in [0x1, 0x2, 0x5]:
+            self.mpls_label_stack = tmp[:3]
+
+    def __len__(self):
+        return self.__hdr_len__ + self.len
+
+    def __bytes__(self):
+        return self.pack_hdr() + self.data
+
+
 __bgp1 = b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x13\x04'
 __bgp2 = b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x63\x02\x00\x00\x00\x48\x40\x01\x01\x00\x40\x02\x0a\x01\x02\x01\xf4\x01\xf4\x02\x01\xfe\xbb\x40\x03\x04\xc0\xa8\x00\x0f\x40\x05\x04\x00\x00\x00\x64\x40\x06\x00\xc0\x07\x06\xfe\xba\xc0\xa8\x00\x0a\xc0\x08\x0c\xfe\xbf\x00\x01\x03\x16\x00\x04\x01\x54\x00\xfa\x80\x09\x04\xc0\xa8\x00\x0f\x80\x0a\x04\xc0\xa8\x00\xfa\x16\xc0\xa8\x04'
 __bgp3 = b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x79\x02\x00\x00\x00\x62\x40\x01\x01\x00\x40\x02\x00\x40\x05\x04\x00\x00\x00\x64\xc0\x10\x08\x00\x02\x01\x2c\x00\x00\x01\x2c\xc0\x80\x24\x00\x00\xfd\xe9\x40\x01\x01\x00\x40\x02\x04\x02\x01\x15\xb3\x40\x05\x04\x00\x00\x00\x2c\x80\x09\x04\x16\x05\x05\x05\x80\x0a\x04\x16\x05\x05\x05\x90\x0e\x00\x1e\x00\x01\x80\x0c\x00\x00\x00\x00\x00\x00\x00\x00\x0c\x04\x04\x04\x00\x60\x18\x77\x01\x00\x00\x01\xf4\x00\x00\x01\xf4\x85'
 __bgp4 = b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x2d\x01\x04\x00\xed\x00\x5a\xc6\x6e\x83\x7d\x10\x02\x06\x01\x04\x00\x01\x00\x01\x02\x02\x80\x00\x02\x02\x02\x00'
+__bgp5 = b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x93\x02\x00\x00\x00\x7c\x40\x01\x01\x00\x40\x02\x00\x40\x05\x04\x00\x00\x00\x64\xc0\x10\x10\x03\x0c\x00\x00\x00\x00\x00\x08\x00\x02\x03\xe8\x00\x00\x00\x02\x90\x0e\x00\x57\x00\x19\x46\x04\x01\x01\x01\x02\x00\x02\x25\x00\x01\x01\x01\x01\x02\x00\x02\x05\x00\x00\x03\xe8\x00\x00\x04\x00\x00\x00\x00\x00\x02\x30\xcc\xaa\x02\x9c\xd8\x29\x20\xc0\xb4\x01\x02\x00\x00\x02\x02\x25\x00\x01\x01\x01\x01\x02\x00\x02\x05\x00\x00\x03\xe8\x00\x00\x04\x00\x00\x00\x00\x00\x02\x30\xee\xdd\xcc\x02\xb3\x37\x20\xc0\xb4\x01\x02\x00\x00\x02'
 
 
 def test_pack():
@@ -681,6 +744,7 @@ def test_pack():
     assert (__bgp2 == bytes(BGP(__bgp2)))
     assert (__bgp3 == bytes(BGP(__bgp3)))
     assert (__bgp4 == bytes(BGP(__bgp4)))
+    assert (__bgp5 == bytes(BGP(__bgp5)))
 
 
 def test_unpack():
@@ -759,6 +823,27 @@ def test_unpack():
     c = b4.open.parameters[2].capability
     assert (c.code == CAP_ROUTE_REFRESH)
     assert (c.len == 0)
+
+    b5 = BGP(__bgp5)
+    assert (b5.len == 147)
+    assert (b5.type == UPDATE)
+    assert (len(b5.update.withdrawn) == 0)
+    a = b5.update.attributes[-1]
+    assert (a.type == MP_REACH_NLRI)
+    assert (a.len == 87)
+    m = a.mp_reach_nlri
+    assert (m.afi == AFI_L2VPN)
+    assert (m.safi == SAFI_EVPN)
+    r = m.announced[0]
+    assert (r.type == 2)
+    assert (r.len == 37)
+    assert (r.rd == '\x00\x01\x01\x01\x01\x02\x00\x02')
+    assert (r.esi == '\x05\x00\x00\x03\xe8\x00\x00\x04\x00\x00')
+    assert (r.eth_id == '\x00\x00\x00\x02')
+    assert (r.mac_address_length == 48)
+    assert (r.mac_address == '\xcc\xaa\x02\x9c\xd8\x29')
+    assert (r.ip_address_length == 32)
+    assert (r.ip_address == '\xc0\xb4\x01\x02')
 
 
 if __name__ == '__main__':
