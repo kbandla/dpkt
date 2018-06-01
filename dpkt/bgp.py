@@ -9,6 +9,7 @@ import socket
 
 from . import dpkt
 from .decorators import deprecated
+from dpkt.compat import compat_ord
 
 
 # Border Gateway Protocol 4 - RFC 4271
@@ -684,7 +685,7 @@ class RouteEVPN(dpkt.Packet):
 
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
-        buf = bytearray(self.data[:self.len])
+        buf = self.data[:self.len]
         self.data = self.data[self.len:]
 
         # Get route distinguisher.
@@ -701,7 +702,7 @@ class RouteEVPN(dpkt.Packet):
             buf = buf[4:]
 
         if self.type == 0x2:
-            self.mac_address_length = buf[0]
+            self.mac_address_length = compat_ord(buf[0])
             if self.mac_address_length == 48:
                 self.mac_address = buf[1:7]
                 buf = buf[7:]
@@ -710,7 +711,7 @@ class RouteEVPN(dpkt.Packet):
                 buf = buf[1:]
 
         if self.type != 0x1:
-            self.ip_address_length = buf[0]
+            self.ip_address_length = compat_ord(buf[0])
             if self.ip_address_length == 128:
                 self.ip_address = buf[1:17]
                 buf = buf[17:]
