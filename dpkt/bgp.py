@@ -679,7 +679,7 @@ class RouteIPV6(dpkt.Packet):
 class RouteEVPN(dpkt.Packet):
     __hdr__ = (
         ('type', 'B', 0),
-        ('len', 'B', 0),
+        ('len', 'B', 0)
     )
 
     def unpack(self, buf):
@@ -844,7 +844,7 @@ def test_unpack():
     assert (r.rd == '\x00\x01\x01\x01\x01\x02\x00\x02')
     assert (r.esi == '\x05\x00\x00\x03\xe8\x00\x00\x04\x00\x00')
     assert (r.eth_id == '\x00\x00\x00\x02')
-    assert (r.mpls_label1 == '\x00\x00\x02')
+    assert (r.mpls_label_stack == '\x00\x00\x02')
 
     b6 = BGP(__bgp6)
     assert (b6.len == 111)
@@ -866,8 +866,7 @@ def test_unpack():
     assert (r.mac_address == '\xcc\xaa\x02\x9c\xd8\x29')
     assert (r.ip_address_length == 32)
     assert (r.ip_address == '\xc0\xb4\x01\x02')
-    assert (r.mpls_label1 == '\x00\x00\x02')
-    assert (r.mpls_label2 == '\x00\x00\x00')
+    assert (r.mpls_label_stack == '\x00\x00\x02\x00\x00\x00')
 
     b7 = BGP(__bgp7)
     assert (b7.len == 88)
