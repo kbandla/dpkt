@@ -722,7 +722,10 @@ class RouteEVPN(dpkt.Packet):
                 tmp = tmp[1:]
 
         if self.type in [0x1, 0x2]:
-            self.mpls_label_stack = tmp[:6]
+            self.mpls_label_stack = tmp[:3]
+            tmp = tmp[3:]
+            if self.len > len(tmp):
+                self.mpls_label_stack += tmp[:3]
 
     def __len__(self):
         return self.__hdr_len__ + self.len
