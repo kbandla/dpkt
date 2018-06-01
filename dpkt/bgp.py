@@ -685,7 +685,7 @@ class RouteEVPN(dpkt.Packet):
 
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
-        buf = self.data[:self.len]
+        self.route_data = buf = self.data[:self.len]
         self.data = self.data[self.len:]
 
         # Get route distinguisher.
@@ -732,7 +732,7 @@ class RouteEVPN(dpkt.Packet):
         return self.__hdr_len__ + self.len
 
     def __bytes__(self):
-        return self.pack_hdr() + self.data
+        return self.pack_hdr() + self.route_data
 
 
 __bgp1 = b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x13\x04'
