@@ -684,48 +684,48 @@ class RouteEVPN(dpkt.Packet):
 
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
-        self.data = self.data[:self.len]
-        tmp = bytearray(self.data)
+        buf = bytearray(self.data[:self.len])
+        self.data = self.data[self.len:]
 
         # Get route distinguisher.
-        self.rd = tmp[:8]
-        tmp = tmp[8:]
+        self.rd = buf[:8]
+        buf = buf[8:]
 
         # Get route information.  Not all fields are present on all route types.
         if self.type != 0x3:
-            self.esi = tmp[:10]
-            tmp = tmp[10:]
+            self.esi = buf[:10]
+            buf = buf[10:]
 
         if self.type != 0x4:
-            self.eth_id = tmp[:4]
-            tmp = tmp[4:]
+            self.eth_id = buf[:4]
+            buf = buf[4:]
 
         if self.type == 0x2:
-            self.mac_address_length = tmp[0]
+            self.mac_address_length = buf[0]
             if self.mac_address_length == 48:
-                self.mac_address = tmp[1:7]
-                tmp = tmp[7:]
+                self.mac_address = buf[1:7]
+                buf = buf[7:]
             else:
                 self.mac_address = None
-                tmp = tmp[1:]
+                buf = buf[1:]
 
         if self.type != 0x1:
-            self.ip_address_length = tmp[0]
+            self.ip_address_length = buf[0]
             if self.ip_address_length == 128:
-                self.ip_address = tmp[1:17]
-                tmp = tmp[17:]
+                self.ip_address = buf[1:17]
+                buf = buf[17:]
             elif self.ip_address_length == 32:
-                self.ip_address = tmp[1:5]
-                tmp = tmp[5:]
+                self.ip_address = buf[1:5]
+                buf = buf[5:]
             else:
                 self.ip_address = None
-                tmp = tmp[1:]
+                buf = buf[1:]
 
         if self.type in [0x1, 0x2]:
-            self.mpls_label_stack = tmp[:3]
-            tmp = tmp[3:]
-            if self.len > len(tmp):
-                self.mpls_label_stack += tmp[:3]
+            self.mpls_label_stack = buf[:3]
+            buf = buf[3:]
+            if self.len > len(buf):
+                self.mpls_label_stack += buf[:3]
 
     def __len__(self):
         return self.__hdr_len__ + self.len
