@@ -685,7 +685,7 @@ class RouteEVPN(dpkt.Packet):
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
         self.data = self.data[:self.len]
-        tmp = self.data
+        tmp = bytearray(self.data)
 
         # Get route distinguisher.
         self.rd = tmp[:8]
@@ -701,8 +701,8 @@ class RouteEVPN(dpkt.Packet):
             tmp = tmp[4:]
 
         if self.type == 0x2:
-            self.mac_address_length = ord(tmp[0])
-            if self.mac_address_length > 0:
+            self.mac_address_length = tmp[0]
+            if self.mac_address_length == 48:
                 self.mac_address = tmp[1:7]
                 tmp = tmp[7:]
             else:
@@ -710,7 +710,7 @@ class RouteEVPN(dpkt.Packet):
                 tmp = tmp[1:]
 
         if self.type != 0x1:
-            self.ip_address_length = ord(tmp[0])
+            self.ip_address_length = tmp[0]
             if self.ip_address_length == 128:
                 self.ip_address = tmp[1:17]
                 tmp = tmp[17:]
@@ -849,10 +849,10 @@ def test_unpack():
     r = m.announced[0]
     assert (r.type == 1)
     assert (r.len == 25)
-    assert (r.rd == '\x00\x01\x01\x01\x01\x02\x00\x02')
-    assert (r.esi == '\x05\x00\x00\x03\xe8\x00\x00\x04\x00\x00')
-    assert (r.eth_id == '\x00\x00\x00\x02')
-    assert (r.mpls_label_stack == '\x00\x00\x02')
+    assert (r.rd == b'\x00\x01\x01\x01\x01\x02\x00\x02')
+    assert (r.esi == b'\x05\x00\x00\x03\xe8\x00\x00\x04\x00\x00')
+    assert (r.eth_id == b'\x00\x00\x00\x02')
+    assert (r.mpls_label_stack == b'\x00\x00\x02')
 
     b6 = BGP(__bgp6)
     assert (b6.len == 111)
@@ -867,14 +867,14 @@ def test_unpack():
     r = m.announced[0]
     assert (r.type == 2)
     assert (r.len == 40)
-    assert (r.rd == '\x00\x01\x01\x01\x01\x02\x00\x02')
-    assert (r.esi == '\x05\x00\x00\x03\xe8\x00\x00\x04\x00\x00')
-    assert (r.eth_id == '\x00\x00\x00\x02')
+    assert (r.rd == b'\x00\x01\x01\x01\x01\x02\x00\x02')
+    assert (r.esi == b'\x05\x00\x00\x03\xe8\x00\x00\x04\x00\x00')
+    assert (r.eth_id == b'\x00\x00\x00\x02')
     assert (r.mac_address_length == 48)
-    assert (r.mac_address == '\xcc\xaa\x02\x9c\xd8\x29')
+    assert (r.mac_address == b'\xcc\xaa\x02\x9c\xd8\x29')
     assert (r.ip_address_length == 32)
-    assert (r.ip_address == '\xc0\xb4\x01\x02')
-    assert (r.mpls_label_stack == '\x00\x00\x02\x00\x00\x00')
+    assert (r.ip_address == b'\xc0\xb4\x01\x02')
+    assert (r.mpls_label_stack == b'\x00\x00\x02\x00\x00\x00')
 
     b7 = BGP(__bgp7)
     assert (b7.len == 88)
@@ -889,10 +889,10 @@ def test_unpack():
     r = m.announced[0]
     assert (r.type == 3)
     assert (r.len == 17)
-    assert (r.rd == '\x00\x01\x01\x01\x01\x02\x00\x02')
-    assert (r.eth_id == '\x00\x00\x00\x02')
+    assert (r.rd == b'\x00\x01\x01\x01\x01\x02\x00\x02')
+    assert (r.eth_id == b'\x00\x00\x00\x02')
     assert (r.ip_address_length == 32)
-    assert (r.ip_address == '\xc0\xb4\x01\x02')
+    assert (r.ip_address == b'\xc0\xb4\x01\x02')
 
     b8 = BGP(__bgp8)
     assert (b8.len == 95)
@@ -907,10 +907,10 @@ def test_unpack():
     r = m.announced[0]
     assert (r.type == 4)
     assert (r.len == 24)
-    assert (r.rd == '\x00\x01\x01\x01\x01\x02\x00\x02')
-    assert (r.esi == '\x05\x00\x00\x03\xe8\x00\x00\x04\x00\x00')
+    assert (r.rd == b'\x00\x01\x01\x01\x01\x02\x00\x02')
+    assert (r.esi == b'\x05\x00\x00\x03\xe8\x00\x00\x04\x00\x00')
     assert (r.ip_address_length == 32)
-    assert (r.ip_address == '\xc0\xb4\x01\x02')
+    assert (r.ip_address == b'\xc0\xb4\x01\x02')
 
     b9 = BGP(__bgp9)
     assert (b9.len == 123)
@@ -925,14 +925,14 @@ def test_unpack():
     r = m.announced[0]
     assert (r.type == 2)
     assert (r.len == 52)
-    assert (r.rd == '\x00\x01\x01\x01\x01\x02\x00\x02')
-    assert (r.esi == '\x05\x00\x00\x03\xe8\x00\x00\x04\x00\x00')
-    assert (r.eth_id == '\x00\x00\x00\x02')
+    assert (r.rd == b'\x00\x01\x01\x01\x01\x02\x00\x02')
+    assert (r.esi == b'\x05\x00\x00\x03\xe8\x00\x00\x04\x00\x00')
+    assert (r.eth_id == b'\x00\x00\x00\x02')
     assert (r.mac_address_length == 48)
-    assert (r.mac_address == '\xcc\xaa\x02\x9c\xd8\x29')
+    assert (r.mac_address == b'\xcc\xaa\x02\x9c\xd8\x29')
     assert (r.ip_address_length == 128)
-    assert (r.ip_address == '\xc0\xb4\x01\x02\xc0\xb4\x01\x02\xc0\xb4\x01\x02\xc0\xb4\x01\x02')
-    assert (r.mpls_label_stack == '\x00\x00\x02\x00\x00\x00')
+    assert (r.ip_address == b'\xc0\xb4\x01\x02\xc0\xb4\x01\x02\xc0\xb4\x01\x02\xc0\xb4\x01\x02')
+    assert (r.mpls_label_stack == b'\x00\x00\x02\x00\x00\x00')
 
 
 if __name__ == '__main__':
