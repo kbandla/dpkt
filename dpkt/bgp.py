@@ -9,7 +9,7 @@ import socket
 
 from . import dpkt
 from .decorators import deprecated
-from dpkt.compat import compat_ord
+from .compat import compat_ord
 
 
 # Border Gateway Protocol 4 - RFC 4271
