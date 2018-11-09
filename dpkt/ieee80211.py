@@ -133,6 +133,10 @@ class IEEE80211(dpkt.Packet):
         ('duration', 'H', 0)
     )
 
+    # The standard really defines the entire MAC protocol as little-endian on the wire,
+    # however there is broken logic in the rest of the module preventing this from working right now
+    #__byte_order__ = '<'
+
     @property
     def version(self):
         return (self.framectl & _VERSION_MASK) >> _VERSION_SHIFT
