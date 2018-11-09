@@ -552,7 +552,7 @@ class IEEE80211(dpkt.Packet):
         __hdr__ = (
             ('delba_param_set', 'H', 0),
             ('reason_code', 'H', 0),
-            #('gcr_group_addr', '8s', 0), # Standard says it must be there, but it isn't?
+            #('gcr_group_addr', '8s', '\x00' * 8), # Standard says it must be there, but it isn't?
         )
 
     class Data(dpkt.Packet):
