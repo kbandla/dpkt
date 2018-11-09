@@ -115,6 +115,7 @@ BLOCK_ACK = 3
 # Block ack category action codes
 BLOCK_ACK_CODE_REQUEST = 0
 BLOCK_ACK_CODE_RESPONSE = 1
+BLOCK_ACK_CODE_DELBA = 2
 
 
 class IEEE80211(dpkt.Packet):
@@ -517,6 +518,7 @@ class IEEE80211(dpkt.Packet):
                 BLOCK_ACK: {
                     BLOCK_ACK_CODE_REQUEST: ('block_ack_request', IEEE80211.BlockAckActionRequest),
                     BLOCK_ACK_CODE_RESPONSE: ('block_ack_response', IEEE80211.BlockAckActionResponse),
+                    BLOCK_ACK_CODE_DELBA: ('block_ack_delba', IEEE80211.BlockAckActionDelba),
                 },
             }
 
@@ -544,6 +546,13 @@ class IEEE80211(dpkt.Packet):
             ('status_code', 'H', 0),
             ('parameters', 'H', 0),
             ('timeout', 'H', 0),
+        )
+
+    class BlockAckActionDelba(dpkt.Packet):
+        __hdr__ = (
+            ('delba_param_set', 'H', 0),
+            ('reason_code', 'H', 0),
+            #('gcr_group_addr', '8s', 0), # Standard says it must be there, but it isn't?
         )
 
     class Data(dpkt.Packet):
