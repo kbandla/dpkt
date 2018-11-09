@@ -790,6 +790,16 @@ def test_action_block_ack_response():
     parameters = struct.unpack('H', b'\x10\x02')[0]
     assert ieee.action.block_ack_response.parameters == parameters
 
+def test_action_block_ack_delete():
+    s = b'\xd0\x00\x2c\x00\x00\xc1\x41\x06\x13\x0d\x6c\xb2\xae\xae\xde\x80\x6c\xb2\xae\xae\xde\x80\xa0\x52\x03\x02\x00\x08\x01\x00''\x74\x5d\x0a\xc6'
+    ieee = IEEE80211(s, fcs=True)
+    assert ieee.type == MGMT_TYPE
+    assert ieee.subtype == M_ACTION
+    assert ieee.action.category == BLOCK_ACK
+    assert ieee.action.code == BLOCK_ACK_CODE_DELBA
+    assert ieee.action.block_ack_delba.delba_param_set == 0x0800
+    assert ieee.action.block_ack_delba.reason_code == 1
+
 if __name__ == '__main__':
     # Runs all the test associated with this class/file
     test_802211_ack()
@@ -801,4 +811,5 @@ if __name__ == '__main__':
     test_compressed_block_ack()
     test_action_block_ack_request()
     test_action_block_ack_response()
+    test_action_block_ack_delete()
     print('Tests Successful...')
