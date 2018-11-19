@@ -112,6 +112,8 @@ class Message(dpkt.Packet):
         # Parse body
         if is_body_allowed:
             self.body = parse_body(f, self.headers)
+        else:
+            self.body = b''
         # Save the rest
         self.data = f.read()
 
