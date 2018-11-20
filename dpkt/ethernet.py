@@ -172,7 +172,9 @@ class Ethernet(dpkt.Packet):
 
         # initial type is based on next layer, pointed by self.data;
         # try to find an ETH_TYPE matching the data class
-        if isinstance(self.data, dpkt.Packet):
+        if (isinstance(self.data, dpkt.Packet) and not
+                getattr(self, 'mpls_labels', False) and not
+                getattr(self, 'vlan_tags', False)):
             new_type = self._typesw_rev.get(self.data.__class__, new_type)
 
         if getattr(self, 'mpls_labels', None):
@@ -182,7 +184,7 @@ class Ethernet(dpkt.Packet):
             lbl.s = 1
 
             # set encapsulation type
-            if not (self.type == ETH_TYPE_MPLS or self.type == ETH_TYPE_MPLS_MCAST):
+            if new_type not in (ETH_TYPE_MPLS, ETH_TYPE_MPLS_MCAST):
                 new_type = ETH_TYPE_MPLS
             tags_buf = b''.join(lbl.pack_hdr() for lbl in self.mpls_labels)
 
@@ -191,16 +193,17 @@ class Ethernet(dpkt.Packet):
             t1 = self.vlan_tags[0]
             if len(self.vlan_tags) == 1:
                 if isinstance(t1, VLANtag8021Q):
-                    t1.type = self.type
-                    new_type = ETH_TYPE_8021Q
+                    if new_type not in self._QinQ_eth_types:
+                        new_type = ETH_TYPE_8021Q
                 elif isinstance(t1, VLANtagISL):
                     t1.type = 0  # 0 means Ethernet
                     is_isl = True
             elif len(self.vlan_tags) == 2:
                 t2 = self.vlan_tags[1]
                 if isinstance(t1, VLANtag8021Q) and isinstance(t2, VLANtag8021Q):
-                    t2.type = self.type
-                    new_type = t1.type = ETH_TYPE_8021Q
+                    t1.type = ETH_TYPE_8021Q
+                    if new_type not in self._QinQ_eth_types:
+                        new_type = ETH_TYPE_8021Q  # stacked QinQ; could be 802.1ad as well
             else:
                 raise dpkt.PackError('maximum is 2 VLAN tags per Ethernet frame')
             tags_buf = b''.join(tag.pack_hdr() for tag in self.vlan_tags)
@@ -508,20 +511,19 @@ def test_eth_802dot1q_stacked():  # 2 VLAN tags
     assert isinstance(eth.data, arp.ARP)
 
 
-def test_eth_mpls_stacked():  # 2 MPLS labels
+def test_eth_mpls_stacked():  # Eth - MPLS - MPLS - IP - ICMP
     from . import ip
+    from . import icmp
     s = (b'\x00\x30\x96\xe6\xfc\x39\x00\x30\x96\x05\x28\x38\x88\x47\x00\x01\x20\xff\x00\x01\x01\xff'
          b'\x45\x00\x00\x64\x00\x50\x00\x00\xff\x01\xa7\x06\x0a\x1f\x00\x01\x0a\x22\x00\x01\x08\x00'
-         b'\xbd\x11\x0f\x65\x12\xa0\x00\x00\x00\x00\x00\x53\x9e\xe0\xab\xcd\xab\xcd\xab\xcd\xab\xcd'
-         b'\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd'
-         b'\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd'
-         b'\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd')
+         b'\xbd\x11\x0f\x65\x12\xa0\x00\x00\x00\x00\x00\x53\x9e\xe0' + b'\xab\xcd' * 32)
     eth = Ethernet(s)
     assert len(eth.mpls_labels) == 2
     assert eth.mpls_labels[0].val == 18
     assert eth.mpls_labels[1].val == 16
     assert eth.labels == [(18, 0, 255), (16, 0, 255)]
     assert isinstance(eth.data, ip.IP)
+    assert isinstance(eth.data.data, icmp.ICMP)
 
     # construction
     assert str(eth) == str(s), 'pack 1'
@@ -638,6 +640,72 @@ def test_eth_pppoe():   # Eth - PPPoE - IPv6 - UDP - DHCP6
     assert len(eth) == len(s)
 
 
+def test_eth_2mpls_ecw_eth_llc_stp():  # Eth - MPLS - MPLS - PW ECW - 802.3 Eth(no FCS) - LLC - STP
+    from . import stp
+    s = (b'\xcc\x01\x0d\x5c\x00\x10\xcc\x00\x0d\x5c\x00\x10\x88\x47\x00\x01\x20\xfe\x00\x01\x01\xff'
+         b'\x00\x00\x00\x00\x01\x80\xc2\x00\x00\x00\xcc\x04\x0d\x5c\xf0\x00\x00\x26\x42\x42\x03\x00'
+         b'\x00\x00\x00\x00\x80\x00\xcc\x04\x0d\x5c\x00\x00\x00\x00\x00\x00\x80\x00\xcc\x04\x0d\x5c'
+         b'\x00\x00\x80\x01\x00\x00\x14\x00\x02\x00\x0f\x00\x00\x00\x00\x00\x00\x00\x00\x00')
+
+    eth = Ethernet(s)
+    assert len(eth.mpls_labels) == 2
+    assert eth.mpls_labels[0].val == 18
+    assert eth.mpls_labels[1].val == 16
+
+    # stack
+    eth2 = eth.data
+    assert isinstance(eth2, Ethernet)
+    assert eth2.len == 38  # 802.3 Ethernet
+    # no FCS, all trailer
+    assert not hasattr(eth2, 'fcs')
+    assert eth2.trailer == b'\x00' * 8
+    assert isinstance(eth2.data, llc.LLC)
+    assert isinstance(eth2.data.data, stp.STP)
+    assert eth2.data.data.port_id == 0x8001
+
+    # construction
+ # FIXME
+    # assert str(eth) == str(s), 'pack 1'
+    # assert str(eth) == str(s), 'pack 2'
+    # assert len(eth) == len(s)
+
+
+# QinQ: Eth - 802.1ad - 802.1Q - IP
+def test_eth_802dot1ad_802dot1q_ip():
+    from . import ip
+    s = (b'\x00\x10\x94\x00\x00\x0c\x00\x10\x94\x00\x00\x14\x88\xa8\x00\x1e\x81\x00\x00\x64\x08\x00'
+         b'\x45\x00\x05\xc2\x54\xb0\x00\x00\xff\xfd\xdd\xbf\xc0\x55\x01\x16\xc0\x55\x01\x0e' +
+         1434 * b'\x00' + b'\x4f\xdc\xcd\x64\x20\x8d\xb6\x4e\xa8\x45\xf8\x80\xdd\x0c\xf9\x72\xc4'
+         b'\xd0\xcf\xcb\x46\x6d\x62\x7a')
+
+    eth = Ethernet(s)
+    assert eth.type == ETH_TYPE_8021ad
+    assert eth.vlan_tags[0].id == 30
+    assert eth.vlan_tags[1].id == 100
+    assert isinstance(eth.data, ip.IP)
+
+    e1 = Ethernet(s[:-1458])  # strip IP data
+
+    # construction
+    e2 = Ethernet(
+        dst='\x00\x10\x94\x00\x00\x0c', src='\x00\x10\x94\x00\x00\x14',
+        type=ETH_TYPE_8021ad,
+        vlan_tags=[
+            VLANtag8021Q(pri=0, id=30, cfi=0),
+            VLANtag8021Q(pri=0, id=100, cfi=0)
+        ],
+        data=ip.IP(
+            len=1474, id=21680, ttl=255, p=253, sum=56767,
+            src='\xc0U\x01\x16', dst='\xc0U\x01\x0e', opts=''
+        )
+    )
+    assert str(e1) == str(e2)
+
+    #eth.ip.data = b''
+    #assert str(e3) == str(eth)
+
+
+
 if __name__ == '__main__':
     test_eth()
     test_eth_init_with_data()
@@ -651,5 +719,7 @@ if __name__ == '__main__':
     test_eth_llc_snap_cdp()
     test_eth_llc_ipx()
     test_eth_pppoe()
+    test_eth_2mpls_ecw_eth_llc_stp()
+    test_eth_802dot1ad_802dot1q_ip()
 
     print('Tests Successful...')
