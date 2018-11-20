@@ -6,7 +6,6 @@ from __future__ import print_function
 from __future__ import absolute_import
 
 import struct
-import codecs
 from zlib import crc32
 
 from . import dpkt
@@ -40,6 +39,9 @@ ETH_TYPE_CDP = 0x2000  # Cisco Discovery Protocol
 ETH_TYPE_DTP = 0x2004  # Cisco Dynamic Trunking Protocol
 ETH_TYPE_REVARP = 0x8035  # reverse addr resolution protocol
 ETH_TYPE_8021Q = 0x8100  # IEEE 802.1Q VLAN tagging
+ETH_TYPE_8021ad = 0x88a8  # IEEE 802.1ad
+ETH_TYPE_QinQ1 = 0x9100  # Legacy QinQ
+ETH_TYPE_QinQ2 = 0x9200  # Legacy QinQ
 ETH_TYPE_IPX = 0x8137  # Internetwork Packet Exchange
 ETH_TYPE_IP6 = 0x86DD  # IPv6 protocol
 ETH_TYPE_PPP = 0x880B  # PPP
@@ -61,7 +63,7 @@ class Ethernet(dpkt.Packet):
         __hdr__: Header fields of Ethernet.
         TODO.
     """
-    
+
     __hdr__ = (
         ('dst', '6s', ''),
         ('src', '6s', ''),
@@ -70,15 +72,20 @@ class Ethernet(dpkt.Packet):
     _typesw = {}
     _typesw_rev = {}  # reverse mapping
 
+    _QinQ_eth_types = frozenset([ETH_TYPE_8021Q, ETH_TYPE_8021ad, ETH_TYPE_QinQ1, ETH_TYPE_QinQ2])
+
     def __init__(self, *args, **kwargs):
         dpkt.Packet.__init__(self, *args, **kwargs)
         # if data was given in kwargs, try to unpack it
-        if self.data: 
+        if self.data:
             if isstr(self.data) or isinstance(self.data, bytes):
                 self._unpack_data(self.data)
 
     def _unpack_data(self, buf):
-        if self.type == ETH_TYPE_8021Q:
+        next_type = self.type
+
+        # unpack vlan tag and mpls label stacks
+        if next_type in self._QinQ_eth_types:
             self.vlan_tags = []
 
             # support up to 2 tags (double tagging aka QinQ)
@@ -86,13 +93,13 @@ class Ethernet(dpkt.Packet):
                 tag = VLANtag8021Q(buf)
                 buf = buf[tag.__hdr_len__:]
                 self.vlan_tags.append(tag)
-                self.type = tag.type
-                if self.type != ETH_TYPE_8021Q:
+                next_type = tag.type
+                if next_type != ETH_TYPE_8021Q:
                     break
             # backward compatibility, use the 1st tag
             self.vlanid, self.priority, self.cfi = self.vlan_tags[0].as_tuple()
 
-        elif self.type == ETH_TYPE_MPLS or self.type == ETH_TYPE_MPLS_MCAST:
+        elif next_type == ETH_TYPE_MPLS or next_type == ETH_TYPE_MPLS_MCAST:
             self.labels = []  # old list containing labels as tuples
             self.mpls_labels = []  # new list containing labels as instances of MPLSlabel
 
@@ -104,10 +111,18 @@ class Ethernet(dpkt.Packet):
                 self.labels.append(lbl.as_tuple())
                 if lbl.s:  # bottom of stack
                     break
-            self.type = ETH_TYPE_IP
+
+            # poor man's heuristics to guessing the next type
+            if buf[0] == '\x45':  # IP version 4 + header len 20 bytes
+                next_type = ETH_TYPE_IP
+
+            # pseudowire Ethernet control word (ECW)
+            elif buf[:2] == '\x00\x00' and len(buf) - 4 >= self.__hdr_len__:
+                buf = buf[4:]  # skip the ECW
+                next_type = ETH_TYPE_TEB  # re-use TEB to decode Ethernet
 
         try:
-            self.data = self._typesw[self.type](buf)
+            self.data = self._typesw[next_type](buf)
             setattr(self, self.data.__class__.__name__.lower(), self.data)
         except (KeyError, dpkt.UnpackError):
             self.data = buf
@@ -138,16 +153,20 @@ class Ethernet(dpkt.Packet):
             # if the upper layer len(self.data) can be fully decoded and returns its size,
             # and there's a difference with size in the Eth header, then assume the last
             # 4 bytes is the FCS and remaining bytes are a trailer.
-            eth_len = self.type
+            eth_len = self.len = self.type
             if len(self.data) > eth_len:
                 tail_len = len(self.data) - eth_len
                 if tail_len >= 4:
-                    self.fcs = struct.unpack('>I', self.data[-4:])[0]
-                    self.trailer = self.data[eth_len:-4]
+                    # if the last 4 bytes are zeroes that's unlikely a FCS
+                    if self.data[-4:] == '\x00\x00\x00\x00':
+                        self.trailer = self.data[eth_len:]
+                    else:
+                        self.fcs = struct.unpack('>I', self.data[-4:])[0]
+                        self.trailer = self.data[eth_len:-4]
             self.data = self.llc = llc.LLC(self.data[:eth_len])
 
     def pack_hdr(self):
-        tags_buf =  b''
+        tags_buf = b''
         new_type = self.type
         is_isl = False  # ISL wraps Ethernet, this determines order of packing
 
@@ -456,7 +475,7 @@ def test_eth_802dot1q_stacked():  # 2 VLAN tags
          b'\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd'
          b'\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd')
     eth = Ethernet(s)
-    assert eth.type == ETH_TYPE_IP
+    assert eth.type == ETH_TYPE_8021Q
     assert len(eth.vlan_tags) == 2
     assert eth.vlan_tags[0].id == 118
     assert eth.vlan_tags[1].id == 10
@@ -617,9 +636,6 @@ def test_eth_pppoe():   # Eth - PPPoE - IPv6 - UDP - DHCP6
     # construction
     assert str(eth) == str(s)
     assert len(eth) == len(s)
-
-
-
 
 
 if __name__ == '__main__':
