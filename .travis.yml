@@ -1,4 +1,6 @@
 language: python
+sudo: required
+dist: xenial
 matrix:
   global:
     LD_PRELOAD=/lib/x86_64-linux-gnu/libSegFault.so
