@@ -39,9 +39,9 @@ ETH_TYPE_CDP = 0x2000  # Cisco Discovery Protocol
 ETH_TYPE_DTP = 0x2004  # Cisco Dynamic Trunking Protocol
 ETH_TYPE_REVARP = 0x8035  # reverse addr resolution protocol
 ETH_TYPE_8021Q = 0x8100  # IEEE 802.1Q VLAN tagging
-ETH_TYPE_8021ad = 0x88a8  # IEEE 802.1ad
-ETH_TYPE_QinQ1 = 0x9100  # Legacy QinQ
-ETH_TYPE_QinQ2 = 0x9200  # Legacy QinQ
+ETH_TYPE_8021AD = 0x88a8  # IEEE 802.1ad
+ETH_TYPE_QINQ1 = 0x9100  # Legacy QinQ
+ETH_TYPE_QINQ2 = 0x9200  # Legacy QinQ
 ETH_TYPE_IPX = 0x8137  # Internetwork Packet Exchange
 ETH_TYPE_IP6 = 0x86DD  # IPv6 protocol
 ETH_TYPE_PPP = 0x880B  # PPP
@@ -51,6 +51,9 @@ ETH_TYPE_PPPoE_DISC = 0x8863  # PPP Over Ethernet Discovery Stage
 ETH_TYPE_PPPoE = 0x8864  # PPP Over Ethernet Session Stage
 ETH_TYPE_LLDP = 0x88CC  # Link Layer Discovery Protocol
 ETH_TYPE_TEB = 0x6558  # Transparent Ethernet Bridging
+
+# all QinQ types for fast checking
+_ETH_TYPES_QINQ = frozenset([ETH_TYPE_8021Q, ETH_TYPE_8021AD, ETH_TYPE_QINQ1, ETH_TYPE_QINQ2])
 
 
 class Ethernet(dpkt.Packet):
@@ -72,8 +75,6 @@ class Ethernet(dpkt.Packet):
     _typesw = {}
     _typesw_rev = {}  # reverse mapping
 
-    _QinQ_eth_types = frozenset([ETH_TYPE_8021Q, ETH_TYPE_8021ad, ETH_TYPE_QinQ1, ETH_TYPE_QinQ2])
-
     def __init__(self, *args, **kwargs):
         dpkt.Packet.__init__(self, *args, **kwargs)
         # if data was given in kwargs, try to unpack it
@@ -85,7 +86,7 @@ class Ethernet(dpkt.Packet):
         next_type = self.type
 
         # unpack vlan tag and mpls label stacks
-        if next_type in self._QinQ_eth_types:
+        if next_type in _ETH_TYPES_QINQ:
             self.vlan_tags = []
 
             # support up to 2 tags (double tagging aka QinQ)
@@ -170,13 +171,6 @@ class Ethernet(dpkt.Packet):
         new_type = self.type
         is_isl = False  # ISL wraps Ethernet, this determines order of packing
 
-        # initial type is based on next layer, pointed by self.data;
-        # try to find an ETH_TYPE matching the data class
-        if (isinstance(self.data, dpkt.Packet) and not
-                getattr(self, 'mpls_labels', False) and not
-                getattr(self, 'vlan_tags', False)):
-            new_type = self._typesw_rev.get(self.data.__class__, new_type)
-
         if getattr(self, 'mpls_labels', None):
             # mark all labels with s=0, last one with s=1
             for lbl in self.mpls_labels:
@@ -193,7 +187,7 @@ class Ethernet(dpkt.Packet):
             t1 = self.vlan_tags[0]
             if len(self.vlan_tags) == 1:
                 if isinstance(t1, VLANtag8021Q):
-                    if new_type not in self._QinQ_eth_types:
+                    if new_type not in _ETH_TYPES_QINQ:
                         new_type = ETH_TYPE_8021Q
                 elif isinstance(t1, VLANtagISL):
                     t1.type = 0  # 0 means Ethernet
@@ -202,11 +196,16 @@ class Ethernet(dpkt.Packet):
                 t2 = self.vlan_tags[1]
                 if isinstance(t1, VLANtag8021Q) and isinstance(t2, VLANtag8021Q):
                     t1.type = ETH_TYPE_8021Q
-                    if new_type not in self._QinQ_eth_types:
+                    if new_type not in _ETH_TYPES_QINQ:
                         new_type = ETH_TYPE_8021Q  # stacked QinQ; could be 802.1ad as well
             else:
                 raise dpkt.PackError('maximum is 2 VLAN tags per Ethernet frame')
             tags_buf = b''.join(tag.pack_hdr() for tag in self.vlan_tags)
+
+        # initial type is based on next layer, pointed by self.data;
+        # try to find an ETH_TYPE matching the data class
+        elif isinstance(self.data, dpkt.Packet):
+            new_type = self._typesw_rev.get(self.data.__class__, new_type)
 
         # if self.data is LLC then this is IEEE 802.3 Ethernet and self.type
         # then actually encodes the length of data
@@ -664,10 +663,8 @@ def test_eth_2mpls_ecw_eth_llc_stp():  # Eth - MPLS - MPLS - PW ECW - 802.3 Eth(
     assert eth2.data.data.port_id == 0x8001
 
     # construction
- # FIXME
-    # assert str(eth) == str(s), 'pack 1'
-    # assert str(eth) == str(s), 'pack 2'
-    # assert len(eth) == len(s)
+    # XXX - FIXME: make packing account for the ECW
+    # assert str(eth) == str(s)
 
 
 # QinQ: Eth - 802.1ad - 802.1Q - IP
@@ -679,7 +676,7 @@ def test_eth_802dot1ad_802dot1q_ip():
          b'\xd0\xcf\xcb\x46\x6d\x62\x7a')
 
     eth = Ethernet(s)
-    assert eth.type == ETH_TYPE_8021ad
+    assert eth.type == ETH_TYPE_8021AD
     assert eth.vlan_tags[0].id == 30
     assert eth.vlan_tags[1].id == 100
     assert isinstance(eth.data, ip.IP)
@@ -689,7 +686,7 @@ def test_eth_802dot1ad_802dot1q_ip():
     # construction
     e2 = Ethernet(
         dst='\x00\x10\x94\x00\x00\x0c', src='\x00\x10\x94\x00\x00\x14',
-        type=ETH_TYPE_8021ad,
+        type=ETH_TYPE_8021AD,
         vlan_tags=[
             VLANtag8021Q(pri=0, id=30, cfi=0),
             VLANtag8021Q(pri=0, id=100, cfi=0)
@@ -700,10 +697,6 @@ def test_eth_802dot1ad_802dot1q_ip():
         )
     )
     assert str(e1) == str(e2)
-
-    #eth.ip.data = b''
-    #assert str(e3) == str(eth)
-
 
 
 if __name__ == '__main__':
