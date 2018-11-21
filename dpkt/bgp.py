@@ -9,6 +9,7 @@ import socket
 
 from . import dpkt
 from .decorators import deprecated
+from .compat import compat_ord
 
 
 # Border Gateway Protocol 4 - RFC 4271
@@ -62,11 +63,13 @@ NO_PEER = 0xffffff04
 # Common AFI types
 AFI_IPV4 = 1
 AFI_IPV6 = 2
+AFI_L2VPN = 25
 
 # Multiprotocol SAFI types
 SAFI_UNICAST = 1
 SAFI_MULTICAST = 2
 SAFI_UNICAST_MULTICAST = 3
+SAFI_EVPN = 70
 
 # OPEN Message Optional Parameters
 AUTHENTICATION = 1
@@ -528,6 +531,8 @@ class BGP(dpkt.Packet):
                         Route = RouteIPV4
                     elif self.afi == AFI_IPV6:
                         Route = RouteIPV6
+                    elif self.afi == AFI_L2VPN:
+                        Route = RouteEVPN
                     else:
                         Route = RouteGeneric
 
@@ -575,6 +580,8 @@ class BGP(dpkt.Packet):
                         Route = RouteIPV4
                     elif self.afi == AFI_IPV6:
                         Route = RouteIPV6
+                    elif self.afi == AFI_L2VPN:
+                        Route = RouteEVPN
                     else:
                         Route = RouteGeneric
 
@@ -670,10 +677,75 @@ class RouteIPV6(dpkt.Packet):
         return self.pack_hdr() + self.prefix[:(self.len + 7) // 8]
 
 
+class RouteEVPN(dpkt.Packet):
+    __hdr__ = (
+        ('type', 'B', 0),
+        ('len', 'B', 0)
+    )
+
+    def unpack(self, buf):
+        dpkt.Packet.unpack(self, buf)
+        self.route_data = buf = self.data[:self.len]
+        self.data = self.data[self.len:]
+
+        # Get route distinguisher.
+        self.rd = buf[:8]
+        buf = buf[8:]
+
+        # Get route information.  Not all fields are present on all route types.
+        if self.type != 0x3:
+            self.esi = buf[:10]
+            buf = buf[10:]
+
+        if self.type != 0x4:
+            self.eth_id = buf[:4]
+            buf = buf[4:]
+
+        if self.type == 0x2:
+            self.mac_address_length = compat_ord(buf[0])
+            if self.mac_address_length == 48:
+                self.mac_address = buf[1:7]
+                buf = buf[7:]
+            else:
+                self.mac_address = None
+                buf = buf[1:]
+
+        if self.type != 0x1:
+            self.ip_address_length = compat_ord(buf[0])
+            if self.ip_address_length == 128:
+                self.ip_address = buf[1:17]
+                buf = buf[17:]
+            elif self.ip_address_length == 32:
+                self.ip_address = buf[1:5]
+                buf = buf[5:]
+            else:
+                self.ip_address = None
+                buf = buf[1:]
+
+        if self.type in [0x1, 0x2]:
+            self.mpls_label_stack = buf[:3]
+            buf = buf[3:]
+            if self.len > len(buf):
+                self.mpls_label_stack += buf[:3]
+
+    def __len__(self):
+        return self.__hdr_len__ + self.len
+
+    def __bytes__(self):
+        return self.pack_hdr() + self.route_data
+
+
 __bgp1 = b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x13\x04'
 __bgp2 = b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x63\x02\x00\x00\x00\x48\x40\x01\x01\x00\x40\x02\x0a\x01\x02\x01\xf4\x01\xf4\x02\x01\xfe\xbb\x40\x03\x04\xc0\xa8\x00\x0f\x40\x05\x04\x00\x00\x00\x64\x40\x06\x00\xc0\x07\x06\xfe\xba\xc0\xa8\x00\x0a\xc0\x08\x0c\xfe\xbf\x00\x01\x03\x16\x00\x04\x01\x54\x00\xfa\x80\x09\x04\xc0\xa8\x00\x0f\x80\x0a\x04\xc0\xa8\x00\xfa\x16\xc0\xa8\x04'
 __bgp3 = b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x79\x02\x00\x00\x00\x62\x40\x01\x01\x00\x40\x02\x00\x40\x05\x04\x00\x00\x00\x64\xc0\x10\x08\x00\x02\x01\x2c\x00\x00\x01\x2c\xc0\x80\x24\x00\x00\xfd\xe9\x40\x01\x01\x00\x40\x02\x04\x02\x01\x15\xb3\x40\x05\x04\x00\x00\x00\x2c\x80\x09\x04\x16\x05\x05\x05\x80\x0a\x04\x16\x05\x05\x05\x90\x0e\x00\x1e\x00\x01\x80\x0c\x00\x00\x00\x00\x00\x00\x00\x00\x0c\x04\x04\x04\x00\x60\x18\x77\x01\x00\x00\x01\xf4\x00\x00\x01\xf4\x85'
 __bgp4 = b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x2d\x01\x04\x00\xed\x00\x5a\xc6\x6e\x83\x7d\x10\x02\x06\x01\x04\x00\x01\x00\x01\x02\x02\x80\x00\x02\x02\x02\x00'
+
+# BGP-EVPN type 1-4 packets for testing.
+__bgp5 = b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x60\x02\x00\x00\x00\x49\x40\x01\x01\x00\x40\x02\x00\x40\x05\x04\x00\x00\x00\x64\xc0\x10\x10\x03\x0c\x00\x00\x00\x00\x00\x08\x00\x02\x03\xe8\x00\x00\x00\x02\x90\x0e\x00\x24\x00\x19\x46\x04\x01\x01\x01\x02\x00\x01\x19\x00\x01\x01\x01\x01\x02\x00\x02\x05\x00\x00\x03\xe8\x00\x00\x04\x00\x00\x00\x00\x00\x02\x00\x00\x02'
+__bgp6 = b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x6f\x02\x00\x00\x00\x58\x40\x01\x01\x00\x40\x02\x00\x40\x05\x04\x00\x00\x00\x64\xc0\x10\x10\x03\x0c\x00\x00\x00\x00\x00\x08\x00\x02\x03\xe8\x00\x00\x00\x02\x90\x0e\x00\x33\x00\x19\x46\x04\x01\x01\x01\x02\x00\x02\x28\x00\x01\x01\x01\x01\x02\x00\x02\x05\x00\x00\x03\xe8\x00\x00\x04\x00\x00\x00\x00\x00\x02\x30\xcc\xaa\x02\x9c\xd8\x29\x20\xc0\xb4\x01\x02\x00\x00\x02\x00\x00\x00'
+__bgp7 = b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x58\x02\x00\x00\x00\x41\x40\x01\x01\x00\x40\x02\x00\x40\x05\x04\x00\x00\x00\x64\xc0\x10\x10\x03\x0c\x00\x00\x00\x00\x00\x08\x00\x02\x03\xe8\x00\x00\x00\x02\x90\x0e\x00\x1c\x00\x19\x46\x04\x01\x01\x01\x02\x00\x03\x11\x00\x01\x01\x01\x01\x02\x00\x02\x00\x00\x00\x02\x20\xc0\xb4\x01\x02'
+__bgp8 = b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x5f\x02\x00\x00\x00\x48\x40\x01\x01\x00\x40\x02\x00\x40\x05\x04\x00\x00\x00\x64\xc0\x10\x10\x03\x0c\x00\x00\x00\x00\x00\x08\x00\x02\x03\xe8\x00\x00\x00\x02\x90\x0e\x00\x23\x00\x19\x46\x04\x01\x01\x01\x02\x00\x04\x18\x00\x01\x01\x01\x01\x02\x00\x02\x05\x00\x00\x03\xe8\x00\x00\x04\x00\x00\x20\xc0\xb4\x01\x02'
+__bgp9 = b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x7b\x02\x00\x00\x00\x64\x40\x01\x01\x00\x40\x02\x00\x40\x05\x04\x00\x00\x00\x64\xc0\x10\x10\x03\x0c\x00\x00\x00\x00\x00\x08\x00\x02\x03\xe8\x00\x00\x00\x02\x90\x0e\x00\x3f\x00\x19\x46\x04\x01\x01\x01\x02\x00\x02\x34\x00\x01\x01\x01\x01\x02\x00\x02\x05\x00\x00\x03\xe8\x00\x00\x04\x00\x00\x00\x00\x00\x02\x30\xcc\xaa\x02\x9c\xd8\x29\x80\xc0\xb4\x01\x02\xc0\xb4\x01\x02\xc0\xb4\x01\x02\xc0\xb4\x01\x02\x00\x00\x02\x00\x00\x00'
 
 
 def test_pack():
@@ -681,6 +753,11 @@ def test_pack():
     assert (__bgp2 == bytes(BGP(__bgp2)))
     assert (__bgp3 == bytes(BGP(__bgp3)))
     assert (__bgp4 == bytes(BGP(__bgp4)))
+    assert (__bgp5 == bytes(BGP(__bgp5)))
+    assert (__bgp6 == bytes(BGP(__bgp6)))
+    assert (__bgp7 == bytes(BGP(__bgp7)))
+    assert (__bgp8 == bytes(BGP(__bgp8)))
+    assert (__bgp9 == bytes(BGP(__bgp9)))
 
 
 def test_unpack():
@@ -759,6 +836,104 @@ def test_unpack():
     c = b4.open.parameters[2].capability
     assert (c.code == CAP_ROUTE_REFRESH)
     assert (c.len == 0)
+
+    b5 = BGP(__bgp5)
+    assert (b5.len == 96)
+    assert (b5.type == UPDATE)
+    assert (len(b5.update.withdrawn) == 0)
+    a = b5.update.attributes[-1]
+    assert (a.type == MP_REACH_NLRI)
+    assert (a.len == 36)
+    m = a.mp_reach_nlri
+    assert (m.afi == AFI_L2VPN)
+    assert (m.safi == SAFI_EVPN)
+    r = m.announced[0]
+    assert (r.type == 1)
+    assert (r.len == 25)
+    assert (r.rd == b'\x00\x01\x01\x01\x01\x02\x00\x02')
+    assert (r.esi == b'\x05\x00\x00\x03\xe8\x00\x00\x04\x00\x00')
+    assert (r.eth_id == b'\x00\x00\x00\x02')
+    assert (r.mpls_label_stack == b'\x00\x00\x02')
+
+    b6 = BGP(__bgp6)
+    assert (b6.len == 111)
+    assert (b6.type == UPDATE)
+    assert (len(b6.update.withdrawn) == 0)
+    a = b6.update.attributes[-1]
+    assert (a.type == MP_REACH_NLRI)
+    assert (a.len == 51)
+    m = a.mp_reach_nlri
+    assert (m.afi == AFI_L2VPN)
+    assert (m.safi == SAFI_EVPN)
+    r = m.announced[0]
+    assert (r.type == 2)
+    assert (r.len == 40)
+    assert (r.rd == b'\x00\x01\x01\x01\x01\x02\x00\x02')
+    assert (r.esi == b'\x05\x00\x00\x03\xe8\x00\x00\x04\x00\x00')
+    assert (r.eth_id == b'\x00\x00\x00\x02')
+    assert (r.mac_address_length == 48)
+    assert (r.mac_address == b'\xcc\xaa\x02\x9c\xd8\x29')
+    assert (r.ip_address_length == 32)
+    assert (r.ip_address == b'\xc0\xb4\x01\x02')
+    assert (r.mpls_label_stack == b'\x00\x00\x02\x00\x00\x00')
+
+    b7 = BGP(__bgp7)
+    assert (b7.len == 88)
+    assert (b7.type == UPDATE)
+    assert (len(b7.update.withdrawn) == 0)
+    a = b7.update.attributes[-1]
+    assert (a.type == MP_REACH_NLRI)
+    assert (a.len == 28)
+    m = a.mp_reach_nlri
+    assert (m.afi == AFI_L2VPN)
+    assert (m.safi == SAFI_EVPN)
+    r = m.announced[0]
+    assert (r.type == 3)
+    assert (r.len == 17)
+    assert (r.rd == b'\x00\x01\x01\x01\x01\x02\x00\x02')
+    assert (r.eth_id == b'\x00\x00\x00\x02')
+    assert (r.ip_address_length == 32)
+    assert (r.ip_address == b'\xc0\xb4\x01\x02')
+
+    b8 = BGP(__bgp8)
+    assert (b8.len == 95)
+    assert (b8.type == UPDATE)
+    assert (len(b8.update.withdrawn) == 0)
+    a = b8.update.attributes[-1]
+    assert (a.type == MP_REACH_NLRI)
+    assert (a.len == 35)
+    m = a.mp_reach_nlri
+    assert (m.afi == AFI_L2VPN)
+    assert (m.safi == SAFI_EVPN)
+    r = m.announced[0]
+    assert (r.type == 4)
+    assert (r.len == 24)
+    assert (r.rd == b'\x00\x01\x01\x01\x01\x02\x00\x02')
+    assert (r.esi == b'\x05\x00\x00\x03\xe8\x00\x00\x04\x00\x00')
+    assert (r.ip_address_length == 32)
+    assert (r.ip_address == b'\xc0\xb4\x01\x02')
+
+    b9 = BGP(__bgp9)
+    assert (b9.len == 123)
+    assert (b9.type == UPDATE)
+    assert (len(b9.update.withdrawn) == 0)
+    a = b9.update.attributes[-1]
+    assert (a.type == MP_REACH_NLRI)
+    assert (a.len == 63)
+    m = a.mp_reach_nlri
+    assert (m.afi == AFI_L2VPN)
+    assert (m.safi == SAFI_EVPN)
+    r = m.announced[0]
+    assert (r.type == 2)
+    assert (r.len == 52)
+    assert (r.rd == b'\x00\x01\x01\x01\x01\x02\x00\x02')
+    assert (r.esi == b'\x05\x00\x00\x03\xe8\x00\x00\x04\x00\x00')
+    assert (r.eth_id == b'\x00\x00\x00\x02')
+    assert (r.mac_address_length == 48)
+    assert (r.mac_address == b'\xcc\xaa\x02\x9c\xd8\x29')
+    assert (r.ip_address_length == 128)
+    assert (r.ip_address == b'\xc0\xb4\x01\x02\xc0\xb4\x01\x02\xc0\xb4\x01\x02\xc0\xb4\x01\x02')
+    assert (r.mpls_label_stack == b'\x00\x00\x02\x00\x00\x00')
 
 
 if __name__ == '__main__':
