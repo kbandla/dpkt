@@ -117,10 +117,11 @@ class Ethernet(dpkt.Packet):
             if buf[0] == '\x45':  # IP version 4 + header len 20 bytes
                 next_type = ETH_TYPE_IP
 
-            # pseudowire Ethernet control word (ECW)
-            elif buf[:2] == '\x00\x00' and len(buf) - 4 >= self.__hdr_len__:
-                buf = buf[4:]  # skip the ECW
-                next_type = ETH_TYPE_TEB  # re-use TEB to decode Ethernet
+            # pseudowire Ethernet
+            elif len(buf) >= self.__hdr_len__:
+                if buf[:2] == '\x00\x00':  # looks like the control word (ECW)
+                    buf = buf[4:]  # skip the ECW
+                next_type = ETH_TYPE_TEB  # re-use TEB class mapping to decode Ethernet
 
         try:
             self.data = self._typesw[next_type](buf)
