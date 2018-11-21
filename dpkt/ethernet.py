@@ -10,7 +10,7 @@ from zlib import crc32
 
 from . import dpkt
 from . import llc
-from .compat import iteritems
+from .compat import compat_ord, iteritems
 
 try:
     isinstance("", basestring)
@@ -114,12 +114,12 @@ class Ethernet(dpkt.Packet):
                     break
 
             # poor man's heuristics to guessing the next type
-            if buf[0] == '\x45':  # IP version 4 + header len 20 bytes
+            if compat_ord(buf[0]) == 0x45:  # IP version 4 + header len 20 bytes
                 next_type = ETH_TYPE_IP
 
             # pseudowire Ethernet
             elif len(buf) >= self.__hdr_len__:
-                if buf[:2] == '\x00\x00':  # looks like the control word (ECW)
+                if buf[:2] == b'\x00\x00':  # looks like the control word (ECW)
                     buf = buf[4:]  # skip the ECW
                 next_type = ETH_TYPE_TEB  # re-use TEB class mapping to decode Ethernet
 
@@ -160,7 +160,7 @@ class Ethernet(dpkt.Packet):
                 tail_len = len(self.data) - eth_len
                 if tail_len >= 4:
                     # if the last 4 bytes are zeroes that's unlikely a FCS
-                    if self.data[-4:] == '\x00\x00\x00\x00':
+                    if self.data[-4:] == b'\x00\x00\x00\x00':
                         self.trailer = self.data[eth_len:]
                     else:
                         self.fcs = struct.unpack('>I', self.data[-4:])[0]
@@ -686,7 +686,7 @@ def test_eth_802dot1ad_802dot1q_ip():
 
     # construction
     e2 = Ethernet(
-        dst='\x00\x10\x94\x00\x00\x0c', src='\x00\x10\x94\x00\x00\x14',
+        dst=b'\x00\x10\x94\x00\x00\x0c', src=b'\x00\x10\x94\x00\x00\x14',
         type=ETH_TYPE_8021AD,
         vlan_tags=[
             VLANtag8021Q(pri=0, id=30, cfi=0),
@@ -694,7 +694,7 @@ def test_eth_802dot1ad_802dot1q_ip():
         ],
         data=ip.IP(
             len=1474, id=21680, ttl=255, p=253, sum=56767,
-            src='\xc0U\x01\x16', dst='\xc0U\x01\x0e', opts=''
+            src=b'\xc0U\x01\x16', dst=b'\xc0U\x01\x0e', opts=b''
         )
     )
     assert str(e1) == str(e2)
