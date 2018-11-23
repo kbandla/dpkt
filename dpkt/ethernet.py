@@ -188,7 +188,7 @@ class Ethernet(dpkt.Packet):
             t1 = self.vlan_tags[0]
             if len(self.vlan_tags) == 1:
                 if isinstance(t1, VLANtag8021Q):
-                    if new_type not in _ETH_TYPES_QINQ:
+                    if new_type not in _ETH_TYPES_QINQ:  # preserve the type if already set
                         new_type = ETH_TYPE_8021Q
                 elif isinstance(t1, VLANtagISL):
                     t1.type = 0  # 0 means Ethernet
@@ -198,7 +198,7 @@ class Ethernet(dpkt.Packet):
                 if isinstance(t1, VLANtag8021Q) and isinstance(t2, VLANtag8021Q):
                     t1.type = ETH_TYPE_8021Q
                     if new_type not in _ETH_TYPES_QINQ:
-                        new_type = ETH_TYPE_8021Q  # stacked QinQ; could be 802.1ad as well
+                        new_type = ETH_TYPE_8021AD
             else:
                 raise dpkt.PackError('maximum is 2 VLAN tags per Ethernet frame')
             tags_buf = b''.join(tag.pack_hdr() for tag in self.vlan_tags)
@@ -494,7 +494,9 @@ def test_eth_802dot1q_stacked():  # 2 VLAN tags
 
     # construction with kwargs
     eth2 = Ethernet(src=eth.src, dst=eth.dst, vlan_tags=eth.vlan_tags, data=eth.data)
-    assert str(eth2) == str(s)
+
+    # construction sets ip.type to 802.1ad instead of 802.1q so account for it
+    assert str(eth2) == str(s[:12] + b'\x88\xa8' + s[14:])
 
     # construction w/o the tags
     del eth.vlan_tags, eth.cfi, eth.vlanid, eth.priority
