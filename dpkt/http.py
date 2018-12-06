@@ -127,7 +127,7 @@ class Message(dpkt.Packet):
         return '%s\r\n%s' % (self.pack_hdr(), self.body.decode("utf8", "ignore"))
 
     def __bytes__(self):
-        return self.pack_hdr().encode("ascii", "ignore") + b'\r\n' + (self.body or '')
+        return self.pack_hdr().encode("ascii", "ignore") + b'\r\n' + (self.body or b'')
 
 
 class Request(Message):
