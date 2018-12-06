@@ -127,13 +127,7 @@ class Message(dpkt.Packet):
         return '%s\r\n%s' % (self.pack_hdr(), self.body.decode("utf8", "ignore"))
 
     def __bytes__(self):
-        # Not using byte interpolation to preserve Python 3.4 compatibility. The extra
-        # \r\n doesn't get trimmed from the bytes, so it's necessary to omit the spacing
-        # one when building the output if there's no body
-        if self.body:
-            return self.pack_hdr().encode("ascii", "ignore") + b'\r\n' + self.body
-        else:
-            return self.pack_hdr().encode("ascii", "ignore")
+        return self.pack_hdr().encode("ascii", "ignore") + b'\r\n' + (self.body or '')
 
 
 class Request(Message):
