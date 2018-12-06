@@ -240,7 +240,7 @@ class Response(Message):
 
     def __bytes__(self):
         str_out = '%s/%s %s %s\r\n' % (self.__proto, self.version, self.status,
-                                       self.reason) + Message.__str__(self)
+                                       self.reason)
         return str_out.encode("ascii", "ignore") + Message.__bytes__(self)
 
 
@@ -300,6 +300,13 @@ def test_noreason_response():
     r = Response(s)
     assert r.reason == ''
     assert bytes(r) == s
+
+
+def test_response_with_body():
+    r = Response()
+    r.body = b'foo'
+    assert str(r) == 'HTTP/1.0 200 OK\r\n\r\nfoo'
+    assert bytes(r) == b'HTTP/1.0 200 OK\r\n\r\nfoo'
 
 
 def test_body_forbidden_response():
@@ -436,6 +443,7 @@ if __name__ == '__main__':
     test_chunked_response()
     test_multicookie_response()
     test_noreason_response()
+    test_response_with_body()
     test_request_version()
     test_invalid_header()
     test_body_forbidden_response()
