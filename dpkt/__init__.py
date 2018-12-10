@@ -6,7 +6,7 @@ import sys
 __author__ = 'Dug Song'
 __author_email__ = 'dugsong@monkey.org'
 __license__ = 'BSD'
-__url__ = 'http://dpkt.googlecode.com/'
+__url__ = 'https://github.com/kbandla/dpkt'
 __version__ = '1.9.2'
 
 
