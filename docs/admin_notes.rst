@@ -59,6 +59,12 @@ Create the TEST PyPI Release
   $ python setup.py sdist bdist_wheel
   $ twine upload dist/* -r testpypi
 
+Install the TEST PyPI Release
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. code-block:: bash
+
+  $ pip install --index-url https://test.pypi.org/simple dpkt
+
 Create the REAL PyPI Release
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .. code-block:: bash
