@@ -9,6 +9,7 @@ import time
 from decimal import Decimal
 
 from . import dpkt
+from .compat import intround
 
 TCPDUMP_MAGIC = 0xa1b2c3d4
 TCPDUMP_MAGIC_NANO = 0xa1b23c4d
@@ -196,33 +197,68 @@ class Writer(object):
         TODO.
     """
 
+    __le = sys.byteorder == 'little'
+
     def __init__(self, fileobj, snaplen=1500, linktype=DLT_EN10MB, nano=False):
         self.__f = fileobj
         self._precision = 9 if nano else 6
+        self._precision_multiplier = 10**self._precision
+
         magic = TCPDUMP_MAGIC_NANO if nano else TCPDUMP_MAGIC
-        if sys.byteorder == 'little':
+        if self.__le:
             fh = LEFileHdr(snaplen=snaplen, linktype=linktype, magic=magic)
+            self._PktHdr = LEPktHdr()
         else:
             fh = FileHdr(snaplen=snaplen, linktype=linktype, magic=magic)
+            self._PktHdr = PktHdr()
+
+        self._pack_hdr = self._PktHdr._pack_hdr
         self.__f.write(bytes(fh))
 
     def writepkt(self, pkt, ts=None):
+        """Write single packet and optional timestamp to file.
+
+        Args:
+            pkt: `bytes` will be called on this and written to file.
+            ts (float): Timestamp in seconds. Defaults to current time.
+        """
         if ts is None:
             ts = time.time()
-        s = bytes(pkt)
-        n = len(s)
+
+        self.writepkt_time(bytes(pkt), ts)
+
+    def writepkt_time(self, pkt, ts):
+        """Write single packet and its timestamp to file.
+
+        Args:
+            pkt (bytes): Some `bytes` to write to the file
+            ts (float): Timestamp in seconds
+        """
+        n = len(pkt)
         sec = int(ts)
-        usec = int(round(ts % 1 * 10 ** self._precision))
-        if sys.byteorder == 'little':
-            ph = LEPktHdr(tv_sec=sec,
-                          tv_usec=usec,
-                          caplen=n, len=n)
-        else:
-            ph = PktHdr(tv_sec=sec,
-                        tv_usec=usec,
-                        caplen=n, len=n)
-        self.__f.write(bytes(ph))
-        self.__f.write(s)
+        usec = intround(ts % 1 * self._precision_multiplier)
+        ph = self._pack_hdr(sec, usec, n, n)
+        self.__f.write(ph + pkt)
+
+    def writepkts(self, pkts):
+        """Write an iterable of packets to file.
+
+        Timestamps should be in seconds.
+        Packets must be of type `bytes` as they will not be cast.
+
+        Args:
+            pkts: iterable containing (ts, pkt)
+        """
+        fd = self.__f
+        pack_hdr = self._pack_hdr
+        precision_multiplier = self._precision_multiplier
+
+        for ts, pkt in pkts:
+            n = len(pkt)
+            sec = int(ts)
+            usec = intround(ts % 1 * precision_multiplier)
+            ph = pack_hdr(sec, usec, n, n)
+            fd.write(ph + pkt)
 
     def close(self):
         self.__f.close()
@@ -362,40 +398,108 @@ def test_reader():
     assert reader.dispatch(1, lambda ts, pkt: None) == 0
 
 
-def test_writer_precision():
-    data = b'foo'
-    from .compat import BytesIO
+class WriterTestWrap:
+    """
+    Decorate a writer test function with an instance of this class.
 
-    # default precision
-    fobj = BytesIO()
-    writer = Writer(fobj)
-    writer.writepkt(data, ts=1454725786.526401)
-    fobj.flush()
-    fobj.seek(0)
+    The test will be provided with a writer object, which it shoud write some pkts to.
 
-    reader = Reader(fobj)
-    ts, buf1 = next(iter(reader))
-    assert ts == 1454725786.526401
-    assert buf1 == b'foo'
+    After the test has run, the BytesIO object will be passed to a Reader, which will compare each pkt to the return value of the test.
+    """
+    def __init__(self, *args, **kwargs):
+        self.args = args
+        self.kwargs = kwargs
 
-    # nano precision
-    from decimal import Decimal
+    def __call__(self, f, *args, **kwargs):
+        def wrapper(*args, **kwargs):
+            from .compat import BytesIO
+            for little_endian in [True, False]:
+                fobj = BytesIO()
+                _sysle = Writer._Writer__le
+                Writer._Writer__le = little_endian
+                f.__globals__['writer'] = Writer(fobj, **self.kwargs.get('writer', {}))
+                f.__globals__['fobj'] = fobj
+                pkts = f(*args, **kwargs)
+                fobj.flush()
+                fobj.seek(0)
 
-    fobj = BytesIO()
-    writer = Writer(fobj, nano=True)
-    writer.writepkt(data, ts=Decimal('1454725786.010203045'))
-    fobj.flush()
-    fobj.seek(0)
+                assert pkts
+                for (ts_out, pkt_out), (ts_in, pkt_in) in zip(pkts, iter(Reader(fobj))):
+                    assert ts_out == ts_in
+                    assert pkt_out == pkt_in
+                writer.close()
+                Writer._Writer__le = _sysle
+        return wrapper
 
-    reader = Reader(fobj)
-    ts, buf1 = next(iter(reader))
-    assert ts == Decimal('1454725786.010203045')
-    assert buf1 == b'foo'
+@WriterTestWrap()
+def test_writer_precision_normal():
+    ts, pkt = 1454725786.526401, b'foo'
+    writer.writepkt(pkt, ts=ts)
+    return [(ts, pkt)]
 
+@WriterTestWrap(writer={'nano': True})
+def test_writer_precision_nano():
+    ts, pkt = Decimal('1454725786.010203045'), b'foo'
+    writer.writepkt(pkt, ts=ts)
+    return [(ts, pkt)]
+
+@WriterTestWrap(writer={'nano': False})
+def test_writer_precision_nano_fail():
+    """ if writer is not set to nano, supplying this timestamp should be truncated """
+    ts, pkt = (Decimal('1454725786.010203045'), b'foo')
+    writer.writepkt(pkt, ts=ts)
+    return [(1454725786.010203, pkt)]
+
+@WriterTestWrap()
+def test_writepkt_no_time():
+    ts, pkt = 1454725786.526401, b'foooo'
+    _tmp = time.time
+    time.time = lambda: ts
+    writer.writepkt(pkt)
+    time.time = _tmp
+    return [(ts, pkt)]
+
+@WriterTestWrap(writer={'snaplen': 10})
+def test_writepkt_snaplen():
+    ts, pkt = 1454725786.526401, b'foooo'
+    writer.writepkt(pkt, ts)
+    return [(ts, pkt)]
+
+@WriterTestWrap()
+def test_writepkt_with_time():
+    ts, pkt = 1454725786.526401, b'foooo'
+    writer.writepkt(pkt, ts)
+    return [(ts, pkt)]
+
+@WriterTestWrap()
+def test_writepkt_time():
+    ts, pkt = 1454725786.526401, b'foooo'
+    writer.writepkt_time(pkt, ts)
+    return [(ts, pkt)]
+
+@WriterTestWrap()
+def test_writepkts():
+    """ writing multiple packets from a list """
+    pkts = [
+        (1454725786.526401, b"fooo"),
+        (1454725787.526401, b"barr"),
+        (3243204320.093211, b"grill"),
+        (1454725789.526401, b"lol"),
+    ]
+
+    writer.writepkts(pkts)
+    return pkts
 
 if __name__ == '__main__':
-    test_pcap_endian()
     test_reader()
-    test_writer_precision()
+    test_pcap_endian()
+    test_writer_precision_normal()
+    test_writer_precision_nano()
+    test_writer_precision_nano_fail()
+    test_writepkt_snaplen()
+    test_writepkt_no_time()
+    test_writepkt_with_time()
+    test_writepkt_time()
+    test_writepkts()
 
     print('Tests Successful...')

@@ -27,6 +27,13 @@ except ImportError:
 if sys.version_info < (3,):
     def iteritems(d, **kw):
         return d.iteritems(**kw)
+
+    def intround(num):
+        return int(round(num))
+
 else:
     def iteritems(d, **kw):
         return iter(d.items(**kw))
+
+    # python3 will return an int if you round to 0 decimal places
+    intround = round

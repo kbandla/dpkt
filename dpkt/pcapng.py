@@ -11,7 +11,7 @@ from time import time
 import sys
 
 from . import dpkt
-from .compat import BytesIO
+from .compat import BytesIO, intround
 
 BYTE_ORDER_MAGIC = 0x1A2B3C4D
 BYTE_ORDER_MAGIC_LE = 0x4D3C2B1A
@@ -91,11 +91,13 @@ def _align32b(i):
     r = i % 4
     return i if not r else i + 4 - r
 
-
 def _padded(s):
     """Return bytes `s` padded with zeroes to align to the 32-bit boundary"""
     return struct_pack('%ss' % _align32b(len(s)), s)
 
+def _padded_tolen(s, tolen):
+    """Return bytes `s` padded with `tolen` zeroes to align to the 32-bit boundary"""
+    return struct_pack('%ss' % tolen, s)
 
 def _padlen(s):
     """Return size of padding required to align str `s` to the 32-bit boundary"""
@@ -152,10 +154,13 @@ class _PcapngBlock(dpkt.Packet):
 
     def __bytes__(self):
         opts_buf = self._do_pack_options()
-        self.len = self._len = self.__hdr_len__ + len(opts_buf)
 
-        hdr_buf = dpkt.Packet.pack_hdr(self)
-        return hdr_buf[:-4] + opts_buf + hdr_buf[-4:]
+        n = len(opts_buf) + self.__hdr_len__
+        self.len = n
+        self._len = n
+
+        hdr_buf = self._pack_hdr(self.type, n, n)
+        return b''.join([hdr_buf[:-4], opts_buf, hdr_buf[-4:]])
 
     def __len__(self):
         if not getattr(self, 'opts', None):
@@ -186,9 +191,7 @@ class PcapngOption(dpkt.Packet):
         if self.code == PCAPNG_OPT_COMMENT:
             self.text = self.data.decode('utf-8')
 
-
     def __bytes__(self):
-        #return dpkt.Packet.__bytes__(self)
         # encode comment
         if self.code == PCAPNG_OPT_COMMENT:
             text = getattr(self, 'text', self.data)
@@ -196,7 +199,8 @@ class PcapngOption(dpkt.Packet):
             self.data = text.encode('utf-8') if not isinstance(text, bytes) else text
 
         self.len = len(self.data)
-        return dpkt.Packet.pack_hdr(self) + _padded(self.data)
+        hdr = self._pack_hdr(self.code, self.len)
+        return hdr + _padded(self.data)
 
     def __len__(self):
         return self.__hdr_len__ + len(self.data) + _padlen(self.data)
@@ -226,6 +230,23 @@ class SectionHeaderBlock(_PcapngBlock):
         #( options, variable size )
         ('_len', 'I', 28)
     )
+    def __bytes__(self):
+        opts_buf = self._do_pack_options()
+
+        n = len(opts_buf) + self.__hdr_len__
+        self.len = n
+        self._len = n
+
+        hdr_buf = self._pack_hdr(
+            self.type,
+            n,
+            self.bom,
+            self.v_major,
+            self.v_minor,
+            self.sec_len,
+            n,
+        )
+        return b''.join([hdr_buf[:-4], opts_buf, hdr_buf[-4:]])
 
 
 class SectionHeaderBlockLE(SectionHeaderBlock):
@@ -245,6 +266,23 @@ class InterfaceDescriptionBlock(_PcapngBlock):
         #( options, variable size )
         ('_len', 'I', 20)
     )
+
+    def __bytes__(self):
+        opts_buf = self._do_pack_options()
+
+        n = len(opts_buf) + self.__hdr_len__
+        self.len = n
+        self._len = n
+
+        hdr_buf = self._pack_hdr(
+            self.type,
+            n,
+            self.linktype,
+            self._reserved,
+            self.snaplen,
+            n,
+        )
+        return b''.join([hdr_buf[:-4], opts_buf, hdr_buf[-4:]])
 
 
 class InterfaceDescriptionBlockLE(InterfaceDescriptionBlock):
@@ -283,13 +321,29 @@ class EnhancedPacketBlock(_PcapngBlock):
 
     def __bytes__(self):
         pkt_buf = self.pkt_data
-        self.caplen = self.pkt_len = len(pkt_buf)
+
+        pkt_len = len(pkt_buf)
+        self.caplen = pkt_len
+        self.pkt_len = pkt_len
 
         opts_buf = self._do_pack_options()
-        self.len = self._len = self.__hdr_len__ + _align32b(self.caplen) + len(opts_buf)
 
-        hdr_buf = dpkt.Packet.pack_hdr(self)
-        return hdr_buf[:-4] + _padded(pkt_buf) + opts_buf + hdr_buf[-4:]
+        n = self.__hdr_len__ + _align32b(self.caplen) + len(opts_buf)
+        self.len = n
+        self._len = n
+
+        hdr_buf = self._pack_hdr(
+            self.type,
+            n,
+            self.iface_id,
+            self.ts_high,
+            self.ts_low,
+            pkt_len,
+            pkt_len,
+            n
+        )
+
+        return b''.join([hdr_buf[:-4], _padded(pkt_buf), opts_buf, hdr_buf[-4:]])
 
     def __len__(self):
         opts_len = sum(len(o) for o in self.opts)
@@ -301,8 +355,9 @@ class EnhancedPacketBlockLE(EnhancedPacketBlock):
 
 
 class Writer(object):
-
     """Simple pcapng dumpfile writer."""
+
+    __le = sys.byteorder == 'little'
 
     def __init__(self, fileobj, snaplen=1500, linktype=DLT_EN10MB, shb=None, idb=None):
         """
@@ -312,7 +367,6 @@ class Writer(object):
         idb can be an instance of InterfaceDescriptionBlock(LE)
         """
         self.__f = fileobj
-        self.__le = sys.byteorder == 'little'
 
         if shb:
             self._validate_block('shb', shb, SectionHeaderBlock)
@@ -322,9 +376,11 @@ class Writer(object):
         if self.__le:
             shb = shb or SectionHeaderBlockLE()
             idb = idb or InterfaceDescriptionBlockLE(snaplen=snaplen, linktype=linktype)
+            self._kls = EnhancedPacketBlockLE
         else:
             shb = shb or SectionHeaderBlock()
             idb = idb or InterfaceDescriptionBlock(snaplen=snaplen, linktype=linktype)
+            self._kls = EnhancedPacketBlock
 
         self.__f.write(bytes(shb))
         self.__f.write(bytes(idb))
@@ -345,18 +401,19 @@ class Writer(object):
 
     def writepkt(self, pkt, ts=None):
         """
-        Write a single packet with its timestamp.
+        Write a single packet with an optional timestamp.
 
-        pkt can be a buffer or an instance of EnhancedPacketBlock(LE)
-        ts is a Unix timestamp in seconds since Epoch (e.g. 1454725786.99)
+        Args:
+            pkt: buffer or instance of EnhancedPacketBlock(LE)
+            ts: Unix timestamp in seconds since Epoch (e.g. 1454725786.99)
         """
         if isinstance(pkt, EnhancedPacketBlock):
             self._validate_block('pkt', pkt, EnhancedPacketBlock)
 
             if ts is not None:  # ts as an argument gets precedence
-                ts = int(round(ts * 1e6))
+                ts = intround(ts * 1e6)
             elif pkt.ts_high == pkt.ts_low == 0:
-                ts = int(round(time() * 1e6))
+                ts = intround(time() * 1e6)
 
             if ts is not None:
                 pkt.ts_high = ts >> 32
@@ -368,14 +425,70 @@ class Writer(object):
         # pkt is a buffer - wrap it into an EPB
         if ts is None:
             ts = time()
-        ts = int(round(ts * 1e6))  # to int microseconds
+        self.writepkt_time(pkt, ts)
 
-        s = bytes(pkt)
+    def writepkt_time(self, pkt, ts):
+        """
+        Write a single packet with a mandatory timestamp.
+
+        Args:
+            pkt: a buffer
+            ts: Unix timestamp in seconds since Epoch (e.g. 1454725786.99)
+        """
+        ts = intround(ts * 1e6)  # to int microseconds
+
+        s = pkt
         n = len(s)
 
-        kls = EnhancedPacketBlockLE if self.__le else EnhancedPacketBlock
-        epb = kls(ts_high=ts >> 32, ts_low=ts & 0xffffffff, caplen=n, pkt_len=n, pkt_data=s)
+        epb = self._kls(
+            ts_high=ts >> 32,
+            ts_low=ts & 0xffffffff,
+            caplen=n,
+            pkt_len=n,
+            pkt_data=s
+        )
         self.__f.write(bytes(epb))
+
+    def writepkts(self, pkts):
+        """
+        Take an iterable of (ts, pkt), and write to file.
+        """
+        kls = self._kls()
+        ph = kls._pack_hdr
+        fd = self.__f
+
+        iface_id = kls.iface_id
+        pkt_type = kls.type
+
+        opts_buf = kls._do_pack_options()
+        opts_len = len(opts_buf)
+
+        hdr_len = kls.__hdr_len__
+        precalc_n = hdr_len + opts_len
+
+        for ts, pkt in pkts:
+            ts = intround(ts * 1e6)  # to int microseconds
+            pkt_len = len(pkt)
+            pkt_len_align = _align32b(pkt_len)
+
+            n = precalc_n + pkt_len_align
+            hdr_buf = ph(
+                pkt_type,
+                n,
+                iface_id,
+                ts >> 32,
+                ts & 0xffffffff,
+                pkt_len,
+                pkt_len,
+                n
+            )
+            buf = b''.join([
+                hdr_buf[:-4],
+                _padded_tolen(pkt, pkt_len_align),
+                opts_buf,
+                hdr_buf[-4:]
+            ])
+            fd.write(buf)
 
     def close(self):
         self.__f.close()
@@ -565,6 +678,7 @@ def test_shb():
     assert bytes(shb.opts[1]) == b'\x00\x00\x00\x00'
 
     # block packing
+    assert bytes(shb) == bytes(buf)
     assert str(shb) == str(buf)
     assert len(shb) == len(buf)
 
@@ -597,6 +711,7 @@ def test_idb():
     assert bytes(idb.opts[1]) == b'\x00\x00\x00\x00'
 
     # block packing
+    assert bytes(idb) == bytes(buf)
     assert str(idb) == str(buf)
     assert len(idb) == len(buf)
 
@@ -635,6 +750,7 @@ def test_epb():
     assert bytes(epb.opts[1]) == b'\x00\x00\x00\x00'
 
     # block packing
+    assert bytes(epb) == bytes(buf)
     assert str(epb) == str(buf)
     assert len(epb) == len(buf)
 
@@ -742,6 +858,87 @@ def test_custom_read_write():
     fobj.close()
 
 
+class WriterTestWrap:
+    """
+    Decorate a writer test function with an instance of this class.
+
+    The test will be provided with a writer object, which it shoud write some pkts to.
+
+    After the test has run, the BytesIO object will be passed to a Reader, which will compare each pkt to the return value of the test.
+    """
+    def __init__(self, *args, **kwargs):
+        self.args = args
+        self.kwargs = kwargs
+
+    def __call__(self, f, *args, **kwargs):
+        def wrapper(*args, **kwargs):
+            from .compat import BytesIO
+            for little_endian in [True, False]:
+                fobj = BytesIO()
+                _sysle = Writer._Writer__le
+                Writer._Writer__le = little_endian
+                f.__globals__['writer'] = Writer(fobj, **self.kwargs.get('writer', {}))
+                f.__globals__['fobj'] = fobj
+                pkts = f(*args, **kwargs)
+                fobj.flush()
+                fobj.seek(0)
+
+                assert pkts, "You must return the input data from the test"
+                for (ts_out, pkt_out), (ts_in, pkt_in) in zip(pkts, iter(Reader(fobj))):
+                    assert ts_out == ts_in
+                    assert pkt_out == pkt_in
+
+                writer.close()
+                Writer._Writer__le = _sysle
+        return wrapper
+
+@WriterTestWrap()
+def test_writepkt_no_time():
+    global time
+    ts, pkt = 1454725786.526401, b'foooo'
+    _tmp = time
+    time = lambda: ts
+    writer.writepkt(pkt)
+    time = _tmp
+    return [(ts, pkt)]
+
+@WriterTestWrap(writer={'snaplen': 10})
+def test_writepkt_snaplen():
+    ts, pkt = 1454725786.526401, b'foooo'*100
+    writer.writepkt(pkt, ts)
+    return [(ts, pkt)]
+
+@WriterTestWrap()
+def test_writepkt_with_time():
+    ts, pkt = 1454725786.526401, b'foooo'
+    writer.writepkt(pkt, ts)
+    return [(ts, pkt)]
+
+@WriterTestWrap(writer_littleendian=False)
+def test_writepkt_be():
+    ts, pkt = 1454725786.526401, b'foooo'
+    writer.writepkt_time(pkt, ts)
+    return [(ts, pkt)]
+
+@WriterTestWrap()
+def test_writepkt_time():
+    ts, pkt = 1454725786.526401, b'foooo'
+    writer.writepkt_time(pkt, ts)
+    return [(ts, pkt)]
+
+@WriterTestWrap()
+def test_writepkts():
+    """ writing multiple packets from a list """
+    pkts = [
+        (1454725786.526401, b"fooo"),
+        (1454725787.526401, b"barr"),
+        (3243204320.093211, b"grill"),
+        (1454725789.526401, b"lol"),
+    ]
+
+    writer.writepkts(pkts)
+    return pkts
+
 if __name__ == '__main__':
     # TODO: big endian unit tests; could not find any examples..
 
@@ -750,6 +947,11 @@ if __name__ == '__main__':
     test_epb()
     test_simple_write_read()
     test_custom_read_write()
+    test_writepkt_snaplen()
+    test_writepkt_no_time()
+    test_writepkt_with_time()
+    test_writepkt_time()
+    test_writepkts()
     repr(PcapngOptionLE())
 
     print('Tests Successful...')
