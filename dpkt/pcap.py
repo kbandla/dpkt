@@ -392,13 +392,16 @@ def test_pcap_endian():
     assert (befh.linktype == lefh.linktype)
 
 
-def test_reader():
-    data = (  # full libpcap file with one packet
+class TestData():
+    pcap = (  # full libpcap file with one packet
         b'\xd4\xc3\xb2\xa1\x02\x00\x04\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff\x00\x00\x01\x00\x00\x00'
         b'\xb2\x67\x4a\x42\xae\x91\x07\x00\x46\x00\x00\x00\x46\x00\x00\x00\x00\xc0\x9f\x32\x41\x8c\x00\xe0'
         b'\x18\xb1\x0c\xad\x08\x00\x45\x00\x00\x38\x00\x00\x40\x00\x40\x11\x65\x47\xc0\xa8\xaa\x08\xc0\xa8'
         b'\xaa\x14\x80\x1b\x00\x35\x00\x24\x85\xed'
     )
+
+def test_reader():
+    data = TestData().pcap
 
     # --- BytesIO tests ---
     from .compat import BytesIO
@@ -427,6 +430,21 @@ def test_reader():
     reader = Reader(fobj)
     assert reader.dispatch(1, lambda ts, pkt: None) == 1
     assert reader.dispatch(1, lambda ts, pkt: None) == 0
+
+    # test loop() over all packets
+    fobj.seek(0)
+    reader = Reader(fobj)
+
+    class Count:
+        counter = 0
+
+        @classmethod
+        def inc(cls):
+            cls.counter += 1
+
+    reader.loop(lambda ts, pkt: Count.inc())
+    assert Count.counter == 1
+
 
 @TryExceptException(ValueError, msg="invalid tcpdump header")
 def test_reader_badheader():
