@@ -352,6 +352,37 @@ class Reader(object):
             buf = self.__f.read(hdr.caplen)
             yield (hdr.tv_sec + (hdr.tv_usec / self._divisor), buf)
 
+################################################################################
+#                                    TESTS                                     #
+################################################################################
+class TryExceptException:
+    def __init__(self, exception_type, msg=''):
+        self.exception_type = exception_type
+        self.msg = msg
+
+    def __call__(self, f, *args, **kwargs):
+        def wrapper(*args, **kwargs):
+            try:
+                f()
+            except self.exception_type as e:
+                if self.msg:
+                    assert str(e) == self.msg
+            else:
+                raise Exception("There should have been an Exception raised")
+        return wrapper
+
+@TryExceptException(Exception, msg='There should have been an Exception raised')
+def test_TryExceptException():
+    """ Check that we can catch a function which does not throw an exception when it is supposed to """
+    @TryExceptException(NotImplementedError)
+    def fun():
+        pass
+
+    try:
+        fun()
+    except Exception as e:
+        raise e
+
 
 def test_pcap_endian():
     be = b'\xa1\xb2\xc3\xd4\x00\x02\x00\x04\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x60\x00\x00\x00\x01'
@@ -396,6 +427,12 @@ def test_reader():
     reader = Reader(fobj)
     assert reader.dispatch(1, lambda ts, pkt: None) == 1
     assert reader.dispatch(1, lambda ts, pkt: None) == 0
+
+@TryExceptException(ValueError, msg="invalid tcpdump header")
+def test_reader_badheader():
+    from .compat import BytesIO
+    fobj = BytesIO(b'\x00'*24)
+    reader = Reader(fobj)
 
 
 class WriterTestWrap:
