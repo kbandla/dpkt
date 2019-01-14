@@ -109,6 +109,8 @@ class Message(dpkt.Packet):
         # Parse body
         if is_body_allowed:
             self.body = parse_body(f, self.headers)
+        else:
+            self.body = b''
         # Save the rest
         self.data = f.read()
 
@@ -122,13 +124,7 @@ class Message(dpkt.Packet):
         return '%s\r\n%s' % (self.pack_hdr(), self.body.decode("utf8", "ignore"))
 
     def __bytes__(self):
-        # Not using byte interpolation to preserve Python 3.4 compatibility. The extra
-        # \r\n doesn't get trimmed from the bytes, so it's necessary to omit the spacing
-        # one when building the output if there's no body
-        if self.body:
-            return self.pack_hdr().encode("ascii", "ignore") + b'\r\n' + self.body
-        else:
-            return self.pack_hdr().encode("ascii", "ignore")
+        return self.pack_hdr().encode("ascii", "ignore") + b'\r\n' + (self.body or b'')
 
 
 class Request(Message):
@@ -235,7 +231,7 @@ class Response(Message):
 
     def __bytes__(self):
         str_out = '%s/%s %s %s\r\n' % (self.__proto, self.version, self.status,
-                                       self.reason) + Message.__str__(self)
+                                       self.reason)
         return str_out.encode("ascii", "ignore") + Message.__bytes__(self)
 
 
@@ -323,6 +319,13 @@ def test_noreason_response():
     r = Response(s)
     assert r.reason == ''
     assert bytes(r) == s
+
+
+def test_response_with_body():
+    r = Response()
+    r.body = b'foo'
+    assert str(r) == 'HTTP/1.0 200 OK\r\n\r\nfoo'
+    assert bytes(r) == b'HTTP/1.0 200 OK\r\n\r\nfoo'
 
 
 def test_body_forbidden_response():

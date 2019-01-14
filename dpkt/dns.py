@@ -276,8 +276,7 @@ class DNS(dpkt.Packet):
                 return struct.pack('>H', self.preference) + \
                        pack_name(self.mxname, off + 2, label_ptrs)
             elif self.type == DNS_TXT or self.type == DNS_HINFO:
-                return b''.join(['%s%s' % (chr(len(x)), x)
-                                for x in self.text])
+                return b''.join(struct.pack('B', len(x)) + x for x in self.text)
             elif self.type == DNS_AAAA:
                 return self.ip6
             elif self.type == DNS_SRV:

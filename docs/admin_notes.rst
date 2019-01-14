@@ -4,30 +4,76 @@ Notes
 
 PyPI Release How-To
 -------------------
-Notes and information on how to do the PyPI release for the dpkt project.
+Notes and information on how to do the PyPI release for the dpkt project. For full details on packaging you can reference this page Packaging_
+
+.. _Packaging: https://packaging.python.org/tutorials/packaging-projects/#packaging-your-project 
+
+The following instructions should work, but things change :)
 
 Package Requirements
 ~~~~~~~~~~~~~~~~~~~~
 
 - pip install tox
-- pip install wheel
+- pip install --upgrade setuptools wheel
+- pip install twine
+
+Setup pypirc
+~~~~~~~~~~~~
+The easiest thing to do is setup a ~/.pypirc file with the following contents
+
+.. code-block:: bash
+
+ [distutils]
+ index-servers =
+   pypi
+   testpypi
+
+ [pypi]
+ repository=https://upload.pypi.org/legacy/
+ username=<pypi username>
+ password=<pypi password>
+
+ [testpypi]
+ repository=https://test.pypi.org/legacy/
+ username=<pypi username>
+ password=<pypi password>
 
 Tox Background
 ~~~~~~~~~~~~~~
 Tox will install the dpkt package into a blank virtualenv and then execute all the tests against the newly installed package. So if everything goes okay, you know the pypi package installed fine and the tests (which pull from the installed dpkt package) also ran okay.
 
-Create the PyPI Release
-~~~~~~~~~~~~~~~~~~~~~~~
+Make sure ALL tests pass
+~~~~~~~~~~~~~~~~~~~~~~~~
 .. code-block:: bash
 
  $ cd dpkt
  $ tox 
- $ vi dpkt/__init__.py and bump the version
- $ python setup.py release
-   <enter your pypi password>
 
-If everything above went okay...
+If ALL the test above pass...
 
+Create the TEST PyPI Release
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. code-block:: bash
+
+  $ vi dpkt/__init__.py and bump the version
+  $ python setup.py sdist bdist_wheel
+  $ twine upload dist/* -r testpypi
+
+Install the TEST PyPI Release
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. code-block:: bash
+
+  $ pip install --index-url https://test.pypi.org/simple dpkt
+
+Create the REAL PyPI Release
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. code-block:: bash
+
+  $ twine upload dist/* -r pypi
+
+
+Push changes to Github
+~~~~~~~~~~~~~~~~~~~~~~
 .. code-block:: bash
 
  $ git add dpkt/__init__.py
@@ -38,5 +84,7 @@ If everything above went okay...
  
 Git Releases (discussion)
 ~~~~~~~~~~~~~~~~~~~~~~~~~
+Note: This is an opinion, we/I could certainly be convinced otherwise. 
+
 You can also do a 'release' on GitHub (the tags above are perfect for that). In general this is discouraged, people should always do a $pip install dpkt. If people want older releases they can do a $pip install dpkt==<old version>. Providing tarballs/zip file on GitHub will just confuse new users and they'll have a 'bad experience' when trying to deal with a tarball.
 

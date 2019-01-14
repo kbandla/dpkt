@@ -216,19 +216,38 @@ class Writer(object):
         self.__f.write(bytes(fh))
 
     def writepkt(self, pkt, ts=None):
-        """ Write pkt and optional ts to file """
+        """Write single packet and optional timestamp to file.
+
+        Args:
+            pkt: `bytes` will be called on this and written to file.
+            ts (float): Timestamp in seconds. Defaults to current time.
+        """
         if ts is None:
             ts = time.time()
-        s = bytes(pkt)
-        self.writepkt_time(s, ts)
+
+        self.writepkt_time(bytes(pkt), ts)
 
     def writepkt_time(self, pkt, ts):
-        """ Write pkt and mandatory ts to file """
-        self.writepkts([(ts, pkt)])
+        """Write single packet and its timestamp to file.
+
+        Args:
+            pkt (bytes): Some `bytes` to write to the file
+            ts (float): Timestamp in seconds
+        """
+        n = len(pkt)
+        sec = int(ts)
+        usec = intround(ts % 1 * self._precision_multiplier)
+        ph = self._pack_hdr(sec, usec, n, n)
+        self.__f.write(ph + pkt)
 
     def writepkts(self, pkts):
-        """
-        Take an iterable of (ts, pkt), and write to file.
+        """Write an iterable of packets to file.
+
+        Timestamps should be in seconds.
+        Packets must be of type `bytes` as they will not be cast.
+
+        Args:
+            pkts: iterable containing (ts, pkt)
         """
         fd = self.__f
         pack_hdr = self._pack_hdr
@@ -238,11 +257,8 @@ class Writer(object):
             n = len(pkt)
             sec = int(ts)
             usec = intround(ts % 1 * precision_multiplier)
-
             ph = pack_hdr(sec, usec, n, n)
-
-            fd.write(ph)
-            fd.write(pkt)
+            fd.write(ph + pkt)
 
     def close(self):
         self.__f.close()
