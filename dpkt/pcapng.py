@@ -1205,6 +1205,19 @@ def test_writepkt_with_time():
     writer.writepkt(pkt, ts)
     return [(ts, pkt)]
 
+@WriterTestWrap()
+def test_writepkts():
+    """ writing multiple packets from a list """
+    pkts = [
+        (1454725786.526401, b"fooo"),
+        (1454725787.526401, b"barr"),
+        (3243204320.093211, b"grill"),
+        (1454725789.526401, b"lol"),
+    ]
+
+    writer.writepkts(pkts)
+    return pkts
+
 def test_pcapng_block_unpack():
     block = _PcapngBlock()
     buf = b'012345678901'
