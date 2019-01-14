@@ -489,17 +489,3 @@ def test_writepkts():
 
     writer.writepkts(pkts)
     return pkts
-
-if __name__ == '__main__':
-    test_reader()
-    test_pcap_endian()
-    test_writer_precision_normal()
-    test_writer_precision_nano()
-    test_writer_precision_nano_fail()
-    test_writepkt_snaplen()
-    test_writepkt_no_time()
-    test_writepkt_with_time()
-    test_writepkt_time()
-    test_writepkts()
-
-    print('Tests Successful...')
