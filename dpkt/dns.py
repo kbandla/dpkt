@@ -372,7 +372,7 @@ class DNS(dpkt.Packet):
 
     def __len__(self):
         # XXX - cop out
-        return len(str(self))
+        return len(bytes(self))
 
     def __bytes__(self):
         # XXX - compress names on the fly
@@ -389,38 +389,44 @@ class DNS(dpkt.Packet):
 
 
 ### TESTS
-class TestData(object):
+def define_testdata():
+    """
+    Reference test data is stored in the dynamically defined class.
+
+    It is created in this way so that we can import unhexlify only during
+    testing, and not during normal use.
+    """
     from binascii import unhexlify
 
-    def __init__(self):
-        self.a_resp = self.unhexlify(
+    class TestData(object):
+        a_resp = unhexlify(
             "059c8180000100010000000106676f6f676c6503636f6d0000010001c00c00010"
             "0010000012b0004d83ace2e0000290200000000000000"
         )
-        self.aaaa_resp = self.unhexlify(
+        aaaa_resp = unhexlify(
             "7f228180000100010000000005676d61696c03636f6d00001c0001c00c001c000"
             "10000012b00102a001450400908020000000000002005"
         )
-        self.cname_resp = self.unhexlify(
+        cname_resp = unhexlify(
             "a154818000010001000000000377777705676d61696c03636f6d0000010001c00"
             "c000500010000545f000e046d61696c06676f6f676c65c016"
         )
-        self.invalid_rr = self.unhexlify(
+        invalid_rr = unhexlify(
             "000001000000000100000000046e616d650000150001000000000000"
         )
-        self.mx_resp = self.unhexlify(
+        mx_resp = unhexlify(
             "053b8180000100010000000006676f6f676c6503636f6d00000f0001c00c000f0"
             "001000002570011001e04616c7432056173706d78016cc00c"
         )
-        self.null_resp = self.unhexlify(
+        null_resp = unhexlify(
             "12b0840000010001000000000b626c6168626c616836363606706972617465037"
             "3656100000a0001c00c000a00010000000000095641434b4403c5e901"
         )
-        self.opt_resp = self.unhexlify(
+        opt_resp = unhexlify(
             "8d6e0110000100000000000104783131310678787878313106616b616d6169036"
             "e657400000100010000290fa0000080000000"
         )
-        self.ptr_resp = self.unhexlify(
+        ptr_resp = unhexlify(
             "67028180000100010003000001310131033231310331343107696e2d616464720"
             "46172706100000c0001c00c000c000100000d3600240764656661756c740a762d"
             "756d63652d69667305756d6e657405756d6963680365647500c00e00020001000"
@@ -428,23 +434,24 @@ class TestData(object):
             "73682d6c6963656e7365c06dc00e0002000100000d36000b04646e73320369746"
             "4c04f"
         )
-        self.soa_resp = self.unhexlify(
+        soa_resp = unhexlify(
             "851f8180000100010000000006676f6f676c6503636f6d0000060001c00c00060"
             "001000000230026036e7332c00c09646e732d61646d696ec00c0a747447000003"
             "8400000384000007080000003c"
         )
-        self.srv_resp = self.unhexlify(
+        srv_resp = unhexlify(
             "7f2281800001000100000000075f6a6162626572045f746370066a61626265720"
             "3636f6d0000210001c00c0021000100000e0f001a000a000014950764656e6a61"
             "6232066a616262657203636f6d00"
         )
-        self.txt_resp = self.unhexlify(
+        txt_resp = unhexlify(
             "10328180000100010000000006676f6f676c6503636f6d0000100001c00c00100"
             "0010000010e00100f763d7370663120707472203f616c6c"
         )
+    return TestData()
 
 def test_basic():
-    buf = TestData().a_resp
+    buf = define_testdata().a_resp
     my_dns = DNS(buf)
 
     assert my_dns.qd[0].name == 'google.com'
@@ -494,7 +501,7 @@ def test_Q_unpack():
 def property_runner(prop, ops, set_to=None):
     if set_to is None:
         set_to = [False, True, False]
-    buf = TestData().a_resp
+    buf = define_testdata().a_resp
     dns = DNS(buf)
 
     for set_to, op in zip(set_to, ops):
@@ -527,7 +534,7 @@ def test_rcode():
     property_runner('rcode', ops=[33152, 33153, 33152])
 
 def test_PTR():
-    buf = TestData().ptr_resp
+    buf = define_testdata().ptr_resp
     my_dns = DNS(buf)
     assert my_dns.qd[0].name == '1.1.211.141.in-addr.arpa' and \
            my_dns.an[0].ptrname == 'default.v-umce-ifs.umnet.umich.edu' and \
@@ -537,7 +544,7 @@ def test_PTR():
     assert buf == bytes(my_dns)
 
 def test_OPT():
-    buf = TestData().opt_resp
+    buf = define_testdata().opt_resp
     my_dns = DNS(buf)
     my_rr = my_dns.ar[0]
     assert my_rr.type == DNS_OPT
@@ -573,7 +580,7 @@ def test_very_long_name():
     DNS(b'\x00\x00\x01\x00\x00\x01\x00\x00\x00\x00\x00\x00' + (b'\x10abcdef0123456789' * 16) + b'\x00')
 
 def test_null_response():
-    buf = TestData().null_resp
+    buf = define_testdata().null_resp
     my_dns = DNS(buf)
     assert my_dns.qd[0].name == 'blahblah666.pirate.sea' and \
            my_dns.an[0].null == b'5641434b4403c5e901'
@@ -581,7 +588,7 @@ def test_null_response():
 
 
 def test_txt_response():
-    buf = TestData().txt_resp
+    buf = define_testdata().txt_resp
     my_dns = DNS(buf)
     my_rr = my_dns.an[0]
     assert my_rr.type == DNS_TXT
@@ -705,12 +712,16 @@ def test_rdata_OPT():
     correct = b''
     assert packdata == correct
 
+def test_dns_len():
+    my_dns = DNS()
+    assert len(my_dns) == 12
+
 @TryExceptException(dpkt.PackError)
 def test_rdata_FAIL():
     DNS.RR(type=12345666).pack_rdata(0, {})
 
 def test_soa():
-    buf = TestData().soa_resp
+    buf = define_testdata().soa_resp
     soa = DNS(buf)
 
     assert soa.id == 34079
@@ -740,7 +751,7 @@ def test_soa():
     assert soa.ar == []
 
 def test_mx():
-    buf = TestData().mx_resp
+    buf = define_testdata().mx_resp
     mx = DNS(buf)
 
     assert mx.id == 1339
@@ -766,7 +777,7 @@ def test_mx():
     assert mx.ar == []
 
 def test_aaaa():
-    buf = TestData().aaaa_resp
+    buf = define_testdata().aaaa_resp
     aaaa = DNS(buf)
 
     aaaa.id = 32546
@@ -790,7 +801,7 @@ def test_aaaa():
     assert aaaa.ar == []
 
 def test_srv():
-    buf = TestData().srv_resp
+    buf = define_testdata().srv_resp
     srv = DNS(buf)
 
     srv.id = 32546
@@ -818,7 +829,7 @@ def test_srv():
     assert srv.ar == []
 
 def test_cname():
-    buf = TestData().cname_resp
+    buf = define_testdata().cname_resp
     cname = DNS(buf)
 
     cname.id = 41300
@@ -844,5 +855,5 @@ def test_cname():
 
 @TryExceptException(dpkt.UnpackError)
 def test_invalid_rr():
-    buf = TestData().invalid_rr
+    buf = define_testdata().invalid_rr
     DNS(buf)

@@ -743,85 +743,99 @@ def test_pcapng_header():
     except Exception as e:
         assert isinstance(e, ValueError)
 
-class TestData:
-    def __init__(self):
-        self.valid_shb_le = SectionHeaderBlockLE(opts=[
-            PcapngOptionLE(code=3, data=b'64-bit Windows 8.1, build 9600'),
-            PcapngOptionLE(code=4, data=b'Dumpcap 1.12.7 (v1.12.7-0-g7fc8978 from master-1.12)'),
-            PcapngOptionLE()
-        ])
+def define_testdata():
+    class TestData(object):
+        def __init__(self):
+            self.valid_shb_le = SectionHeaderBlockLE(opts=[
+                PcapngOptionLE(code=3, data=b'64-bit Windows 8.1, build 9600'),
+                PcapngOptionLE(code=4, data=b'Dumpcap 1.12.7 (v1.12.7-0-g7fc8978 from master-1.12)'),
+                PcapngOptionLE()
+            ])
 
-        self.valid_shb_be = SectionHeaderBlock(opts=[
-            PcapngOption(code=3, data=b'64-bit Windows 8.1, build 9600'),
-            PcapngOption(code=4, data=b'Dumpcap 1.12.7 (v1.12.7-0-g7fc8978 from master-1.12)'),
-            PcapngOption()
-        ])
+            self.valid_shb_be = SectionHeaderBlock(opts=[
+                PcapngOption(code=3, data=b'64-bit Windows 8.1, build 9600'),
+                PcapngOption(code=4, data=b'Dumpcap 1.12.7 (v1.12.7-0-g7fc8978 from master-1.12)'),
+                PcapngOption()
+            ])
 
-        self.valid_idb_le = InterfaceDescriptionBlockLE(snaplen=0x40000, opts=[
-            PcapngOptionLE(code=2, data=b'\\Device\\NPF_{3BBF21A7-91AE-4DDB-AB2C-C782999C22D5}'),
-            PcapngOptionLE(code=9, data=b'\x06'),
-            PcapngOptionLE(code=12, data=b'64-bit Windows 8.1, build 9600'),
-            PcapngOptionLE()
-        ])
+            self.valid_idb_le = InterfaceDescriptionBlockLE(snaplen=0x40000, opts=[
+                PcapngOptionLE(code=2, data=b'\\Device\\NPF_{3BBF21A7-91AE-4DDB-AB2C-C782999C22D5}'),
+                PcapngOptionLE(code=9, data=b'\x06'),
+                PcapngOptionLE(code=12, data=b'64-bit Windows 8.1, build 9600'),
+                PcapngOptionLE()
+            ])
 
-        self.valid_idb_be = InterfaceDescriptionBlock(snaplen=0x40000, opts=[
-            PcapngOption(code=2, data=b'\\Device\\NPF_{3BBF21A7-91AE-4DDB-AB2C-C782999C22D5}'),
-            PcapngOption(code=9, data=b'\x06'),
-            PcapngOption(code=12, data=b'64-bit Windows 8.1, build 9600'),
-            PcapngOption()
-        ])
+            self.valid_idb_be = InterfaceDescriptionBlock(snaplen=0x40000, opts=[
+                PcapngOption(code=2, data=b'\\Device\\NPF_{3BBF21A7-91AE-4DDB-AB2C-C782999C22D5}'),
+                PcapngOption(code=9, data=b'\x06'),
+                PcapngOption(code=12, data=b'64-bit Windows 8.1, build 9600'),
+                PcapngOption()
+            ])
 
-        self.valid_pcapng = (
-            b'\x0a\x0d\x0d\x0a\x7c\x00\x00\x00\x4d\x3c\x2b\x1a\x01\x00\x00\x00\xff\xff\xff\xff\xff\xff'
-            b'\xff\xff\x03\x00\x1e\x00\x36\x34\x2d\x62\x69\x74\x20\x57\x69\x6e\x64\x6f\x77\x73\x20\x38'
-            b'\x2e\x31\x2c\x20\x62\x75\x69\x6c\x64\x20\x39\x36\x30\x30\x00\x00\x04\x00\x34\x00\x44\x75'
-            b'\x6d\x70\x63\x61\x70\x20\x31\x2e\x31\x32\x2e\x37\x20\x28\x76\x31\x2e\x31\x32\x2e\x37\x2d'
-            b'\x30\x2d\x67\x37\x66\x63\x38\x39\x37\x38\x20\x66\x72\x6f\x6d\x20\x6d\x61\x73\x74\x65\x72'
-            b'\x2d\x31\x2e\x31\x32\x29\x00\x00\x00\x00\x7c\x00\x00\x00\x01\x00\x00\x00\x7c\x00\x00\x00'
-            b'\x01\x00\x00\x00\x00\x00\x04\x00\x02\x00\x32\x00\x5c\x44\x65\x76\x69\x63\x65\x5c\x4e\x50'
-            b'\x46\x5f\x7b\x33\x42\x42\x46\x32\x31\x41\x37\x2d\x39\x31\x41\x45\x2d\x34\x44\x44\x42\x2d'
-            b'\x41\x42\x32\x43\x2d\x43\x37\x38\x32\x39\x39\x39\x43\x32\x32\x44\x35\x7d\x00\x00\x09\x00'
-            b'\x01\x00\x06\x00\x00\x00\x0c\x00\x1e\x00\x36\x34\x2d\x62\x69\x74\x20\x57\x69\x6e\x64\x6f'
-            b'\x77\x73\x20\x38\x2e\x31\x2c\x20\x62\x75\x69\x6c\x64\x20\x39\x36\x30\x30\x00\x00\x00\x00'
-            b'\x00\x00\x7c\x00\x00\x00\x06\x00\x00\x00\x84\x00\x00\x00\x00\x00\x00\x00\x63\x20\x05\x00'
-            b'\xd6\xc4\xab\x0b\x4a\x00\x00\x00\x4a\x00\x00\x00\x08\x00\x27\x96\xcb\x7c\x52\x54\x00\x12'
-            b'\x35\x02\x08\x00\x45\x00\x00\x3c\xa4\x40\x00\x00\x1f\x01\x27\xa2\xc0\xa8\x03\x28\x0a\x00'
-            b'\x02\x0f\x00\x00\x56\xf0\x00\x01\x00\x6d\x41\x42\x43\x44\x45\x46\x47\x48\x49\x4a\x4b\x4c'
-            b'\x4d\x4e\x4f\x50\x51\x52\x53\x54\x55\x56\x57\x41\x42\x43\x44\x45\x46\x47\x48\x49\x00\x00'
-            b'\x01\x00\x0f\x00\x64\x70\x6b\x74\x20\x69\x73\x20\x61\x77\x65\x73\x6f\x6d\x65\x00\x00\x00'
-            b'\x00\x00\x84\x00\x00\x00')
+            self.valid_pcapng = (
+                b'\x0a\x0d\x0d\x0a\x7c\x00\x00\x00\x4d\x3c\x2b\x1a\x01\x00\x00'
+                b'\x00\xff\xff\xff\xff\xff\xff\xff\xff\x03\x00\x1e\x00\x36\x34'
+                b'\x2d\x62\x69\x74\x20\x57\x69\x6e\x64\x6f\x77\x73\x20\x38\x2e'
+                b'\x31\x2c\x20\x62\x75\x69\x6c\x64\x20\x39\x36\x30\x30\x00\x00'
+                b'\x04\x00\x34\x00\x44\x75\x6d\x70\x63\x61\x70\x20\x31\x2e\x31'
+                b'\x32\x2e\x37\x20\x28\x76\x31\x2e\x31\x32\x2e\x37\x2d\x30\x2d'
+                b'\x67\x37\x66\x63\x38\x39\x37\x38\x20\x66\x72\x6f\x6d\x20\x6d'
+                b'\x61\x73\x74\x65\x72\x2d\x31\x2e\x31\x32\x29\x00\x00\x00\x00'
+                b'\x7c\x00\x00\x00\x01\x00\x00\x00\x7c\x00\x00\x00\x01\x00\x00'
+                b'\x00\x00\x00\x04\x00\x02\x00\x32\x00\x5c\x44\x65\x76\x69\x63'
+                b'\x65\x5c\x4e\x50\x46\x5f\x7b\x33\x42\x42\x46\x32\x31\x41\x37'
+                b'\x2d\x39\x31\x41\x45\x2d\x34\x44\x44\x42\x2d\x41\x42\x32\x43'
+                b'\x2d\x43\x37\x38\x32\x39\x39\x39\x43\x32\x32\x44\x35\x7d\x00'
+                b'\x00\x09\x00\x01\x00\x06\x00\x00\x00\x0c\x00\x1e\x00\x36\x34'
+                b'\x2d\x62\x69\x74\x20\x57\x69\x6e\x64\x6f\x77\x73\x20\x38\x2e'
+                b'\x31\x2c\x20\x62\x75\x69\x6c\x64\x20\x39\x36\x30\x30\x00\x00'
+                b'\x00\x00\x00\x00\x7c\x00\x00\x00\x06\x00\x00\x00\x84\x00\x00'
+                b'\x00\x00\x00\x00\x00\x63\x20\x05\x00\xd6\xc4\xab\x0b\x4a\x00'
+                b'\x00\x00\x4a\x00\x00\x00\x08\x00\x27\x96\xcb\x7c\x52\x54\x00'
+                b'\x12\x35\x02\x08\x00\x45\x00\x00\x3c\xa4\x40\x00\x00\x1f\x01'
+                b'\x27\xa2\xc0\xa8\x03\x28\x0a\x00\x02\x0f\x00\x00\x56\xf0\x00'
+                b'\x01\x00\x6d\x41\x42\x43\x44\x45\x46\x47\x48\x49\x4a\x4b\x4c'
+                b'\x4d\x4e\x4f\x50\x51\x52\x53\x54\x55\x56\x57\x41\x42\x43\x44'
+                b'\x45\x46\x47\x48\x49\x00\x00\x01\x00\x0f\x00\x64\x70\x6b\x74'
+                b'\x20\x69\x73\x20\x61\x77\x65\x73\x6f\x6d\x65\x00\x00\x00\x00'
+                b'\x00\x84\x00\x00\x00'
+            )
+            self.valid_pkts = [
+                (1442984653.210838, b"\x08\x00'\x96\xcb|RT\x00\x125\x02\x08\x00E\x00\x00<\xa4@\x00\x00\x1f\x01'\xa2\xc0\xa8\x03(\n\x00\x02\x0f\x00\x00V\xf0\x00\x01\x00mABCDEFGHIJKLMNOPQRSTUVWABCDEFGHI")
+            ]
 
-        self.valid_pkts = [
-            (1442984653.210838, b"\x08\x00'\x96\xcb|RT\x00\x125\x02\x08\x00E\x00\x00<\xa4@\x00\x00\x1f\x01'\xa2\xc0\xa8\x03(\n\x00\x02\x0f\x00\x00V\xf0\x00\x01\x00mABCDEFGHIJKLMNOPQRSTUVWABCDEFGHI")
-        ]
+            self.valid_epb_be = EnhancedPacketBlock(opts=[
+                PcapngOption(code=1, text=b'dpkt is awesome'),
+                PcapngOption()
+            ], pkt_data=(
+                b'\x08\x00\x27\x96\xcb\x7c\x52\x54\x00\x12\x35\x02\x08\x00\x45'
+                b'\x00\x00\x3c\xa4\x40\x00\x00\x1f\x01\x27\xa2\xc0\xa8\x03\x28'
+                b'\x0a\x00\x02\x0f\x00\x00\x56\xf0\x00\x01\x00\x6d\x41\x42\x43'
+                b'\x44\x45\x46\x47\x48\x49\x4a\x4b\x4c\x4d\x4e\x4f\x50\x51\x52'
+                b'\x53\x54\x55\x56\x57\x41\x42\x43\x44\x45\x46\x47\x48\x49'
+            ))
 
-        self.valid_epb_be = EnhancedPacketBlock(opts=[
-            PcapngOption(code=1, text=b'dpkt is awesome'),
-            PcapngOption()
-        ], pkt_data=(
-            b'\x08\x00\x27\x96\xcb\x7c\x52\x54\x00\x12\x35\x02\x08\x00\x45\x00\x00\x3c\xa4\x40\x00\x00'
-            b'\x1f\x01\x27\xa2\xc0\xa8\x03\x28\x0a\x00\x02\x0f\x00\x00\x56\xf0\x00\x01\x00\x6d\x41\x42'
-            b'\x43\x44\x45\x46\x47\x48\x49\x4a\x4b\x4c\x4d\x4e\x4f\x50\x51\x52\x53\x54\x55\x56\x57\x41'
-            b'\x42\x43\x44\x45\x46\x47\x48\x49'
-        ))
+            self.valid_epb_le = EnhancedPacketBlockLE(opts=[
+                PcapngOptionLE(code=1, text=b'dpkt is awesome'),
+                PcapngOptionLE()
+            ], pkt_data=(
+                b'\x08\x00\x27\x96\xcb\x7c\x52\x54\x00\x12\x35\x02\x08\x00\x45'
+                b'\x00\x00\x3c\xa4\x40\x00\x00\x1f\x01\x27\xa2\xc0\xa8\x03\x28'
+                b'\x0a\x00\x02\x0f\x00\x00\x56\xf0\x00\x01\x00\x6d\x41\x42\x43'
+                b'\x44\x45\x46\x47\x48\x49\x4a\x4b\x4c\x4d\x4e\x4f\x50\x51\x52'
+                b'\x53\x54\x55\x56\x57\x41\x42\x43\x44\x45\x46\x47\x48\x49'
+            ))
 
-        self.valid_epb_le = EnhancedPacketBlockLE(opts=[
-            PcapngOptionLE(code=1, text=b'dpkt is awesome'),
-            PcapngOptionLE()
-        ], pkt_data=(
-            b'\x08\x00\x27\x96\xcb\x7c\x52\x54\x00\x12\x35\x02\x08\x00\x45\x00\x00\x3c\xa4\x40\x00\x00'
-            b'\x1f\x01\x27\xa2\xc0\xa8\x03\x28\x0a\x00\x02\x0f\x00\x00\x56\xf0\x00\x01\x00\x6d\x41\x42'
-            b'\x43\x44\x45\x46\x47\x48\x49\x4a\x4b\x4c\x4d\x4e\x4f\x50\x51\x52\x53\x54\x55\x56\x57\x41'
-            b'\x42\x43\x44\x45\x46\x47\x48\x49'
-        ))
+        @property
+        def shb_idb_epb_le(self):
+            return self.valid_shb_le, self.valid_idb_le, self.valid_epb_le
 
-    @property
-    def shb_idb_epb_le(self):
-        return self.valid_shb_le, self.valid_idb_le, self.valid_epb_le
+        @property
+        def shb_idb_epb_be(self):
+            return self.valid_shb_be, self.valid_idb_be, self.valid_epb_be
 
-    @property
-    def shb_idb_epb_be(self):
-        return self.valid_shb_be, self.valid_idb_be, self.valid_epb_be
+    return TestData()
+
 def pre_test(f):
     def wrapper(*args, **kwargs):
         fobj = BytesIO()
@@ -906,21 +920,21 @@ class PostTest:
 @PostTest(test='assertion', type=ValueError, msg='invalid pcapng header: not a SHB')
 @pre_test
 def test_shb_header():
-    shb = TestData().valid_shb_le
+    shb = define_testdata().valid_shb_le
     shb.type = 123456666
     fobj.write(bytes(shb))
 
 @PostTest(test='assertion', type=ValueError, msg='unknown endianness')
 @pre_test
 def test_shb_bom():
-    shb = TestData().valid_shb_le
+    shb = define_testdata().valid_shb_le
     shb.bom = 12345666
     fobj.write(bytes(shb))
 
 @PostTest(test='assertion', type=ValueError, msg='unknown pcapng version 123.45')
 @pre_test
 def test_shb_version():
-    shb = TestData().valid_shb_le
+    shb = define_testdata().valid_shb_le
     shb.v_major = 123
     shb.v_minor = 45
     fobj.write(bytes(shb))
@@ -928,15 +942,15 @@ def test_shb_version():
 @PostTest(test='assertion', type=ValueError, msg='IDB not found')
 @pre_test
 def test_no_idb():
-    shb = TestData().valid_shb_le
+    shb = define_testdata().valid_shb_le
     fobj.write(bytes(shb)+b'aaaa')
 
 @PostTest(test='compare_property', property='idb')
 @pre_test
 def test_idb_opt_offset():
     """ Test that the timestamp offset is correctly written and read """
-    shb = TestData().valid_shb_le
-    idb = TestData().valid_idb_le
+    shb = define_testdata().valid_shb_le
+    idb = define_testdata().valid_idb_le
     idb.opts.insert(0, PcapngOptionLE(
         code=PCAPNG_OPT_IF_TSOFFSET,
         data=struct_pack('<q', 123456666))
@@ -948,18 +962,18 @@ def test_idb_opt_offset():
 @pre_test
 def test_idb_linktype():
     """ Test that if the idb.linktype is not in dloff, dloff is set to 0 """
-    shb = TestData().valid_shb_le
-    idb = TestData().valid_idb_le
+    shb = define_testdata().valid_shb_le
+    idb = define_testdata().valid_idb_le
     idb.linktype = 3456
     fobj.write(bytes(shb)+bytes(idb))
     return 0
 
 def test_repr():
     """ check the __repr__ method for Packet subclass.
-    
+
     The __repr__ method currently includes the b'' in the string. This means that python2 and python3 will differ.
     """
-    real = repr(TestData().valid_shb_le)
+    real = repr(define_testdata().valid_shb_le)
 
     python2 = "SectionHeaderBlockLE(opts=[PcapngOptionLE(code=3, data='64-bit Windows 8.1, build 9600'), PcapngOptionLE(code=4, data='Dumpcap 1.12.7 (v1.12.7-0-g7fc8978 from master-1.12)'), PcapngOptionLE(opt_endofopt)])"
     python3 = "SectionHeaderBlockLE(opts=[PcapngOptionLE(code=3, data=b'64-bit Windows 8.1, build 9600'), PcapngOptionLE(code=4, data=b'Dumpcap 1.12.7 (v1.12.7-0-g7fc8978 from master-1.12)'), PcapngOptionLE(opt_endofopt)])"
@@ -968,7 +982,7 @@ def test_repr():
 
 @pre_test
 def test_filter():
-    buf = TestData().valid_pcapng
+    buf = define_testdata().valid_pcapng
     fobj.write(buf)
     fobj.flush()
     fobj.seek(0)
@@ -981,42 +995,42 @@ def test_filter():
 @PostTest(test='compare_method', method='readpkts')
 @pre_test
 def test_readpkts():
-    fobj.write(TestData().valid_pcapng)
-    return TestData().valid_pkts
+    fobj.write(define_testdata().valid_pcapng)
+    return define_testdata().valid_pkts
 
 @PostTest(test='compare_method', method='next')
 @pre_test
 def test_next():
-    fobj.write(TestData().valid_pcapng)
-    return TestData().valid_pkts[0]
+    fobj.write(define_testdata().valid_pcapng)
+    return define_testdata().valid_pkts[0]
 
 @pre_test
 def test_dispatch():
-    fobj.write(TestData().valid_pcapng)
+    fobj.write(define_testdata().valid_pcapng)
     fobj.flush()
     fobj.seek(0)
 
     def callback(timestamp, pkt, *args):
-        assert (timestamp, pkt) == TestData().valid_pkts[0]
+        assert (timestamp, pkt) == define_testdata().valid_pkts[0]
 
     reader = Reader(fobj)
     assert 1 == reader.dispatch(0, callback)
 
 @pre_test
 def test_loop():
-    fobj.write(TestData().valid_pcapng)
+    fobj.write(define_testdata().valid_pcapng)
     fobj.flush()
     fobj.seek(0)
 
     def callback(timestamp, pkt, *args):
-        assert (timestamp, pkt) == TestData().valid_pkts[0]
+        assert (timestamp, pkt) == define_testdata().valid_pkts[0]
 
     reader = Reader(fobj)
     reader.loop(callback)
 
 def test_idb_opt_err():
     """ Test that options end with opt_endofopt """
-    idb = TestData().valid_idb_le
+    idb = define_testdata().valid_idb_le
     del idb.opts[-1]
     try:
         bytes(idb)
@@ -1026,7 +1040,7 @@ def test_idb_opt_err():
 
 def test_custom_read_write():
     """Test a full pcapng file with 1 ICMP packet"""
-    buf = TestData().valid_pcapng
+    buf = define_testdata().valid_pcapng
     fobj = BytesIO(buf)
 
     # test reading
@@ -1046,7 +1060,7 @@ def test_custom_read_write():
     fobj.close()
 
     # test pcapng customized writing
-    shb, idb, epb = TestData().shb_idb_epb_le
+    shb, idb, epb = define_testdata().shb_idb_epb_le
 
     fobj = BytesIO()
     writer = Writer(fobj, shb=shb, idb=idb)
@@ -1079,7 +1093,7 @@ def test_writer_validate_instance():
 def test_writepkt_epb_ts():
     """ writepkt should assign ts_high/low for epb if they are 0 """
     global time
-    shb, idb, epb = TestData().shb_idb_epb_le
+    shb, idb, epb = define_testdata().shb_idb_epb_le
     writer = Writer(fobj, shb=shb, idb=idb)
     epb.ts_high = epb.ts_low = 0
     ts = 1454725786.526401
@@ -1095,7 +1109,7 @@ def test_writepkt_epb_ts():
 @pre_test
 def test_writer_validate_le():
     """ System endianness and shb endianness should match"""
-    shb = TestData().valid_shb_be
+    shb = define_testdata().valid_shb_be
     _sysle = Writer._Writer__le
 
     Writer._Writer__le = True
@@ -1111,7 +1125,7 @@ def test_writer_validate_le():
 @pre_test
 def test_writer_validate_be():
     """ System endianness and shb endianness should match"""
-    shb = TestData().valid_shb_le
+    shb = define_testdata().valid_shb_le
     _sysle = Writer._Writer__le
 
     Writer._Writer__le = False
@@ -1156,7 +1170,7 @@ def test_pcapng_block_unpack():
 
 def test_epb_unpack():
     """ EnhancedPacketBlocks can only unpack data >64 bytes, the length of their header """
-    shb, idb, epb = TestData().shb_idb_epb_be
+    shb, idb, epb = define_testdata().shb_idb_epb_be
     buf = b'quite-long-but-not-long-enough-at-least-32'
     try:
         epb.unpack(buf)
@@ -1165,8 +1179,8 @@ def test_epb_unpack():
 
 def test_epb_unpack_length_mismatch():
     """ Force calculated len to be 0 when unpacking epb, this should fail when unpacking """
-    shb, idb, epb = TestData().shb_idb_epb_be
-    
+    shb, idb, epb = define_testdata().shb_idb_epb_be
+
     unpackme = bytes(epb)
     unpackme = unpackme[:-4] + b'\x00'*4
     try:
@@ -1183,7 +1197,7 @@ def test_pcapng_block_len_no_opts():
 
 def test_reader_file_descriptor():
     """ Reader has .fd and .fileno() convenience members. Compare them to the actual fobj that was passed in """
-    pcapng = TestData().valid_pcapng
+    pcapng = define_testdata().valid_pcapng
     import tempfile
     with tempfile.TemporaryFile() as fobj:
         fobj.write(pcapng)
