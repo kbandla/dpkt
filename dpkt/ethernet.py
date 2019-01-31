@@ -393,6 +393,16 @@ def test_eth():
     assert str(eth) == str(s)
     assert len(eth) == len(s)
 
+def test_eth_zero_ethtype():
+    s = (b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+         b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+         b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+         b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x08\x89\x12\x04')
+    eth = Ethernet(s)
+    assert eth
+    assert eth.type == ETH_TYPE_UNKNOWN
+    assert str(eth) == str(s)
+    assert len(eth) == len(s)
 
 def test_eth_init_with_data():
     # initialize with a data string, test that it gets unpacked
