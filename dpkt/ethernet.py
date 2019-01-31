@@ -30,6 +30,7 @@ ETH_MTU = (ETH_LEN_MAX - ETH_HDR_LEN - ETH_CRC_LEN)
 ETH_MIN = (ETH_LEN_MIN - ETH_HDR_LEN - ETH_CRC_LEN)
 
 # Ethernet payload types - http://standards.ieee.org/regauth/ethertype
+ETH_TYPE_UNKNOWN = 0x0000
 ETH_TYPE_EDP = 0x00bb  # Extreme Networks Discovery Protocol
 ETH_TYPE_PUP = 0x0200  # PUP protocol
 ETH_TYPE_IP = 0x0800  # IP protocol
@@ -131,7 +132,7 @@ class Ethernet(dpkt.Packet):
 
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
-        if self.type > 1500:
+        if self.type > 1500 or self.type == ETH_TYPE_UNKNOWN:
             # Ethernet II
             self._unpack_data(self.data)
 
