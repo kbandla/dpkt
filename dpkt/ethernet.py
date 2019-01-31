@@ -132,7 +132,7 @@ class Ethernet(dpkt.Packet):
 
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
-        if self.type > 1500 or self.type == ETH_TYPE_UNKNOWN:
+        if self.type > 1500:
             # Ethernet II
             self._unpack_data(self.data)
 
@@ -149,7 +149,11 @@ class Ethernet(dpkt.Packet):
             # Novell "raw" 802.3
             self.type = ETH_TYPE_IPX
             self.data = self.ipx = self._typesw[ETH_TYPE_IPX](self.data[2:])
-
+            
+        elif self.type == ETH_TYPE_UNKNOWN:
+            # Unknown type, assume Ethernet
+            self._unpack_data(self.data)
+            
         else:
             # IEEE 802.3 Ethernet - LLC
             # try to unpack FCS here; we follow the same heuristic approach as Wireshark:
