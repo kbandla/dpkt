@@ -30,6 +30,7 @@ ETH_MTU = (ETH_LEN_MAX - ETH_HDR_LEN - ETH_CRC_LEN)
 ETH_MIN = (ETH_LEN_MIN - ETH_HDR_LEN - ETH_CRC_LEN)
 
 # Ethernet payload types - http://standards.ieee.org/regauth/ethertype
+ETH_TYPE_UNKNOWN = 0x0000
 ETH_TYPE_EDP = 0x00bb  # Extreme Networks Discovery Protocol
 ETH_TYPE_PUP = 0x0200  # PUP protocol
 ETH_TYPE_IP = 0x0800  # IP protocol
@@ -148,7 +149,11 @@ class Ethernet(dpkt.Packet):
             # Novell "raw" 802.3
             self.type = ETH_TYPE_IPX
             self.data = self.ipx = self._typesw[ETH_TYPE_IPX](self.data[2:])
-
+            
+        elif self.type == ETH_TYPE_UNKNOWN:
+            # Unknown type, assume Ethernet
+            self._unpack_data(self.data)
+            
         else:
             # IEEE 802.3 Ethernet - LLC
             # try to unpack FCS here; we follow the same heuristic approach as Wireshark:
@@ -388,6 +393,16 @@ def test_eth():
     assert str(eth) == str(s)
     assert len(eth) == len(s)
 
+def test_eth_zero_ethtype():
+    s = (b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+         b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+         b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+         b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x08\x89\x12\x04')
+    eth = Ethernet(s)
+    assert eth
+    assert eth.type == ETH_TYPE_UNKNOWN
+    assert str(eth) == str(s)
+    assert len(eth) == len(s)
 
 def test_eth_init_with_data():
     # initialize with a data string, test that it gets unpacked
