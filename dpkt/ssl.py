@@ -344,7 +344,7 @@ class TLSCertificate(dpkt.Packet):
 class TLSUnknownHandshake(dpkt.Packet):
     __hdr__ = tuple()
 
-
+TLSNewSessionTicket = TLSUnknownHandshake
 TLSServerKeyExchange = TLSUnknownHandshake
 TLSCertificateRequest = TLSUnknownHandshake
 TLSServerHelloDone = TLSUnknownHandshake
@@ -359,6 +359,7 @@ HANDSHAKE_TYPES = {
     0: ('HelloRequest', TLSHelloRequest),
     1: ('ClientHello', TLSClientHello),
     2: ('ServerHello', TLSServerHello),
+    4: ('NewSessionTicket', TLSNewSessionTicket),
     11: ('Certificate', TLSCertificate),
     12: ('ServerKeyExchange', TLSServerKeyExchange),
     13: ('CertificateRequest', TLSCertificateRequest),
