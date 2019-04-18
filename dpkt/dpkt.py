@@ -106,6 +106,9 @@ class Packet(_MetaPacket("Temp", (object,), {})):
     def __len__(self):
         return self.__hdr_len__ + len(self.data)
 
+    def __iter__(self):
+        return iter(zip(self.__class__.__hdr_fields__, map(self.__getitem__, self.__class__.__hdr_fields__)))
+
     def __getitem__(self, k):
         try:
             return getattr(self, k)
