@@ -4,11 +4,7 @@
 from __future__ import print_function
 from __future__ import absolute_import
 
-try:
-    from collections import OrderedDict
-except ImportError:
-    # Python 2.6
-    OrderedDict = dict
+from collections import OrderedDict
 
 from . import dpkt
 from .compat import BytesIO, iteritems
