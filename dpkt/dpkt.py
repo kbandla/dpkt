@@ -1,16 +1,19 @@
 # $Id: dpkt.py 43 2007-08-02 22:42:59Z jon.oberheide $
 # -*- coding: utf-8 -*-
 """Simple packet creation and parsing."""
-from __future__ import absolute_import 
+from __future__ import absolute_import
 
+import array
 import copy
+from functools import partial
 import itertools
 import socket
 import struct
-import array
-from functools import partial
 
-from .compat import compat_ord, compat_izip, iteritems
+import six
+import six.moves
+
+from .compat import compat_ord
 
 
 class Error(Exception):
@@ -40,7 +43,7 @@ class _MetaPacket(type):
             t.__hdr_fields__ = [x[0] for x in st]
             t.__hdr_fmt__ = getattr(t, '__byte_order__', '>') + ''.join([x[1] for x in st])
             t.__hdr_len__ = struct.calcsize(t.__hdr_fmt__)
-            t.__hdr_defaults__ = dict(compat_izip(
+            t.__hdr_defaults__ = dict(six.moves.zip(
                 t.__hdr_fields__, [x[2] for x in st]))
         return t
 
@@ -97,7 +100,7 @@ class Packet(_MetaPacket("Temp", (object,), {})):
             for k in self.__hdr_fields__:
                 setattr(self, k, copy.copy(self.__hdr_defaults__[k]))
 
-            for k, v in iteritems(kwargs):
+            for k, v in six.iteritems(kwargs):
                 setattr(self, k, v)
 
         if hasattr(self, '__hdr_fmt__'):
@@ -134,7 +137,7 @@ class Packet(_MetaPacket("Temp", (object,), {})):
         # (3)
         l.extend(
             ['%s=%r' % (attr_name, attr_value)
-             for attr_name, attr_value in iteritems(self.__dict__)
+             for attr_name, attr_value in six.iteritems(self.__dict__)
              if attr_name[0] != '_'                   # exclude _private attributes
              and attr_name != self.data.__class__.__name__.lower()])  # exclude fields like ip.udp
         # (4)
@@ -144,7 +147,7 @@ class Packet(_MetaPacket("Temp", (object,), {})):
 
     def __str__(self):
         return str(self.__bytes__())
-    
+
     def __bytes__(self):
         return self.pack_hdr() + bytes(self.data)
 
@@ -173,8 +176,9 @@ class Packet(_MetaPacket("Temp", (object,), {})):
 
     def unpack(self, buf):
         """Unpack packet header fields from buf, and set self.data."""
-        for k, v in compat_izip(self.__hdr_fields__,
-                                struct.unpack(self.__hdr_fmt__, buf[:self.__hdr_len__])):
+        for k, v in six.moves.zip(self.__hdr_fields__,
+                                  struct.unpack(self.__hdr_fmt__,
+                                                buf[:self.__hdr_len__])):
             setattr(self, k, v)
         self.data = buf[self.__hdr_len__:]
 

@@ -3,13 +3,14 @@
 """Generic Routing Encapsulation."""
 from __future__ import absolute_import
 
-import struct
 import codecs
+import struct
+
+import six.moves
 
 from . import dpkt
 from . import ethernet
 from .decorators import deprecated
-from .compat import compat_izip
 
 GRE_CP = 0x8000  # Checksum Present
 GRE_RP = 0x4000  # Routing Present
@@ -88,7 +89,7 @@ class GRE(dpkt.Packet):
             fmtlen = struct.calcsize(fmt)
             vals = struct.unpack("!" + fmt, self.data[:fmtlen])
             self.data = self.data[fmtlen:]
-            self.__dict__.update(dict(compat_izip(fields, vals)))
+            self.__dict__.update(dict(six.moves.zip(fields, vals)))
         if self.flags & GRE_RP:
             l = []
             while True:

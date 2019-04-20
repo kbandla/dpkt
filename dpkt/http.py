@@ -9,8 +9,9 @@ except ImportError:
     # Python 2.6
     OrderedDict = dict
 
+import six
+
 from . import dpkt
-from .compat import BytesIO, iteritems
 
 
 def parse_headers(f):
@@ -99,14 +100,11 @@ class Message(dpkt.Packet):
             self.headers = OrderedDict()
             self.body = b''
             self.data = b''
-            # NOTE: changing this to iteritems breaks py3 compatibility
-            for k, v in self.__hdr_defaults__.items():
-                setattr(self, k, v)
-            for k, v in iteritems(kwargs):
+            for k, v in six.iteritems(self.__hdr_defaults__, **kwargs):
                 setattr(self, k, v)
 
     def unpack(self, buf, is_body_allowed=True):
-        f = BytesIO(buf)
+        f = six.BytesIO(buf)
         # Parse headers
         self.headers = parse_headers(f)
         # Parse body
@@ -118,7 +116,9 @@ class Message(dpkt.Packet):
         self.data = f.read()
 
     def pack_hdr(self):
-        return ''.join(['%s: %s\r\n' % t for t in iteritems(self.headers)])
+        return ''.join([
+            '%s: %s\r\n' % t for t in six.iteritems(self.headers)
+        ])
 
     def __len__(self):
         return len(str(self))
@@ -161,7 +161,7 @@ class Request(Message):
     __proto = 'HTTP'
 
     def unpack(self, buf):
-        f = BytesIO(buf)
+        f = six.BytesIO(buf)
         line = f.readline().decode("ascii", "ignore")
         l = line.strip().split()
         if len(l) < 2:
@@ -207,7 +207,7 @@ class Response(Message):
     __proto = 'HTTP'
 
     def unpack(self, buf):
-        f = BytesIO(buf)
+        f = six.BytesIO(buf)
         line = f.readline()
         l = line.strip().decode("ascii", "ignore").split(None, 2)
         if len(l) < 2 or not l[0].startswith(self.__proto) or not l[1].isdigit():

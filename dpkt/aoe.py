@@ -4,9 +4,10 @@ from __future__ import absolute_import
 
 import struct
 
+import six
+
 from . import dpkt
 from .decorators import deprecated
-from .compat import iteritems
 
 class AOE(dpkt.Packet):
     """ATA over Ethernet Protocol.
@@ -73,7 +74,7 @@ def __load_cmds():
     prefix = 'AOE_CMD_'
     g = globals()
 
-    for k, v in iteritems(g):
+    for k, v in six.iteritems(g):
         if k.startswith(prefix):
             name = 'aoe' + k[len(prefix):].lower()
             try:

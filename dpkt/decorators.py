@@ -2,7 +2,10 @@
 from __future__ import print_function
 from __future__ import absolute_import
 
+import sys
 import warnings
+
+import six.moves
 
 
 def decorator_with_args(decorator_to_enhance):
@@ -48,12 +51,10 @@ class TestDeprecatedDecorator(object):
         return
 
     def test_deprecated_decorator(self):
-        import sys
-        from .compat import StringIO
 
         saved_stderr = sys.stderr
         try:
-            out = StringIO()
+            out = six.moves.StringIO()
             sys.stderr = out
             self.deprecated_decorator()
             try: # This isn't working under newest version of pytest

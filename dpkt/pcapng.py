@@ -7,11 +7,12 @@ from __future__ import print_function
 from __future__ import absolute_import
 
 from struct import pack as struct_pack, unpack as struct_unpack
-from time import time
 import sys
+from time import time
+
+import six
 
 from . import dpkt
-from .compat import BytesIO, intround
 
 BYTE_ORDER_MAGIC = 0x1A2B3C4D
 BYTE_ORDER_MAGIC_LE = 0x4D3C2B1A
@@ -411,9 +412,9 @@ class Writer(object):
             self._validate_block('pkt', pkt, EnhancedPacketBlock)
 
             if ts is not None:  # ts as an argument gets precedence
-                ts = intround(ts * 1e6)
+                ts = int(round(ts * 1e6))
             elif pkt.ts_high == pkt.ts_low == 0:
-                ts = intround(time() * 1e6)
+                ts = int(round((time() * 1e6)))
 
             if ts is not None:
                 pkt.ts_high = ts >> 32
@@ -435,7 +436,7 @@ class Writer(object):
             pkt: a buffer
             ts: Unix timestamp in seconds since Epoch (e.g. 1454725786.99)
         """
-        ts = intround(ts * 1e6)  # to int microseconds
+        ts = int(round(ts * 1e6))  # to int microseconds
 
         s = pkt
         n = len(s)
@@ -467,7 +468,7 @@ class Writer(object):
         precalc_n = hdr_len + opts_len
 
         for ts, pkt in pkts:
-            ts = intround(ts * 1e6)  # to int microseconds
+            ts = int(round(ts * 1e6))  # to int microseconds
             pkt_len = len(pkt)
             pkt_len_align = _align32b(pkt_len)
 
@@ -757,7 +758,7 @@ def test_epb():
 
 def test_simple_write_read():
     """Test writing a basic pcapng and then reading it"""
-    fobj = BytesIO()
+    fobj = six.BytesIO()
 
     writer = Writer(fobj, snaplen=0x2000, linktype=DLT_LINUX_SLL)
     writer.writepkt(b'foo', ts=1454725786.526401)
@@ -802,7 +803,7 @@ def test_custom_read_write():
         b'\x01\x00\x0f\x00\x64\x70\x6b\x74\x20\x69\x73\x20\x61\x77\x65\x73\x6f\x6d\x65\x00\x00\x00'
         b'\x00\x00\x84\x00\x00\x00')
 
-    fobj = BytesIO(buf)
+    fobj = six.BytesIO(buf)
 
     # test reading
     reader = Reader(fobj)
@@ -841,7 +842,7 @@ def test_custom_read_write():
         b'\x43\x44\x45\x46\x47\x48\x49\x4a\x4b\x4c\x4d\x4e\x4f\x50\x51\x52\x53\x54\x55\x56\x57\x41'
         b'\x42\x43\x44\x45\x46\x47\x48\x49'
     ))
-    fobj = BytesIO()
+    fobj = six.BytesIO()
     writer = Writer(fobj, shb=shb, idb=idb)
     writer.writepkt(epb, ts=1442984653.210838)
     assert fobj.getvalue() == buf
@@ -851,7 +852,7 @@ def test_custom_read_write():
     epb.ts_high = 335971
     epb.ts_low = 195806422
 
-    fobj = BytesIO()
+    fobj = six.BytesIO()
     writer = Writer(fobj, shb=shb, idb=idb)
     writer.writepkt(epb)
     assert fobj.getvalue() == buf
@@ -872,9 +873,8 @@ class WriterTestWrap:
 
     def __call__(self, f, *args, **kwargs):
         def wrapper(*args, **kwargs):
-            from .compat import BytesIO
             for little_endian in [True, False]:
-                fobj = BytesIO()
+                fobj = six.BytesIO()
                 _sysle = Writer._Writer__le
                 Writer._Writer__le = little_endian
                 f.__globals__['writer'] = Writer(fobj, **self.kwargs.get('writer', {}))

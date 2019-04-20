@@ -4,12 +4,13 @@
 from __future__ import print_function
 from __future__ import absolute_import
 
+from decimal import Decimal
 import sys
 import time
-from decimal import Decimal
+
+import six
 
 from . import dpkt
-from .compat import intround
 
 TCPDUMP_MAGIC = 0xa1b2c3d4
 TCPDUMP_MAGIC_NANO = 0xa1b23c4d
@@ -236,7 +237,7 @@ class Writer(object):
         """
         n = len(pkt)
         sec = int(ts)
-        usec = intround(ts % 1 * self._precision_multiplier)
+        usec = int(round(ts % 1 * self._precision_multiplier))
         ph = self._pack_hdr(sec, usec, n, n)
         self.__f.write(ph + pkt)
 
@@ -256,7 +257,7 @@ class Writer(object):
         for ts, pkt in pkts:
             n = len(pkt)
             sec = int(ts)
-            usec = intround(ts % 1 * precision_multiplier)
+            usec = int(round(ts % 1 * precision_multiplier))
             ph = pack_hdr(sec, usec, n, n)
             fd.write(ph + pkt)
 
@@ -370,12 +371,10 @@ def test_reader():
     )
 
     # --- BytesIO tests ---
-    from .compat import BytesIO
 
     # BytesIO
-    fobj = BytesIO(data)
+    fobj = six.BytesIO(data)
     reader = Reader(fobj)
-    assert reader.name == '<BytesIO>'
     _, buf1 = next(iter(reader))
     assert buf1 == data[FileHdr.__hdr_len__ + PktHdr.__hdr_len__:]
 
@@ -412,9 +411,8 @@ class WriterTestWrap:
 
     def __call__(self, f, *args, **kwargs):
         def wrapper(*args, **kwargs):
-            from .compat import BytesIO
             for little_endian in [True, False]:
-                fobj = BytesIO()
+                fobj = six.BytesIO()
                 _sysle = Writer._Writer__le
                 Writer._Writer__le = little_endian
                 f.__globals__['writer'] = Writer(fobj, **self.kwargs.get('writer', {}))

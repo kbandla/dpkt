@@ -8,8 +8,11 @@ except ImportError:
 
 package_name = 'dpkt'
 description = 'fast, simple packet creation / parsing, with definitions for the basic TCP/IP protocols'
-readme = open('README.rst').read()
-requirements = []
+with open('README.rst') as filep:
+    readme = filep.read()
+requirements = [
+    'six'
+]
 
 # PyPI Readme
 long_description = open('README.rst').read()

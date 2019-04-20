@@ -6,8 +6,9 @@ from __future__ import absolute_import
 
 import struct
 
+import six.moves
+
 from . import dpkt
-from .compat import compat_izip
 
 class NetflowBase(dpkt.Packet):
     """Base class for Cisco Netflow packets.
@@ -66,8 +67,9 @@ class NetflowBase(dpkt.Packet):
 
         def unpack(self, buf):
             # don't bother with data
-            for k, v in compat_izip(self.__hdr_fields__,
-                                       struct.unpack(self.__hdr_fmt__, buf[:self.__hdr_len__])):
+            for k, v in six.moves.zip(self.__hdr_fields__,
+                                      struct.unpack(self.__hdr_fmt__,
+                                      buf[:self.__hdr_len__])):
                 setattr(self, k, v)
             self.data = b""
 

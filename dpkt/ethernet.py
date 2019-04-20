@@ -8,9 +8,11 @@ from __future__ import absolute_import
 import struct
 from zlib import crc32
 
+import six
+
 from . import dpkt
 from . import llc
-from .compat import compat_ord, iteritems
+from .compat import compat_ord
 
 try:
     isinstance("", basestring)
@@ -266,7 +268,7 @@ class Ethernet(dpkt.Packet):
 # XXX - auto-load Ethernet dispatch table from ETH_TYPE_* definitions
 def __load_types():
     g = globals()
-    for k, v in iteritems(g):
+    for k, v in six.iteritems(g):
         if k.startswith('ETH_TYPE_'):
             name = k[9:]
             modname = name.lower()
