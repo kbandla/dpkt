@@ -8,7 +8,6 @@ import struct
 import socket
 
 from . import dpkt
-from .decorators import deprecated
 from .compat import compat_ord
 
 

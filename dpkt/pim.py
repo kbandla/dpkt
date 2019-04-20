@@ -4,7 +4,6 @@
 from __future__ import absolute_import
 
 from . import dpkt
-from .decorators import deprecated
 
 
 class PIM(dpkt.Packet):

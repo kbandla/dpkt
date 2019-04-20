@@ -7,7 +7,6 @@ import socket
 
 from . import dpkt
 from . import ieee80211
-from .decorators import deprecated
 
 # Ref: http://www.radiotap.org
 # Fields Ref: http://www.radiotap.org/defined-fields/all

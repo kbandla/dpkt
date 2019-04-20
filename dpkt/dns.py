@@ -8,7 +8,6 @@ import struct
 import codecs
 
 from . import dpkt
-from .decorators import deprecated
 from .compat import compat_ord
 
 DNS_Q = 0
@@ -521,6 +520,4 @@ if __name__ == '__main__':
     test_very_long_name()
     test_null_response()
     test_txt_response()
-    test_deprecated_methods()
-    test_deprecated_method_performance()
     print('Tests Successful...')
