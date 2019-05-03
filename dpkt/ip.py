@@ -5,7 +5,6 @@ from __future__ import print_function
 from __future__ import absolute_import
 
 from . import dpkt
-from .decorators import deprecated
 from .compat import iteritems
 
 class IP(dpkt.Packet):

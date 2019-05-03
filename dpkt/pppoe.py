@@ -8,7 +8,6 @@ import codecs
 
 from . import dpkt
 from . import ppp
-from .decorators import deprecated
 
 # RFC 2516 codes
 PPPoE_PADI = 0x09

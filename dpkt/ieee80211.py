@@ -8,7 +8,6 @@ import socket
 import struct
 
 from . import dpkt
-from .decorators import deprecated
 
 # Frame Types
 MGMT_TYPE = 0

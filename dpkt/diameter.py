@@ -7,7 +7,6 @@ from __future__ import absolute_import
 import struct
 
 from . import dpkt
-from .decorators import deprecated
 from .compat import compat_ord
 
 # Diameter Base Protocol - RFC 3588
