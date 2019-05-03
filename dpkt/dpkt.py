@@ -90,7 +90,7 @@ class Packet(_MetaPacket("Temp", (object,), {})):
                 self.unpack(args[0])
             except struct.error:
                 if len(args[0]) < self.__hdr_len__:
-                    raise NeedData
+                    raise NeedData('got %d, %d needed at least' % (len(args[0]), self.__hdr_len__))
                 raise UnpackError('invalid %s: %r' %
                                   (self.__class__.__name__, args[0]))
         else:
