@@ -28,7 +28,7 @@ class ARP(dpkt.Packet):
     Attributes:
         __hdr__: Header fields of ARP.
     """
-    
+
     __hdr__ = (
         ('hrd', 'H', ARP_HRD_ETH),
         ('pro', 'H', ARP_PRO_IP),

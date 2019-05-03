@@ -5,8 +5,8 @@ from __future__ import absolute_import
 import struct
 
 from . import dpkt
-from .decorators import deprecated
 from .compat import iteritems
+
 
 class AOE(dpkt.Packet):
     """ATA over Ethernet Protocol.

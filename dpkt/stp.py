@@ -16,7 +16,7 @@ class STP(dpkt.Packet):
         __hdr__: Header fields of STP.
         TODO.
     """
-    
+
     __hdr__ = (
         ('proto_id', 'H', 0),
         ('v', 'B', 0),

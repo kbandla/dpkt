@@ -19,7 +19,7 @@ class RADIUS(dpkt.Packet):
         __hdr__: Header fields of RADIUS.
         TODO.
     """
-    
+
     __hdr__ = (
         ('code', 'B', 0),
         ('id', 'B', 0),

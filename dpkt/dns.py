@@ -8,7 +8,6 @@ import struct
 import codecs
 
 from . import dpkt
-from .decorators import deprecated
 from .compat import compat_ord
 
 DNS_Q = 0

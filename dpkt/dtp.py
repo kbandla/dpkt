@@ -17,7 +17,7 @@ class DTP(dpkt.Packet):
         __hdr__: Header fields of DTP.
         TODO.
     """
-    
+
     __hdr__ = (
         ('v', 'B', 0),
     )  # rest is TLVs

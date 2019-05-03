@@ -23,7 +23,7 @@ try:
     from BytesIO import BytesIO
 except ImportError: 
     from io import BytesIO
-        
+
 if sys.version_info < (3,):
     def iteritems(d, **kw):
         return d.iteritems(**kw)

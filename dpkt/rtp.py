@@ -4,7 +4,6 @@
 from __future__ import absolute_import
 
 from .dpkt import Packet
-from .decorators import deprecated
 
 # version 1100 0000 0000 0000 ! 0xC000  14
 # p       0010 0000 0000 0000 ! 0x2000  13

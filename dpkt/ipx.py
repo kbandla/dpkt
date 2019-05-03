@@ -17,7 +17,7 @@ class IPX(dpkt.Packet):
         __hdr__: Header fields of IPX.
         TODO.
     """
-    
+
     __hdr__ = (
         ('sum', 'H', 0xffff),
         ('len', 'H', IPX_HDR_LEN),

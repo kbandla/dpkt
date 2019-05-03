@@ -8,7 +8,6 @@ import codecs
 
 from . import dpkt
 from . import ethernet
-from .decorators import deprecated
 from .compat import compat_izip
 
 GRE_CP = 0x8000  # Checksum Present
