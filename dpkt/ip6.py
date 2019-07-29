@@ -6,8 +6,14 @@ from __future__ import absolute_import
 
 from . import dpkt
 from . import ip
+from . import tcp
 from .compat import compat_ord
+import struct
 
+# The allowed extension headers and their classes (in order according to RFC).
+EXT_HDRS = [ip.IP_PROTO_HOPOPTS, ip.IP_PROTO_ROUTING, ip.IP_PROTO_FRAGMENT, ip.IP_PROTO_AH, ip.IP_PROTO_ESP,
+            ip.IP_PROTO_DSTOPTS]
+# EXT_HDRS_CLS - classes is below - after all the used classes are defined.
 
 class IP6(dpkt.Packet):
     """Internet Protocol, version 6.
@@ -27,7 +33,6 @@ class IP6(dpkt.Packet):
         ('src', '16s', ''),
         ('dst', '16s', '')
     )
-
     _protosw = ip.IP._protosw
 
     @property
@@ -73,8 +78,8 @@ class IP6(dpkt.Packet):
 
         next_ext_hdr = self.nxt
 
-        while next_ext_hdr in ext_hdrs:
-            ext = ext_hdrs_cls[next_ext_hdr](buf)
+        while next_ext_hdr in EXT_HDRS:
+            ext = EXT_HDRS_CLS[next_ext_hdr](buf)
             self.extension_hdrs[next_ext_hdr] = ext
             self.all_extension_headers.append(ext)
             buf = buf[ext.length:]
@@ -91,29 +96,34 @@ class IP6(dpkt.Packet):
             self.data = buf
 
     def headers_str(self):
+        nxt = self.nxt
         # If all_extension_headers is available, return the headers as they originally appeared
-        if self.all_extension_headers:
-            return b''.join(bytes(ext) for ext in self.all_extension_headers)
-
+        if hasattr(self, 'all_extension_headers') and self.all_extension_headers:
+            # get the nxt header from the last one
+            nxt = self.all_extension_headers[-1].nxt
+            return nxt, b''.join(bytes(ext) for ext in self.all_extension_headers)
         # Output extension headers in order defined in RFC1883 (except dest opts)
         header_str = b""
-        for hdr in ext_hdrs:
-            if hdr in self.extension_hdrs:
-                header_str += bytes(self.extension_hdrs[hdr])
-        return header_str
+        if hasattr(self, 'extension_hdrs'):
+            for hdr in EXT_HDRS:
+                if hdr in self.extension_hdrs:
+                    nxt = self.extension_hdrs[hdr].nxt
+                    header_str += bytes(self.extension_hdrs[hdr])
+        return nxt, header_str
 
     def __bytes__(self):
+        self.p, hdr_str = self.headers_str()
         if (self.p == 6 or self.p == 17 or self.p == 58) and not self.data.sum:
             # XXX - set TCP, UDP, and ICMPv6 checksums
             p = bytes(self.data)
-            s = dpkt.struct.pack('>16s16sxBH', self.src, self.dst, self.nxt, len(p))
+            s = struct.pack('>16s16sxBH', self.src, self.dst, self.p, len(p))
             s = dpkt.in_cksum_add(0, s)
             s = dpkt.in_cksum_add(s, p)
             try:
                 self.data.sum = dpkt.in_cksum_done(s)
             except AttributeError:
                 pass
-        return self.pack_hdr() + self.headers_str() + bytes(self.data)
+        return self.pack_hdr() + hdr_str + bytes(self.data)
 
     @classmethod
     def set_proto(cls, p, pktclass):
@@ -268,16 +278,12 @@ class IP6ESPHeader(IP6ExtensionHeader):
         dpkt.Packet.unpack(self, buf)
         self.length = self.__hdr_len__ + len(self.data)
 
-
-ext_hdrs = [ip.IP_PROTO_HOPOPTS, ip.IP_PROTO_ROUTING, ip.IP_PROTO_FRAGMENT, ip.IP_PROTO_AH, ip.IP_PROTO_ESP,
-            ip.IP_PROTO_DSTOPTS]
-ext_hdrs_cls = {ip.IP_PROTO_HOPOPTS: IP6HopOptsHeader,
+EXT_HDRS_CLS = {ip.IP_PROTO_HOPOPTS: IP6HopOptsHeader,
                 ip.IP_PROTO_ROUTING: IP6RoutingHeader,
                 ip.IP_PROTO_FRAGMENT: IP6FragmentHeader,
                 ip.IP_PROTO_ESP: IP6ESPHeader,
                 ip.IP_PROTO_AH: IP6AHHeader,
                 ip.IP_PROTO_DSTOPTS: IP6DstOptsHeader}
-
 
 # Unit tests
 
@@ -394,6 +400,40 @@ def test_ip6_all_extension_headers():  # https://github.com/kbandla/dpkt/pull/40
     assert isinstance(hdrs[5], IP6DstOptsHeader)
     assert bytes(_ip) == s
 
+def test_ip6_gen_tcp_ack():
+    t = tcp.TCP()
+    t.win = 8192
+    t.dport = 80
+    t.sport = 4711
+    t.flags = tcp.TH_ACK
+    t.seq = 22
+    t.ack = 33
+    ipp = IP6()
+    ipp.src = b'\xfd\x00\x00\x00\x00\x00\x00\x00\xc8\xba\x88\x88\x00\xaa\xbb\x01'
+    ipp.dst = b'\x00d\xff\x9b\x00\x00\x00\x00\x00\x00\x00\x00\xc1\n@*'
+    ipp.hlim = 64
+    ipp.nxt = ip.IP_PROTO_TCP
+    ipp.data = t
+    ipp.plen = ipp.data.ulen = len(ipp.data)
+
+    assert len(bytes(ipp)) == 60
+    assert ipp.p == ip.IP_PROTO_TCP
+
+    # Second part of testing - with ext headers.
+    ipp.p = 0
+    o = (b'\x3b\x04\x01\x02\x00\x00\xc9\x10\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+     b'\x00\x00\x01\x00\xc2\x04\x00\x00\x00\x00\x05\x02\x00\x00\x01\x02\x00\x00')
+    ipp.extension_hdrs = {}
+    ipp.extension_hdrs[0] = IP6HopOptsHeader(o)
+    ipp.extension_hdrs[0].nxt = ip.IP_PROTO_TCP
+    ipp.nxt = ip.proto = ip.IP_PROTO_HOPOPTS
+    _p,exthdrs = ipp.headers_str()
+    ipp.plen = len(exthdrs) + len(ipp.data)
+
+    _b = bytes(ipp)
+
+    assert ipp.p == ip.IP_PROTO_TCP
+    assert ipp.nxt == ip.IP_PROTO_HOPOPTS
 
 if __name__ == '__main__':
     test_ipg()
@@ -404,4 +444,5 @@ if __name__ == '__main__':
     test_ip6_esp_header()
     test_ip6_extension_headers()
     test_ip6_all_extension_headers()
+    test_ip6_gen_tcp_ack()
     print('Tests Successful...')
