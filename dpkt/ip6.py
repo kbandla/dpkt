@@ -8,7 +8,12 @@ from . import dpkt
 from . import ip
 from . import tcp
 from .compat import compat_ord
+import struct
 
+# The allowed extension headers and their classes (in order according to RFC).
+EXT_HDRS = [ip.IP_PROTO_HOPOPTS, ip.IP_PROTO_ROUTING, ip.IP_PROTO_FRAGMENT, ip.IP_PROTO_AH, ip.IP_PROTO_ESP,
+            ip.IP_PROTO_DSTOPTS]
+# EXT_HDRS_CLS - classes is below - after all the used classes are defined.
 
 class IP6(dpkt.Packet):
     """Internet Protocol, version 6.
@@ -73,8 +78,8 @@ class IP6(dpkt.Packet):
 
         next_ext_hdr = self.nxt
 
-        while next_ext_hdr in ext_hdrs:
-            ext = ext_hdrs_cls[next_ext_hdr](buf)
+        while next_ext_hdr in EXT_HDRS:
+            ext = EXT_HDRS_CLS[next_ext_hdr](buf)
             self.extension_hdrs[next_ext_hdr] = ext
             self.all_extension_headers.append(ext)
             buf = buf[ext.length:]
@@ -100,7 +105,7 @@ class IP6(dpkt.Packet):
         # Output extension headers in order defined in RFC1883 (except dest opts)
         header_str = b""
         if hasattr(self, 'extension_hdrs'):
-            for hdr in ext_hdrs:
+            for hdr in EXT_HDRS:
                 if hdr in self.extension_hdrs:
                     nxt = self.extension_hdrs[hdr].nxt
                     header_str += bytes(self.extension_hdrs[hdr])
@@ -111,7 +116,7 @@ class IP6(dpkt.Packet):
         if (self.p == 6 or self.p == 17 or self.p == 58) and not self.data.sum:
             # XXX - set TCP, UDP, and ICMPv6 checksums
             p = bytes(self.data)
-            s = dpkt.struct.pack('>16s16sxBH', self.src, self.dst, self.p, len(p))
+            s = struct.pack('>16s16sxBH', self.src, self.dst, self.p, len(p))
             s = dpkt.in_cksum_add(0, s)
             s = dpkt.in_cksum_add(s, p)
             try:
@@ -273,16 +278,12 @@ class IP6ESPHeader(IP6ExtensionHeader):
         dpkt.Packet.unpack(self, buf)
         self.length = self.__hdr_len__ + len(self.data)
 
-
-ext_hdrs = [ip.IP_PROTO_HOPOPTS, ip.IP_PROTO_ROUTING, ip.IP_PROTO_FRAGMENT, ip.IP_PROTO_AH, ip.IP_PROTO_ESP,
-            ip.IP_PROTO_DSTOPTS]
-ext_hdrs_cls = {ip.IP_PROTO_HOPOPTS: IP6HopOptsHeader,
+EXT_HDRS_CLS = {ip.IP_PROTO_HOPOPTS: IP6HopOptsHeader,
                 ip.IP_PROTO_ROUTING: IP6RoutingHeader,
                 ip.IP_PROTO_FRAGMENT: IP6FragmentHeader,
                 ip.IP_PROTO_ESP: IP6ESPHeader,
                 ip.IP_PROTO_AH: IP6AHHeader,
                 ip.IP_PROTO_DSTOPTS: IP6DstOptsHeader}
-
 
 # Unit tests
 
