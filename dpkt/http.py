@@ -40,6 +40,11 @@ def parse_headers(f):
 
 def parse_body(f, headers):
     """Return HTTP body parsed from a file object, given HTTP header dict."""
+    #handle HTTP/0.9
+    if not headers:
+        return b''.join(f.readlines())
+
+    body = b''
     if headers.get('transfer-encoding', '').lower() == 'chunked':
         l = []
         found_end = False
@@ -68,9 +73,7 @@ def parse_body(f, headers):
             raise dpkt.NeedData('short body (missing %d bytes)' % (n - len(body)))
     elif 'content-type' in headers:
         body = f.read()
-    else:
-        # XXX - need to handle HTTP/0.9
-        body = b''
+
     return body
 
 
@@ -102,10 +105,13 @@ class Message(dpkt.Packet):
             for k, v in iteritems(kwargs):
                 setattr(self, k, v)
 
-    def unpack(self, buf, is_body_allowed=True):
+    def unpack(self, buf, is_body_allowed=True, is_header_allowed=True):
         f = BytesIO(buf)
         # Parse headers
-        self.headers = parse_headers(f)
+        if is_header_allowed:
+            self.headers = parse_headers(f)
+        else:
+            self.headers = b''
         # Parse body
         if is_body_allowed:
             self.body = parse_body(f, self.headers)
@@ -115,16 +121,21 @@ class Message(dpkt.Packet):
         self.data = f.read()
 
     def pack_hdr(self):
-        return ''.join(['%s: %s\r\n' % t for t in iteritems(self.headers)])
+        if self.headers:
+            return ''.join(['%s: %s\r\n' % t for t in iteritems(self.headers)])
 
     def __len__(self):
         return len(str(self))
 
     def __str__(self):
-        return '%s\r\n%s' % (self.pack_hdr(), self.body.decode("utf8", "ignore"))
+        if self.headers:
+            return '%s\r\n%s' % (self.pack_hdr(), self.body.decode("utf8", "ignore"))
+        return '%s' % self.body.decode("utf8", "ignore")
 
     def __bytes__(self):
-        return self.pack_hdr().encode("ascii", "ignore") + b'\r\n' + (self.body or b'')
+        if self.headers:
+            return self.pack_hdr().encode("ascii", "ignore") + b'\r\n' + (self.body or b'')
+        return self.body or b''
 
 
 class Request(Message):
@@ -168,19 +179,27 @@ class Request(Message):
         if len(l) == 2:
             # HTTP/0.9 does not specify a version in the request line
             self.version = '0.9'
+	    # only GET requests are allowed
+            if l[0] != 'GET':
+                raise dpkt.UnpackError('invalid http method: %r' % l[0])
         else:
             if not l[2].startswith(self.__proto):
                 raise dpkt.UnpackError('invalid http version: %r' % l[2])
             self.version = l[2][len(self.__proto) + 1:]
+            Message.unpack(self, f.read())
         self.method = l[0]
         self.uri = l[1]
-        Message.unpack(self, f.read())
 
     def __str__(self):
+        if self.version == '0.9':
+            return '%s %s\r\n' % (self.method, self.uri)
         return '%s %s %s/%s\r\n' % (self.method, self.uri, self.__proto,
                                     self.version) + Message.__str__(self)
 
     def __bytes__(self):
+        if self.version == '0.9':
+            str_out = '%s %s\r\n' % (self.method, self.uri)
+            return str_out.encode("ascii", "ignore")
         str_out = '%s %s %s/%s\r\n' % (self.method, self.uri, self.__proto,
                                        self.version)
         return str_out.encode("ascii", "ignore") + Message.__bytes__(self)
@@ -208,31 +227,41 @@ class Response(Message):
         line = f.readline()
         l = line.strip().decode("ascii", "ignore").split(None, 2)
         if len(l) < 2 or not l[0].startswith(self.__proto) or not l[1].isdigit():
-            raise dpkt.UnpackError('invalid response: %r' % line)
-        self.version = l[0][len(self.__proto) + 1:]
-        self.status = l[1]
-        self.reason = l[2] if len(l) > 2 else ''
-        # RFC Sec 4.3.
-        # http://www.w3.org/Protocols/rfc2616/rfc2616-sec4.html#sec4.3.
-        # For response messages, whether or not a message-body is included with
-        # a message is dependent on both the request method and the response
-        # status code (section 6.1.1). All responses to the HEAD request method
-        # MUST NOT include a message-body, even though the presence of entity-
-        # header fields might lead one to believe they do. All 1xx
-        # (informational), 204 (no content), and 304 (not modified) responses
-        # MUST NOT include a message-body. All other responses do include a
-        # message-body, although it MAY be of zero length.
-        is_body_allowed = int(self.status) >= 200 and 204 != int(self.status) != 304
-        Message.unpack(self, f.read(), is_body_allowed)
+            self.version = '0.9'
+            self.status = ''
+            self.reason = ''
+            Message.unpack(self, buf, True, False)
+        else:
+            self.version = l[0][len(self.__proto) + 1:]
+            self.status = l[1]
+            self.reason = l[2] if len(l) > 2 else ''
+            # RFC Sec 4.3.
+            # http://www.w3.org/Protocols/rfc2616/rfc2616-sec4.html#sec4.3.
+            # For response messages, whether or not a message-body is included with
+            # a message is dependent on both the request method and the response
+            # status code (section 6.1.1). All responses to the HEAD request method
+            # MUST NOT include a message-body, even though the presence of entity-
+            # header fields might lead one to believe they do. All 1xx
+            # (informational), 204 (no content), and 304 (not modified) responses
+            # MUST NOT include a message-body. All other responses do include a
+            # message-body, although it MAY be of zero length.
+            is_body_allowed = int(self.status) >= 200 and 204 != int(self.status) != 304
+            Message.unpack(self, f.read(), is_body_allowed)
 
     def __str__(self):
-        return '%s/%s %s %s\r\n' % (self.__proto, self.version, self.status,
-                                    self.reason) + Message.__str__(self)
+        if self.version == '0.9':
+            return '%s\r\n' % Message.__str__(self)
+        else:
+            return '%s/%s %s %s\r\n' % (self.__proto, self.version, self.status,
+                                        self.reason) + Message.__str__(self)
 
     def __bytes__(self):
-        str_out = '%s/%s %s %s\r\n' % (self.__proto, self.version, self.status,
-                                       self.reason)
-        return str_out.encode("ascii", "ignore") + Message.__bytes__(self)
+        if self.version == '0.9':
+            return Message.__bytes__(self)        
+        else:
+            str_out = '%s/%s %s %s\r\n' % (self.__proto, self.version, self.status,
+                                           self.reason)
+            return str_out.encode("ascii", "ignore") + Message.__bytes__(self)
 
 
 def test_parse_request():
