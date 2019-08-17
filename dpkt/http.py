@@ -121,21 +121,20 @@ class Message(dpkt.Packet):
         self.data = f.read()
 
     def pack_hdr(self):
-        if self.headers:
-            return ''.join(['%s: %s\r\n' % t for t in iteritems(self.headers)])
+        return ''.join(['%s: %s\r\n' % t for t in iteritems(self.headers)])
 
     def __len__(self):
         return len(str(self))
 
     def __str__(self):
-        if self.headers:
-            return '%s\r\n%s' % (self.pack_hdr(), self.body.decode("utf8", "ignore"))
-        return '\r\n%s' % self.body.decode("utf8", "ignore")
+        if self.version == '0.9':
+            return '%s' % self.body.decode("utf8", "ignore")
+        return '%s\r\n%s' % (self.pack_hdr(), self.body.decode("utf8", "ignore"))
 
     def __bytes__(self):
-        if self.headers:
-            return self.pack_hdr().encode("ascii", "ignore") + b'\r\n' + (self.body or b'')
-        return b'\r\n' + (self.body or b'')
+        if self.version == '0.9':
+            return b'' + (self.body or b'')
+        return self.pack_hdr().encode("ascii", "ignore") + b'\r\n' + (self.body or b'')
 
 
 class Request(Message):
@@ -272,16 +271,23 @@ def test_parse_request():
     assert r.body == b'sn=em&mn=dtest4&pw=this+is+atest&fr=true&login=Sign+in&od=www'
     assert r.headers['content-type'] == 'application/x-www-form-urlencoded'
     try:
-        Request(s[:60])
+        Request(s[:40])
         assert 'invalid headers parsed!'
     except dpkt.UnpackError:
-        pass
+        assert True 
 
 
 def test_format_request():
     r = Request()
     assert str(r) == 'GET / HTTP/1.0\r\n\r\n'
+    r.version = '0.9'
+    r.uri = '/test'
+    s = str(r)
+    assert s.startswith('GET /test\r\n')
+    s = bytes(r)
+    assert s.startswith(b'GET /test\r\n')
     r.method = 'POST'
+    r.version = '1.0'
     r.uri = '/foo/bar/baz.html'
     r.headers['content-type'] = 'text/plain'
     r.headers['content-length'] = '5'
@@ -321,13 +327,24 @@ def test_noreason_response():
     assert r.reason == ''
     assert bytes(r) == s
 
+def test_hypertext_only_response():
+    s = b"""<HTML>A very simple HTML page</HTML>\r\n"""
+    r = Response(s)
+    assert r.reason == ''
+    assert r.status == ''
+    assert r.version == '0.9'
+    assert r.headers == b''
+    assert r.body == b'<HTML>A very simple HTML page</HTML>\r\n'
+    s = str(r) 
+    assert s.startswith('<HTML>A very simple HTML page</HTML>\r\n') 
+    s = bytes(r) 
+    assert s.startswith(b'<HTML>A very simple HTML page</HTML>\r\n')
 
 def test_response_with_body():
     r = Response()
     r.body = b'foo'
     assert str(r) == 'HTTP/1.0 200 OK\r\n\r\nfoo'
     assert bytes(r) == b'HTTP/1.0 200 OK\r\n\r\nfoo'
-
 
 def test_body_forbidden_response():
     s = b'HTTP/1.1 304 Not Modified\r\n'\
@@ -372,14 +389,27 @@ def test_request_version():
     assert r.method == 'GET'
     assert r.uri == '/'
     assert r.version == '0.9'
+    
+    s = b"""POST /\r\n\r\n"""
+    try:
+        Request(s)
+        assert "invalid http method"
+    except dpkt.UnpackError:
+        assert True 
 
     s = b"""GET / CHEESE/1.0\r\n\r\n"""
     try:
         Request(s)
         assert "invalid protocol version parsed!"
-    except:
-        pass
+    except dpkt.UnpackError:
+        assert True 
 
+    s = b"""MOUSE / HTTP/1.0\r\n\r\n"""
+    try:
+        Request(s)
+        assert "invalid http method"
+    except dpkt.UnpackError:
+        assert True 
 
 def test_invalid_header():
     # valid header.
@@ -463,6 +493,7 @@ if __name__ == '__main__':
     test_chunked_response()
     test_multicookie_response()
     test_noreason_response()
+    test_hypertext_only_response()
     test_response_with_body()
     test_request_version()
     test_invalid_header()
