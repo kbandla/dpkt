@@ -1,8 +1,14 @@
 # -*- coding: utf-8 -*-
-"""Hypertext Transfer Protocol Version 2."""
+"""
+Hypertext Transfer Protocol Version 2.
+2019-10-06: Xiaochun Xu, Add HEADER frame uncompress by import hpack api
+2019-10-06: Xiaochun Xu, Add DATA frame decoding function payload_json by import json module if content-type is application/json-patch+json
+"""
 
 import struct
 import codecs
+import hpack
+import json
 
 from . import dpkt
 
@@ -145,7 +151,6 @@ class Setting(dpkt.Packet):
         ('value', 'I', 0),
     )
 
-
 class PaddedFrame(Frame):
 
     """
@@ -175,6 +180,10 @@ class DataFrame(PaddedFrame):
     def payload(self):
         return self.unpadded_data
 
+    @property
+    def payload_json(self):
+        return json.loads(self.unpadded_data)
+
 class HeadersFrame(PaddedFrame):
 
     """
@@ -190,6 +199,8 @@ class HeadersFrame(PaddedFrame):
             self.block_fragment = self.unpadded_data[5:]
         else:
             self.block_fragment = self.unpadded_data
+        decoder = hpack.Decoder(1000)
+        self.headers = decoder.decode(self.block_fragment)
 
 class PriorityFrame(Frame):
 
@@ -739,4 +750,3 @@ class TestFrame(object):
                 preface=True)
         assert (len(frames) == 0)
         assert (i == 24)
-
