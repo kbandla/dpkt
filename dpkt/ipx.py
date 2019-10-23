@@ -23,6 +23,6 @@ class IPX(dpkt.Packet):
         ('len', 'H', IPX_HDR_LEN),
         ('tc', 'B', 0),
         ('pt', 'B', 0),
-        ('dst', '12s', ''),
-        ('src', '12s', '')
+        ('dst', '12s', b''),
+        ('src', '12s', b'')
     )

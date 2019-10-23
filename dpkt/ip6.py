@@ -30,8 +30,8 @@ class IP6(dpkt.Packet):
         ('plen', 'H', 0),  # payload length (not including header)
         ('nxt', 'B', 0),  # next header protocol
         ('hlim', 'B', 0),  # hop limit
-        ('src', '16s', ''),
-        ('dst', '16s', '')
+        ('src', '16s', b''),
+        ('dst', '16s', b'')
     )
     _protosw = ip.IP._protosw
 

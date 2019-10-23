@@ -22,7 +22,7 @@ class SLL(dpkt.Packet):
         ('type', 'H', 0),  # 0: to us, 1: bcast, 2: mcast, 3: other, 4: from us
         ('hrd', 'H', arp.ARP_HRD_ETH),
         ('hlen', 'H', 6),  # hardware address length
-        ('hdr', '8s', ''),  # first 8 bytes of link-layer header
+        ('hdr', '8s', b''),  # first 8 bytes of link-layer header
         ('ethtype', 'H', ethernet.ETH_TYPE_IP),
     )
     _typesw = ethernet.Ethernet._typesw

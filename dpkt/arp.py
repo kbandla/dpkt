@@ -35,8 +35,8 @@ class ARP(dpkt.Packet):
         ('hln', 'B', 6),  # hardware address length
         ('pln', 'B', 4),  # protocol address length
         ('op', 'H', ARP_OP_REQUEST),
-        ('sha', '6s', ''),
-        ('spa', '4s', ''),
-        ('tha', '6s', ''),
-        ('tpa', '4s', '')
+        ('sha', '6s', b''),
+        ('spa', '4s', b''),
+        ('tha', '6s', b''),
+        ('tpa', '4s', b'')
     )

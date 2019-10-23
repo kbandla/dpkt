@@ -69,8 +69,8 @@ class Ethernet(dpkt.Packet):
     """
 
     __hdr__ = (
-        ('dst', '6s', ''),
-        ('src', '6s', ''),
+        ('dst', '6s', b''),
+        ('src', '6s', b''),
         ('type', 'H', ETH_TYPE_IP)
     )
     _typesw = {}
@@ -350,7 +350,7 @@ class VLANtagISL(dpkt.Packet):
     __hdr__ = (
         ('da', '5s', b'\x01\x00\x0c\x00\x00'),
         ('_type_pri', 'B', 3),
-        ('sa', '6s', ''),
+        ('sa', '6s', b''),
         ('len', 'H', 0),
         ('snap', '3s', b'\xaa\xaa\x03'),
         ('hsa', '3s', b'\x00\x00\x0c'),
