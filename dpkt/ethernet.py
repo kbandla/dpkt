@@ -719,12 +719,7 @@ def test_eth_802dot1ad_802dot1q_ip():
 
 def test_eth_pack():
     eth = Ethernet(data=b'12345')
-    raised = False
-    try:
-        _ = str(eth)
-    except:
-        raised = True
-    assert not raised
+    assert str(eth)
 
 
 if __name__ == '__main__':
