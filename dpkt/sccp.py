@@ -37,15 +37,15 @@ class ActivateCallPlane(dpkt.Packet):
 class CallInfo(dpkt.Packet):
     __byte_order__ = '<'
     __hdr__ = (
-        ('calling_party_name', '40s', ''),
-        ('calling_party', '24s', ''),
-        ('called_party_name', '40s', ''),
-        ('called_party', '24s', ''),
+        ('calling_party_name', '40s', b''),
+        ('calling_party', '24s', b''),
+        ('called_party_name', '40s', b''),
+        ('called_party', '24s', b''),
         ('line_instance', 'I', 0),
         ('call_id', 'I', 0),
         ('call_type', 'I', 0),
-        ('orig_called_party_name', '40s', ''),
-        ('orig_called_party', '24s', '')
+        ('orig_called_party_name', '40s', b''),
+        ('orig_called_party', '24s', b'')
     )
 
 
@@ -78,7 +78,7 @@ class DisplayPromptStatus(dpkt.Packet):
     __byte_order__ = '<'
     __hdr__ = (
         ('msg_timeout', 'I', 0),
-        ('display_msg', '32s', ''),
+        ('display_msg', '32s', b''),
         ('line_instance', 'I', 1),
         ('call_id', 'I', 0)
     )
@@ -87,7 +87,7 @@ class DisplayPromptStatus(dpkt.Packet):
 class DisplayText(dpkt.Packet):
     __byte_order__ = '<'
     __hdr__ = (
-        ('display_msg', '36s', ''),
+        ('display_msg', '36s', b''),
     )
 
 
@@ -114,7 +114,7 @@ class OpenReceiveChannelAck(dpkt.Packet):
     __byte_order__ = '<'
     __hdr__ = (
         ('channel_status', 'I', 0),
-        ('ip', '4s', ''),
+        ('ip', '4s', b''),
         ('port', 'I', 0),
         ('passthruparty_id', 'I', 0),
     )
@@ -152,7 +152,7 @@ class StartMediaTransmission(dpkt.Packet):
         ('conference_id', 'I', 0),
         ('passthruparty_id', 'I', 0),
         ('ipv4_or_ipv6', 'I', 0),
-        ('remote_ip', '16s', ''),
+        ('remote_ip', '16s', b''),
         ('remote_port', 'I', 0),
         ('ms_packet', 'I', 0),
         ('payload_capability', 'I', 4),  # 4: G.711 u-law 64k
@@ -194,7 +194,7 @@ class SCCP(dpkt.Packet):
         ('len', 'I', 0),
         ('rsvd', 'I', 0),
         ('msgid', 'I', 0),
-        ('msg', '0s', ''),
+        ('msg', '0s', b''),
     )
     _msgsw = {
         KEYPAD_BUTTON: KeypadButton,

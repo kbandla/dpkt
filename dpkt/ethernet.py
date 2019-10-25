@@ -69,8 +69,8 @@ class Ethernet(dpkt.Packet):
     """
 
     __hdr__ = (
-        ('dst', '6s', ''),
-        ('src', '6s', ''),
+        ('dst', '6s', b''),
+        ('src', '6s', b''),
         ('type', 'H', ETH_TYPE_IP)
     )
     _typesw = {}
@@ -350,7 +350,7 @@ class VLANtagISL(dpkt.Packet):
     __hdr__ = (
         ('da', '5s', b'\x01\x00\x0c\x00\x00'),
         ('_type_pri', 'B', 3),
-        ('sa', '6s', ''),
+        ('sa', '6s', b''),
         ('len', 'H', 0),
         ('snap', '3s', b'\xaa\xaa\x03'),
         ('hsa', '3s', b'\x00\x00\x0c'),
@@ -717,6 +717,11 @@ def test_eth_802dot1ad_802dot1q_ip():
     assert str(e1) == str(e2)
 
 
+def test_eth_pack():
+    eth = Ethernet(data=b'12345')
+    assert str(eth)
+
+
 if __name__ == '__main__':
     test_eth()
     test_eth_init_with_data()
@@ -732,5 +737,6 @@ if __name__ == '__main__':
     test_eth_pppoe()
     test_eth_2mpls_ecw_eth_llc_stp()
     test_eth_802dot1ad_802dot1q_ip()
+    test_eth_pack()
 
     print('Tests Successful...')

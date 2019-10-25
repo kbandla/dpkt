@@ -12,7 +12,7 @@ class EDP(dpkt.Packet):
         ('sum', 'H', 0),
         ('seq', 'H', 0),
         ('mid', 'H', 0),
-        ('mac', '6s', '')
+        ('mac', '6s', b'')
         )
     
     def __str__(self):

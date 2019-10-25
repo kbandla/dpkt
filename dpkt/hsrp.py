@@ -38,6 +38,6 @@ class HSRP(dpkt.Packet):
         ('priority', 'B', 0),
         ('group', 'B', 0),
         ('rsvd', 'B', 0),
-        ('auth', '8s', 'cisco'),
-        ('vip', '4s', '')
+        ('auth', '8s', b'cisco'),
+        ('vip', '4s', b'')
     )

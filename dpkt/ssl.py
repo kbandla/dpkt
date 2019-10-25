@@ -20,8 +20,8 @@ from . import ssl_ciphersuites
 class SSL2(dpkt.Packet):
     __hdr__ = (
         ('len', 'H', 0),
-        ('msg', 's', ''),
-        ('pad', 's', ''),
+        ('msg', 's', b''),
+        ('pad', 's', b''),
     )
 
     def unpack(self, buf):
