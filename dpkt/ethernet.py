@@ -742,5 +742,6 @@ if __name__ == '__main__':
     test_eth_pppoe()
     test_eth_2mpls_ecw_eth_llc_stp()
     test_eth_802dot1ad_802dot1q_ip()
+    test_eth_pack()
 
     print('Tests Successful...')
