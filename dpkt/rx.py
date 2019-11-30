@@ -39,7 +39,7 @@ class Rx(dpkt.Packet):
         __hdr__: Header fields of Rx.
         TODO.
     """
-    
+
     __hdr__ = (
         ('epoch', 'I', 0),
         ('cid', 'I', 0),

@@ -939,6 +939,7 @@ def test_writepkts():
     writer.writepkts(pkts)
     return pkts
 
+
 if __name__ == '__main__':
     # TODO: big endian unit tests; could not find any examples..
 

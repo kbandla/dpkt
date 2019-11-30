@@ -7,6 +7,7 @@ from __future__ import absolute_import
 from . import dpkt
 from .compat import iteritems
 
+
 class IP(dpkt.Packet):
     """Internet Protocol.
 
@@ -395,6 +396,7 @@ def test_constuctor():
     assert (bytes(ip1) == b'E\x00\x00 \x00\x00\x00\x00@\x00z\xdf\x00\x00\x00\x00\x00\x00\x00\x00Hello world!')
     assert (bytes(ip2) == bytes(ip4))
     assert (bytes(ip2) == b'E\x00\x00 \x00\x00\x00\x00@\x00z\xdf\x00\x00\x00\x00\x00\x00\x00\x00Hello world!')
+
 
 def test_frag():
     from . import ethernet

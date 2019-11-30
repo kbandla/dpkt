@@ -186,6 +186,7 @@ def test_dhcp():
     assert isinstance(dhcp.sname, bytes)
     assert isinstance(dhcp.file, bytes)
 
+
 if __name__ == '__main__':
     test_dhcp()
     print('Tests Successful...')

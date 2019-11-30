@@ -15,7 +15,7 @@ class ESP(dpkt.Packet):
         __hdr__: Header fields of ESP.
         TODO.
     """
-    
+
     __hdr__ = (
         ('spi', 'I', 0),
         ('seq', 'I', 0)

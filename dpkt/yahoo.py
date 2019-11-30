@@ -15,7 +15,7 @@ class YHOO(dpkt.Packet):
         __hdr__: Header fields of Yahoo Messenger.
         TODO.
     """
-    
+
     __hdr__ = [
         ('version', '8s', ' ' * 8),
         ('length', 'I', 0),

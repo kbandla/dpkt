@@ -7,6 +7,7 @@ import struct
 from . import dpkt
 from .compat import iteritems
 
+
 class AOE(dpkt.Packet):
     """ATA over Ethernet Protocol.
 

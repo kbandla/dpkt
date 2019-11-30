@@ -2,7 +2,7 @@
 from __future__ import absolute_import 
 
 import dpkt
-import sys
+
 
 class EDP(dpkt.Packet):
     __hdr__ = (
@@ -14,7 +14,7 @@ class EDP(dpkt.Packet):
         ('mid', 'H', 0),
         ('mac', '6s', b'')
         )
-    
+
     def __str__(self):
         if not self.sum:
             self.sum = dpkt.in_cksum(dpkt.Packet.__str__(self))
