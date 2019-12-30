@@ -52,6 +52,7 @@ ETH_TYPE_PPPoE_DISC = 0x8863  # PPP Over Ethernet Discovery Stage
 ETH_TYPE_PPPoE = 0x8864  # PPP Over Ethernet Session Stage
 ETH_TYPE_LLDP = 0x88CC  # Link Layer Discovery Protocol
 ETH_TYPE_TEB = 0x6558  # Transparent Ethernet Bridging
+ETH_TYPE_PROFINET = 0x8892  # PROFINET protocol
 
 # all QinQ types for fast checking
 _ETH_TYPES_QINQ = frozenset([ETH_TYPE_8021Q, ETH_TYPE_8021AD, ETH_TYPE_QINQ1, ETH_TYPE_QINQ2])
@@ -77,6 +78,7 @@ class Ethernet(dpkt.Packet):
     _typesw_rev = {}  # reverse mapping
 
     def __init__(self, *args, **kwargs):
+        self._next_type = None
         dpkt.Packet.__init__(self, *args, **kwargs)
         # if data was given in kwargs, try to unpack it
         if self.data:
@@ -84,10 +86,9 @@ class Ethernet(dpkt.Packet):
                 self._unpack_data(self.data)
 
     def _unpack_data(self, buf):
-        next_type = self.type
 
         # unpack vlan tag and mpls label stacks
-        if next_type in _ETH_TYPES_QINQ:
+        if self._next_type in _ETH_TYPES_QINQ:
             self.vlan_tags = []
 
             # support up to 2 tags (double tagging aka QinQ)
@@ -95,13 +96,13 @@ class Ethernet(dpkt.Packet):
                 tag = VLANtag8021Q(buf)
                 buf = buf[tag.__hdr_len__:]
                 self.vlan_tags.append(tag)
-                next_type = tag.type
-                if next_type != ETH_TYPE_8021Q:
+                self._next_type = tag.type
+                if self._next_type != ETH_TYPE_8021Q:
                     break
             # backward compatibility, use the 1st tag
             self.vlanid, self.priority, self.cfi = self.vlan_tags[0].as_tuple()
 
-        elif next_type == ETH_TYPE_MPLS or next_type == ETH_TYPE_MPLS_MCAST:
+        elif self._next_type == ETH_TYPE_MPLS or self._next_type == ETH_TYPE_MPLS_MCAST:
             self.labels = []  # old list containing labels as tuples
             self.mpls_labels = []  # new list containing labels as instances of MPLSlabel
 
@@ -116,16 +117,17 @@ class Ethernet(dpkt.Packet):
 
             # poor man's heuristics to guessing the next type
             if compat_ord(buf[0]) == 0x45:  # IP version 4 + header len 20 bytes
-                next_type = ETH_TYPE_IP
+                self._next_type = ETH_TYPE_IP
 
             # pseudowire Ethernet
             elif len(buf) >= self.__hdr_len__:
                 if buf[:2] == b'\x00\x00':  # looks like the control word (ECW)
                     buf = buf[4:]  # skip the ECW
-                next_type = ETH_TYPE_TEB  # re-use TEB class mapping to decode Ethernet
+                self._next_type = ETH_TYPE_TEB  # re-use TEB class mapping to decode Ethernet
 
         try:
-            self.data = self._typesw[next_type](buf)
+            eth_type = self._next_type if self._next_type else self.type
+            self.data = self._typesw[eth_type](buf)
             setattr(self, self.data.__class__.__name__.lower(), self.data)
         except (KeyError, dpkt.UnpackError):
             self.data = buf
@@ -134,6 +136,7 @@ class Ethernet(dpkt.Packet):
         dpkt.Packet.unpack(self, buf)
         if self.type > 1500:
             # Ethernet II
+            self._next_type = self.type
             self._unpack_data(self.data)
 
         elif (self.dst.startswith(b'\x01\x00\x0c\x00\x00') or
@@ -722,6 +725,27 @@ def test_eth_pack():
     assert str(eth)
 
 
+def test_eth_802dot1q_with_unfamiliar_data():
+    profinet_data = (b'\xfe\xff\x05\x01\x05\x01\x00\x02\x00\x00\x00\x6c\x02'
+         b'\x05\x00\x12\x00\x00\x02\x01\x02\x02\x02\x03\x02\x04\x02\x05\x02'
+         b'\x06\x01\x01\x01\x02\x02\x01\x00\x08\x00\x00\x53\x37\x2d\x33\x30'
+         b'\x30\x02\x02\x00\x22\x00\x00\x70\x6c\x63\x78\x62\x33\x30\x30\x78'
+         b'\x6b\x63\x70\x75\x78\x61\x33\x31\x37\x2d\x32\x78\x61\x70\x6e\x78'
+         b'\x72\x64\x70\x32\x32\x63\x66\x02\x03\x00\x06\x00\x00\x00\x2a\x01'
+         b'\x01\x02\x04\x00\x04\x00\x00\x02\x00\x01\x02\x00\x0e\x00\x01\xc0'
+         b'\xa8\x3c\x87\xff\xff\xff\x00\xc0\xa8\x3c\x87')
+
+    s = (b'\x00\x0c\x29\x65\x1c\x29\x00\x0e\x8c\x8a\xa2\x5e\x81\x00\x00\x00'
+         b'\x88\x92' + profinet_data)
+
+    eth = Ethernet(s)
+    assert eth.type == ETH_TYPE_8021Q
+    assert len(eth.vlan_tags) == 1
+    assert eth.vlan_tags[0].type == ETH_TYPE_PROFINET
+    assert isinstance(eth.data, bytes)
+    assert eth.data == profinet_data
+
+
 if __name__ == '__main__':
     test_eth()
     test_eth_init_with_data()
@@ -738,5 +762,6 @@ if __name__ == '__main__':
     test_eth_2mpls_ecw_eth_llc_stp()
     test_eth_802dot1ad_802dot1q_ip()
     test_eth_pack()
+    test_eth_802dot1q_with_unfamiliar_data()
 
     print('Tests Successful...')
