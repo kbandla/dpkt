@@ -126,7 +126,7 @@ class Ethernet(dpkt.Packet):
                 self._next_type = ETH_TYPE_TEB  # re-use TEB class mapping to decode Ethernet
 
         try:
-            eth_type = self._next_type if self._next_type else self.type
+            eth_type = self._next_type or self.type
             self.data = self._typesw[eth_type](buf)
             setattr(self, self.data.__class__.__name__.lower(), self.data)
         except (KeyError, dpkt.UnpackError):
