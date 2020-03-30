@@ -86,7 +86,6 @@ class Ethernet(dpkt.Packet):
                 self._unpack_data(self.data)
 
     def _unpack_data(self, buf):
-
         # unpack vlan tag and mpls label stacks
         if self._next_type in _ETH_TYPES_QINQ:
             self.vlan_tags = []
@@ -152,11 +151,11 @@ class Ethernet(dpkt.Packet):
             # Novell "raw" 802.3
             self.type = ETH_TYPE_IPX
             self.data = self.ipx = self._typesw[ETH_TYPE_IPX](self.data[2:])
-            
+
         elif self.type == ETH_TYPE_UNKNOWN:
             # Unknown type, assume Ethernet
             self._unpack_data(self.data)
-            
+
         else:
             # IEEE 802.3 Ethernet - LLC
             # try to unpack FCS here; we follow the same heuristic approach as Wireshark:
@@ -177,7 +176,7 @@ class Ethernet(dpkt.Packet):
 
     def pack_hdr(self):
         tags_buf = b''
-        new_type = self.type
+        new_type = self.type  # replacement self.type when packing eth header
         is_isl = False  # ISL wraps Ethernet, this determines order of packing
 
         if getattr(self, 'mpls_labels', None):
@@ -192,12 +191,18 @@ class Ethernet(dpkt.Packet):
             tags_buf = b''.join(lbl.pack_hdr() for lbl in self.mpls_labels)
 
         elif getattr(self, 'vlan_tags', None):
+            # set last tag type to next layer pointed by self.data
+            last_tag_type = self.type  # default
+            if isinstance(self.data, dpkt.Packet):
+                last_tag_type = self._typesw_rev.get(self.data.__class__, self.type)
+
             # set encapsulation types
             t1 = self.vlan_tags[0]
             if len(self.vlan_tags) == 1:
                 if isinstance(t1, VLANtag8021Q):
                     if new_type not in _ETH_TYPES_QINQ:  # preserve the type if already set
                         new_type = ETH_TYPE_8021Q
+                    t1.type = last_tag_type
                 elif isinstance(t1, VLANtagISL):
                     t1.type = 0  # 0 means Ethernet
                     is_isl = True
@@ -207,6 +212,7 @@ class Ethernet(dpkt.Packet):
                     t1.type = ETH_TYPE_8021Q
                     if new_type not in _ETH_TYPES_QINQ:
                         new_type = ETH_TYPE_8021AD
+                t2.type = last_tag_type
             else:
                 raise dpkt.PackError('maximum is 2 VLAN tags per Ethernet frame')
             tags_buf = b''.join(tag.pack_hdr() for tag in self.vlan_tags)
@@ -396,6 +402,7 @@ def test_eth():
     assert str(eth) == str(s)
     assert len(eth) == len(s)
 
+
 def test_eth_zero_ethtype():
     s = (b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
          b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
@@ -406,6 +413,7 @@ def test_eth_zero_ethtype():
     assert eth.type == ETH_TYPE_UNKNOWN
     assert str(eth) == str(s)
     assert len(eth) == len(s)
+
 
 def test_eth_init_with_data():
     # initialize with a data string, test that it gets unpacked
@@ -746,6 +754,20 @@ def test_eth_802dot1q_with_unfamiliar_data():
     assert eth.data == profinet_data
 
 
+def test_eth_802dot1q_with_arp_data():  # https://github.com/kbandla/dpkt/issues/460
+    from .arp import ARP
+    e = Ethernet(src=b'foobar', dst=b'\xff' * 6)
+    v = VLANtag8021Q(pri=0, cfi=0, id=1)
+    e.vlan_tags = [v]
+    a = ARP(sha = b'foobar', spa = b'\x0a\x0a\x0a\x0a',
+            tha = b'', tpa = b'\x0a\x0a\x0a\x05')
+    e.data = a
+    assert bytes(e) == (
+        b'\xff\xff\xff\xff\xff\xfffoobar\x81\x00\x00\x01\x08\x06'  # 0x0806 = next layer is ARP
+        b'\x00\x01\x08\x00\x06\x04\x00\x01foobar\x0a\x0a\x0a\x0a'
+        b'\x00\x00\x00\x00\x00\x00\x0a\x0a\x0a\x05')
+
+
 if __name__ == '__main__':
     test_eth()
     test_eth_init_with_data()
@@ -763,5 +785,6 @@ if __name__ == '__main__':
     test_eth_802dot1ad_802dot1q_ip()
     test_eth_pack()
     test_eth_802dot1q_with_unfamiliar_data()
+    test_eth_802dot1q_with_arp_data()
 
     print('Tests Successful...')
