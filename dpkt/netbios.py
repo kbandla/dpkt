@@ -7,27 +7,49 @@ import struct
 
 from . import dpkt
 from . import dns
+from .compat import compat_ord
 
 
 def encode_name(name):
-    """Return the NetBIOS first-level encoded name."""
-    l = []
-    for c in struct.pack('16s', name):
+    """Return the NetBIOS first-level encoded name.
+
+    Args:
+        name (str): name to encode, 1 to 16 ASCII characters
+
+    Returns:
+        bytes: 32 bytes long encoded name
+    """
+    # add spaces if needed to make the name exactly 16 chars
+    while len(name) < 16:
+        name += '\x20'
+
+    encoded_name = bytearray()
+    for c in name:
         c = ord(c)
-        l.append(chr((c >> 4) + 0x41))
-        l.append(chr((c & 0xf) + 0x41))
-    return ''.join(l)
+        encoded_name.append((c >> 4) + 0x41)
+        encoded_name.append((c & 0x0f) + 0x41)
+    return bytes(encoded_name)
 
 
 def decode_name(nbname):
-    """Return the NetBIOS first-level decoded nbname."""
+    """Return the NetBIOS first-level decoded nbname.
+
+    Args:
+        nbname (bytes): 32 bytes long first-level encoded name
+
+    Returns:
+        str: decoded name
+    """
     if len(nbname) != 32:
         return nbname
-    l = []
-    for i in range(0, 32, 2):
-        l.append(chr(((ord(nbname[i]) - 0x41) << 4) |
-                     ((ord(nbname[i + 1]) - 0x41) & 0xf)))
-    return ''.join(l).split('\x00', 1)[0]
+
+    decoded_name = bytearray()
+    for i in range(0, len(nbname), 2):
+        decoded_name.append(
+            ((compat_ord(nbname[i]) - 0x41) << 4) |
+            ((compat_ord(nbname[i + 1]) - 0x41) & 0x0f))
+    return (decoded_name.split(b'\x00', 1)[0]).decode('ascii')
+
 
 # RR types
 NS_A = 0x01  # IP address
@@ -122,9 +144,11 @@ class NS(dns.DNS):
                 self.nodenames = l
                 # XXX - skip stats
 
+    # FIXME: dns.DNS.pack_name does not exist; dns.pack_name has a different signature
     def pack_name(self, buf, name):
         return dns.DNS.pack_name(self, buf, encode_name(name))
 
+    # FIXME: dns.DNS.unpack_name does not exist; dns.unpack_name?
     def unpack_name(self, buf, off):
         name, off = dns.DNS.unpack_name(self, buf, off)
         return decode_name(name), off
@@ -167,3 +191,20 @@ DGRAM_ERROR = 0x13
 DGRAM_QUERY = 0x14
 DGRAM_POSITIVE = 0x15
 DGRAM_NEGATIVE = 0x16
+
+
+def test_encode_name():
+    assert encode_name('The NetBIOS name') == b'FEGIGFCAEOGFHEECEJEPFDCAGOGBGNGF'
+    assert encode_name('FRED') == b'EGFCEFEECACACACACACACACACACACACA'
+
+
+def test_decode_name():
+    assert decode_name(b'FEGIGFCAEOGFHEECEJEPFDCAGOGBGNGF') == 'The NetBIOS name'
+    # original botched example from rfc1001
+    assert decode_name(b'FEGHGFCAEOGFHEECEJEPFDCAHEGBGNGF') == 'Tge NetBIOS tame'
+
+
+if __name__ == '__main__':
+    test_encode_name()
+    test_decode_name()
+    print('Tests Successful...')
