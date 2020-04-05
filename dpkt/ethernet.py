@@ -158,20 +158,39 @@ class Ethernet(dpkt.Packet):
 
         else:
             # IEEE 802.3 Ethernet - LLC
-            # try to unpack FCS here; we follow the same heuristic approach as Wireshark:
-            # if the upper layer len(self.data) can be fully decoded and returns its size,
-            # and there's a difference with size in the Eth header, then assume the last
-            # 4 bytes is the FCS and remaining bytes are a trailer.
+            # try to unpack FCS, padding and trailer here
+            # we follow a heuristic approach similar to that of Wireshark
+
+            # size of eth body, not including the header
             eth_len = self.len = self.type
-            if len(self.data) > eth_len:
-                tail_len = len(self.data) - eth_len
-                if tail_len >= 4:
-                    # if the last 4 bytes are zeroes that's unlikely a FCS
-                    if self.data[-4:] == b'\x00\x00\x00\x00':
-                        self.trailer = self.data[eth_len:]
-                    else:
-                        self.fcs = struct.unpack('>I', self.data[-4:])[0]
-                        self.trailer = self.data[eth_len:-4]
+
+            # actual size of the remaining data, could include eth body, padding, fcs, trailer
+            data_len = len(self.data)
+            if data_len > eth_len:
+                # everything after eth body
+                tail = self.data[eth_len:]
+
+                # could be padding + fcs, possibly trailer
+                if len(tail) > 4:
+                    # determine size of padding
+                    if eth_len < 46:  # 46=60-14; 14=size of eth hdr; all padded to 60 bytes
+                        pad_len = 46 - eth_len
+                        padding = tail[:pad_len]
+
+                        # heuristic
+                        if padding == pad_len * b'\x00':  # padding is likely zeroes
+                            self.padding = padding
+                            tail = tail[pad_len:]
+                        # else proceed to decode as fcs+trailer
+
+                # 4 bytes FCS and possible trailer
+                if len(tail) >= 4:
+                    self.fcs = struct.unpack('>I', tail[:4])[0]
+                    tail = tail[4:]
+
+                if tail:
+                    self.trailer = tail
+
             self.data = self.llc = llc.LLC(self.data[:eth_len])
 
     def pack_hdr(self):
@@ -233,29 +252,35 @@ class Ethernet(dpkt.Packet):
         else:
             return tags_buf + hdr_buf
 
-    def __str__(self):
+    def __bytes__(self):
         tail = b''
         if isinstance(self.data, llc.LLC):
+            fcs = b''
             if hasattr(self, 'fcs'):
                 if self.fcs:
                     fcs = self.fcs
                 else:
                     # if fcs field is present but 0/None, then compute it and add to the tail
-                    fcs_buf = self.pack_hdr() + bytes(self.data) + getattr(self, 'trailer', '')
+                    fcs_buf = self.pack_hdr() + bytes(self.data)
                     # if ISL header is present, exclude it from the calculation
                     if getattr(self, 'vlan_tags', None):
                         if isinstance(self.vlan_tags[0], VLANtagISL):
                             fcs_buf = fcs_buf[VLANtagISL.__hdr_len__:]
+                    fcs_buf += getattr(self, 'padding', b'')
                     revcrc = crc32(fcs_buf) & 0xffffffff
                     fcs = struct.unpack('<I', struct.pack('>I', revcrc))[0]  # bswap32
-                tail = getattr(self, 'trailer', b'') + struct.pack('>I', fcs)
-        return str(dpkt.Packet.__bytes__(self) + tail)
+                fcs = struct.pack('>I', fcs)
+            tail = getattr(self, 'padding', b'') + fcs + getattr(self, 'trailer', b'')
+        return bytes(dpkt.Packet.__bytes__(self) + tail)
 
     def __len__(self):
         tags = getattr(self, 'mpls_labels', []) + getattr(self, 'vlan_tags', [])
         _len = dpkt.Packet.__len__(self) + sum(t.__hdr_len__ for t in tags)
-        if isinstance(self.data, llc.LLC) and hasattr(self, 'fcs'):
-            _len += len(getattr(self, 'trailer', '')) + 4
+        if isinstance(self.data, llc.LLC):
+            _len += len(getattr(self, 'padding', b''))
+            if hasattr(self, 'fcs'):
+                _len += 4
+            _len += len(getattr(self, 'trailer', b''))
         return _len
 
     @classmethod
@@ -580,9 +605,9 @@ def test_isl_eth_llc_stp():  # ISL - 802.3 Ethernet(w/FCS) - LLC - STP
     assert eth.vlan_tags[0].id == 333
     assert eth.vlan_tags[0].pri == 3
 
-    # check that FCS was decoded
+    # check that FCS and padding were decoded
     assert eth.fcs == 0x41c675d6
-    assert eth.trailer == b'\x00' * 8
+    assert eth.padding == b'\x00' * 8
 
     # stack
     assert isinstance(eth.data, llc.LLC)
@@ -595,10 +620,14 @@ def test_isl_eth_llc_stp():  # ISL - 802.3 Ethernet(w/FCS) - LLC - STP
 
     # construction with kwargs
     eth2 = Ethernet(src=eth.src, dst=eth.dst, vlan_tags=eth.vlan_tags, data=eth.data)
-    eth2.trailer = eth.trailer
-    eth2.fcs = None
+    eth2.padding = b'\x00' * 8
     # test FCS computation
+    eth2.fcs = None
     assert str(eth2) == str(s)
+
+    # TODO: test padding construction
+    # eth2.padding = None
+    # assert str(eth2) == str(s)
 
     # construction w/o the ISL tag
     del eth.vlan_tags, eth.vlan
@@ -684,9 +713,9 @@ def test_eth_2mpls_ecw_eth_llc_stp():  # Eth - MPLS - MPLS - PW ECW - 802.3 Eth(
     eth2 = eth.data
     assert isinstance(eth2, Ethernet)
     assert eth2.len == 38  # 802.3 Ethernet
-    # no FCS, all trailer
+    # no FCS, no trailer, just 8 bytes of padding (60=38+14+8)
     assert not hasattr(eth2, 'fcs')
-    assert eth2.trailer == b'\x00' * 8
+    assert eth2.padding == b'\x00' * 8
     assert isinstance(eth2.data, llc.LLC)
     assert isinstance(eth2.data.data, stp.STP)
     assert eth2.data.data.port_id == 0x8001
@@ -768,6 +797,27 @@ def test_eth_802dot1q_with_arp_data():  # https://github.com/kbandla/dpkt/issues
         b'\x00\x00\x00\x00\x00\x00\x0a\x0a\x0a\x05')
 
 
+# 802.3 Ethernet - LLC/STP - Padding - FCS - Metamako trailer
+def test_eth_8023_llc_trailer():  # https://github.com/kbandla/dpkt/issues/438
+    d = (b'\x01\x80\xc2\x00\x00\x00\x78\x0c\xf0\xb4\xd8\x91\x00\x27\x42\x42\x03\x00\x00\x02\x02\x3c'
+         b'\x00\x01\x2c\x33\x11\xf2\x39\xc1\x00\x00\x00\x02\x80\x01\x78\x0c\xf0\xb4\xd8\xbc\x80\xaa'
+         b'\x01\x00\x14\x00\x02\x00\x0f\x00\x00\x00\x00\x00\x00\x00\x00\x00\x4d\xb9\x81\x20\x5c\x1e'
+         b'\x5f\xba\x3a\xa5\x47\xfa\x01\x8e\x52\x03')
+    eth = Ethernet(d)
+    assert eth.len == 39
+    assert eth.padding == b'\x00\x00\x00\x00\x00\x00\x00'
+    assert eth.fcs == 0x4db98120
+    assert eth.trailer == b'\x5c\x1e\x5f\xba\x3a\xa5\x47\xfa\x01\x8e\x52\x03'
+    assert isinstance(eth.data, llc.LLC)
+
+    # packing
+    assert bytes(eth) == d
+
+    # FCS computation
+    eth.fcs = None
+    assert bytes(eth) == d
+
+
 if __name__ == '__main__':
     test_eth()
     test_eth_init_with_data()
@@ -786,5 +836,6 @@ if __name__ == '__main__':
     test_eth_pack()
     test_eth_802dot1q_with_unfamiliar_data()
     test_eth_802dot1q_with_arp_data()
+    test_eth_8023_llc_trailer()
 
     print('Tests Successful...')
