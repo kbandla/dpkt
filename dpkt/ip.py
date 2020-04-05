@@ -362,6 +362,14 @@ def test_ip():
     assert (ip.udp.sport == 111)
     assert (ip.udp.data == b'foobar')
 
+def test_dict():
+    ip = IP(id=0, src=b'\x01\x02\x03\x04', dst=b'\x01\x02\x03\x04', p=17)
+    d = dict(ip)
+
+    assert (d['src'] == b'\x01\x02\x03\x04')
+    assert (d['dst'] == b'\x01\x02\x03\x04')
+    assert (d['id'] == 0)
+    assert (d['p'] == 17)
 
 def test_hl():  # Todo chack this test method
     s = b'BB\x03\x00\x00\x00\x00\x00\x00\x00\xd0\x00\xec\xbc\xa5\x00\x00\x00\x03\x80\x00\x00\xd0\x01\xf2\xac\xa5"0\x01\x00\x14\x00\x02\x00\x0f\x00\x00\x00\x00\x00\x00\x00\x00\x00'
@@ -420,6 +428,7 @@ def test_frag():
 
 if __name__ == '__main__':
     test_ip()
+    test_dict()
     test_hl()
     test_opt()
     test_zerolen()
