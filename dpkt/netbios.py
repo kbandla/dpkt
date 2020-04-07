@@ -11,43 +11,24 @@ from .compat import compat_ord
 
 
 def encode_name(name):
-    """Return the NetBIOS first-level encoded name.
-
-    Args:
-        name (str): name to encode, 1 to 16 ASCII characters
-
-    Returns:
-        bytes: 32 bytes long encoded name
-    """
-    # add spaces if needed to make the name exactly 16 chars
-    name = '{:16s}'.format(name)
-
-    encoded_name = bytearray()
-    for c in name:
-        c = ord(c)
-        encoded_name.append((c >> 4) + 0x41)
-        encoded_name.append((c & 0x0f) + 0x41)
-    return bytes(encoded_name)
+    """Return the NetBIOS first-level encoded name."""
+    l = []
+    for c in struct.pack('16s', name.encode()):
+        c = compat_ord(c)
+        l.append(chr((c >> 4) + 0x41))
+        l.append(chr((c & 0xf) + 0x41))
+    return ''.join(l)
 
 
 def decode_name(nbname):
-    """Return the NetBIOS first-level decoded nbname.
-
-    Args:
-        nbname (bytes): 32 bytes long first-level encoded name
-
-    Returns:
-        str: decoded name
-    """
+    """Return the NetBIOS first-level decoded nbname."""
     if len(nbname) != 32:
         return nbname
-
-    decoded_name = bytearray()
-    for i in range(0, len(nbname), 2):
-        decoded_name.append(
-            ((compat_ord(nbname[i]) - 0x41) << 4) |
-            ((compat_ord(nbname[i + 1]) - 0x41) & 0x0f))
-    return (decoded_name.split(b'\x00', 1)[0]).decode('ascii')
+    l = []
+    for i in range(0, 32, 2):
+        l.append(chr(((ord(nbname[i]) - 0x41) << 4) |
+                     ((ord(nbname[i + 1]) - 0x41) & 0xf)))
+    return ''.join(l).split('\x00', 1)[0]
 
 
 # RR types
@@ -193,14 +174,18 @@ DGRAM_NEGATIVE = 0x16
 
 
 def test_encode_name():
-    assert encode_name('The NetBIOS name') == b'FEGIGFCAEOGFHEECEJEPFDCAGOGBGNGF'
-    assert encode_name('FRED') == b'EGFCEFEECACACACACACACACACACACACA'
+    assert encode_name('The NetBIOS name') == 'FEGIGFCAEOGFHEECEJEPFDCAGOGBGNGF'
+    # rfc1002
+    assert encode_name('FRED            ') == 'EGFCEFEECACACACACACACACACACACACA'
+    # https://github.com/kbandla/dpkt/issues/458
+    assert encode_name('*') == 'CKAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
 
 
 def test_decode_name():
-    assert decode_name(b'FEGIGFCAEOGFHEECEJEPFDCAGOGBGNGF') == 'The NetBIOS name'
+    assert decode_name('FEGIGFCAEOGFHEECEJEPFDCAGOGBGNGF') == 'The NetBIOS name'
     # original botched example from rfc1001
-    assert decode_name(b'FEGHGFCAEOGFHEECEJEPFDCAHEGBGNGF') == 'Tge NetBIOS tame'
+    assert decode_name('FEGHGFCAEOGFHEECEJEPFDCAHEGBGNGF') == 'Tge NetBIOS tame'
+    assert decode_name('CKAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA') == '*'
 
 
 if __name__ == '__main__':
