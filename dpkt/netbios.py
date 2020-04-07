@@ -20,8 +20,7 @@ def encode_name(name):
         bytes: 32 bytes long encoded name
     """
     # add spaces if needed to make the name exactly 16 chars
-    while len(name) < 16:
-        name += '\x20'
+    name = '{:16s}'.format(name)
 
     encoded_name = bytearray()
     for c in name:
