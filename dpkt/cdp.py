@@ -7,8 +7,6 @@ import struct
 
 from . import dpkt
 
-
-
 CDP_DEVID = 1  # string
 CDP_ADDRESS = 2
 CDP_PORTID = 3  # string
@@ -31,7 +29,7 @@ CDP_LOCATION = 23  # string
 class CDP(dpkt.Packet):
     """Cisco Discovery Protocol.
 
-    See more about the BGP on \
+    See more on
     https://en.wikipedia.org/wiki/Cisco_Discovery_Protocol
 
     Attributes:
@@ -45,9 +43,9 @@ class CDP(dpkt.Packet):
         ('sum', 'H', 0)
     )
 
-
     class TLV(dpkt.Packet):
-        '''When constructing the packet, len is not mandatory : if not provided, then self.data must be this exact TLV payload'''
+        """When constructing the packet, len is not mandatory: 
+        if not provided, then self.data must be this exact TLV payload"""
 
         __hdr__ = (
             ('type', 'H', 0),
@@ -67,10 +65,9 @@ class CDP(dpkt.Packet):
             return self.__hdr_len__ + len(self.data)
 
         def __bytes__(self):
-            if hasattr(self,'len') and not self.len:
+            if hasattr(self, 'len') and not self.len:
                 self.len = len(self)
             return self.pack_hdr() + bytes(self.data)
-
 
     class Address(TLV):
         # XXX - only handle NLPID/IP for now
@@ -83,7 +80,6 @@ class CDP(dpkt.Packet):
         def data_len(self):
             return self.alen
 
-
     class TLV_Addresses(TLV):
         __hdr__ = (
             ('type', 'H', CDP_ADDRESS),
@@ -91,15 +87,14 @@ class CDP(dpkt.Packet):
             ('Addresses', 'L', 1),
         )
 
-
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
         buf = self.data
         l = []
         while buf:
-            #find the right TLV according to Type value
+            # find the right TLV according to Type value
             tlv_find_type = self.TLV(buf).type
-            #if this TLV is not in tlv_types, use the default TLV class
+            # if this TLV is not in tlv_types, use the default TLV class
             tlv = self.tlv_types.get(tlv_find_type, self.TLV)(buf)
             l.append(bytes(tlv))
             buf = buf[len(tlv):]
@@ -115,7 +110,7 @@ class CDP(dpkt.Packet):
             self.sum = dpkt.in_cksum(self.pack_hdr() + data)
         return self.pack_hdr() + data
 
-    #keep here the TLV classes whose header is different from the generic TLV header (example : TLV_Addresses)
+    # keep here the TLV classes whose header is different from the generic TLV header (example : TLV_Addresses)
     tlv_types = {CDP_ADDRESS: TLV_Addresses}
 
 
@@ -151,6 +146,3 @@ def test_cdp():
 if __name__ == '__main__':
     test_cdp()
     print('Tests Successful...')
-
-
-
