@@ -619,7 +619,7 @@ def test_eth_llc_snap_cdp():  # 802.3 Ethernet - LLC/SNAP - CDP
     # stack
     assert isinstance(eth.data, llc.LLC)
     assert isinstance(eth.data.data, cdp.CDP)
-    assert len(eth.data.data.data) == 8  # number of CDP TLVs; ensures they are decoded
+    assert len(eth.data.data.tlvs) == 8  # number of CDP TLVs; ensures they are decoded
     assert str(eth) == str(s), 'pack 1'
     assert str(eth) == str(s), 'pack 2'
     assert len(eth) == len(s)
