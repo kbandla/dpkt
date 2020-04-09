@@ -12,10 +12,10 @@ matrix:
       env: TOXENV=py36
     - python: "3.7"
       env: TOXENV=py37,coveralls,docs
-    - python: "pypy3.5"
-      env: TOXENV=pypy
     - python: "3.8"
       env: TOXENV=py38
+    - python: "pypy3.5"
+      env: TOXENV=pypy
 before_install:
   - python --version
   - virtualenv --version
