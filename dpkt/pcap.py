@@ -312,6 +312,7 @@ class Reader(object):
 
     def __next__(self):
         return next(self.__iter)
+    next = __next__  # Python 2 compat
 
     def dispatch(self, cnt, callback, *args):
         """Collect and process packets with a user callback.
