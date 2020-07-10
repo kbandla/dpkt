@@ -155,7 +155,7 @@ class IP6OptsHeader(IP6ExtensionHeader):
 
         index = 0
 
-        while index < self.length - 2:
+        while index < self.len - 2:
             opt_type = compat_ord(self.data[index])
 
             # PAD1 option
