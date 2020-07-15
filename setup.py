@@ -1,10 +1,9 @@
-import os
 import sys
 
 try:
-    from setuptools import setup, Command
+    from setuptools import setup
 except ImportError:
-    from distutils.core import setup, Command
+    from distutils.core import setup
 
 package_name = 'dpkt'
 description = 'fast, simple packet creation / parsing, with definitions for the basic TCP/IP protocols'
@@ -42,6 +41,7 @@ setup(name=package_name,
           'Programming Language :: Python :: 3.5',
           'Programming Language :: Python :: 3.6',
           'Programming Language :: Python :: 3.7',
+          'Programming Language :: Python :: 3.8',
           'Programming Language :: Python :: Implementation :: CPython',
           'Programming Language :: Python :: Implementation :: PyPy',
       ]
