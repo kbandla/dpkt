@@ -7,10 +7,8 @@ from __future__ import absolute_import
 import struct
 import socket
 
-from examples.print_icmp import inet_to_str
 from . import dpkt
 from .compat import compat_ord
-
 
 # Border Gateway Protocol 4 - RFC 4271
 # Communities Attribute - RFC 1997
@@ -1023,3 +1021,18 @@ if __name__ == '__main__':
     test_unpack()
     test_BGP_MP_NLRI_20_1_mp_reach_nlri_next_hop()
     print('Tests Successful...')
+
+
+def inet_to_str(inet):
+    """Convert inet object to a string
+
+        Args:
+            inet (inet struct): inet network address
+        Returns:
+            str: Printable/readable IP address
+    """
+    # First try ipv4 and then ipv6
+    try:
+        return socket.inet_ntop(socket.AF_INET, inet)
+    except ValueError:
+        return socket.inet_ntop(socket.AF_INET6, inet)
