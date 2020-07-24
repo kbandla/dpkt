@@ -5,7 +5,11 @@ jobs:
   build:
     strategy:
       matrix:
+<<<<<<< HEAD
         python-version: [3.8]
+=======
+        python-version: [2.7, 3.7, 3.8]
+>>>>>>> branch 'unit_test' of https://github.com/amgadhanafy/dpkt.git
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
