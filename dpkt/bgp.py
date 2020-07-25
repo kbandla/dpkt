@@ -10,6 +10,7 @@ import socket
 from . import dpkt
 from .compat import compat_ord
 
+
 # Border Gateway Protocol 4 - RFC 4271
 # Communities Attribute - RFC 1997
 # Capabilities - RFC 3392
@@ -1021,7 +1022,6 @@ if __name__ == '__main__':
     test_unpack()
     test_bgp_mp_nlri_20_1_mp_reach_nlri_next_hop()
     print('Tests Successful...')
-
 
 def inet_to_str(inet):
     """Convert inet object to a string

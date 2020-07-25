@@ -37,5 +37,6 @@ _build
 
 # eclipse project file
 .settings/
-.classpath
+.classpath 
 .project
+.pydevproject
