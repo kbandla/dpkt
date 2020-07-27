@@ -392,19 +392,35 @@ class BGP(dpkt.Packet):
                     def unpack(self, buf):
                         dpkt.Packet.unpack(self, buf)
                         l = []
+                        octet = 2
+                        fmt = '>H'
+                        if self.len * 2 != len(self.data):
+                            octet = 4
+                            fmt = '>I'
                         for i in range(self.len):
-                            AS = struct.unpack('>H', self.data[:2])[0]
-                            self.data = self.data[2:]
-                            l.append(AS)
-                        self.data = self.path = l
+                            if len(self.data)>= octet:
+                                AS = struct.unpack(fmt, self.data[:octet])[0]
+                                self.data = self.data[octet:]
+                                l.append(AS)
+                        self.path = l
 
                     def __len__(self):
-                        return self.__hdr_len__ + 2 * len(self.path)
+                        octet = 2
+                        fmt = '>H'
+                        if self.len * 2 != len(self.data):
+                            octet = 4
+                            fmt = '>I'
+                        return self.__hdr_len__ + octet * len(self.path)
 
                     def __bytes__(self):
+                        octet = 2
+                        fmt = '>H'
+                        if self.len * 2 != len(self.data):
+                            octet = 4
+                            fmt = '>I'
                         as_str = b''
                         for AS in self.path:
-                            as_str += struct.pack('>H', AS)
+                            as_str += struct.pack(fmt, AS)
                         return self.pack_hdr() + as_str
 
             class NextHop(dpkt.Packet):
