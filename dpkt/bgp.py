@@ -518,11 +518,11 @@ class BGP(dpkt.Packet):
                     nlen = struct.unpack('B', self.data[:1])[0]
                     self.data = self.data[1:]
                     self.next_hop = self.data[:nlen]
-                    num_hops = nlen // hop_len
-                    for i in range(num_hops):
+                    while nlen > 0:
                         hop = self.data[:hop_len]
                         l.append(hop)
                         self.data = self.data[hop_len:]
+                        nlen -= hop_len
                     self.next_hops = l
 
                     # SNPAs
