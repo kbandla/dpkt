@@ -517,12 +517,13 @@ class BGP(dpkt.Packet):
                     l = []
                     nlen = struct.unpack('B', self.data[:1])[0]
                     self.data = self.data[1:]
+                    self.next_hop = self.data[:nlen]
                     num_hops = nlen // hop_len
                     for i in range(num_hops):
                         hop = self.data[:hop_len]
                         l.append(hop)
                         self.data = self.data[hop_len:]
-                    self.next_hop = l
+                    self.next_hops = l
 
                     # SNPAs
                     l = []
@@ -553,14 +554,14 @@ class BGP(dpkt.Packet):
 
                 def __len__(self):
                     return self.__hdr_len__ + \
-                           1 + sum(map(len, self.next_hop)) + \
+                           1 + sum(map(len, self.next_hops)) + \
                            1 + sum(map(len, self.snpas)) + \
                            sum(map(len, self.announced))
 
                 def __bytes__(self):
                     return self.pack_hdr() + \
-                           struct.pack('B', sum(map(len, self.next_hop))) + \
-                           b''.join(map(bytes, self.next_hop)) + \
+                           struct.pack('B', sum(map(len, self.next_hops))) + \
+                           b''.join(map(bytes, self.next_hops)) + \
                            struct.pack('B', len(self.snpas)) + \
                            b''.join(map(bytes, self.snpas)) + \
                            b''.join(map(bytes, self.announced))
@@ -1012,10 +1013,10 @@ def test_bgp_mp_nlri_20_1_mp_reach_nlri_next_hop():
     prefix = mp_reach_nlri.announced[2]
     assert (socket.inet_ntop(socket.AF_INET6, prefix.prefix) == '2001:db8:1::')
     assert (prefix.len == 64)
-    assert (len(mp_reach_nlri.next_hop) == 2)
-    assert (socket.inet_ntop(socket.AF_INET6,mp_reach_nlri.next_hop[0]) == '2001:db8::1')
-    assert (socket.inet_ntop(socket.AF_INET6,mp_reach_nlri.next_hop[1]) == 'fe80::c001:bff:fe7e:0')
-
+    assert (len(mp_reach_nlri.next_hops) == 2)
+    assert (socket.inet_ntop(socket.AF_INET6, mp_reach_nlri.next_hops[0]) == '2001:db8::1')
+    assert (socket.inet_ntop(socket.AF_INET6, mp_reach_nlri.next_hops[1]) == 'fe80::c001:bff:fe7e:0')
+    assert (mp_reach_nlri.next_hop == b''.join(mp_reach_nlri.next_hops))
 
 if __name__ == '__main__':
     test_pack()
