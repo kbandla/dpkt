@@ -1004,17 +1004,17 @@ def test_bgp_mp_nlri_20_1_mp_reach_nlri_next_hop():
     assert (len(mp_reach_nlri.snpas) == 0)
     assert (len(mp_reach_nlri.announced) == 3)
     prefix = mp_reach_nlri.announced[0]
-    assert (inet_to_str(prefix.prefix) == '2001:db8:1:2::')
+    assert (socket.inet_ntop(socket.AF_INET6, prefix.prefix) == '2001:db8:1:2::')
     assert (prefix.len == 64)
     prefix = mp_reach_nlri.announced[1]
-    assert (inet_to_str(prefix.prefix) == '2001:db8:1:1::')
+    assert (socket.inet_ntop(socket.AF_INET6, prefix.prefix) == '2001:db8:1:1::')
     assert (prefix.len == 64)
     prefix = mp_reach_nlri.announced[2]
-    assert (inet_to_str(prefix.prefix) == '2001:db8:1::')
+    assert (socket.inet_ntop(socket.AF_INET6, prefix.prefix) == '2001:db8:1::')
     assert (prefix.len == 64)
     assert (len(mp_reach_nlri.next_hop) == 2)
-    assert (inet_to_str(mp_reach_nlri.next_hop[0]) == '2001:db8::1')
-    assert (inet_to_str(mp_reach_nlri.next_hop[1]) == 'fe80::c001:bff:fe7e:0')
+    assert (socket.inet_ntop(socket.AF_INET6,mp_reach_nlri.next_hop[0]) == '2001:db8::1')
+    assert (socket.inet_ntop(socket.AF_INET6,mp_reach_nlri.next_hop[1]) == 'fe80::c001:bff:fe7e:0')
 
 
 if __name__ == '__main__':
@@ -1023,16 +1023,3 @@ if __name__ == '__main__':
     test_bgp_mp_nlri_20_1_mp_reach_nlri_next_hop()
     print('Tests Successful...')
 
-def inet_to_str(inet):
-    """Convert inet object to a string
-
-        Args:
-            inet (inet struct): inet network address
-        Returns:
-            str: Printable/readable IP address
-    """
-    # First try ipv4 and then ipv6
-    try:
-        return socket.inet_ntop(socket.AF_INET, inet)
-    except ValueError:
-        return socket.inet_ntop(socket.AF_INET6, inet)
