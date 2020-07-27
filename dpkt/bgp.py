@@ -517,6 +517,7 @@ class BGP(dpkt.Packet):
                     l = []
                     nlen = struct.unpack('B', self.data[:1])[0]
                     self.data = self.data[1:]
+                    # next_hop is kept for backward compatibility
                     self.next_hop = self.data[:nlen]
                     while nlen > 0:
                         hop = self.data[:hop_len]
@@ -945,8 +946,7 @@ def test_unpack():
 
 
 def test_bgp_mp_nlri_20_1_mp_reach_nlri_next_hop():
-    # Error processing BGP data: packet 20 : message 1 of BGP_MP_NLRI.cap
-    # https://packetlife.net/media/captures/BGP_MP_NLRI.cap
+    # test for https://github.com/kbandla/dpkt/issues/485
     __bgp = b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x6c\x02\x00\x00\x00\x55\x40\x01\x01\x00\x40\x02\x04\x02\x01\xfd\xe9\x80\x04\x04\x00\x00\x00\x00\x80\x0e\x40\x00\x02\x01\x20\x20\x01\x0d\xb8\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\xfe\x80\x00\x00\x00\x00\x00\x00\xc0\x01\x0b\xff\xfe\x7e\x00\x00\x00\x40\x20\x01\x0d\xb8\x00\x01\x00\x02\x40\x20\x01\x0d\xb8\x00\x01\x00\x01\x40\x20\x01\x0d\xb8\x00\x01\x00\x00'
     assert (__bgp == bytes(BGP(__bgp)))
     bgp = BGP(__bgp)
