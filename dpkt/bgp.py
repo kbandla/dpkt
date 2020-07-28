@@ -951,7 +951,97 @@ def test_unpack():
     assert (r.mpls_label_stack == b'\x00\x00\x02\x00\x00\x00')
 
 
+def test_bgp_add_path_6_1_as_path():
+    # test for https://github.com/kbandla/dpkt/issues/481
+    # Error processing BGP data: packet 6 : message 1 of bgp-add-path.cap https://packetlife.net/media/captures/bgp-add-path.cap
+    __bgp = b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x59\x02\x00\x00\x00\x30\x40\x01\x01\x00\x40\x02\x06\x02\x01\x00\x00\xfb\xff\x40\x03\x04\x0a\x00\x0e\x01\x80\x04\x04\x00\x00\x00\x00\x40\x05\x04\x00\x00\x00\x64\x80\x0a\x04\x0a\x00\x22\x04\x80\x09\x04\x0a\x00\x0f\x01\x00\x00\x00\x01\x20\x05\x05\x05\x05\x00\x00\x00\x01\x20\xc0\xa8\x01\x05'
+    bgp = BGP(__bgp)
+    assert (__bgp == bytes((bgp)))
+    assert (len(bgp) == 89)
+    assert (bgp.type == UPDATE)
+    assert (len(bgp.update.withdrawn) == 0)
+    assert (len(bgp.update.announced) == 2)
+
+    assert (len(bgp.update.attributes) == 7)
+
+    attribute = bgp.update.attributes[0]
+    assert (attribute.type == ORIGIN)
+    assert (attribute.optional == False)
+    assert (attribute.transitive == True)
+    assert (attribute.partial == False)
+    assert (attribute.extended_length == False)
+    assert (attribute.flags == 0x40)
+    assert (attribute.len == 1)
+    assert (attribute.origin.type == ORIGIN_IGP)
+
+    attribute = bgp.update.attributes[1]
+    assert (attribute.type == AS_PATH)
+    assert (attribute.optional == False)
+    assert (attribute.transitive == True)
+    assert (attribute.partial == False)
+    assert (attribute.extended_length == False)
+    assert (attribute.flags == 0x40)
+    assert (attribute.len == 6)
+    assert (len(attribute.as_path.segments) == 1)
+    segment = attribute.as_path.segments[0]
+    assert (segment.type == AS_SEQUENCE)
+    assert (segment.len == 1)
+    assert (len(segment.path) == 1)
+    assert (segment.path[0] == 64511)
+
+    attribute = bgp.update.attributes[2]
+    assert (attribute.type == NEXT_HOP)
+    assert (attribute.optional == False)
+    assert (attribute.transitive == True)
+    assert (attribute.partial == False)
+    assert (attribute.extended_length == False)
+    assert (attribute.flags == 0x40)
+    assert (attribute.len == 4)
+    assert (socket.inet_ntop(socket.AF_INET, bytes(attribute.next_hop)) == '10.0.14.1')
+
+    attribute = bgp.update.attributes[3]
+    assert (attribute.type == MULTI_EXIT_DISC)
+    assert (attribute.optional == True)
+    assert (attribute.transitive == False)
+    assert (attribute.partial == False)
+    assert (attribute.extended_length == False)
+    assert (attribute.flags == 0x80)
+    assert (attribute.len == 4)
+    assert (attribute.multi_exit_disc.value == 0)
+
+    attribute = bgp.update.attributes[4]
+    assert (attribute.type == LOCAL_PREF)
+    assert (attribute.optional == False)
+    assert (attribute.transitive == True)
+    assert (attribute.partial == False)
+    assert (attribute.extended_length == False)
+    assert (attribute.flags == 0x40)
+    assert (attribute.len == 4)
+    assert (attribute.local_pref.value == 100)
+
+    attribute = bgp.update.attributes[5]
+    assert (attribute.type == CLUSTER_LIST)
+    assert (attribute.optional == True)
+    assert (attribute.transitive == False)
+    assert (attribute.partial == False)
+    assert (attribute.extended_length == False)
+    assert (attribute.flags == 0x80)
+    assert (attribute.len == 4)
+    assert (socket.inet_ntop(socket.AF_INET, bytes(attribute.cluster_list)) == '10.0.34.4')
+
+    attribute = bgp.update.attributes[6]
+    assert (attribute.type == ORIGINATOR_ID)
+    assert (attribute.optional == True)
+    assert (attribute.transitive == False)
+    assert (attribute.partial == False)
+    assert (attribute.extended_length == False)
+    assert (attribute.flags == 0x80)
+    assert (attribute.len == 4)
+    assert (socket.inet_ntop(socket.AF_INET, bytes(attribute.originator_id)) == '10.0.15.1')
+
+
 if __name__ == '__main__':
     test_pack()
     test_unpack()
+    test_bgp_add_path_6_1_as_path()
     print('Tests Successful...')
