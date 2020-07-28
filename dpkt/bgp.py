@@ -68,6 +68,7 @@ AFI_L2VPN = 25
 SAFI_UNICAST = 1
 SAFI_MULTICAST = 2
 SAFI_UNICAST_MULTICAST = 3
+SAFI_LABELED_UNICAST = 4
 SAFI_EVPN = 70
 
 # OPEN Message Optional Parameters
@@ -1040,8 +1041,91 @@ def test_bgp_add_path_6_1_as_path():
     assert (socket.inet_ntop(socket.AF_INET, bytes(attribute.originator_id)) == '10.0.15.1')
 
 
+def test_bgplu_21_1_as_path():
+    # Error processing BGP data: packet 21 : message 1 of bgplu.cap https://packetlife.net/media/captures/bgplu.cap
+    __bgp = b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x42\x02\x00\x00\x00\x2b\x40\x01\x01\x00\x40\x02\x00\x40\x03\x04\x0a\x01\x01\x02\x40\x05\x04\x00\x00\x00\x64\x80\x0e\x13\x00\x01\x04\x04\x0a\x01\x01\x02\x00\x48\xdb\xc4\x30\xdb\xc4\x21\x01\x03\x00'
+    bgp = BGP(__bgp)
+    assert (__bgp == bytes(bgp))
+    assert (len(bgp) == 66)
+    assert (bgp.type == UPDATE)
+    assert (len(bgp.update.withdrawn) == 0)
+    assert (len(bgp.update.announced) == 0)
+
+    assert (len(bgp.update.attributes) == 5)
+
+    attribute = bgp.update.attributes[0]
+    assert (attribute.type == ORIGIN)
+    assert (attribute.optional == False)
+    assert (attribute.transitive == True)
+    assert (attribute.partial == False)
+    assert (attribute.extended_length == False)
+    assert (attribute.flags == 0x40)
+    assert (attribute.len == 1)
+    assert (attribute.origin.type == ORIGIN_IGP)
+
+    attribute = bgp.update.attributes[1]
+    assert (attribute.type == AS_PATH)
+    assert (attribute.optional == False)
+    assert (attribute.transitive == True)
+    assert (attribute.partial == False)
+    assert (attribute.extended_length == False)
+    assert (attribute.flags == 0x40)
+    assert (attribute.len == 0)
+    assert (len(attribute.as_path.segments) == 0)
+
+    attribute = bgp.update.attributes[2]
+    assert (attribute.type == NEXT_HOP)
+    assert (attribute.optional == False)
+    assert (attribute.transitive == True)
+    assert (attribute.partial == False)
+    assert (attribute.extended_length == False)
+    assert (attribute.flags == 0x40)
+    assert (attribute.len == 4)
+    assert (socket.inet_ntop(socket.AF_INET, bytes(attribute.next_hop)) == '10.1.1.2')
+
+    attribute = bgp.update.attributes[3]
+    assert (attribute.type == LOCAL_PREF)
+    assert (attribute.optional == False)
+    assert (attribute.transitive == True)
+    assert (attribute.partial == False)
+    assert (attribute.extended_length == False)
+    assert (attribute.flags == 0x40)
+    assert (attribute.len == 4)
+    assert (attribute.local_pref.value == 100)
+
+    attribute = bgp.update.attributes[4]
+    assert (attribute.type == MP_REACH_NLRI)
+    assert (attribute.optional == True)
+    assert (attribute.transitive == False)
+    assert (attribute.partial == False)
+    assert (attribute.extended_length == False)
+    assert (attribute.flags == 0x80)
+    assert (attribute.len == 19)
+
+    mp_reach_nlri = attribute.mp_reach_nlri
+    assert (mp_reach_nlri.afi == AFI_IPV4)
+    assert (mp_reach_nlri.safi == SAFI_LABELED_UNICAST)
+    assert (socket.inet_ntop(socket.AF_INET, mp_reach_nlri.next_hop) == '10.1.1.2')
+    assert (len(mp_reach_nlri.snpas) == 0)
+    assert (len(mp_reach_nlri.announced) == 1)
+    prefix = mp_reach_nlri.announced[0]
+    assert (socket.inet_ntop(socket.AF_INET, prefix.prefix) == '2001:db8:1:2::')
+    assert (prefix.len == 64)
+
+    attribute = bgp.update.attributes[6]
+    assert (attribute.type == ORIGINATOR_ID)
+    assert (attribute.optional == True)
+    assert (attribute.transitive == False)
+    assert (attribute.partial == False)
+    assert (attribute.extended_length == False)
+    assert (attribute.flags == 0x80)
+    assert (attribute.len == 4)
+    assert (socket.inet_ntop(socket.AF_INET, bytes(attribute.originator_id)) == '10.0.15.1')
+
+
 if __name__ == '__main__':
     test_pack()
     test_unpack()
     test_bgp_add_path_6_1_as_path()
+    test_bgplu_21_1_as_path()
     print('Tests Successful...')
