@@ -511,10 +511,20 @@ class BGP(dpkt.Packet):
                     dpkt.Packet.unpack(self, buf)
 
                     # Next Hop
+                    hop_len = 4
+                    if self.afi == AFI_IPV6:
+                        hop_len = 16
+                    l = []
                     nlen = struct.unpack('B', self.data[:1])[0]
                     self.data = self.data[1:]
+                    # next_hop is kept for backward compatibility
                     self.next_hop = self.data[:nlen]
-                    self.data = self.data[nlen:]
+                    while nlen > 0:
+                        hop = self.data[:hop_len]
+                        l.append(hop)
+                        self.data = self.data[hop_len:]
+                        nlen -= hop_len
+                    self.next_hops = l
 
                     # SNPAs
                     l = []
@@ -545,14 +555,14 @@ class BGP(dpkt.Packet):
 
                 def __len__(self):
                     return self.__hdr_len__ + \
-                           1 + len(self.next_hop) + \
+                           1 + sum(map(len, self.next_hops)) + \
                            1 + sum(map(len, self.snpas)) + \
                            sum(map(len, self.announced))
 
                 def __bytes__(self):
                     return self.pack_hdr() + \
-                           struct.pack('B', len(self.next_hop)) + \
-                           bytes(self.next_hop) + \
+                           struct.pack('B', sum(map(len, self.next_hops))) + \
+                           b''.join(map(bytes, self.next_hops)) + \
                            struct.pack('B', len(self.snpas)) + \
                            b''.join(map(bytes, self.snpas)) + \
                            b''.join(map(bytes, self.announced))
@@ -935,7 +945,82 @@ def test_unpack():
     assert (r.mpls_label_stack == b'\x00\x00\x02\x00\x00\x00')
 
 
+def test_bgp_mp_nlri_20_1_mp_reach_nlri_next_hop():
+    # test for https://github.com/kbandla/dpkt/issues/485
+    __bgp = b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x6c\x02\x00\x00\x00\x55\x40\x01\x01\x00\x40\x02\x04\x02\x01\xfd\xe9\x80\x04\x04\x00\x00\x00\x00\x80\x0e\x40\x00\x02\x01\x20\x20\x01\x0d\xb8\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\xfe\x80\x00\x00\x00\x00\x00\x00\xc0\x01\x0b\xff\xfe\x7e\x00\x00\x00\x40\x20\x01\x0d\xb8\x00\x01\x00\x02\x40\x20\x01\x0d\xb8\x00\x01\x00\x01\x40\x20\x01\x0d\xb8\x00\x01\x00\x00'
+    assert (__bgp == bytes(BGP(__bgp)))
+    bgp = BGP(__bgp)
+    assert (len(bgp.data) == 89)
+    assert (bgp.type == UPDATE)
+    assert (len(bgp.update.withdrawn) == 0)
+    assert (len(bgp.update.announced) == 0)
+    assert (len(bgp.update.attributes) == 4)
+
+    attribute = bgp.update.attributes[0]
+    assert (attribute.type == ORIGIN)
+    assert (attribute.optional == False)
+    assert (attribute.transitive == True)
+    assert (attribute.partial == False)
+    assert (attribute.extended_length == False)
+    assert (attribute.len == 1)
+    o = attribute.origin
+    assert (o.type == ORIGIN_IGP)
+
+    attribute = bgp.update.attributes[1]
+    assert (attribute.type == AS_PATH)
+    assert (attribute.optional == False)
+    assert (attribute.transitive == True)
+    assert (attribute.partial == False)
+    assert (attribute.extended_length == False)
+    assert (attribute.flags == 64)
+    assert (attribute.len == 4)
+    assert (len(attribute.as_path.segments) == 1)
+    segment = attribute.as_path.segments[0]
+    assert (segment.type == AS_SEQUENCE)
+    assert (segment.len == 1)
+    assert (len(segment.path) == 1)
+    assert (segment.path[0] == 65001)
+
+    attribute = bgp.update.attributes[2]
+    assert (attribute.type == MULTI_EXIT_DISC)
+    assert (attribute.optional == True)
+    assert (attribute.transitive == False)
+    assert (attribute.partial == False)
+    assert (attribute.extended_length == False)
+    assert (attribute.flags == 0x80)
+    assert (attribute.len == 4)
+    assert (attribute.multi_exit_disc.value == 0)
+
+    attribute = bgp.update.attributes[3]
+    assert (attribute.type == MP_REACH_NLRI)
+    assert (attribute.optional == True)
+    assert (attribute.transitive == False)
+    assert (attribute.partial == False)
+    assert (attribute.extended_length == False)
+    assert (attribute.flags == 0x80)
+    assert (attribute.len == 64)
+    mp_reach_nlri = attribute.mp_reach_nlri
+    assert (mp_reach_nlri.afi == AFI_IPV6)
+    assert (mp_reach_nlri.safi == SAFI_UNICAST)
+    assert (len(mp_reach_nlri.snpas) == 0)
+    assert (len(mp_reach_nlri.announced) == 3)
+    prefix = mp_reach_nlri.announced[0]
+    assert (socket.inet_ntop(socket.AF_INET6, prefix.prefix) == '2001:db8:1:2::')
+    assert (prefix.len == 64)
+    prefix = mp_reach_nlri.announced[1]
+    assert (socket.inet_ntop(socket.AF_INET6, prefix.prefix) == '2001:db8:1:1::')
+    assert (prefix.len == 64)
+    prefix = mp_reach_nlri.announced[2]
+    assert (socket.inet_ntop(socket.AF_INET6, prefix.prefix) == '2001:db8:1::')
+    assert (prefix.len == 64)
+    assert (len(mp_reach_nlri.next_hops) == 2)
+    assert (socket.inet_ntop(socket.AF_INET6, mp_reach_nlri.next_hops[0]) == '2001:db8::1')
+    assert (socket.inet_ntop(socket.AF_INET6, mp_reach_nlri.next_hops[1]) == 'fe80::c001:bff:fe7e:0')
+    assert (mp_reach_nlri.next_hop == b''.join(mp_reach_nlri.next_hops))
+
 if __name__ == '__main__':
     test_pack()
     test_unpack()
+    test_bgp_mp_nlri_20_1_mp_reach_nlri_next_hop()
     print('Tests Successful...')
+
