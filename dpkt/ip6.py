@@ -15,6 +15,7 @@ EXT_HDRS = [ip.IP_PROTO_HOPOPTS, ip.IP_PROTO_ROUTING, ip.IP_PROTO_FRAGMENT, ip.I
             ip.IP_PROTO_DSTOPTS]
 # EXT_HDRS_CLS - classes is below - after all the used classes are defined.
 
+
 class IP6(dpkt.Packet):
     """Internet Protocol, version 6.
 
@@ -156,25 +157,32 @@ class IP6OptsHeader(IP6ExtensionHeader):
         index = 0
 
         while index < self.length - 2:
-            opt_type = compat_ord(self.data[index])
+            try:
+                opt_type = compat_ord(self.data[index])
 
-            # PAD1 option
-            if opt_type == 0:
-                index += 1
-                continue
+                # PAD1 option
+                if opt_type == 0:
+                    index += 1
+                    continue
 
-            opt_length = compat_ord(self.data[index + 1])
+                opt_length = compat_ord(self.data[index + 1])
 
-            if opt_type == 1:  # PADN option
-                # PADN uses opt_length bytes in total
+                if opt_type == 1:  # PADN option
+                    # PADN uses opt_length bytes in total
+                    index += opt_length + 2
+                    continue
+
+                options.append({
+                    'type': opt_type,
+                    'opt_length': opt_length,
+                    'data': self.data[index + 2:index + 2 + opt_length]
+                })
+
+                # add the two chars and the option_length, to move to the next option
                 index += opt_length + 2
-                continue
 
-            options.append(
-                {'type': opt_type, 'opt_length': opt_length, 'data': self.data[index + 2:index + 2 + opt_length]})
-
-            # add the two chars and the option_length, to move to the next option
-            index += opt_length + 2
+            except IndexError:
+                raise dpkt.NeedData
 
         self.options = options
         self.data = buf[2:self.length]  # keep raw data with all pad options, but not the following data
@@ -287,6 +295,7 @@ EXT_HDRS_CLS = {ip.IP_PROTO_HOPOPTS: IP6HopOptsHeader,
 
 # Unit tests
 
+
 def test_ipg():
     s = (b'\x60\x00\x00\x00\x00\x28\x06\x40\xfe\x80\x00\x00\x00\x00\x00\x00\x02\x11\x24\xff\xfe\x8c'
          b'\x11\xde\xfe\x80\x00\x00\x00\x00\x00\x00\x02\xb0\xd0\xff\xfe\xe1\x80\x72\xcd\xca\x00\x16'
@@ -303,6 +312,7 @@ def test_ipg():
     s2 = bytes(_ip)
     assert s == s2
 
+
 def test_dict():
     s = (b'\x60\x00\x00\x00\x00\x28\x06\x40\xfe\x80\x00\x00\x00\x00\x00\x00\x02\x11\x24\xff\xfe\x8c'
          b'\x11\xde\xfe\x80\x00\x00\x00\x00\x00\x00\x02\xb0\xd0\xff\xfe\xe1\x80\x72\xcd\xca\x00\x16'
@@ -314,6 +324,7 @@ def test_dict():
     # basic properties
     assert d['src'] == b'\xfe\x80\x00\x00\x00\x00\x00\x00\x02\x11\x24\xff\xfe\x8c\x11\xde'
     assert d['dst'] == b'\xfe\x80\x00\x00\x00\x00\x00\x00\x02\xb0\xd0\xff\xfe\xe1\x80\x72'
+
 
 def test_ip6_routing_header():
     s = (b'\x60\x00\x00\x00\x00\x3c\x2b\x40\x20\x48\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
@@ -411,6 +422,7 @@ def test_ip6_all_extension_headers():  # https://github.com/kbandla/dpkt/pull/40
     assert isinstance(hdrs[5], IP6DstOptsHeader)
     assert bytes(_ip) == s
 
+
 def test_ip6_gen_tcp_ack():
     t = tcp.TCP()
     t.win = 8192
@@ -433,18 +445,19 @@ def test_ip6_gen_tcp_ack():
     # Second part of testing - with ext headers.
     ipp.p = 0
     o = (b'\x3b\x04\x01\x02\x00\x00\xc9\x10\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-     b'\x00\x00\x01\x00\xc2\x04\x00\x00\x00\x00\x05\x02\x00\x00\x01\x02\x00\x00')
+         b'\x00\x00\x01\x00\xc2\x04\x00\x00\x00\x00\x05\x02\x00\x00\x01\x02\x00\x00')
     ipp.extension_hdrs = {}
     ipp.extension_hdrs[0] = IP6HopOptsHeader(o)
     ipp.extension_hdrs[0].nxt = ip.IP_PROTO_TCP
     ipp.nxt = ip.proto = ip.IP_PROTO_HOPOPTS
-    _p,exthdrs = ipp.headers_str()
+    _p, exthdrs = ipp.headers_str()
     ipp.plen = len(exthdrs) + len(ipp.data)
 
     _b = bytes(ipp)
 
     assert ipp.p == ip.IP_PROTO_TCP
     assert ipp.nxt == ip.IP_PROTO_HOPOPTS
+
 
 if __name__ == '__main__':
     test_ipg()
