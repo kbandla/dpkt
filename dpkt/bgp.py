@@ -20,6 +20,8 @@ from .compat import compat_ord
 # Cease Subcodes - RFC 4486
 # NOPEER Community - RFC 3765
 # Multiprotocol Extensions - 2858
+# Advertisement of Multiple Paths in BGP - RFC 7911
+# BGP Support for Four-Octet Autonomous System (AS) Number Spac - RFC 6793
 
 # Message Types
 OPEN = 1
