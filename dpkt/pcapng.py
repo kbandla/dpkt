@@ -370,6 +370,7 @@ class Writer(object):
 
         if shb:
             self._validate_block('shb', shb, SectionHeaderBlock)
+        if idb:
             try:
                 for idb_ in idb:
                     self._validate_block('idb', idb_, InterfaceDescriptionBlock)
