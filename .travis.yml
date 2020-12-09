@@ -16,6 +16,21 @@ matrix:
       env: TOXENV=py38
     - python: "pypy3.5"
       env: TOXENV=pypy
+    - python: "2.7"
+      arch: ppc64le
+      env: TOXENV=py27
+    - python: "3.5"
+      arch: ppc64le
+      env: TOXENV=py35
+    - python: "3.6"
+      arch: ppc64le
+      env: TOXENV=py36
+    - python: "3.7"
+      arch: ppc64le
+      env: TOXENV=py37,coveralls,docs
+    - python: "3.8"
+      arch: ppc64le
+      env: TOXENV=py38
 before_install:
   - python --version
   - virtualenv --version
