@@ -409,6 +409,24 @@ def test_invalid_header_messy():
     Request(s_messy_header)
 
 
+def test_weird_end_header():
+    s_weird_end = b'POST /main/redirect/ab/1,295,,00.html HTTP/1.0\r\n' \
+        b'Referer: http://www.email.com/login/snap/login.jhtml\r\n' \
+        b'Connection: Keep-Alive\r\n' \
+        b'User-Agent: Mozilla/4.75 [en] (X11; U; OpenBSD 2.8 i386; Nav)\r\n' \
+        b'Host: ltd.snap.com\r\n' \
+        b'Accept: image/gif, image/x-xbitmap, image/jpeg, image/pjpeg, image/png, */*\r\n' \
+        b'Accept-Encoding: gzip\r\n' \
+        b'Accept-Language: en\r\n' \
+        b'Accept-Charset: iso-8859-1,*,utf-8\r\n' \
+        b'Content-type: application/x-www-form-urlencoded\r\n' \
+        b'Cookie: TrackID=1PWdcr3MO_C611BGW'
+    r = Request(s_weird_end)
+    assert r.method == 'POST'
+    assert r.uri == '/main/redirect/ab/1,295,,00.html'
+    assert r.headers['content-type'] == 'application/x-www-form-urlencoded'
+
+
 def test_gzip_response():
     import zlib
     # valid response, compressed using gzip
