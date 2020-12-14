@@ -406,7 +406,16 @@ def test_valid_header():
 def test_invalid_header_messy():
     # messy header.
     s_messy_header = b'aaaaaaaaa\r\nbbbbbbbbb'
-    Request(s_messy_header)
+    try:
+        r = Request(s_messy_header)
+    except dpkt.UnpackError:
+        assert True
+    # If the http request is built successfully or raised exceptions
+    # other than UnpackError, then return a false assertion.
+    except:
+        assert False
+    else:
+        assert False
 
 
 def test_gzip_response():
