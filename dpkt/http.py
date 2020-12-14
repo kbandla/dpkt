@@ -277,6 +277,11 @@ def test_parse_request():
     assert r.uri == '/main/redirect/ab/1,295,,00.html'
     assert r.body == b'sn=em&mn=dtest4&pw=this+is+atest&fr=true&login=Sign+in&od=www'
     assert r.headers['content-type'] == 'application/x-www-form-urlencoded'
+    try:
+        Request(s[:60])
+        assert 'invalid headers parsed!'
+    except dpkt.UnpackError:
+        pass
 
 def test_format_request():
     r = Request()
