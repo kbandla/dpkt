@@ -9,6 +9,7 @@ import binascii
 
 from . import dpkt
 from . import ssl_ciphersuites
+from .compat import compat_ord
 
 #
 # Note from April 2011: cde...@gmail.com added code that parses SSL3/TLS messages more in depth.
@@ -20,8 +21,8 @@ from . import ssl_ciphersuites
 class SSL2(dpkt.Packet):
     __hdr__ = (
         ('len', 'H', 0),
-        ('msg', 's', ''),
-        ('pad', 's', ''),
+        ('msg', 's', b''),
+        ('pad', 's', b''),
     )
 
     def unpack(self, buf):
@@ -31,7 +32,7 @@ class SSL2(dpkt.Packet):
             self.msg, self.data = self.data[:n], self.data[n:]
         else:
             n = self.len = self.len & 0x3FFF
-            padlen = ord(self.data[0])
+            padlen = compat_ord(self.data[0])
             self.msg = self.data[1:1 + n]
             self.pad = self.data[1 + n:1 + n + padlen]
             self.data = self.data[1 + n + padlen:]
@@ -344,7 +345,7 @@ class TLSCertificate(dpkt.Packet):
 class TLSUnknownHandshake(dpkt.Packet):
     __hdr__ = tuple()
 
-
+TLSNewSessionTicket = TLSUnknownHandshake
 TLSServerKeyExchange = TLSUnknownHandshake
 TLSCertificateRequest = TLSUnknownHandshake
 TLSServerHelloDone = TLSUnknownHandshake
@@ -359,6 +360,7 @@ HANDSHAKE_TYPES = {
     0: ('HelloRequest', TLSHelloRequest),
     1: ('ClientHello', TLSClientHello),
     2: ('ServerHello', TLSServerHello),
+    4: ('NewSessionTicket', TLSNewSessionTicket),
     11: ('Certificate', TLSCertificate),
     12: ('ServerKeyExchange', TLSServerKeyExchange),
     13: ('CertificateRequest', TLSCertificateRequest),

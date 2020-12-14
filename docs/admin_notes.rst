@@ -13,9 +13,11 @@ The following instructions should work, but things change :)
 Package Requirements
 ~~~~~~~~~~~~~~~~~~~~
 
-- pip install tox
-- pip install --upgrade setuptools wheel
-- pip install twine
+.. code-block:: bash
+
+ - pip install tox
+ - pip install --upgrade setuptools wheel
+ - pip install twine
 
 Setup pypirc
 ~~~~~~~~~~~~
@@ -82,9 +84,3 @@ Push changes to Github
  $ git push --tags
  $ git push
  
-Git Releases (discussion)
-~~~~~~~~~~~~~~~~~~~~~~~~~
-Note: This is an opinion, we/I could certainly be convinced otherwise. 
-
-You can also do a 'release' on GitHub (the tags above are perfect for that). In general this is discouraged, people should always do a $pip install dpkt. If people want older releases they can do a $pip install dpkt==<old version>. Providing tarballs/zip file on GitHub will just confuse new users and they'll have a 'bad experience' when trying to deal with a tarball.
-

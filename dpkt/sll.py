@@ -17,12 +17,12 @@ class SLL(dpkt.Packet):
         __hdr__: Header fields of SLL.
         TODO.
     """
-    
+
     __hdr__ = (
         ('type', 'H', 0),  # 0: to us, 1: bcast, 2: mcast, 3: other, 4: from us
         ('hrd', 'H', arp.ARP_HRD_ETH),
         ('hlen', 'H', 6),  # hardware address length
-        ('hdr', '8s', ''),  # first 8 bytes of link-layer header
+        ('hdr', '8s', b''),  # first 8 bytes of link-layer header
         ('ethtype', 'H', ethernet.ETH_TYPE_IP),
     )
     _typesw = ethernet.Ethernet._typesw
@@ -34,6 +34,7 @@ class SLL(dpkt.Packet):
             setattr(self, self.data.__class__.__name__.lower(), self.data)
         except (KeyError, dpkt.UnpackError):
             pass
+
 
 def test_sll():
     slldata = b'\x00\x00\x00\x01\x00\x06\x00\x0b\xdb\x52\x0e\x08\xf6\x7f\x08\x00\x45\x00\x00\x34\xcc\x6c\x40\x00\x40\x06\x74\x08\x82\xd9\xfa\x8e\x82\xd9\xfa\x0d'

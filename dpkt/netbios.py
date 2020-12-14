@@ -7,13 +7,14 @@ import struct
 
 from . import dpkt
 from . import dns
+from .compat import compat_ord
 
 
 def encode_name(name):
     """Return the NetBIOS first-level encoded name."""
     l = []
-    for c in struct.pack('16s', name):
-        c = ord(c)
+    for c in struct.pack('16s', name.encode()):
+        c = compat_ord(c)
         l.append(chr((c >> 4) + 0x41))
         l.append(chr((c & 0xf) + 0x41))
     return ''.join(l)
@@ -28,6 +29,7 @@ def decode_name(nbname):
         l.append(chr(((ord(nbname[i]) - 0x41) << 4) |
                      ((ord(nbname[i + 1]) - 0x41) & 0xf)))
     return ''.join(l).split('\x00', 1)[0]
+
 
 # RR types
 NS_A = 0x01  # IP address
@@ -122,9 +124,11 @@ class NS(dns.DNS):
                 self.nodenames = l
                 # XXX - skip stats
 
+    # FIXME: dns.DNS.pack_name does not exist; dns.pack_name has a different signature
     def pack_name(self, buf, name):
         return dns.DNS.pack_name(self, buf, encode_name(name))
 
+    # FIXME: dns.DNS.unpack_name does not exist; dns.unpack_name?
     def unpack_name(self, buf, off):
         name, off = dns.DNS.unpack_name(self, buf, off)
         return decode_name(name), off
@@ -167,3 +171,24 @@ DGRAM_ERROR = 0x13
 DGRAM_QUERY = 0x14
 DGRAM_POSITIVE = 0x15
 DGRAM_NEGATIVE = 0x16
+
+
+def test_encode_name():
+    assert encode_name('The NetBIOS name') == 'FEGIGFCAEOGFHEECEJEPFDCAGOGBGNGF'
+    # rfc1002
+    assert encode_name('FRED            ') == 'EGFCEFEECACACACACACACACACACACACA'
+    # https://github.com/kbandla/dpkt/issues/458
+    assert encode_name('*') == 'CKAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+
+
+def test_decode_name():
+    assert decode_name('FEGIGFCAEOGFHEECEJEPFDCAGOGBGNGF') == 'The NetBIOS name'
+    # original botched example from rfc1001
+    assert decode_name('FEGHGFCAEOGFHEECEJEPFDCAHEGBGNGF') == 'Tge NetBIOS tame'
+    assert decode_name('CKAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA') == '*'
+
+
+if __name__ == '__main__':
+    test_encode_name()
+    test_decode_name()
+    print('Tests Successful...')

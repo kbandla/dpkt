@@ -28,3 +28,15 @@ pip-log.txt
 
 # ReadTheDocs build directory
 _build
+
+# IntelliJ project files 
+*.iml
+*.iws
+*.ipr
+.idea/
+
+# eclipse project file
+.settings/
+.classpath 
+.project
+.pydevproject

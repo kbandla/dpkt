@@ -60,8 +60,8 @@ Tim Yardley <yardley@gmail.com>
 	DHCP definitions
 
 obormot <oscar.ibatullin@gmail.com>
-	pcapng module, Packet repr improvements
-	
+	pcapng module, Ethernet, core improvements
+
 Kyle Keppler <kyle.keppler@gmail.com>
 	Python 3 port
 

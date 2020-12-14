@@ -3,8 +3,9 @@
 """Hypertext Transfer Protocol."""
 from __future__ import print_function
 from __future__ import absolute_import
+from collections import OrderedDict
 from . import dpkt
-from .compat import BytesIO, iteritems, OrderedDict
+from .compat import BytesIO, iteritems
 
 
 def parse_headers(f):

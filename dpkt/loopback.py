@@ -18,7 +18,7 @@ class Loopback(dpkt.Packet):
         __hdr__: Header fields of Loopback.
         TODO.
     """
-    
+
     __hdr__ = (('family', 'I', 0), )
     __byte_order__ = '@'
 

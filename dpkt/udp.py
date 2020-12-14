@@ -18,7 +18,7 @@ class UDP(dpkt.Packet):
         __hdr__: Header fields of UDP.
         TODO.
     """
-    
+
     __hdr__ = (
         ('sport', 'H', 0xdead),
         ('dport', 'H', 0),

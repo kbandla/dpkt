@@ -4,7 +4,6 @@
 from __future__ import absolute_import 
 
 import copy
-import itertools
 import socket
 import struct
 import array
@@ -90,7 +89,7 @@ class Packet(_MetaPacket("Temp", (object,), {})):
                 self.unpack(args[0])
             except struct.error:
                 if len(args[0]) < self.__hdr_len__:
-                    raise NeedData
+                    raise NeedData('got %d, %d needed at least' % (len(args[0]), self.__hdr_len__))
                 raise UnpackError('invalid %s: %r' %
                                   (self.__class__.__name__, args[0]))
         else:
@@ -105,6 +104,9 @@ class Packet(_MetaPacket("Temp", (object,), {})):
 
     def __len__(self):
         return self.__hdr_len__ + len(self.data)
+
+    def __iter__(self):
+        return iter(zip(self.__class__.__hdr_fields__, map(self.__getitem__, self.__class__.__hdr_fields__)))
 
     def __getitem__(self, k):
         try:

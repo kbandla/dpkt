@@ -23,7 +23,7 @@ class TNS(dpkt.Packet):
         ('type', 'B', 0),
         ('rsvd', 'B', 0),
         ('hdrsum', 'H', 0),
-        ('msg', '0s', ''),
+        ('msg', '0s', b''),
     )
 
     def unpack(self, buf):

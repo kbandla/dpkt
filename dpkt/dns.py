@@ -8,7 +8,6 @@ import struct
 import codecs
 
 from . import dpkt
-from .decorators import deprecated
 from .compat import compat_ord
 
 DNS_Q = 0
@@ -714,6 +713,7 @@ def test_rdata_OPT():
 def test_dns_len():
     my_dns = DNS()
     assert len(my_dns) == 12
+
 
 @TryExceptException(dpkt.PackError)
 def test_rdata_FAIL():
