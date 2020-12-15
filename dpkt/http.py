@@ -40,6 +40,11 @@ def parse_headers(f):
 
 def parse_body(f, headers):
     """Return HTTP body parsed from a file object, given HTTP header dict."""
+    #handle HTTP/0.9
+    if not headers:
+        return b''.join(f.readlines())
+
+    body = b''
     if headers.get('transfer-encoding', '').lower() == 'chunked':
         l = []
         found_end = False
@@ -68,9 +73,7 @@ def parse_body(f, headers):
             raise dpkt.NeedData('short body (missing %d bytes)' % (n - len(body)))
     elif 'content-type' in headers:
         body = f.read()
-    else:
-        # XXX - need to handle HTTP/0.9
-        body = b''
+
     return body
 
 
@@ -102,10 +105,13 @@ class Message(dpkt.Packet):
             for k, v in iteritems(kwargs):
                 setattr(self, k, v)
 
-    def unpack(self, buf, is_body_allowed=True):
+    def unpack(self, buf, is_body_allowed=True, is_header_allowed=True):
         f = BytesIO(buf)
         # Parse headers
-        self.headers = parse_headers(f)
+        if is_header_allowed:
+            self.headers = parse_headers(f)
+        else:
+            self.headers = b''
         # Parse body
         if is_body_allowed:
             self.body = parse_body(f, self.headers)
@@ -121,9 +127,13 @@ class Message(dpkt.Packet):
         return len(str(self))
 
     def __str__(self):
+        if self.version == '0.9':
+            return '%s' % self.body.decode("utf8", "ignore")
         return '%s\r\n%s' % (self.pack_hdr(), self.body.decode("utf8", "ignore"))
 
     def __bytes__(self):
+        if self.version == '0.9':
+            return b'' + (self.body or b'')
         return self.pack_hdr().encode("ascii", "ignore") + b'\r\n' + (self.body or b'')
 
 
@@ -168,19 +178,27 @@ class Request(Message):
         if len(l) == 2:
             # HTTP/0.9 does not specify a version in the request line
             self.version = '0.9'
+	    # only GET requests are allowed
+            if l[0] != 'GET':
+                raise dpkt.UnpackError('invalid http method: %r' % l[0])
         else:
             if not l[2].startswith(self.__proto):
                 raise dpkt.UnpackError('invalid http version: %r' % l[2])
             self.version = l[2][len(self.__proto) + 1:]
+            Message.unpack(self, f.read())
         self.method = l[0]
         self.uri = l[1]
-        Message.unpack(self, f.read())
 
     def __str__(self):
+        if self.version == '0.9':
+            return '%s %s\r\n' % (self.method, self.uri)
         return '%s %s %s/%s\r\n' % (self.method, self.uri, self.__proto,
                                     self.version) + Message.__str__(self)
 
     def __bytes__(self):
+        if self.version == '0.9':
+            str_out = '%s %s\r\n' % (self.method, self.uri)
+            return str_out.encode("ascii", "ignore")
         str_out = '%s %s %s/%s\r\n' % (self.method, self.uri, self.__proto,
                                        self.version)
         return str_out.encode("ascii", "ignore") + Message.__bytes__(self)
@@ -208,31 +226,41 @@ class Response(Message):
         line = f.readline()
         l = line.strip().decode("ascii", "ignore").split(None, 2)
         if len(l) < 2 or not l[0].startswith(self.__proto) or not l[1].isdigit():
-            raise dpkt.UnpackError('invalid response: %r' % line)
-        self.version = l[0][len(self.__proto) + 1:]
-        self.status = l[1]
-        self.reason = l[2] if len(l) > 2 else ''
-        # RFC Sec 4.3.
-        # http://www.w3.org/Protocols/rfc2616/rfc2616-sec4.html#sec4.3.
-        # For response messages, whether or not a message-body is included with
-        # a message is dependent on both the request method and the response
-        # status code (section 6.1.1). All responses to the HEAD request method
-        # MUST NOT include a message-body, even though the presence of entity-
-        # header fields might lead one to believe they do. All 1xx
-        # (informational), 204 (no content), and 304 (not modified) responses
-        # MUST NOT include a message-body. All other responses do include a
-        # message-body, although it MAY be of zero length.
-        is_body_allowed = int(self.status) >= 200 and 204 != int(self.status) != 304
-        Message.unpack(self, f.read(), is_body_allowed)
+            self.version = '0.9'
+            self.status = ''
+            self.reason = ''
+            Message.unpack(self, buf, True, False)
+        else:
+            self.version = l[0][len(self.__proto) + 1:]
+            self.status = l[1]
+            self.reason = l[2] if len(l) > 2 else ''
+            # RFC Sec 4.3.
+            # http://www.w3.org/Protocols/rfc2616/rfc2616-sec4.html#sec4.3.
+            # For response messages, whether or not a message-body is included with
+            # a message is dependent on both the request method and the response
+            # status code (section 6.1.1). All responses to the HEAD request method
+            # MUST NOT include a message-body, even though the presence of entity-
+            # header fields might lead one to believe they do. All 1xx
+            # (informational), 204 (no content), and 304 (not modified) responses
+            # MUST NOT include a message-body. All other responses do include a
+            # message-body, although it MAY be of zero length.
+            is_body_allowed = int(self.status) >= 200 and 204 != int(self.status) != 304
+            Message.unpack(self, f.read(), is_body_allowed)
 
     def __str__(self):
-        return '%s/%s %s %s\r\n' % (self.__proto, self.version, self.status,
-                                    self.reason) + Message.__str__(self)
+        if self.version == '0.9':
+            return '%s\r\n' % Message.__str__(self)
+        else:
+            return '%s/%s %s %s\r\n' % (self.__proto, self.version, self.status,
+                                        self.reason) + Message.__str__(self)
 
     def __bytes__(self):
-        str_out = '%s/%s %s %s\r\n' % (self.__proto, self.version, self.status,
-                                       self.reason)
-        return str_out.encode("ascii", "ignore") + Message.__bytes__(self)
+        if self.version == '0.9':
+            return Message.__bytes__(self)        
+        else:
+            str_out = '%s/%s %s %s\r\n' % (self.__proto, self.version, self.status,
+                                           self.reason)
+            return str_out.encode("ascii", "ignore") + Message.__bytes__(self)
 
 
 def test_parse_request():
@@ -243,16 +271,23 @@ def test_parse_request():
     assert r.body == b'sn=em&mn=dtest4&pw=this+is+atest&fr=true&login=Sign+in&od=www'
     assert r.headers['content-type'] == 'application/x-www-form-urlencoded'
     try:
-        Request(s[:60])
+        Request(s[:40])
         assert 'invalid headers parsed!'
     except dpkt.UnpackError:
-        pass
+        assert True 
 
 
 def test_format_request():
     r = Request()
     assert str(r) == 'GET / HTTP/1.0\r\n\r\n'
+    r.version = '0.9'
+    r.uri = '/test'
+    s = str(r)
+    assert s.startswith('GET /test\r\n')
+    s = bytes(r)
+    assert s.startswith(b'GET /test\r\n')
     r.method = 'POST'
+    r.version = '1.0'
     r.uri = '/foo/bar/baz.html'
     r.headers['content-type'] = 'text/plain'
     r.headers['content-length'] = '5'
@@ -292,13 +327,24 @@ def test_noreason_response():
     assert r.reason == ''
     assert bytes(r) == s
 
+def test_hypertext_only_response():
+    s = b"""<HTML>A very simple HTML page</HTML>\r\n"""
+    r = Response(s)
+    assert r.reason == ''
+    assert r.status == ''
+    assert r.version == '0.9'
+    assert r.headers == b''
+    assert r.body == b'<HTML>A very simple HTML page</HTML>\r\n'
+    s = str(r) 
+    assert s.startswith('<HTML>A very simple HTML page</HTML>\r\n') 
+    s = bytes(r) 
+    assert s.startswith(b'<HTML>A very simple HTML page</HTML>\r\n')
 
 def test_response_with_body():
     r = Response()
     r.body = b'foo'
     assert str(r) == 'HTTP/1.0 200 OK\r\n\r\nfoo'
     assert bytes(r) == b'HTTP/1.0 200 OK\r\n\r\nfoo'
-
 
 def test_body_forbidden_response():
     s = b'HTTP/1.1 304 Not Modified\r\n'\
@@ -343,14 +389,27 @@ def test_request_version():
     assert r.method == 'GET'
     assert r.uri == '/'
     assert r.version == '0.9'
+    
+    s = b"""POST /\r\n\r\n"""
+    try:
+        Request(s)
+        assert "invalid http method"
+    except dpkt.UnpackError:
+        assert True 
 
     s = b"""GET / CHEESE/1.0\r\n\r\n"""
     try:
         Request(s)
         assert "invalid protocol version parsed!"
-    except:
-        pass
+    except dpkt.UnpackError:
+        assert True 
 
+    s = b"""MOUSE / HTTP/1.0\r\n\r\n"""
+    try:
+        Request(s)
+        assert "invalid http method"
+    except dpkt.UnpackError:
+        assert True 
 
 def test_invalid_header():
     # valid header.
@@ -434,6 +493,7 @@ if __name__ == '__main__':
     test_chunked_response()
     test_multicookie_response()
     test_noreason_response()
+    test_hypertext_only_response()
     test_response_with_body()
     test_request_version()
     test_invalid_header()
