@@ -386,95 +386,207 @@ class DNS(dpkt.Packet):
         return buf
 
 
+### TESTS
+def define_testdata():
+    """
+    Reference test data is stored in the dynamically defined class.
+
+    It is created in this way so that we can import unhexlify only during
+    testing, and not during normal use.
+    """
+    from binascii import unhexlify
+
+    class TestData(object):
+        a_resp = unhexlify(
+            "059c8180000100010000000106676f6f676c6503636f6d0000010001c00c00010"
+            "0010000012b0004d83ace2e0000290200000000000000"
+        )
+        aaaa_resp = unhexlify(
+            "7f228180000100010000000005676d61696c03636f6d00001c0001c00c001c000"
+            "10000012b00102a001450400908020000000000002005"
+        )
+        cname_resp = unhexlify(
+            "a154818000010001000000000377777705676d61696c03636f6d0000010001c00"
+            "c000500010000545f000e046d61696c06676f6f676c65c016"
+        )
+        invalid_rr = unhexlify(
+            "000001000000000100000000046e616d650000150001000000000000"
+        )
+        mx_resp = unhexlify(
+            "053b8180000100010000000006676f6f676c6503636f6d00000f0001c00c000f0"
+            "001000002570011001e04616c7432056173706d78016cc00c"
+        )
+        null_resp = unhexlify(
+            "12b0840000010001000000000b626c6168626c616836363606706972617465037"
+            "3656100000a0001c00c000a00010000000000095641434b4403c5e901"
+        )
+        opt_resp = unhexlify(
+            "8d6e0110000100000000000104783131310678787878313106616b616d6169036"
+            "e657400000100010000290fa0000080000000"
+        )
+        ptr_resp = unhexlify(
+            "67028180000100010003000001310131033231310331343107696e2d616464720"
+            "46172706100000c0001c00c000c000100000d3600240764656661756c740a762d"
+            "756d63652d69667305756d6e657405756d6963680365647500c00e00020001000"
+            "00d36000d0673686162627903696673c04fc00e0002000100000d36000f0c6669"
+            "73682d6c6963656e7365c06dc00e0002000100000d36000b04646e73320369746"
+            "4c04f"
+        )
+        soa_resp = unhexlify(
+            "851f8180000100010000000006676f6f676c6503636f6d0000060001c00c00060"
+            "001000000230026036e7332c00c09646e732d61646d696ec00c0a747447000003"
+            "8400000384000007080000003c"
+        )
+        srv_resp = unhexlify(
+            "7f2281800001000100000000075f6a6162626572045f746370066a61626265720"
+            "3636f6d0000210001c00c0021000100000e0f001a000a000014950764656e6a61"
+            "6232066a616262657203636f6d00"
+        )
+        txt_resp = unhexlify(
+            "10328180000100010000000006676f6f676c6503636f6d0000100001c00c00100"
+            "0010000010e00100f763d7370663120707472203f616c6c"
+        )
+    return TestData()
+
 def test_basic():
-    from . import ip
+    buf = define_testdata().a_resp
+    my_dns = DNS(buf)
 
-    s = b'E\x00\x02\x08\xc15\x00\x00\x80\x11\x92aBk0\x01Bk0w\x005\xc07\x01\xf4\xda\xc2d\xd2\x81\x80\x00\x01\x00\x03\x00\x0b\x00\x0b\x03www\x06google\x03com\x00\x00\x01\x00\x01\xc0\x0c\x00\x05\x00\x01\x00\x00\x03V\x00\x17\x03www\x06google\x06akadns\x03net\x00\xc0,\x00\x01\x00\x01\x00\x00\x01\xa3\x00\x04@\xe9\xabh\xc0,\x00\x01\x00\x01\x00\x00\x01\xa3\x00\x04@\xe9\xabc\xc07\x00\x02\x00\x01\x00\x00KG\x00\x0c\x04usw5\x04akam\xc0>\xc07\x00\x02\x00\x01\x00\x00KG\x00\x07\x04usw6\xc0t\xc07\x00\x02\x00\x01\x00\x00KG\x00\x07\x04usw7\xc0t\xc07\x00\x02\x00\x01\x00\x00KG\x00\x08\x05asia3\xc0t\xc07\x00\x02\x00\x01\x00\x00KG\x00\x05\x02za\xc07\xc07\x00\x02\x00\x01\x00\x00KG\x00\x0f\x02zc\x06akadns\x03org\x00\xc07\x00\x02\x00\x01\x00\x00KG\x00\x05\x02zf\xc07\xc07\x00\x02\x00\x01\x00\x00KG\x00\x05\x02zh\xc0\xd5\xc07\x00\x02\x00\x01\x00\x00KG\x00\x07\x04eur3\xc0t\xc07\x00\x02\x00\x01\x00\x00KG\x00\x07\x04use2\xc0t\xc07\x00\x02\x00\x01\x00\x00KG\x00\x07\x04use4\xc0t\xc0\xc1\x00\x01\x00\x01\x00\x00\xfb4\x00\x04\xd0\xb9\x84\xb0\xc0\xd2\x00\x01\x00\x01\x00\x001\x0c\x00\x04?\xf1\xc76\xc0\xed\x00\x01\x00\x01\x00\x00\xfb4\x00\x04?\xd7\xc6S\xc0\xfe\x00\x01\x00\x01\x00\x001\x0c\x00\x04?\xd00.\xc1\x0f\x00\x01\x00\x01\x00\x00\n\xdf\x00\x04\xc1-\x01g\xc1"\x00\x01\x00\x01\x00\x00\x101\x00\x04?\xd1\xaa\x88\xc15\x00\x01\x00\x01\x00\x00\r\x1a\x00\x04PCC\xb6\xc0o\x00\x01\x00\x01\x00\x00\x10\x7f\x00\x04?\xf1I\xd6\xc0\x87\x00\x01\x00\x01\x00\x00\n\xdf\x00\x04\xce\x84dl\xc0\x9a\x00\x01\x00\x01\x00\x00\n\xdf\x00\x04A\xcb\xea\x1b\xc0\xad\x00\x01\x00\x01\x00\x00\x0b)\x00\x04\xc1l\x9a\t'
-    ip = ip.IP(s)
-    my_dns = DNS(ip.udp.data)
-    assert my_dns.qd[0].name == 'www.google.com' and my_dns.an[1].name == 'www.google.akadns.net'
-    s = b'\x05\xf5\x01\x00\x00\x01\x00\x00\x00\x00\x00\x00\x03www\x03cnn\x03com\x00\x00\x01\x00\x01'
-    my_dns = DNS(s)
-    assert s == bytes(my_dns)
+    assert my_dns.qd[0].name == 'google.com'
+    assert my_dns.an[0].name == 'google.com'
+    assert bytes(my_dns) == buf
 
+class TryExceptException:
+    def __init__(self, exception_type, msg=''):
+        self.exception_type = exception_type
+        self.msg = msg
+
+    def __call__(self, f, *args, **kwargs):
+        def wrapper(*args, **kwargs):
+            try:
+                f()
+            except self.exception_type as e:
+                if self.msg:
+                    assert str(e) == self.msg
+            else:
+                raise Exception("There should have been an Exception raised")
+        return wrapper
+
+@TryExceptException(Exception, msg='There should have been an Exception raised')
+def test_TryExceptException():
+    """ Check that we can catch a function which does not throw an exception when it is supposed to """
+    @TryExceptException(NotImplementedError)
+    def fun():
+        pass
+
+    try:
+        fun()
+    except Exception as e:
+        raise e
+
+@TryExceptException(NotImplementedError)
+def test_Q_len():
+    """ Test in place for when the method is written """
+    q = DNS.Q()
+    len(q)
+
+@TryExceptException(NotImplementedError)
+def test_Q_unpack():
+    """ Test in place for when the method is written """
+    q = DNS.Q()
+    q.unpack(None)
+
+def property_runner(prop, ops, set_to=None):
+    if set_to is None:
+        set_to = [False, True, False]
+    buf = define_testdata().a_resp
+    dns = DNS(buf)
+
+    for set_to, op in zip(set_to, ops):
+        setattr(dns, prop, set_to)
+        assert dns.op == op
+        assert getattr(dns, prop) == set_to
+
+def test_qr():
+    property_runner('qr', ops=[384, 33152, 384])
+
+def test_opcode():
+    property_runner('opcode', ops=[33152, 35200, 33152])
+
+def test_aa():
+    property_runner('aa', ops=[33152, 34176, 33152])
+
+def test_tc():
+    property_runner('tc', ops=[33152, 33664, 33152])
+
+def test_rd():
+    property_runner('rd', ops=[32896, 33152, 32896])
+
+def test_ra():
+    property_runner('ra', ops=[33024, 33152, 33024])
+
+def test_zero():
+    property_runner('zero', ops=[33152, 33216, 33152])
+
+def test_rcode():
+    property_runner('rcode', ops=[33152, 33153, 33152])
 
 def test_PTR():
-    s = b'g\x02\x81\x80\x00\x01\x00\x01\x00\x03\x00\x00\x011\x011\x03211\x03141\x07in-addr\x04arpa\x00\x00\x0c\x00\x01\xc0\x0c\x00\x0c\x00\x01\x00\x00\r6\x00$\x07default\nv-umce-ifs\x05umnet\x05umich\x03edu\x00\xc0\x0e\x00\x02\x00\x01\x00\x00\r6\x00\r\x06shabby\x03ifs\xc0O\xc0\x0e\x00\x02\x00\x01\x00\x00\r6\x00\x0f\x0cfish-license\xc0m\xc0\x0e\x00\x02\x00\x01\x00\x00\r6\x00\x0b\x04dns2\x03itd\xc0O'
-    my_dns = DNS(s)
+    buf = define_testdata().ptr_resp
+    my_dns = DNS(buf)
     assert my_dns.qd[0].name == '1.1.211.141.in-addr.arpa' and \
            my_dns.an[0].ptrname == 'default.v-umce-ifs.umnet.umich.edu' and \
            my_dns.ns[0].nsname == 'shabby.ifs.umich.edu' and \
            my_dns.ns[1].ttl == 3382 and \
            my_dns.ns[2].nsname == 'dns2.itd.umich.edu'
-    assert s == bytes(my_dns)
-
+    assert buf == bytes(my_dns)
 
 def test_OPT():
-    s = b'\x8dn\x01\x10\x00\x01\x00\x00\x00\x00\x00\x01\x04x111\x06xxxx11\x06akamai\x03net\x00\x00\x01\x00\x01\x00\x00)\x0f\xa0\x00\x00\x80\x00\x00\x00'
-    my_dns = DNS(s)
+    buf = define_testdata().opt_resp
+    my_dns = DNS(buf)
     my_rr = my_dns.ar[0]
     assert my_rr.type == DNS_OPT
     assert my_rr.rlen == 0 and my_rr.rdata == b''
-    assert bytes(my_dns) == s
+    assert bytes(my_dns) == buf
 
     my_rr.rdata = b'\x00\x00\x00\x02\x00\x00'  # add 1 attribute tlv
     my_dns2 = DNS(bytes(my_dns))
     my_rr2 = my_dns2.ar[0]
     assert my_rr2.rlen == 6 and my_rr2.rdata == b'\x00\x00\x00\x02\x00\x00'
 
-
 def test_pack_name():
     # Empty name is \0
     x = pack_name('', 0, {})
     assert x == b'\0'
 
+@TryExceptException(dpkt.UnpackError)
+def test_unpack_name():
+    """ If the offset is longer than the buffer, there will be an UnpackError """
+    unpack_name(b' ', 0)
 
+@TryExceptException(dpkt.UnpackError)
 def test_random_data():
-    try:
-        DNS(b'\x83z0\xd2\x9a\xec\x94_7\xf3\xb7+\x85"?\xf0\xfb')
-    except dpkt.UnpackError:
-        pass
-    except:
-        assert False
-    else:
-        assert False
+    DNS(b'\x83z0\xd2\x9a\xec\x94_7\xf3\xb7+\x85"?\xf0\xfb')
 
-
+@TryExceptException(dpkt.UnpackError)
 def test_circular_pointers():
-    try:
-        DNS(b'\xc0\x00\x01\x00\x00\x01\x00\x00\x00\x00\x00\x00\x07example\x03com\xc0\x00')
-    except dpkt.UnpackError:
-        pass
-    except:
-        assert False
-    else:
-        assert False
+    DNS(b'\xc0\x00\x01\x00\x00\x01\x00\x00\x00\x00\x00\x00\x07example\x03com\xc0\x00')
 
 
+@TryExceptException(dpkt.UnpackError)
 def test_very_long_name():
-    try:
-        DNS(b'\x00\x00\x01\x00\x00\x01\x00\x00\x00\x00\x00\x00' + (b'\x10abcdef0123456789' * 16) + b'\x00')
-    except dpkt.UnpackError:
-        pass
-    except:
-        assert False
-    else:
-        assert False
-
+    DNS(b'\x00\x00\x01\x00\x00\x01\x00\x00\x00\x00\x00\x00' + (b'\x10abcdef0123456789' * 16) + b'\x00')
 
 def test_null_response():
-    s = b'\x12\xb0\x84\x00\x00\x01\x00\x01\x00\x00\x00\x00\x0bblahblah666\x06pirate\x03sea\x00\x00\n\x00\x01\xc0\x0c\x00\n\x00\x01\x00\x00\x00\x00\x00\tVACKD\x03\xc5\xe9\x01'
-    my_dns = DNS(s)
+    buf = define_testdata().null_resp
+    my_dns = DNS(buf)
     assert my_dns.qd[0].name == 'blahblah666.pirate.sea' and \
            my_dns.an[0].null == b'5641434b4403c5e901'
-    assert str(s) == str(my_dns)
+    assert str(buf) == str(my_dns)
 
 
 def test_txt_response():
-    buf = (
-        b'\x10\x32\x81\x80\x00\x01\x00\x01\x00\x00\x00\x00\x06\x67\x6f\x6f\x67\x6c\x65\x03\x63\x6f'
-        b'\x6d\x00\x00\x10\x00\x01\xc0\x0c\x00\x10\x00\x01\x00\x00\x01\x0e\x00\x10\x0f\x76\x3d\x73'
-        b'\x70\x66\x31\x20\x70\x74\x72\x20\x3f\x61\x6c\x6c')
+    buf = define_testdata().txt_resp
     my_dns = DNS(buf)
     my_rr = my_dns.an[0]
     assert my_rr.type == DNS_TXT
@@ -504,20 +616,264 @@ def test_rdata_HINFO():
     assert packdata == correct
 
 
+def test_rdata_rdata():
+    rr = DNS.RR(
+        name='zc.akadns.org',
+        ttl=123446,
+        rdata=b'?\xf1\xc76',
+    )
+    packdata = rr.pack_rdata(0, {})
+    correct = b'?\xf1\xc76'
+    assert packdata == correct
+
+def test_rdata_A():
+    rr = DNS.RR(
+        name='zc.akadns.org',
+        ttl=123446,
+        ip=b'?\xf1\xc76',
+        type=DNS_A,
+    )
+    packdata = rr.pack_rdata(0, {})
+    correct = b'?\xf1\xc76'
+    assert packdata == correct
+
+def test_rdata_NS():
+    rr = DNS.RR(
+        nsname='zc.akadns.org',
+        ttl=123446,
+        ip=b'?\xf1\xc76',
+        type=DNS_NS,
+    )
+    packdata = rr.pack_rdata(0, {})
+    correct = b'\x02zc\x06akadns\x03org\x00'
+    assert packdata == correct
+
+def test_rdata_CNAME():
+    rr = DNS.RR(
+        cname='zc.akadns.org',
+        ttl=123446,
+        ip=b'?\xf1\xc76',
+        type=DNS_CNAME,
+    )
+    packdata = rr.pack_rdata(0, {})
+    correct = b'\x02zc\x06akadns\x03org\x00'
+    assert packdata == correct
+
+def test_rdata_PTR():
+    rr = DNS.RR(
+        ptrname='default.v-umce-ifs.umnet.umich.edu',
+        ttl=1236,
+        ip=b'?\xf1\xc76',
+        type=DNS_PTR,
+    )
+    packdata = rr.pack_rdata(0, {})
+    correct = b'\x07default\nv-umce-ifs\x05umnet\x05umich\x03edu\x00'
+    assert packdata == correct
+
+def test_rdata_SOA():
+    rr = DNS.RR(
+        mname='blah.google.com',
+        rname='moo.blah.com',
+        serial=12345666,
+        refresh=123463,
+        retry=209834,
+        minimum=9000,
+        expire=28341,
+        type=DNS_SOA,
+    )
+    packdata = rr.pack_rdata(0, {})
+    correct = b'\x04blah\x06google\x03com\x00\x03moo\x04blah\xc0\x0c\x00\xbcaB\x00\x01\xe2G\x00\x033\xaa\x00\x00n\xb5\x00\x00#('
+    assert packdata == correct
+
+def test_rdata_MX():
+    rr = DNS.RR(
+        type=DNS_MX,
+        preference=2124,
+        mxname='mail.google.com',
+    )
+
+    packdata = rr.pack_rdata(0, {})
+    correct = b'\x08L\x04mail\x06google\x03com\x00'
+    assert packdata == correct
+
+def test_rdata_AAAA():
+    ip6=b'&\x07\xf8\xb0@\x0c\x0c\x03\x00\x00\x00\x00\x00\x00\x00\x1a'
+    rr = DNS.RR(
+        type=DNS_AAAA,
+        ip6=ip6,
+    )
+
+    packdata = rr.pack_rdata(0, {})
+    correct = ip6
+    assert packdata == correct
+
+def test_rdata_SRV():
+    rr = DNS.RR(
+        type=DNS_SRV,
+        ttl=86400,
+        priority=0,
+        weight=5,
+        port=5060,
+        srvname='_sip._tcp.example.com',
+    )
+
+    packdata = rr.pack_rdata(0, {})
+    correct = b'\x00\x00\x00\x05\x13\xc4\x04_sip\x04_tcp\x07example\x03com\x00'
+    assert packdata == correct
+
+def test_rdata_OPT():
+    rr = DNS.RR(
+        type=DNS_OPT,
+    )
+
+    # TODO: This is hardcoded to return b''. Is this intentional?
+    packdata = rr.pack_rdata(0, {})
+    correct = b''
+    assert packdata == correct
+
 def test_dns_len():
     my_dns = DNS()
     assert len(my_dns) == 12
 
 
-if __name__ == '__main__':
-    # Runs all the test associated with this class/file
-    test_basic()
-    test_PTR()
-    test_OPT()
-    test_pack_name()
-    test_random_data()
-    test_circular_pointers()
-    test_very_long_name()
-    test_null_response()
-    test_txt_response()
-    print('Tests Successful...')
+@TryExceptException(dpkt.PackError)
+def test_rdata_FAIL():
+    DNS.RR(type=12345666).pack_rdata(0, {})
+
+def test_soa():
+    buf = define_testdata().soa_resp
+    soa = DNS(buf)
+
+    assert soa.id == 34079
+    assert soa.op == 33152
+
+    assert len(soa.qd) == 1
+    q = soa.qd[0]
+    assert q.name == 'google.com'
+    assert q.type == DNS_SOA
+    assert q.cls == DNS_IN
+
+    assert len(soa.an) == 1
+    a = soa.an[0]
+    assert a.name == 'google.com'
+    assert a.type == DNS_SOA
+    assert a.cls == DNS_IN
+    assert a.ttl == 35
+    assert a.retry == 900
+    assert a.mname == 'ns2.google.com'
+    assert a.minimum == 60
+    assert a.refresh == 900
+    assert a.expire == 1800
+    assert a.serial == 175404103
+    assert a.rlen == 38
+    assert a.rname == 'dns-admin.google.com'
+    assert a.rdata == b'\x03ns2\xc0\x0c\tdns-admin\xc0\x0c\nttG\x00\x00\x03\x84\x00\x00\x03\x84\x00\x00\x07\x08\x00\x00\x00<'
+    assert soa.ar == []
+
+def test_mx():
+    buf = define_testdata().mx_resp
+    mx = DNS(buf)
+
+    assert mx.id == 1339
+    assert mx.op == 33152
+
+    assert len(mx.qd) == 1
+    q = mx.qd[0]
+    assert q.name == 'google.com'
+    assert q.type == DNS_MX
+    assert q.cls == DNS_IN
+
+    assert len(mx.an) == 1
+    a = mx.an[0]
+    assert a.type == DNS_MX
+    assert a.cls == DNS_IN
+    assert a.name == 'google.com'
+    assert a.ttl == 599
+    assert a.mxname == 'alt2.aspmx.l.google.com'
+    assert a.preference == (30,)
+
+    assert a.rlen == 17
+    assert a.rdata == b'\x00\x1e\x04alt2\x05aspmx\x01l\xc0\x0c'
+    assert mx.ar == []
+
+def test_aaaa():
+    buf = define_testdata().aaaa_resp
+    aaaa = DNS(buf)
+
+    aaaa.id = 32546
+    aaaa.op = 33152
+
+    assert len(aaaa.qd) == 1
+    q = aaaa.qd[0]
+    assert q.type == DNS_AAAA
+    assert q.name == 'gmail.com'
+
+    assert len(aaaa.an) == 1
+    a = aaaa.an[0]
+    assert a.type == DNS_AAAA
+    assert a.cls == DNS_IN
+    assert a.name == 'gmail.com'
+    assert a.ttl == 299
+    assert a.ip6 ==  b'*\x00\x14P@\t\x08\x02\x00\x00\x00\x00\x00\x00 \x05'
+
+    assert a.rlen == 16
+    assert a.rdata ==  b'*\x00\x14P@\t\x08\x02\x00\x00\x00\x00\x00\x00 \x05'
+    assert aaaa.ar == []
+
+def test_srv():
+    buf = define_testdata().srv_resp
+    srv = DNS(buf)
+
+    srv.id = 32546
+    srv.op = 33152
+
+    assert len(srv.qd) == 1
+    q = srv.qd[0]
+    assert q.type == DNS_SRV
+    assert q.name == '_jabber._tcp.jabber.com'
+    assert q.cls == DNS_IN
+
+    assert len(srv.an) == 1
+    a = srv.an[0]
+    assert a.type == DNS_SRV
+    assert a.cls == DNS_IN
+    assert a.name == '_jabber._tcp.jabber.com'
+    assert a.port == 5269
+    assert a.ttl == 3599
+    assert a.srvname == 'denjab2.jabber.com'
+    assert a.priority == 10
+    assert a.weight == 0
+
+    assert a.rlen == 26
+    assert a.rdata == b'\x00\n\x00\x00\x14\x95\x07denjab2\x06jabber\x03com\x00'
+    assert srv.ar == []
+
+def test_cname():
+    buf = define_testdata().cname_resp
+    cname = DNS(buf)
+
+    cname.id = 41300
+    cname.op = 33152
+
+    assert len(cname.qd) == 1
+    q = cname.qd[0]
+    assert q.type == DNS_A
+    assert q.cls == DNS_IN
+    assert q.name == 'www.gmail.com'
+
+    assert len(cname.an) == 1
+    a = cname.an[0]
+    assert a.type == DNS_CNAME
+    assert a.cls == DNS_IN
+    assert a.name == 'www.gmail.com'
+    assert a.ttl == 21599
+    assert a.cname == 'mail.google.com'
+
+    assert a.rlen == 14
+    assert a.rdata == b'\x04mail\x06google\xc0\x16'
+    assert cname.ar == []
+
+@TryExceptException(dpkt.UnpackError)
+def test_invalid_rr():
+    buf = define_testdata().invalid_rr
+    DNS(buf)

@@ -353,6 +353,37 @@ class Reader(object):
             buf = self.__f.read(hdr.caplen)
             yield (hdr.tv_sec + (hdr.tv_usec / self._divisor), buf)
 
+################################################################################
+#                                    TESTS                                     #
+################################################################################
+class TryExceptException:
+    def __init__(self, exception_type, msg=''):
+        self.exception_type = exception_type
+        self.msg = msg
+
+    def __call__(self, f, *args, **kwargs):
+        def wrapper(*args, **kwargs):
+            try:
+                f()
+            except self.exception_type as e:
+                if self.msg:
+                    assert str(e) == self.msg
+            else:
+                raise Exception("There should have been an Exception raised")
+        return wrapper
+
+@TryExceptException(Exception, msg='There should have been an Exception raised')
+def test_TryExceptException():
+    """ Check that we can catch a function which does not throw an exception when it is supposed to """
+    @TryExceptException(NotImplementedError)
+    def fun():
+        pass
+
+    try:
+        fun()
+    except Exception as e:
+        raise e
+
 
 def test_pcap_endian():
     be = b'\xa1\xb2\xc3\xd4\x00\x02\x00\x04\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x60\x00\x00\x00\x01'
@@ -362,13 +393,16 @@ def test_pcap_endian():
     assert (befh.linktype == lefh.linktype)
 
 
-def test_reader():
-    data = (  # full libpcap file with one packet
+class TestData():
+    pcap = (  # full libpcap file with one packet
         b'\xd4\xc3\xb2\xa1\x02\x00\x04\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff\x00\x00\x01\x00\x00\x00'
         b'\xb2\x67\x4a\x42\xae\x91\x07\x00\x46\x00\x00\x00\x46\x00\x00\x00\x00\xc0\x9f\x32\x41\x8c\x00\xe0'
         b'\x18\xb1\x0c\xad\x08\x00\x45\x00\x00\x38\x00\x00\x40\x00\x40\x11\x65\x47\xc0\xa8\xaa\x08\xc0\xa8'
         b'\xaa\x14\x80\x1b\x00\x35\x00\x24\x85\xed'
     )
+
+def test_reader():
+    data = TestData().pcap
 
     # --- BytesIO tests ---
     from .compat import BytesIO
@@ -398,6 +432,37 @@ def test_reader():
     assert reader.dispatch(1, lambda ts, pkt: None) == 1
     assert reader.dispatch(1, lambda ts, pkt: None) == 0
 
+    # test loop() over all packets
+    fobj.seek(0)
+    reader = Reader(fobj)
+
+    class Count:
+        counter = 0
+
+        @classmethod
+        def inc(cls):
+            cls.counter += 1
+
+    reader.loop(lambda ts, pkt: Count.inc())
+    assert Count.counter == 1
+
+
+@TryExceptException(ValueError, msg="invalid tcpdump header")
+def test_reader_badheader():
+    from .compat import BytesIO
+    fobj = BytesIO(b'\x00'*24)
+    reader = Reader(fobj)
+
+def test_reader_fd():
+    data = TestData().pcap
+
+    import tempfile
+    with tempfile.TemporaryFile() as fd:
+        fd.write(data)
+        fd.seek(0)
+        reader = Reader(fd)
+        assert reader.fd == fd.fileno()
+        assert reader.fileno() == fd.fileno()
 
 class WriterTestWrap:
     """
@@ -425,7 +490,7 @@ class WriterTestWrap:
                 fobj.seek(0)
 
                 assert pkts
-                for (ts_out, pkt_out), (ts_in, pkt_in) in zip(pkts, iter(Reader(fobj))):
+                for (ts_out, pkt_out), (ts_in, pkt_in) in zip(pkts, Reader(fobj).readpkts()):
                     assert ts_out == ts_in
                     assert pkt_out == pkt_in
                 writer.close()
@@ -490,17 +555,3 @@ def test_writepkts():
 
     writer.writepkts(pkts)
     return pkts
-
-if __name__ == '__main__':
-    test_reader()
-    test_pcap_endian()
-    test_writer_precision_normal()
-    test_writer_precision_nano()
-    test_writer_precision_nano_fail()
-    test_writepkt_snaplen()
-    test_writepkt_no_time()
-    test_writepkt_with_time()
-    test_writepkt_time()
-    test_writepkts()
-
-    print('Tests Successful...')
