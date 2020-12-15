@@ -364,26 +364,32 @@ class Writer(object):
         Create a pcapng dumpfile writer for the given fileobj.
 
         shb can be an instance of SectionHeaderBlock(LE)
-        idb can be an instance of InterfaceDescriptionBlock(LE)
+        idb can be an instance of InterfaceDescriptionBlock(LE) (or sequence of them)
         """
         self.__f = fileobj
 
         if shb:
             self._validate_block('shb', shb, SectionHeaderBlock)
         if idb:
-            self._validate_block('idb', idb, InterfaceDescriptionBlock)
+            try:
+                for idb_ in idb:
+                    self._validate_block('idb', idb_, InterfaceDescriptionBlock)
+            except TypeError: # not iter
+                self._validate_block('idb', idb, InterfaceDescriptionBlock)
+                idb = [idb]
 
         if self.__le:
             shb = shb or SectionHeaderBlockLE()
-            idb = idb or InterfaceDescriptionBlockLE(snaplen=snaplen, linktype=linktype)
+            idb = idb or [InterfaceDescriptionBlockLE(snaplen=snaplen, linktype=linktype)]
             self._kls = EnhancedPacketBlockLE
         else:
             shb = shb or SectionHeaderBlock()
-            idb = idb or InterfaceDescriptionBlock(snaplen=snaplen, linktype=linktype)
+            idb = idb or [InterfaceDescriptionBlock(snaplen=snaplen, linktype=linktype)]
             self._kls = EnhancedPacketBlock
 
         self.__f.write(bytes(shb))
-        self.__f.write(bytes(idb))
+        for idb_ in idb:
+            self.__f.write(bytes(idb_))
 
     def _validate_block(self, arg_name, blk, expected_cls):
         """Check a user-defined block for correct type and endianness"""
