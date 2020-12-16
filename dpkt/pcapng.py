@@ -374,7 +374,7 @@ class Writer(object):
             try:
                 for idb_ in idb:
                     self._validate_block('idb', idb_, InterfaceDescriptionBlock)
-            except TypeError: # not iter
+            except (TypeError, ValueError): # not iter or _validate_block failed
                 self._validate_block('idb', idb, InterfaceDescriptionBlock)
                 idb = [idb]
 
@@ -1128,6 +1128,19 @@ def test_custom_read_write():
     writer = Writer(fobj, shb=shb, idb=idb)
     writer.writepkt(epb)
     assert fobj.getvalue() == buf
+    fobj.close()
+
+def test_multi_idb_writer():
+    """Test writing multiple interface description blocks into pcapng and read it"""
+    fobj = BytesIO()
+    shb, idb, epb = define_testdata().shb_idb_epb_le
+
+    writer = Writer(fobj, shb=shb, idb=[idb, idb])
+    writer.writepkt(epb)
+    fobj.flush()
+    fobj.seek(0)
+
+    reader = Reader(fobj)
     fobj.close()
 
 @pre_test
