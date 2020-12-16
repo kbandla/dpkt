@@ -364,26 +364,32 @@ class Writer(object):
         Create a pcapng dumpfile writer for the given fileobj.
 
         shb can be an instance of SectionHeaderBlock(LE)
-        idb can be an instance of InterfaceDescriptionBlock(LE)
+        idb can be an instance of InterfaceDescriptionBlock(LE) (or sequence of them)
         """
         self.__f = fileobj
 
         if shb:
             self._validate_block('shb', shb, SectionHeaderBlock)
         if idb:
-            self._validate_block('idb', idb, InterfaceDescriptionBlock)
+            try:
+                for idb_ in idb:
+                    self._validate_block('idb', idb_, InterfaceDescriptionBlock)
+            except (TypeError, ValueError): # not iter or _validate_block failed
+                self._validate_block('idb', idb, InterfaceDescriptionBlock)
+                idb = [idb]
 
         if self.__le:
             shb = shb or SectionHeaderBlockLE()
-            idb = idb or InterfaceDescriptionBlockLE(snaplen=snaplen, linktype=linktype)
+            idb = idb or [InterfaceDescriptionBlockLE(snaplen=snaplen, linktype=linktype)]
             self._kls = EnhancedPacketBlockLE
         else:
             shb = shb or SectionHeaderBlock()
-            idb = idb or InterfaceDescriptionBlock(snaplen=snaplen, linktype=linktype)
+            idb = idb or [InterfaceDescriptionBlock(snaplen=snaplen, linktype=linktype)]
             self._kls = EnhancedPacketBlock
 
         self.__f.write(bytes(shb))
-        self.__f.write(bytes(idb))
+        for idb_ in idb:
+            self.__f.write(bytes(idb_))
 
     def _validate_block(self, arg_name, blk, expected_cls):
         """Check a user-defined block for correct type and endianness"""
@@ -1122,6 +1128,19 @@ def test_custom_read_write():
     writer = Writer(fobj, shb=shb, idb=idb)
     writer.writepkt(epb)
     assert fobj.getvalue() == buf
+    fobj.close()
+
+def test_multi_idb_writer():
+    """Test writing multiple interface description blocks into pcapng and read it"""
+    fobj = BytesIO()
+    shb, idb, epb = define_testdata().shb_idb_epb_le
+
+    writer = Writer(fobj, shb=shb, idb=[idb, idb])
+    writer.writepkt(epb)
+    fobj.flush()
+    fobj.seek(0)
+
+    reader = Reader(fobj)
     fobj.close()
 
 @pre_test
