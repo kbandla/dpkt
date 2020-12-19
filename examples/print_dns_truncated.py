@@ -4,33 +4,8 @@ DNS packets. This example show how to read/handle trucated packets
 """
 import dpkt
 import datetime
-from dpkt.utils import mac_to_str, inet_to_str
+from dpkt.utils import mac_to_str, inet_to_str, make_dict
 from pprint import pprint
-
-def make_dict(obj):
-    """This method creates a dictionary out of a non-builtin object"""
-
-    # Recursion base case
-    if is_builtin(obj):
-        return obj
-
-    output_dict = {}
-    for key in dir(obj):
-        if not key.startswith('__') and not callable(getattr(obj, key)):
-            attr = getattr(obj, key)
-            if isinstance(attr, list):
-                output_dict[key] = []
-                for item in attr:
-                    output_dict[key].append(make_dict(item))
-            else:
-                output_dict[key] = make_dict(attr)
-
-    # All done
-    return output_dict
-
-
-def is_builtin(obj):
-    return obj.__class__.__module__ in ['__builtin__', 'builtins']
 
 
 def print_packets(pcap):
@@ -64,8 +39,8 @@ def print_packets(pcap):
         fragment_offset = ip.off & dpkt.ip.IP_OFFMASK
 
         # Print out the info
-        print('IP: %s -> %s   (len=%d ttl=%d DF=%d MF=%d offset=%d)\n' %
-              (inet_to_str(ip.src), inet_to_str(ip.dst), ip.len, ip.ttl, do_not_fragment, 
+        print('IP: %s -> %s   (len=%d ttl=%d DF=%d MF=%d offset=%d)' %
+              (inet_to_str(ip.src), inet_to_str(ip.dst), ip.len, ip.ttl, do_not_fragment,
                more_fragments, fragment_offset))
 
         # Check for UDP in the transport layer
@@ -73,21 +48,29 @@ def print_packets(pcap):
 
             # Set the UDP data
             udp = ip.data
+            print('UDP: sport={:d} dport={:d} sum={:d} ulen={:d}'.format(udp.sport, udp.dport,
+                                                                         udp.sum, udp.ulen))
 
             # Now see if we can parse the contents of the trucated DNS request
             try:
                 dns = dpkt.dns.DNS()
                 dns.unpack(udp.data)
-            except (dpkt.dpkt.NeedData, dpkt.dpkt.UnpackError):
-                print('Trucated DNS...')
-                print(udp.data)
-                continue
-            except Exception as e:
+            except (dpkt.dpkt.NeedData, dpkt.dpkt.UnpackError, Exception) as e:
+                print('\nError Parsing DNS, Might be a truncated packet...')
                 print('Exception: {!r}'.format(e))
-    
-        # Print out info
-        dns_data = make_dict(dns)
-        pprint(dns_data)
+
+        # Print out the DNS info
+        print('Queries: {:d}'.format(len(dns.qd)))
+        for query in dns.qd:
+            print('\t {:s} Type:{:d}'.format(query.name, query.type))
+        print('Answers: {:d}'.format(len(dns.an)))
+        for answer in dns.an:
+            if answer.type == 5:
+                print('\t {:s}: type: CNAME Answer: {:s}'.format(answer.name, answer.cname))
+            elif answer.type == 1:
+                print('\t {:s}: type: A Answer: {:s}'.format(answer.name, inet_to_str(answer.ip)))
+            else:
+                pprint(make_dict(answer))
 
 
 def test():
