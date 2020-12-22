@@ -75,7 +75,7 @@ def print_packets(pcap):
 
 def test():
     """Open up a test pcap file and print out the packets"""
-    with open('/Users/briford/data/pcaps/dpkt_test/test.pcap', 'rb') as f:
+    with open('data/truncated_dns.pcap', 'rb') as f:
         pcap = dpkt.pcap.Reader(f)
         print_packets(pcap)
 
