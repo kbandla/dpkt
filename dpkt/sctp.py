@@ -152,7 +152,10 @@ def test_sctp_data_chunk():  # https://github.com/kbandla/dpkt/issues/499
     assert len(ch) == 420  # 419 +1 byte padding
     assert ch.data[-14:] == b'keep-alive\r\n\r\n'  # no padding byte at the end
 
-    # test packing
+    # no remaining sctp data
+    assert sctp.data == b''
+
+    # test packing of the padded chunk
     assert bytes(ch) == d[SCTP.__hdr_len__:]
 
 
