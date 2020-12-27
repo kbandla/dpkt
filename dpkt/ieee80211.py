@@ -765,7 +765,7 @@ def test_action_block_ack_request():
     assert ieee.action.category == BLOCK_ACK
     assert ieee.action.code == BLOCK_ACK_CODE_REQUEST
     assert ieee.action.block_ack_request.timeout == 0
-    parameters = struct.unpack('H', b'\x10\x02')[0]
+    parameters = struct.unpack('<H', b'\x10\x02')[0]
     assert ieee.action.block_ack_request.parameters == parameters
 
 def test_action_block_ack_response():
@@ -775,9 +775,9 @@ def test_action_block_ack_response():
     assert ieee.subtype == M_ACTION
     assert ieee.action.category == BLOCK_ACK
     assert ieee.action.code == BLOCK_ACK_CODE_RESPONSE
-    timeout = struct.unpack('H', b'\x13\x88')[0]
+    timeout = struct.unpack('<H', b'\x13\x88')[0]
     assert ieee.action.block_ack_response.timeout == timeout
-    parameters = struct.unpack('H', b'\x10\x02')[0]
+    parameters = struct.unpack('<H', b'\x10\x02')[0]
     assert ieee.action.block_ack_response.parameters == parameters
 
 if __name__ == '__main__':
