@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 
+import struct
 import sys
 
 if sys.version_info < (3,):
@@ -19,9 +20,9 @@ try:
 except ImportError:
     from io import StringIO
 
-try: 
+try:
     from BytesIO import BytesIO
-except ImportError: 
+except ImportError:
     from io import BytesIO
 
 if sys.version_info < (3,):
@@ -37,3 +38,11 @@ else:
 
     # python3 will return an int if you round to 0 decimal places
     intround = round
+
+
+def ntole(fmt, v):
+    """convert a 2-byte word (fmt='H') or a 4-byte integer (fmt='I')
+    from the network byte order (big endian) to little endian;
+    replaces socket.ntohs() to work on both little and big endian architectures
+    """
+    return struct.unpack('<' + fmt, struct.pack('!' + fmt, v))[0]

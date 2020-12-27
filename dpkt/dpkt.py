@@ -7,7 +7,7 @@ import copy
 import struct
 from functools import partial
 
-from .compat import compat_ord, compat_izip, iteritems
+from .compat import compat_ord, compat_izip, iteritems, ntole
 
 
 class Error(Exception):
@@ -208,9 +208,7 @@ def in_cksum_add(s, buf):
 def in_cksum_done(s):
     s = (s >> 16) + (s & 0xffff)
     s += (s >> 16)
-    res = ~s & 0xffff
-    # convert from the network order to little endian
-    return struct.unpack('<H', struct.pack('!H', res))[0]
+    return ntole('H', ~s & 0xffff)
 
 
 def in_cksum(buf):

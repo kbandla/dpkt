@@ -8,6 +8,7 @@ import socket
 import struct
 
 from . import dpkt
+from .compat import ntole
 
 # Frame Types
 MGMT_TYPE = 0
@@ -329,7 +330,7 @@ class IEEE80211(dpkt.Packet):
 
         # Strip off the FCS field
         if self.fcs_present:
-            self.fcs = struct.unpack('I', self.data[-1 * FCS_LENGTH:])[0]
+            self.fcs = struct.unpack('<I', self.data[-1 * FCS_LENGTH:])[0]
             self.data = self.data[0: -1 * FCS_LENGTH]
 
         if self.type == MGMT_TYPE:
@@ -362,7 +363,7 @@ class IEEE80211(dpkt.Packet):
         if self.type == MGMT_TYPE:
             self.unpack_ies(field.data)
             if self.subtype in FRAMES_WITH_CAPABILITY:
-                self.capability = self.Capability(socket.ntohs(field.capability))
+                self.capability = self.Capability(ntole('H', field.capability))
 
         if self.type == DATA_TYPE and self.subtype == D_QOS_DATA:
             self.qos_data = self.QoS_Data(field.data)
@@ -421,7 +422,7 @@ class IEEE80211(dpkt.Packet):
         def unpack(self, buf):
             dpkt.Packet.unpack(self, buf)
             self.data = buf[self.__hdr_len__:]
-            self.ctl = socket.ntohs(self.ctl)
+            self.ctl = ntole('H', self.ctl)
 
             if self.compressed:
                 self.bmp = struct.unpack('8s', self.data[0:_COMPRESSED_BMP_LENGTH])[0]
@@ -654,7 +655,7 @@ def test_802211_ack():
     assert ieee.wep == 0
     assert ieee.order == 0
     assert ieee.ack.dst == b'\x00\x12\xf0\xb6\x1c\xa4'
-    fcs = struct.unpack('I', s[-4:])[0]
+    fcs = struct.unpack('<I', s[-4:])[0]
     assert ieee.fcs == fcs
 
 def test_80211_beacon():
@@ -677,7 +678,7 @@ def test_80211_beacon():
     assert ieee.rate.data == b'\x82\x84\x8b\x0c\x12\x96\x18\x24'
     assert ieee.ds.data == b'\x01'
     assert ieee.tim.data == b'\x00\x01\x00\x00'
-    fcs = struct.unpack('I', s[-4:])[0]
+    fcs = struct.unpack('<I', s[-4:])[0]
     assert ieee.fcs == fcs
 
 def test_80211_data():
@@ -689,7 +690,7 @@ def test_80211_data():
     assert ieee.data_frame.src == b'\x00\x16\x44\xb0\xae\xc6'
     assert ieee.data_frame.frag_seq == 0x807e
     assert ieee.data == b'\xaa\xaa\x03\x00\x00\x00\x08\x00\x45\x00\x00\x28\x07\x27\x40\x00\x80\x06\x1d\x39\x8d\xd4\x37\x3d\x3f\xf5\xd1\x69\xc0\x5f\x01\xbb\xb2\xd6\xef\x23\x38\x2b\x4f\x08\x50\x10\x42\x04'
-    assert ieee.fcs == struct.unpack('I', b'\xac\x17\x00\x00')[0]
+    assert ieee.fcs == struct.unpack('<I', b'\xac\x17\x00\x00')[0]
 
     from . import llc
     llc_pkt = llc.LLC(ieee.data_frame.data)
@@ -706,7 +707,7 @@ def test_80211_data_qos():
     assert ieee.data_frame.frag_seq == 0x207b
     assert ieee.data == b'\xaa\xaa\x03\x00\x00\x00\x88\x8e\x01\x00\x00\x74\x02\x02\x00\x74\x19\x80\x00\x00\x00\x6a\x16\x03\x01\x00\x65\x01\x00\x00\x61\x03\x01\x4b\x4c\xa7\x7e\x27\x61\x6f\x02\x7b\x3c\x72\x39\xe3\x7b\xd7\x43\x59\x91\x7f\xaa\x22\x47\x51\xb6\x88\x9f\x85\x90\x87\x5a\xd1\x13\x20\xe0\x07\x00\x00\x68\xbd\xa4\x13\xb0\xd5\x82\x7e\xc7\xfb\xe7\xcc\xab\x6e\x5d\x5a\x51\x50\xd4\x45\xc5\xa1\x65\x53\xad\xb5\x88\x5b\x00\x1a\x00\x2f\x00\x05\x00\x04\x00\x35\x00\x0a\x00\x09\x00\x03\x00\x08\x00\x33\x00\x39\x00\x16\x00\x15\x00\x14\x01\x00'
     assert ieee.qos_data.control == 0x0
-    assert ieee.fcs == struct.unpack('I', b'\xff\xff\xff\xff')[0]
+    assert ieee.fcs == struct.unpack('<I', b'\xff\xff\xff\xff')[0]
 
 def test_bug():
     s = b'\x88\x41\x2c\x00\x00\x26\xcb\x17\x44\xf0\x00\x1e\x52\x97\x14\x11\x00\x1f\x6d\xe8\x18\x00\xd0\x07\x00\x00\x6f\x00\x00\x20\x00\x00\x00\x00'
