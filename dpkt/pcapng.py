@@ -1241,6 +1241,9 @@ def test_writepkts():
     writer.writepkts(pkts)
     return pkts
 
+def test_pcapng_block_pack():
+    assert bytes(_PcapngBlock())
+
 def test_pcapng_block_unpack():
     block = _PcapngBlock()
     buf = b'012345678901'
