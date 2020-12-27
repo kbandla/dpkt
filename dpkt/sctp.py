@@ -52,13 +52,13 @@ class SCTP(dpkt.Packet):
             chunk = Chunk(self.data)
             l.append(chunk)
             self.data = self.data[len(chunk):]
-        self.data = self.chunks = l
+        self.chunks = l
 
     def __len__(self):
-        return self.__hdr_len__ + sum(map(len, self.data))
+        return self.__hdr_len__ + sum(len(x) for x in self.chunks)
 
     def __bytes__(self):
-        l = [bytes(x) for x in self.data]
+        l = [bytes(x) for x in self.chunks]
         if self.sum == 0:
             s = crc32c.add(0xffffffff, self.pack_hdr())
             for x in l:
