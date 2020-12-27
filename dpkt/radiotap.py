@@ -233,7 +233,7 @@ class Radiotap(dpkt.Packet):
 
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
-        self.data = buf[ntole('H', self.length):]
+        self.data = buf[ntole(self.length):]
 
         self.fields = []
         buf = buf[self.__hdr_len__:]

@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 
-import struct
+from struct import pack, unpack
 import sys
 
 if sys.version_info < (3,):
@@ -40,9 +40,8 @@ else:
     intround = round
 
 
-def ntole(fmt, v):
-    """convert a 2-byte word (fmt='H') or a 4-byte integer (fmt='I')
-    from the network byte order (big endian) to little endian;
+def ntole(v):
+    """convert a 2-byte word from the network byte order (big endian) to little endian;
     replaces socket.ntohs() to work on both little and big endian architectures
     """
-    return struct.unpack('<' + fmt, struct.pack('!' + fmt, v))[0]
+    return unpack('<H', pack('!H', v))[0]

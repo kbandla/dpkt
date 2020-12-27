@@ -208,7 +208,7 @@ def in_cksum_add(s, buf):
 def in_cksum_done(s):
     s = (s >> 16) + (s & 0xffff)
     s += (s >> 16)
-    return ntole('H', ~s & 0xffff)
+    return ntole(~s & 0xffff)
 
 
 def in_cksum(buf):

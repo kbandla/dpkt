@@ -363,7 +363,7 @@ class IEEE80211(dpkt.Packet):
         if self.type == MGMT_TYPE:
             self.unpack_ies(field.data)
             if self.subtype in FRAMES_WITH_CAPABILITY:
-                self.capability = self.Capability(ntole('H', field.capability))
+                self.capability = self.Capability(ntole(field.capability))
 
         if self.type == DATA_TYPE and self.subtype == D_QOS_DATA:
             self.qos_data = self.QoS_Data(field.data)
@@ -422,7 +422,7 @@ class IEEE80211(dpkt.Packet):
         def unpack(self, buf):
             dpkt.Packet.unpack(self, buf)
             self.data = buf[self.__hdr_len__:]
-            self.ctl = ntole('H', self.ctl)
+            self.ctl = ntole(self.ctl)
 
             if self.compressed:
                 self.bmp = struct.unpack('8s', self.data[0:_COMPRESSED_BMP_LENGTH])[0]
