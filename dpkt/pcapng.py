@@ -1112,7 +1112,10 @@ def test_custom_read_write():
     fobj.close()
 
     # test pcapng customized writing
-    shb, idb, epb = define_testdata().shb_idb_epb_le
+    if sys.byteorder == 'little':
+        shb, idb, epb = define_testdata().shb_idb_epb_le
+    else:
+        shb, idb, epb = define_testdata().shb_idb_epb_be
 
     fobj = BytesIO()
     writer = Writer(fobj, shb=shb, idb=idb)
