@@ -1,15 +1,13 @@
 # $Id: dpkt.py 43 2007-08-02 22:42:59Z jon.oberheide $
 # -*- coding: utf-8 -*-
 """Simple packet creation and parsing."""
-from __future__ import absolute_import 
+from __future__ import absolute_import
 
 import copy
-import socket
 import struct
-import array
 from functools import partial
 
-from .compat import compat_ord, compat_izip, iteritems
+from .compat import compat_ord, compat_izip, iteritems, ntole
 
 
 class Error(Exception):
@@ -48,7 +46,7 @@ class Packet(_MetaPacket("Temp", (object,), {})):
     """Base packet class, with metaclass magic to generate members from self.__hdr__.
 
     Attributes:
-        __hdr__: Packet header should be defined as a list of 
+        __hdr__: Packet header should be defined as a list of
                  (name, structfmt, default) tuples.
         __byte_order__: Byte order, can be set to override the default ('>')
 
@@ -146,7 +144,7 @@ class Packet(_MetaPacket("Temp", (object,), {})):
 
     def __str__(self):
         return str(self.__bytes__())
-    
+
     def __bytes__(self):
         return self.pack_hdr() + bytes(self.data)
 
@@ -200,16 +198,17 @@ def hexdump(buf, length=16):
 def in_cksum_add(s, buf):
     n = len(buf)
     cnt = (n // 2) * 2
-    a = array.array('H', buf[:cnt])
+    a = struct.unpack('<{}H'.format(n // 2), buf[:cnt])  # unpack as little endian words
+    res = s + sum(a)
     if cnt != n:
-        a.append(compat_ord(buf[-1]))
-    return s + sum(a)
+        res += compat_ord(buf[-1])
+    return res
 
 
 def in_cksum_done(s):
     s = (s >> 16) + (s & 0xffff)
     s += (s >> 16)
-    return socket.ntohs(~s & 0xffff)
+    return ntole(~s & 0xffff)
 
 
 def in_cksum(buf):
@@ -222,8 +221,10 @@ def test_utils():
     __hd = '  0000:  00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e     ...............'
     h = hexdump(__buf)
     assert (h == __hd)
+    assert in_cksum_add(0, __buf) == 12600  # endianness
     c = in_cksum(__buf)
     assert (c == 51150)
+
 
 def test_getitem():
     """ create a Packet subclass and access its properties """
@@ -244,6 +245,7 @@ def test_getitem():
     except Exception as e:
         assert isinstance(e, KeyError)
 
+
 def test_pack_hdr_overflow():
     """ Try to fit too much data into struct packing """
     class Foo(Packet):
@@ -260,6 +262,7 @@ def test_pack_hdr_overflow():
     else:
         assert False, "There should have been an exception raised"
 
+
 def test_pack_hdr_tuple():
     """ Test the unpacking of a tuple for a single format string """
     class Foo(Packet):
@@ -270,4 +273,3 @@ def test_pack_hdr_tuple():
     foo = Foo()
     b = bytes(foo)
     assert b == b'\x00\x00\x00\x01\x00\x00\x00\x02'
-
