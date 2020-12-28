@@ -80,7 +80,7 @@ class Radiotap(dpkt.Packet):
     def _is_present(self, bit):
         index = bit // 8
         mask = 1 << (bit % 8)
-        return compat_ord(self.present_flags[index]) & mask
+        return 1 if (compat_ord(self.present_flags[index]) & mask) else 0
 
     @property
     def tsft_present(self):
@@ -370,7 +370,31 @@ class Radiotap(dpkt.Packet):
         )
 
 
-def test_radiotap():
+def test_radiotap_1():
+    s = b'\x00\x00\x00\x18\x6e\x48\x00\x00\x00\x02\x6c\x09\xa0\x00\xa8\x81\x02\x00\x00\x00\x00\x00\x00\x00'
+    rad = Radiotap(s)
+    assert(rad.version == 0)
+    assert(rad.present_flags == b'\x6e\x48\x00\x00')
+    assert(rad.tsft_present == 0)
+    assert(rad.flags_present == 1)
+    assert(rad.rate_present == 1)
+    assert(rad.channel_present == 1)
+    assert(rad.fhss_present == 0)
+    assert(rad.ant_sig_present == 1)
+    assert(rad.ant_noise_present == 1)
+    assert(rad.lock_qual_present == 0)
+    assert(rad.db_tx_attn_present == 0)
+    assert(rad.dbm_tx_power_present == 0)
+    assert(rad.ant_present == 1)
+    assert(rad.db_ant_sig_present == 0)
+    assert(rad.db_ant_noise_present == 0)
+    assert(rad.rx_flags_present == 1)
+    assert(rad.channel.freq == 0x096c)
+    assert(rad.channel.flags == 0xa0)
+    assert(len(rad.fields) == 7)
+
+
+def test_radiotap_2():
     s = (b'\x00\x00\x30\x00\x2f\x40\x00\xa0\x20\x08\x00\xa0\x20\x08\x00\xa0\x20\x08\x00\x00\x00\x00'
          b'\x00\x00\x08\x84\xbd\xac\x28\x00\x00\x00\x10\x02\x85\x09\xa0\x00\xa5\x00\x00\x00\xa1\x00'
          b'\x9f\x01\xa1\x02')
@@ -398,6 +422,15 @@ def test_radiotap():
     assert(rad.flags.fcs)
 
 
+def test_fcs():
+    s = b'\x00\x00\x1a\x00\x2f\x48\x00\x00\x34\x8f\x71\x09\x00\x00\x00\x00\x10\x0c\x85\x09\xc0\x00\xcc\x01\x00\x00'
+    rt = Radiotap(s)
+    assert(rt.flags_present)
+    assert(rt.flags.fcs == 1)
+
+
 if __name__ == '__main__':
-    test_radiotap()
+    test_radiotap_1()
+    test_radiotap_2()
+    test_fcs()
     print('Tests Successful...')
