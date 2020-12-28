@@ -425,7 +425,7 @@ def test_radiotap_2():
 def test_fcs():
     s = b'\x00\x00\x1a\x00\x2f\x48\x00\x00\x34\x8f\x71\x09\x00\x00\x00\x00\x10\x0c\x85\x09\xc0\x00\xcc\x01\x00\x00'
     rt = Radiotap(s)
-    assert(rt.flags_present)
+    assert(rt.flags_present == 1)
     assert(rt.flags.fcs == 1)
 
 
