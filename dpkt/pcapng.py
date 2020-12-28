@@ -929,7 +929,8 @@ class WriterTestWrap:
                     assert ts_out == ts_in
                     assert pkt_out == pkt_in
 
-                writer.close()
+                # 'noqa' for flake8 to ignore these since writer and fobj were injected into globals
+                writer.close()  # noqa
                 Writer._Writer__le = _sysle
                 del f.__globals__['writer']
                 del f.__globals__['fobj']
@@ -974,14 +975,14 @@ class PostTest:
 def test_shb_header():
     shb = define_testdata().valid_shb_le
     shb.type = 123456666
-    fobj.write(bytes(shb))
+    fobj.write(bytes(shb))  # noqa
 
 @PostTest(test='assertion', type=ValueError, msg='unknown endianness')
 @pre_test
 def test_shb_bom():
     shb = define_testdata().valid_shb_le
     shb.bom = 12345666
-    fobj.write(bytes(shb))
+    fobj.write(bytes(shb))  # noqa
 
 @PostTest(test='assertion', type=ValueError, msg='unknown pcapng version 123.45')
 @pre_test
@@ -989,13 +990,13 @@ def test_shb_version():
     shb = define_testdata().valid_shb_le
     shb.v_major = 123
     shb.v_minor = 45
-    fobj.write(bytes(shb))
+    fobj.write(bytes(shb))  # noqa
 
 @PostTest(test='assertion', type=ValueError, msg='IDB not found')
 @pre_test
 def test_no_idb():
     shb = define_testdata().valid_shb_le
-    fobj.write(bytes(shb)+b'aaaa')
+    fobj.write(bytes(shb)+b'aaaa')  # noqa
 
 @PostTest(test='compare_property', property='idb')
 @pre_test
@@ -1007,7 +1008,7 @@ def test_idb_opt_offset():
         code=PCAPNG_OPT_IF_TSOFFSET,
         data=struct_pack('<q', 123456666))
     )
-    fobj.write(bytes(shb)+bytes(idb))
+    fobj.write(bytes(shb)+bytes(idb))  # noqa
     return idb
 
 @PostTest(test='compare_property', property='dloff')
@@ -1017,7 +1018,7 @@ def test_idb_linktype():
     shb = define_testdata().valid_shb_le
     idb = define_testdata().valid_idb_le
     idb.linktype = 3456
-    fobj.write(bytes(shb)+bytes(idb))
+    fobj.write(bytes(shb)+bytes(idb))  # noqa
     return 0
 
 def test_repr():
@@ -1035,10 +1036,10 @@ def test_repr():
 @pre_test
 def test_filter():
     buf = define_testdata().valid_pcapng
-    fobj.write(buf)
-    fobj.flush()
-    fobj.seek(0)
-    reader = Reader(fobj)
+    fobj.write(buf)  # noqa
+    fobj.flush()  # noqa
+    fobj.seek(0)  # noqa
+    reader = Reader(fobj)  # noqa
     try:
         reader.setfilter(None, None)
     except Exception as e:
@@ -1047,37 +1048,37 @@ def test_filter():
 @PostTest(test='compare_method', method='readpkts')
 @pre_test
 def test_readpkts():
-    fobj.write(define_testdata().valid_pcapng)
+    fobj.write(define_testdata().valid_pcapng)  # noqa
     return define_testdata().valid_pkts
 
 @PostTest(test='compare_method', method='next')
 @pre_test
 def test_next():
-    fobj.write(define_testdata().valid_pcapng)
+    fobj.write(define_testdata().valid_pcapng)  # noqa
     return define_testdata().valid_pkts[0]
 
 @pre_test
 def test_dispatch():
-    fobj.write(define_testdata().valid_pcapng)
-    fobj.flush()
-    fobj.seek(0)
+    fobj.write(define_testdata().valid_pcapng)  # noqa
+    fobj.flush()  # noqa
+    fobj.seek(0)  # noqa
 
     def callback(timestamp, pkt, *args):
         assert (timestamp, pkt) == define_testdata().valid_pkts[0]
 
-    reader = Reader(fobj)
+    reader = Reader(fobj)  # noqa
     assert 1 == reader.dispatch(0, callback)
 
 @pre_test
 def test_loop():
-    fobj.write(define_testdata().valid_pcapng)
-    fobj.flush()
-    fobj.seek(0)
+    fobj.write(define_testdata().valid_pcapng)  # noqa
+    fobj.flush()  # noqa
+    fobj.seek(0)  # noqa
 
     def callback(timestamp, pkt, *args):
         assert (timestamp, pkt) == define_testdata().valid_pkts[0]
 
-    reader = Reader(fobj)
+    reader = Reader(fobj)  # noqa
     reader.loop(callback)
 
 def test_idb_opt_err():
@@ -1152,7 +1153,7 @@ def test_writer_validate_instance():
     shb = 10
 
     try:
-        writer = Writer(fobj, shb=shb)
+        writer = Writer(fobj, shb=shb)  # noqa
     except Exception as e:
         assert isinstance(e, ValueError)
         assert str(e) == 'shb: expecting class SectionHeaderBlock'
@@ -1162,7 +1163,7 @@ def test_writepkt_epb_ts():
     """ writepkt should assign ts_high/low for epb if they are 0 """
     global time
     shb, idb, epb = define_testdata().shb_idb_epb_le
-    writer = Writer(fobj, shb=shb, idb=idb)
+    writer = Writer(fobj, shb=shb, idb=idb)  # noqa
     epb.ts_high = epb.ts_low = 0
     ts = 1454725786.526401
     _time = time
@@ -1183,7 +1184,7 @@ def test_writer_validate_le():
     Writer._Writer__le = True
 
     try:
-        writer = Writer(fobj, shb=shb)
+        writer = Writer(fobj, shb=shb)  # noqa
     except Exception as e:
         assert isinstance(e, ValueError)
         assert str(e) == 'shb: expecting class SectionHeaderBlockLE on a little-endian system'
@@ -1199,7 +1200,7 @@ def test_writer_validate_be():
     Writer._Writer__le = False
 
     try:
-        writer = Writer(fobj, shb=shb)
+        writer = Writer(fobj, shb=shb)  # noqa
     except Exception as e:
         assert isinstance(e, ValueError)
         assert str(e) == 'shb: expecting class SectionHeaderBlock on a big-endian system'
@@ -1212,20 +1213,20 @@ def test_writepkt_no_time():
     ts, pkt = 1454725786.526401, b'foooo'
     _tmp = time
     time = lambda: ts
-    writer.writepkt(pkt)
+    writer.writepkt(pkt)  # noqa
     time = _tmp
     return [(ts, pkt)]
 
 @WriterTestWrap(writer={'snaplen': 10})
 def test_writepkt_snaplen():
     ts, pkt = 1454725786.526401, b'foooo'*100
-    writer.writepkt(pkt, ts)
+    writer.writepkt(pkt, ts)  # noqa
     return [(ts, pkt)]
 
 @WriterTestWrap()
 def test_writepkt_with_time():
     ts, pkt = 1454725786.526401, b'foooo'
-    writer.writepkt(pkt, ts)
+    writer.writepkt(pkt, ts)  # noqa
     return [(ts, pkt)]
 
 @WriterTestWrap()
@@ -1238,7 +1239,7 @@ def test_writepkts():
         (1454725789.526401, b"lol"),
     ]
 
-    writer.writepkts(pkts)
+    writer.writepkts(pkts)  # noqa
     return pkts
 
 def test_pcapng_block_pack():

@@ -45,3 +45,9 @@ def ntole(v):
     replaces socket.ntohs() to work on both little and big endian architectures
     """
     return unpack('<H', pack('!H', v))[0]
+
+
+def isstr(s):
+    """True if 's' is an instance of basestring in py2, or of str in py3"""
+    bs = getattr(__builtins__, 'basestring', str)
+    return isinstance(s, bs)
