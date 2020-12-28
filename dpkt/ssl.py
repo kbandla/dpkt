@@ -9,6 +9,7 @@ import binascii
 
 from . import dpkt
 from . import ssl_ciphersuites
+from .compat import compat_ord
 
 #
 # Note from April 2011: cde...@gmail.com added code that parses SSL3/TLS messages more in depth.
@@ -31,7 +32,7 @@ class SSL2(dpkt.Packet):
             self.msg, self.data = self.data[:n], self.data[n:]
         else:
             n = self.len = self.len & 0x3FFF
-            padlen = ord(self.data[0])
+            padlen = compat_ord(self.data[0])
             self.msg = self.data[1:1 + n]
             self.pad = self.data[1 + n:1 + n + padlen]
             self.data = self.data[1 + n + padlen:]

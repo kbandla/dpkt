@@ -3,8 +3,6 @@
 from __future__ import print_function
 from __future__ import absolute_import
 
-import socket
-
 from . import dpkt
 from . import ieee80211
 
@@ -215,7 +213,7 @@ class Radiotap(dpkt.Packet):
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
         self.data = buf[self.length:]
-
+        
         self.fields = []
         buf = buf[self.__hdr_len__:]
 
