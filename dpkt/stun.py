@@ -45,7 +45,7 @@ class STUN(dpkt.Packet):
         __hdr__: Header fields of STUN.
         TODO.
     """
-    
+
     __hdr__ = (
         ('type', 'H', 0),
         ('len', 'H', 0),

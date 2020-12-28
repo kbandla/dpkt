@@ -17,7 +17,7 @@ class DTP(dpkt.Packet):
         __hdr__: Header fields of DTP.
         TODO.
     """
-    
+
     __hdr__ = (
         ('v', 'B', 0),
     )  # rest is TLVs
@@ -32,6 +32,8 @@ class DTP(dpkt.Packet):
             tvs.append((t, v))
         self.data = tvs
 
+    def __bytes__(self):
+        return b''.join([struct.pack('>HH', t, len(v)) + v for t, v in self.data])
 
 TRUNK_NAME = 0x01
 MAC_ADDR = 0x04

@@ -44,7 +44,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 project = 'dpkt'
-copyright = '2009-2015 Dug Song and contributors'
+copyright = '2009-2019 Dug Song and lots of Contributors'
 
 release = get_version('../dpkt/__init__.py')
 version = '.'.join(release.split('.')[:2])

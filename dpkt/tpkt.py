@@ -18,7 +18,7 @@ class TPKT(dpkt.Packet):
         __hdr__: Header fields of TPKT.
         TODO.
     """
-    
+
     __hdr__ = (
         ('v', 'B', 3),
         ('rsvd', 'B', 0),

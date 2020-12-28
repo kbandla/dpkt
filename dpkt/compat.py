@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 
+from struct import pack, unpack
 import sys
 
 if sys.version_info < (3,):
@@ -19,14 +20,28 @@ try:
 except ImportError:
     from io import StringIO
 
-try: 
+try:
     from BytesIO import BytesIO
-except ImportError: 
+except ImportError:
     from io import BytesIO
-        
+
 if sys.version_info < (3,):
     def iteritems(d, **kw):
         return d.iteritems(**kw)
+
+    def intround(num):
+        return int(round(num))
+
 else:
     def iteritems(d, **kw):
         return iter(d.items(**kw))
+
+    # python3 will return an int if you round to 0 decimal places
+    intround = round
+
+
+def ntole(v):
+    """convert a 2-byte word from the network byte order (big endian) to little endian;
+    replaces socket.ntohs() to work on both little and big endian architectures
+    """
+    return unpack('<H', pack('!H', v))[0]

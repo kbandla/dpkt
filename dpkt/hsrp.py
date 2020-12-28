@@ -28,7 +28,7 @@ class HSRP(dpkt.Packet):
         __hdr__: Header fields of HSRP.
         TODO.
     """
-    
+
     __hdr__ = (
         ('version', 'B', 0),
         ('opcode', 'B', 0),
@@ -38,6 +38,6 @@ class HSRP(dpkt.Packet):
         ('priority', 'B', 0),
         ('group', 'B', 0),
         ('rsvd', 'B', 0),
-        ('auth', '8s', 'cisco'),
-        ('vip', '4s', '')
+        ('auth', '8s', b'cisco'),
+        ('vip', '4s', b'')
     )
