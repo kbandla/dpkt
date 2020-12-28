@@ -10,15 +10,7 @@ from zlib import crc32
 
 from . import dpkt
 from . import llc
-from .compat import compat_ord, iteritems
-
-try:
-    isinstance("", basestring)
-    def isstr(s):
-        return isinstance(s, basestring)
-except NameError:
-    def isstr(s):
-        return isinstance(s, str)
+from .compat import compat_ord, iteritems, isstr
 
 ETH_CRC_LEN = 4
 ETH_HDR_LEN = 14
