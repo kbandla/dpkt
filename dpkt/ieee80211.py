@@ -553,6 +553,7 @@ class IEEE80211(dpkt.Packet):
         )
 
     class BlockAckActionDelba(dpkt.Packet):
+        __byte_order__ = '<'
         __hdr__ = (
             ('delba_param_set', 'H', 0),
             ('reason_code', 'H', 0),
