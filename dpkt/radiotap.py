@@ -5,6 +5,7 @@ from __future__ import absolute_import
 
 from . import dpkt
 from . import ieee80211
+from .compat import compat_ord
 
 # Ref: http://www.radiotap.org
 # Fields Ref: http://www.radiotap.org/defined-fields/all
@@ -55,7 +56,6 @@ _HALF_RATE_SHIFT = 14
 _QUARTER_RATE_SHIFT = 15
 
 # Flags offsets and masks
-_FCS_SHIFT = 1
 _FCS_MASK = 0x10
 
 
@@ -80,7 +80,7 @@ class Radiotap(dpkt.Packet):
     def is_present(self, bit):
         index = bit // 8
         mask = 1 << (bit % 8)
-        return self.present_flags[index] & mask
+        return compat_ord(self.present_flags[index]) & mask
 
     @property
     def tsft_present(self):
@@ -213,15 +213,15 @@ class Radiotap(dpkt.Packet):
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
         self.data = buf[self.length:]
-        
+
         self.fields = []
         buf = buf[self.__hdr_len__:]
 
-        self.present_flags = bytearray(buf[:4])
+        self.present_flags = buf[:4]
         buf = buf[4:]
         ext_bit = _EXT_SHIFT
         while self.is_present(ext_bit):
-            self.present_flags = self.present_flags + bytearray(buf[:4])
+            self.present_flags += buf[:4]
             buf = buf[4:]
             ext_bit += 32
 
@@ -302,12 +302,13 @@ class Radiotap(dpkt.Packet):
         )
 
         @property
-        def fcs(self): return (self.val & _FCS_MASK) >> _FCS_SHIFT
+        def fcs(self):
+            return (self.val & _FCS_MASK) >> _FCS_SHIFT
 
-        # TODO statement seems to have no effect
+        # TODO: untested
         @fcs.setter
-        def fcs(self, v): (v << _FCS_SHIFT) | (self.val & ~_FCS_MASK)
-
+        def fcs(self, v):
+            self.val = (v << _FCS_SHIFT) | (v & ~_FCS_MASK)
 
     class LockQuality(RadiotapField):
         __alignment__ = 2
@@ -369,11 +370,13 @@ class Radiotap(dpkt.Packet):
         )
 
 
-def test_Radiotap():
-    s = bytearray.fromhex('000030002f4000a0200800a0200800a020080000000000000884bdac2800000010028509a000a5000000a1009f01a102')
+def test_radiotap():
+    s = (b'\x00\x00\x30\x00\x2f\x40\x00\xa0\x20\x08\x00\xa0\x20\x08\x00\xa0\x20\x08\x00\x00\x00\x00'
+         b'\x00\x00\x08\x84\xbd\xac\x28\x00\x00\x00\x10\x02\x85\x09\xa0\x00\xa5\x00\x00\x00\xa1\x00'
+         b'\x9f\x01\xa1\x02')
     rad = Radiotap(s)
     assert(rad.version == 0)
-    assert(rad.present_flags == bytearray.fromhex('2f4000a0200800a0200800a020080000'))
+    assert(rad.present_flags == b'\x2f\x40\x00\xa0\x20\x08\x00\xa0\x20\x08\x00\xa0\x20\x08\x00\x00')
     assert(rad.tsft_present)
     assert(rad.flags_present)
     assert(rad.rate_present)
@@ -396,5 +399,5 @@ def test_Radiotap():
 
 
 if __name__ == '__main__':
-    test_Radiotap()
+    test_radiotap()
     print('Tests Successful...')
