@@ -353,6 +353,7 @@ class Reader(object):
             buf = self.__f.read(hdr.caplen)
             yield (hdr.tv_sec + (hdr.tv_usec / self._divisor), buf)
 
+
 ################################################################################
 #                                    TESTS                                     #
 ################################################################################
@@ -493,27 +494,29 @@ class WriterTestWrap:
                 for (ts_out, pkt_out), (ts_in, pkt_in) in zip(pkts, Reader(fobj).readpkts()):
                     assert ts_out == ts_in
                     assert pkt_out == pkt_in
-                writer.close()
+
+                # 'noqa' for flake8 to ignore these since writer was injected into globals
+                writer.close()  # noqa
                 Writer._Writer__le = _sysle
         return wrapper
 
 @WriterTestWrap()
 def test_writer_precision_normal():
     ts, pkt = 1454725786.526401, b'foo'
-    writer.writepkt(pkt, ts=ts)
+    writer.writepkt(pkt, ts=ts)  # noqa
     return [(ts, pkt)]
 
 @WriterTestWrap(writer={'nano': True})
 def test_writer_precision_nano():
     ts, pkt = Decimal('1454725786.010203045'), b'foo'
-    writer.writepkt(pkt, ts=ts)
+    writer.writepkt(pkt, ts=ts)  # noqa
     return [(ts, pkt)]
 
 @WriterTestWrap(writer={'nano': False})
 def test_writer_precision_nano_fail():
     """ if writer is not set to nano, supplying this timestamp should be truncated """
     ts, pkt = (Decimal('1454725786.010203045'), b'foo')
-    writer.writepkt(pkt, ts=ts)
+    writer.writepkt(pkt, ts=ts)  # noqa
     return [(1454725786.010203, pkt)]
 
 @WriterTestWrap()
@@ -521,26 +524,26 @@ def test_writepkt_no_time():
     ts, pkt = 1454725786.526401, b'foooo'
     _tmp = time.time
     time.time = lambda: ts
-    writer.writepkt(pkt)
+    writer.writepkt(pkt)  # noqa
     time.time = _tmp
     return [(ts, pkt)]
 
 @WriterTestWrap(writer={'snaplen': 10})
 def test_writepkt_snaplen():
     ts, pkt = 1454725786.526401, b'foooo'
-    writer.writepkt(pkt, ts)
+    writer.writepkt(pkt, ts)  # noqa
     return [(ts, pkt)]
 
 @WriterTestWrap()
 def test_writepkt_with_time():
     ts, pkt = 1454725786.526401, b'foooo'
-    writer.writepkt(pkt, ts)
+    writer.writepkt(pkt, ts)  # noqa
     return [(ts, pkt)]
 
 @WriterTestWrap()
 def test_writepkt_time():
     ts, pkt = 1454725786.526401, b'foooo'
-    writer.writepkt_time(pkt, ts)
+    writer.writepkt_time(pkt, ts)  # noqa
     return [(ts, pkt)]
 
 @WriterTestWrap()
@@ -553,5 +556,5 @@ def test_writepkts():
         (1454725789.526401, b"lol"),
     ]
 
-    writer.writepkts(pkts)
+    writer.writepkts(pkts)  # noqa
     return pkts
