@@ -77,14 +77,14 @@ class Radiotap(dpkt.Packet):
 
     __byte_order__ = '<'
 
-    def is_present(self, bit):
+    def _is_present(self, bit):
         index = bit // 8
         mask = 1 << (bit % 8)
         return compat_ord(self.present_flags[index]) & mask
 
     @property
     def tsft_present(self):
-        return self.is_present(_TSFT_SHIFT)
+        return self._is_present(_TSFT_SHIFT)
 
     @tsft_present.setter
     def tsft_present(self, val):
@@ -92,7 +92,7 @@ class Radiotap(dpkt.Packet):
 
     @property
     def flags_present(self):
-        return self.is_present(_FLAGS_SHIFT)
+        return self._is_present(_FLAGS_SHIFT)
 
     @flags_present.setter
     def flags_present(self, val):
@@ -100,7 +100,7 @@ class Radiotap(dpkt.Packet):
 
     @property
     def rate_present(self):
-        return self.is_present(_RATE_SHIFT)
+        return self._is_present(_RATE_SHIFT)
 
     @rate_present.setter
     def rate_present(self, val):
@@ -108,7 +108,7 @@ class Radiotap(dpkt.Packet):
 
     @property
     def channel_present(self):
-        return self.is_present(_CHANNEL_SHIFT)
+        return self._is_present(_CHANNEL_SHIFT)
 
     @channel_present.setter
     def channel_present(self, val):
@@ -116,7 +116,7 @@ class Radiotap(dpkt.Packet):
 
     @property
     def fhss_present(self):
-        return self.is_present(_FHSS_SHIFT)
+        return self._is_present(_FHSS_SHIFT)
 
     @fhss_present.setter
     def fhss_present(self, val):
@@ -124,7 +124,7 @@ class Radiotap(dpkt.Packet):
 
     @property
     def ant_sig_present(self):
-        return self.is_present(_ANT_SIG_SHIFT)
+        return self._is_present(_ANT_SIG_SHIFT)
 
     @ant_sig_present.setter
     def ant_sig_present(self, val):
@@ -132,7 +132,7 @@ class Radiotap(dpkt.Packet):
 
     @property
     def ant_noise_present(self):
-        return self.is_present(_ANT_NOISE_SHIFT)
+        return self._is_present(_ANT_NOISE_SHIFT)
 
     @ant_noise_present.setter
     def ant_noise_present(self, val):
@@ -140,7 +140,7 @@ class Radiotap(dpkt.Packet):
 
     @property
     def lock_qual_present(self):
-        return self.is_present(_LOCK_QUAL_SHIFT)
+        return self._is_present(_LOCK_QUAL_SHIFT)
 
     @lock_qual_present.setter
     def lock_qual_present(self, val):
@@ -148,7 +148,7 @@ class Radiotap(dpkt.Packet):
 
     @property
     def tx_attn_present(self):
-        return self.is_present(_TX_ATTN_SHIFT)
+        return self._is_present(_TX_ATTN_SHIFT)
 
     @tx_attn_present.setter
     def tx_attn_present(self, val):
@@ -156,7 +156,7 @@ class Radiotap(dpkt.Packet):
 
     @property
     def db_tx_attn_present(self):
-        return self.is_present(_DB_TX_ATTN_SHIFT)
+        return self._is_present(_DB_TX_ATTN_SHIFT)
 
     @db_tx_attn_present.setter
     def db_tx_attn_present(self, val):
@@ -164,7 +164,7 @@ class Radiotap(dpkt.Packet):
 
     @property
     def dbm_tx_power_present(self):
-        return self.is_present(_DBM_TX_POWER_SHIFT)
+        return self._is_present(_DBM_TX_POWER_SHIFT)
 
     @dbm_tx_power_present.setter
     def dbm_tx_power_present(self, val):
@@ -172,7 +172,7 @@ class Radiotap(dpkt.Packet):
 
     @property
     def ant_present(self):
-        return self.is_present(_ANTENNA_SHIFT)
+        return self._is_present(_ANTENNA_SHIFT)
 
     @ant_present.setter
     def ant_present(self, val):
@@ -180,7 +180,7 @@ class Radiotap(dpkt.Packet):
 
     @property
     def db_ant_sig_present(self):
-        return self.is_present(_DB_ANT_SIG_SHIFT)
+        return self._is_present(_DB_ANT_SIG_SHIFT)
 
     @db_ant_sig_present.setter
     def db_ant_sig_present(self, val):
@@ -188,7 +188,7 @@ class Radiotap(dpkt.Packet):
 
     @property
     def db_ant_noise_present(self):
-        return self.is_present(_DB_ANT_NOISE_SHIFT)
+        return self._is_present(_DB_ANT_NOISE_SHIFT)
 
     @db_ant_noise_present.setter
     def db_ant_noise_present(self, val):
@@ -196,7 +196,7 @@ class Radiotap(dpkt.Packet):
 
     @property
     def rx_flags_present(self):
-        return self.is_present(_RX_FLAGS_SHIFT)
+        return self._is_present(_RX_FLAGS_SHIFT)
 
     @rx_flags_present.setter
     def rx_flags_present(self, val):
@@ -204,7 +204,7 @@ class Radiotap(dpkt.Packet):
 
     @property
     def chanplus_present(self):
-        return self.is_present(_CHANNELPLUS_SHIFT)
+        return self._is_present(_CHANNELPLUS_SHIFT)
 
     @chanplus_present.setter
     def chanplus_present(self, val):
@@ -220,7 +220,7 @@ class Radiotap(dpkt.Packet):
         self.present_flags = buf[:4]
         buf = buf[4:]
         ext_bit = _EXT_SHIFT
-        while self.is_present(ext_bit):
+        while self._is_present(ext_bit):
             self.present_flags += buf[:4]
             buf = buf[4:]
             ext_bit += 32
