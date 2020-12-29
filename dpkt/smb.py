@@ -34,7 +34,7 @@ SMB_STATUS_SUCCESS = 0x00000000
 
 
 class SMB(dpkt.Packet):
-    """Server Message Block.
+    r"""Server Message Block.
 
     TODO: Longer class information....
 
@@ -82,11 +82,13 @@ class SMB(dpkt.Packet):
 
 
 def test_smb():
-    buf = b'\xffSMB\xa0\x00\x00\x00\x00\x08\x03\xc8\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x08\xfa\x7a\x00\x08\x53\x02'
+    buf = (b'\xffSMB\xa0\x00\x00\x00\x00\x08\x03\xc8\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+           b'\x00\x00\x08\xfa\x7a\x00\x08\x53\x02')
     smb = SMB(buf)
 
     assert smb.flags == SMB_FLAGS_CASE_INSENSITIVE
-    assert smb.flags2 == SMB_FLAGS2_UNICODE | SMB_FLAGS2_NT_STATUS | SMB_FLAGS2_EXTENDED_SECURITY | SMB_FLAGS2_EXTENDED_ATTRIBUTES | SMB_FLAGS2_LONG_NAMES
+    assert smb.flags2 == (SMB_FLAGS2_UNICODE | SMB_FLAGS2_NT_STATUS |
+                          SMB_FLAGS2_EXTENDED_SECURITY | SMB_FLAGS2_EXTENDED_ATTRIBUTES | SMB_FLAGS2_LONG_NAMES)
     assert smb.pid == 31482
     assert smb.uid == 2048
     assert smb.mid == 595
@@ -95,7 +97,8 @@ def test_smb():
     smb = SMB()
     smb.pid = 0x00081020
     smb.uid = 0x800
-    assert str(smb) == str(b'\xffSMB\x00\x00\x00\x00\x00\x00\x00\x00\x08\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x20\x10\x00\x08\x00\x00')
+    assert str(smb) == str(b'\xffSMB\x00\x00\x00\x00\x00\x00\x00\x00\x08\x00\x00\x00\x00\x00\x00'
+                           b'\x00\x00\x00\x00\x00\x00\x00\x20\x10\x00\x08\x00\x00')
 
 
 if __name__ == '__main__':
