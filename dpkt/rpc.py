@@ -159,17 +159,17 @@ class RPC(dpkt.Packet):
 
 
 def unpack_xdrlist(cls, buf):
-    l = []
+    l_ = []
     while buf:
         if buf.startswith(b'\x00\x00\x00\x01'):
             p = cls(buf[4:])
-            l.append(p)
+            l_.append(p)
             buf = p.data
         elif buf.startswith(b'\x00\x00\x00\x00'):
             break
         else:
             raise dpkt.UnpackError('invalid XDR list')
-    return l
+    return l_
 
 
 def pack_xdrlist(*args):

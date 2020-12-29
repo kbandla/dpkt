@@ -105,22 +105,22 @@ class Gzip(dpkt.Packet):
             self.data = self.data[2:]  # XXX - skip
 
     def pack_hdr(self):
-        l = []
+        l_ = []
         if self.extra:
             self.flags |= GZIP_FEXTRA
             s = bytes(self.extra)
-            l.append(struct.pack('<H', len(s)))
-            l.append(s)
+            l_.append(struct.pack('<H', len(s)))
+            l_.append(s)
         if self.filename:
             self.flags |= GZIP_FNAME
-            l.append(self.filename)
-            l.append(b'\x00')
+            l_.append(self.filename)
+            l_.append(b'\x00')
         if self.comment:
             self.flags |= GZIP_FCOMMENT
-            l.append(self.comment)
-            l.append(b'\x00')
-        l.insert(0, super(Gzip, self).pack_hdr())
-        return b''.join(l)
+            l_.append(self.comment)
+            l_.append(b'\x00')
+        l_.insert(0, super(Gzip, self).pack_hdr())
+        return b''.join(l_)
 
     def compress(self):
         """Compress self.data."""

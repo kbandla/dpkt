@@ -131,12 +131,12 @@ class H225(dpkt.Packet):
         buf = buf[1:]
 
         # Information Elements
-        l = []
+        l_ = []
         while buf:
             ie = self.IE(buf)
-            l.append(ie)
+            l_.append(ie)
             buf = buf[len(ie):]
-        self.data = l
+        self.data = l_
 
     def __len__(self):
         return self.tpkt.__hdr_len__ + self.__hdr_len__ + sum(map(len, self.data))

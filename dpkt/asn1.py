@@ -85,25 +85,25 @@ def decode(buf):
         t = compat_ord(buf[0])
         constructed = t & CONSTRUCTED
         tag = t & TAGMASK
-        l = compat_ord(buf[1])
+        l_ = compat_ord(buf[1])
         c = 0
-        if constructed and l == 128:
+        if constructed and l_ == 128:
             # XXX - constructed, indefinite length
             msg.append((t, decode(buf[2:])))
-        elif l >= 128:
-            c = l & 127
+        elif l_ >= 128:
+            c = l_ & 127
             if c == 1:
-                l = compat_ord(buf[2])
+                l_ = compat_ord(buf[2])
             elif c == 2:
-                l = struct.unpack('>H', buf[2:4])[0]
+                l_ = struct.unpack('>H', buf[2:4])[0]
             elif c == 3:
-                l = struct.unpack('>I', buf[1:5])[0] & 0xfff
+                l_ = struct.unpack('>I', buf[1:5])[0] & 0xfff
                 c = 2
             elif c == 4:
-                l = struct.unpack('>I', buf[2:6])[0]
+                l_ = struct.unpack('>I', buf[2:6])[0]
             else:
                 # XXX - can be up to 127 bytes, but...
-                raise dpkt.UnpackError('excessive long-form ASN.1 length %d' % l)
+                raise dpkt.UnpackError('excessive long-form ASN.1 length %d' % l_)
 
         # Skip type, length
         buf = buf[2 + c:]
@@ -112,26 +112,26 @@ def decode(buf):
         if constructed:
             msg.append((t, decode(buf)))
         elif tag == INTEGER:
-            if l == 0:
+            if l_ == 0:
                 n = 0
-            elif l == 1:
+            elif l_ == 1:
                 n = compat_ord(buf[0])
-            elif l == 2:
+            elif l_ == 2:
                 n = struct.unpack('>H', buf[:2])[0]
-            elif l == 3:
+            elif l_ == 3:
                 n = struct.unpack('>I', buf[:4])[0] >> 8
-            elif l == 4:
+            elif l_ == 4:
                 n = struct.unpack('>I', buf[:4])[0]
             else:
-                raise dpkt.UnpackError('excessive integer length > %d bytes' % l)
+                raise dpkt.UnpackError('excessive integer length > %d bytes' % l_)
             msg.append((t, n))
         elif tag == UTC_TIME:
-            msg.append((t, utctime(buf[:l])))
+            msg.append((t, utctime(buf[:l_])))
         else:
-            msg.append((t, buf[:l]))
+            msg.append((t, buf[:l_]))
 
         # Skip content
-        buf = buf[l:]
+        buf = buf[l_:]
     return msg
 
 

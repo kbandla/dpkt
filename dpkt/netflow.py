@@ -39,12 +39,12 @@ class NetflowBase(dpkt.Packet):
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
         buf = self.data
-        l = []
+        l_ = []
         while buf:
             flow = self.NetflowRecord(buf)
-            l.append(flow)
+            l_.append(flow)
             buf = buf[len(flow):]
-        self.data = l
+        self.data = l_
 
     class NetflowRecordBase(dpkt.Packet):
         """Base class for netflow v1-v7 netflow records.

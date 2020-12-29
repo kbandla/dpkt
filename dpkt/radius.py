@@ -39,10 +39,10 @@ def parse_attrs(buf):
     attrs = []
     while buf:
         t = compat_ord(buf[0])
-        l = compat_ord(buf[1])
-        if l < 2:
+        l_ = compat_ord(buf[1])
+        if l_ < 2:
             break
-        d, buf = buf[2:l], buf[l:]
+        d, buf = buf[2:l_], buf[l_:]
         attrs.append((t, d))
     return attrs
 

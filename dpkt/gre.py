@@ -89,14 +89,14 @@ class GRE(dpkt.Packet):
             self.data = self.data[fmtlen:]
             self.__dict__.update(dict(compat_izip(fields, vals)))
         if self.flags & GRE_RP:
-            l = []
+            l_ = []
             while True:
                 sre = self.SRE(self.data)
                 self.data = self.data[len(sre):]
-                l.append(sre)
+                l_.append(sre)
                 if not sre.len:
                     break
-            self.sre = l
+            self.sre = l_
         try:
             self.data = ethernet.Ethernet._typesw[self.p](self.data)
             setattr(self, self.data.__class__.__name__.lower(), self.data)

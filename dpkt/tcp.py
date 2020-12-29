@@ -105,8 +105,8 @@ def parse_opts(buf):
         if o > TCP_OPT_NOP:
             try:
                 # advance buffer at least 2 bytes = 1 type + 1 length
-                l = max(2, compat_ord(buf[1]))
-                d, buf = buf[2:l], buf[l:]
+                l_ = max(2, compat_ord(buf[1]))
+                d, buf = buf[2:l_], buf[l_:]
             except (IndexError, ValueError):
                 # print 'bad option', repr(str(buf))
                 opts.append(None)  # XXX

@@ -90,16 +90,16 @@ class CDP(dpkt.Packet):
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
         buf = self.data
-        l = []
+        l_ = []
         while buf:
             # find the right TLV according to Type value
             tlv_find_type = self.TLV(buf).type
             # if this TLV is not in tlv_types, use the default TLV class
             tlv = self.tlv_types.get(tlv_find_type, self.TLV)(buf)
-            l.append(bytes(tlv))
+            l_.append(bytes(tlv))
             buf = buf[len(tlv):]
-        self.tlvs = l
-        self.data = b''.join(l)
+        self.tlvs = l_
+        self.data = b''.join(l_)
 
     def __len__(self):
         return self.__hdr_len__ + len(self.data)

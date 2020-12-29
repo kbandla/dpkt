@@ -58,14 +58,14 @@ class SNAC(dpkt.Packet):
 def tlv(buf):
     n = 4
     try:
-        t, l = struct.unpack('>HH', buf[:n])
+        t, l_ = struct.unpack('>HH', buf[:n])
     except struct.error:
         raise dpkt.UnpackError('invalid type, length fields')
-    v = buf[n:n + l]
-    if len(v) < l:
-        raise dpkt.NeedData('%d left, %d needed' % (len(v), l))
-    buf = buf[n + l:]
-    return t, l, v, buf
+    v = buf[n:n + l_]
+    if len(v) < l_:
+        raise dpkt.NeedData('%d left, %d needed' % (len(v), l_))
+    buf = buf[n + l_:]
+    return t, l_, v, buf
 
 # TOC 1.0: http://jamwt.com/Py-TOC/PROTOCOL
 
@@ -116,12 +116,12 @@ def testAIM():
 
     tlvCount = 0
     while tlvdata:
-        t, l, v, tlvdata = tlv(tlvdata)
+        t, l_, v, tlvdata = tlv(tlvdata)
         tlvCount += 1
         if tlvCount == 1:
             # just check function return for first TLV
             assert t == 0x01
-            assert l == 2
+            assert l_ == 2
             assert v == b'\x12\x90'
             assert tlvdata == (
                 b'\x00\x44\x00\x01\x00\x00\x03\x00\x04\x58\x90\x54\x36\x00\x45\x00\x04\x00\x00\x0f'
@@ -147,11 +147,11 @@ def testExceptions():
     except dpkt.NeedData as e:
         assert str(e) == '0 left, 255 needed'
     try:
-        t, l, v, _ = tlv(b'x')
+        t, l_, v, _ = tlv(b'x')
     except dpkt.UnpackError as e:
         assert str(e) == 'invalid type, length fields'
 
     try:
-        t, l, v, _ = tlv(b'\x00\x01\x00\xff')
+        t, l_, v, _ = tlv(b'\x00\x01\x00\xff')
     except dpkt.NeedData as e:
         assert str(e) == '0 left, 255 needed'

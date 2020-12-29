@@ -84,12 +84,12 @@ class Diameter(dpkt.Packet):
                    (compat_ord(self.len[2]))
         self.data = self.data[:self.len - self.__hdr_len__]
 
-        l = []
+        l_ = []
         while self.data:
             avp = AVP(self.data)
-            l.append(avp)
+            l_.append(avp)
             self.data = self.data[len(avp):]
-        self.data = self.avps = l
+        self.data = self.avps = l_
 
     def pack_hdr(self):
         self.len = struct.pack("BBB", (self.len >> 16) & 0xff, (self.len >> 8) & 0xff, self.len & 0xff)

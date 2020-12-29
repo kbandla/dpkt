@@ -265,12 +265,12 @@ class DNS(dpkt.Packet):
             elif self.type == DNS_PTR:
                 return pack_name(self.ptrname, off, label_ptrs)
             elif self.type == DNS_SOA:
-                l = []
-                l.append(pack_name(self.mname, off, label_ptrs))
-                l.append(pack_name(self.rname, off + len(l[0]), label_ptrs))
-                l.append(struct.pack('>IIIII', self.serial, self.refresh,
-                                     self.retry, self.expire, self.minimum))
-                return b''.join(l)
+                l_ = []
+                l_.append(pack_name(self.mname, off, label_ptrs))
+                l_.append(pack_name(self.rname, off + len(l_[0]), label_ptrs))
+                l_.append(struct.pack('>IIIII', self.serial, self.refresh,
+                                      self.retry, self.expire, self.minimum))
+                return b''.join(l_)
             elif self.type == DNS_MX:
                 return struct.pack('>H', self.preference) + \
                     pack_name(self.mxname, off + 2, label_ptrs)

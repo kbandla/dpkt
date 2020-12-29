@@ -146,17 +146,17 @@ class DHCP(dpkt.Packet):
         """Return packed options string."""
         if not self.opts:
             return b''
-        l = []
+        l_ = []
         for t, data in self.opts:
-            l.append(struct.pack("BB%is" % len(data), t, len(data), data))
-        l.append(b'\xff')
-        return b''.join(l)
+            l_.append(struct.pack("BB%is" % len(data), t, len(data), data))
+        l_.append(b'\xff')
+        return b''.join(l_)
 
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
         self.chaddr = self.chaddr[:self.hln]
         buf = self.data
-        l = []
+        l_ = []
         while buf:
             t = compat_ord(buf[0])
             if t == 0xff:
@@ -166,9 +166,9 @@ class DHCP(dpkt.Packet):
                 buf = buf[1:]
             else:
                 n = compat_ord(buf[1])
-                l.append((t, buf[2:2 + n]))
+                l_.append((t, buf[2:2 + n]))
                 buf = buf[2 + n:]
-        self.opts = l
+        self.opts = l_
         self.data = buf
 
 

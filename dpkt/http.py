@@ -22,12 +22,12 @@ def parse_headers(f):
         line = f.readline().strip().decode("ascii", "ignore")
         if not line:
             break
-        l = line.split(':', 1)
-        if len(l[0].split()) != 1:
+        l_ = line.split(':', 1)
+        if len(l_[0].split()) != 1:
             raise dpkt.UnpackError('invalid header: %r' % line)
 
-        k = l[0].lower()
-        v = len(l) != 1 and l[1].lstrip() or ''
+        k = l_[0].lower()
+        v = len(l_) != 1 and l_[1].lstrip() or ''
         if k in d:
             if not type(d[k]) is list:
                 d[k] = [d[k]]
@@ -40,7 +40,7 @@ def parse_headers(f):
 def parse_body(f, headers):
     """Return HTTP body parsed from a file object, given HTTP header dict."""
     if headers.get('transfer-encoding', '').lower() == 'chunked':
-        l = []
+        l_ = []
         found_end = False
         while 1:
             try:
@@ -56,12 +56,12 @@ def parse_body(f, headers):
                 break
 
             if n and len(buf) == n:
-                l.append(buf)
+                l_.append(buf)
             else:
                 break
         if not found_end:
             raise dpkt.NeedData('premature end of chunked body')
-        body = b''.join(l)
+        body = b''.join(l_)
     elif 'content-length' in headers:
         n = int(headers['content-length'])
         body = f.read(n)
@@ -161,20 +161,20 @@ class Request(Message):
     def unpack(self, buf):
         f = BytesIO(buf)
         line = f.readline().decode("ascii", "ignore")
-        l = line.strip().split()
-        if len(l) < 2:
+        l_ = line.strip().split()
+        if len(l_) < 2:
             raise dpkt.UnpackError('invalid request: %r' % line)
-        if l[0] not in self.__methods:
-            raise dpkt.UnpackError('invalid http method: %r' % l[0])
-        if len(l) == 2:
+        if l_[0] not in self.__methods:
+            raise dpkt.UnpackError('invalid http method: %r' % l_[0])
+        if len(l_) == 2:
             # HTTP/0.9 does not specify a version in the request line
             self.version = '0.9'
         else:
-            if not l[2].startswith(self.__proto):
-                raise dpkt.UnpackError('invalid http version: %r' % l[2])
-            self.version = l[2][len(self.__proto) + 1:]
-        self.method = l[0]
-        self.uri = l[1]
+            if not l_[2].startswith(self.__proto):
+                raise dpkt.UnpackError('invalid http version: %r' % l_[2])
+            self.version = l_[2][len(self.__proto) + 1:]
+        self.method = l_[0]
+        self.uri = l_[1]
         Message.unpack(self, f.read())
 
     def __str__(self):
@@ -207,12 +207,12 @@ class Response(Message):
     def unpack(self, buf):
         f = BytesIO(buf)
         line = f.readline()
-        l = line.strip().decode("ascii", "ignore").split(None, 2)
-        if len(l) < 2 or not l[0].startswith(self.__proto) or not l[1].isdigit():
+        l_ = line.strip().decode("ascii", "ignore").split(None, 2)
+        if len(l_) < 2 or not l_[0].startswith(self.__proto) or not l_[1].isdigit():
             raise dpkt.UnpackError('invalid response: %r' % line)
-        self.version = l[0][len(self.__proto) + 1:]
-        self.status = l[1]
-        self.reason = l[2] if len(l) > 2 else ''
+        self.version = l_[0][len(self.__proto) + 1:]
+        self.status = l_[1]
+        self.reason = l_[2] if len(l_) > 2 else ''
         # RFC Sec 4.3.
         # http://www.w3.org/Protocols/rfc2616/rfc2616-sec4.html#sec4.3.
         # For response messages, whether or not a message-body is included with

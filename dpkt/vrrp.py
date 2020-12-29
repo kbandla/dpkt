@@ -47,11 +47,11 @@ class VRRP(dpkt.Packet):
 
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
-        l = []
+        l_ = []
         off = 0
         for off in range(0, 4 * self.count, 4):
-            l.append(self.data[off:off + 4])
-        self.addrs = l
+            l_.append(self.data[off:off + 4])
+        self.addrs = l_
         self.auth = self.data[off + 4:]
         self.data = ''
 

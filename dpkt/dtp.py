@@ -29,8 +29,8 @@ class DTP(dpkt.Packet):
         buf = self.data
         tvs = []
         while buf:
-            t, l = struct.unpack('>HH', buf[:4])
-            v, buf = buf[4:4 + l], buf[4 + l:]
+            t, l_ = struct.unpack('>HH', buf[:4])
+            v, buf = buf[4:4 + l_], buf[4 + l_:]
             tvs.append((t, v))
         self.data = tvs
 
