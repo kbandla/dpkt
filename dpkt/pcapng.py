@@ -1170,7 +1170,7 @@ def test_multi_idb_writer():
     fobj.flush()
     fobj.seek(0)
 
-    reader = Reader(fobj)
+    Reader(fobj)
     fobj.close()
 
 
@@ -1194,10 +1194,12 @@ def test_writepkt_epb_ts():
     writer = Writer(fobj, shb=shb, idb=idb)  # noqa
     epb.ts_high = epb.ts_low = 0
     ts = 1454725786.526401
-    _time = time
-    time = lambda: ts
+    _tmp = time
+
+    def time():
+        return ts
     writer.writepkt(epb)
-    time = _time
+    time = _tmp
 
     ts_high, ts_low = 338704, 3183502017
     assert epb.ts_high == ts_high
@@ -1243,7 +1245,9 @@ def test_writepkt_no_time():
     global time
     ts, pkt = 1454725786.526401, b'foooo'
     _tmp = time
-    time = lambda: ts
+
+    def time():
+        return ts
     writer.writepkt(pkt)  # noqa
     time = _tmp
     return [(ts, pkt)]
@@ -1340,6 +1344,6 @@ def test_posttest():
         pass
 
     try:
-        a = fun()
+        fun()
     except Exception as e:
         assert str(e) == 'No test type specified'

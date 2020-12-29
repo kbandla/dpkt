@@ -1113,7 +1113,8 @@ def test_bgp_mp_nlri_20_1_mp_reach_nlri_next_hop():
 
 def test_bgp_add_path_6_1_as_path():
     # test for https://github.com/kbandla/dpkt/issues/481
-    # Error processing BGP data: packet 6 : message 1 of bgp-add-path.cap https://packetlife.net/media/captures/bgp-add-path.cap
+    # Error processing BGP data: packet 6 : message 1 of bgp-add-path.cap
+    # https://packetlife.net/media/captures/bgp-add-path.cap
     __bgp = (
         b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x59\x02\x00\x00\x00\x30\x40\x01'
         b'\x01\x00\x40\x02\x06\x02\x01\x00\x00\xfb\xff\x40\x03\x04\x0a\x00\x0e\x01\x80\x04\x04\x00\x00\x00\x00'
