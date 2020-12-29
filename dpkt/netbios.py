@@ -27,7 +27,7 @@ def decode_name(nbname):
     l_ = []
     for i in range(0, 32, 2):
         l_.append(chr(((ord(nbname[i]) - 0x41) << 4) |
-                     ((ord(nbname[i + 1]) - 0x41) & 0xf)))
+                      ((ord(nbname[i + 1]) - 0x41) & 0xf)))
     return ''.join(l_).split('\x00', 1)[0]
 
 

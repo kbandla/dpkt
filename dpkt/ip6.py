@@ -454,7 +454,7 @@ def test_ip6_gen_tcp_ack():
     _p, exthdrs = ipp.headers_str()
     ipp.plen = len(exthdrs) + len(ipp.data)
 
-    _b = bytes(ipp)
+    assert bytes(ipp)
 
     assert ipp.p == ip.IP_PROTO_TCP
     assert ipp.nxt == ip.IP_PROTO_HOPOPTS

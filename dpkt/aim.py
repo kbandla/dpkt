@@ -138,14 +138,16 @@ def testAIM():
 def testExceptions():
     testdata = b'xxxxxx'
     try:
-        flap = FLAP(testdata)
+        FLAP(testdata)
     except dpkt.UnpackError as e:
         assert str(e) == 'invalid FLAP header'
+
     testdata = b'*\x02\x12\x34\x00\xff'
     try:
-        flap = FLAP(testdata)
+        FLAP(testdata)
     except dpkt.NeedData as e:
         assert str(e) == '0 left, 255 needed'
+
     try:
         t, l_, v, _ = tlv(b'x')
     except dpkt.UnpackError as e:

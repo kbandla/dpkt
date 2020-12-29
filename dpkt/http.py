@@ -268,7 +268,7 @@ def test_posttest():
         pass
 
     try:
-        a = fun()
+        fun()
     except Exception as e:
         assert str(e) == 'No test type specified'
 
