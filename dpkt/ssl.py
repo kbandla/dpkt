@@ -17,6 +17,7 @@ from .compat import compat_ord
 # Jul 2012: afleenor@google.com modified and extended SSL support further.
 #
 
+
 # SSL 2.0 is deprecated in RFC 6176
 class SSL2(dpkt.Packet):
     __hdr__ = (
@@ -51,12 +52,11 @@ class TLS(dpkt.Packet):
         self.records = []
         dpkt.Packet.__init__(self, *args, **kwargs)
 
-
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
         pointer = 0
         while len(self.data[pointer:]) > 0:
-            end = pointer + 5 + struct.unpack("!H", buf[pointer+3:pointer+5])[0]
+            end = pointer + 5 + struct.unpack("!H", buf[pointer + 3:pointer + 5])[0]
             self.records.append(TLSRecord(buf[pointer:end]))
             pointer = end
             self.data = self.data[pointer:]
@@ -193,7 +193,7 @@ def parse_extensions(buf):
 
     pointer = 2
     while pointer < extensions_length:
-        ext_type = struct.unpack('!H', buf[pointer:pointer+2])[0]
+        ext_type = struct.unpack('!H', buf[pointer:pointer + 2])[0]
         pointer += 2
         ext_data, parsed = parse_variable_array(buf[pointer:], 2)
         extensions.append((ext_type, ext_data))
@@ -206,7 +206,6 @@ class SSL3Exception(Exception):
 
 
 class TLSRecord(dpkt.Packet):
-
     """
     SSLv3 or TLSv1+ packet.
 
@@ -246,20 +245,16 @@ class TLSRecord(dpkt.Packet):
 
 
 class TLSChangeCipherSpec(dpkt.Packet):
-
     """
     ChangeCipherSpec message is just a single byte with value 1
     """
-
     __hdr__ = (('type', 'B', 1),)
 
 
 class TLSAppData(str):
-
     """
     As far as TLSRecord is concerned, AppData is just an opaque blob.
     """
-
     pass
 
 
@@ -329,21 +324,22 @@ class TLSCertificate(dpkt.Packet):
     __hdr__ = tuple()
 
     def unpack(self, buf):
-       try:
-           dpkt.Packet.unpack(self, buf)
-           all_certs, all_certs_len = parse_variable_array(self.data, 3)
-           self.certificates = []
-           pointer = 3
-           while pointer < all_certs_len:
-               cert, parsed = parse_variable_array(self.data[pointer:], 3)
-               self.certificates.append((cert))
-               pointer += parsed
-       except struct.error:
+        try:
+            dpkt.Packet.unpack(self, buf)
+            all_certs, all_certs_len = parse_variable_array(self.data, 3)
+            self.certificates = []
+            pointer = 3
+            while pointer < all_certs_len:
+                cert, parsed = parse_variable_array(self.data[pointer:], 3)
+                self.certificates.append((cert))
+                pointer += parsed
+        except struct.error:
             raise dpkt.NeedData
 
 
 class TLSUnknownHandshake(dpkt.Packet):
     __hdr__ = tuple()
+
 
 TLSNewSessionTicket = TLSUnknownHandshake
 TLSServerKeyExchange = TLSUnknownHandshake
@@ -372,7 +368,6 @@ HANDSHAKE_TYPES = {
 
 
 class TLSHandshake(dpkt.Packet):
-
     """
     A TLS Handshake message
 
@@ -458,11 +453,11 @@ def tls_multi_factory(buf):
         i += len(msg)
     return msgs, i
 
+
 _hexdecode = binascii.a2b_hex
 
 
 class TestTLS(object):
-
     """
     Test basic TLS functionality.
     Test that each TLSRecord is correctly discovered and added to TLS.records
@@ -483,7 +478,6 @@ class TestTLS(object):
 
 
 class TestTLSRecord(object):
-
     """
     Test basic TLSRecord functionality
     For this test, the contents of the record doesn't matter, since we're not parsing the next layer.
@@ -507,8 +501,8 @@ class TestTLSRecord(object):
         assert (self.p.data == b'abcdefgh')
 
     def test_initial_flags(self):
-        assert (self.p.compressed == True)
-        assert (self.p.encrypted == True)
+        assert (self.p.compressed is True)
+        assert (self.p.encrypted is True)
 
     def test_repack(self):
         p2 = TLSRecord(type=23, version=0x0301, data=b'abcdefgh')
@@ -528,7 +522,6 @@ class TestTLSRecord(object):
 
 
 class TestTLSChangeCipherSpec(object):
-
     """It's just a byte. This will be quick, I promise"""
 
     @classmethod
@@ -543,7 +536,6 @@ class TestTLSChangeCipherSpec(object):
 
 
 class TestTLSAppData(object):
-
     """AppData is basically just a string"""
 
     def test_value(self):
@@ -557,7 +549,7 @@ class TestTLSHandshake(object):
         cls.h = TLSHandshake(b'\x00\x00\x00\x01\xff')
 
     def test_created_inside_message(self):
-        assert (isinstance(self.h.data, TLSHelloRequest) == True)
+        assert (isinstance(self.h.data, TLSHelloRequest) is True)
 
     def test_length(self):
         assert (self.h.length == 0x01)
@@ -568,7 +560,6 @@ class TestTLSHandshake(object):
 
 
 class TestClientHello(object):
-
     """This data is extracted from and verified by Wireshark"""
 
     @classmethod
@@ -589,7 +580,7 @@ class TestClientHello(object):
     def test_client_hello_constructed(self):
         """Make sure the correct class was constructed"""
         # print self.p
-        assert (isinstance(self.p.data, TLSClientHello) == True)
+        assert (isinstance(self.p.data, TLSClientHello) is True)
 
     #   def testClientDateCorrect(self):
     #       self.assertEqual(self.p.random_unixtime, 1342710284)
@@ -613,7 +604,6 @@ class TestClientHello(object):
 
 
 class TestServerHello(object):
-
     """Again, from Wireshark"""
 
     @classmethod
@@ -623,7 +613,7 @@ class TestServerHello(object):
         cls.p = TLSHandshake(cls.data)
 
     def test_constructed(self):
-        assert (isinstance(self.p.data, TLSServerHello) == True)
+        assert (isinstance(self.p.data, TLSServerHello) is True)
 
     #    def testDateCorrect(self):
     #        self.assertEqual(self.p.random_unixtime, 1342710284)
@@ -639,7 +629,6 @@ class TestServerHello(object):
 
 
 class TestTLSCertificate(object):
-
     """We use a 2016 certificate record from iana.org as test data."""
 
     @classmethod
@@ -651,17 +640,16 @@ class TestTLSCertificate(object):
 
 
 class TestTLSMultiFactory(object):
-
     """Made up test data"""
 
     @classmethod
     def setup_class(cls):
         cls.data = _hexdecode(b'1703010010'  # header 1
-                               b'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'  # data 1
-                               b'1703010010'  # header 2
-                               b'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB'  # data 2
-                               b'1703010010'  # header 3
-                               b'CCCCCCCC')  # data 3 (incomplete)
+                              b'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'  # data 1
+                              b'1703010010'  # header 2
+                              b'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB'  # data 2
+                              b'1703010010'  # header 3
+                              b'CCCCCCCC')  # data 3 (incomplete)
         cls.msgs, cls.bytes_parsed = tls_multi_factory(cls.data)
 
     def test_num_messages(self):
@@ -694,4 +682,3 @@ class TestTLSMultiFactory(object):
         msgs, n = tls_multi_factory(_hexdecode(b'1703010000'))
         assert (len(msgs) == 1)
         assert (n == 5)
-

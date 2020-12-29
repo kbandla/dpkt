@@ -137,7 +137,7 @@ class DHCP(dpkt.Packet):
 
     def __len__(self):
         return self.__hdr_len__ + \
-               sum([2 + len(o[1]) for o in self.opts]) + 1 + len(self.data)
+            sum([2 + len(o[1]) for o in self.opts]) + 1 + len(self.data)
 
     def __bytes__(self):
         return self.pack_hdr() + self.pack_opts() + bytes(self.data)
@@ -148,7 +148,7 @@ class DHCP(dpkt.Packet):
             return b''
         l = []
         for t, data in self.opts:
-            l.append(struct.pack("BB%is"%len(data), t, len(data), data))
+            l.append(struct.pack("BB%is" % len(data), t, len(data), data))
         l.append(b'\xff')
         return b''.join(l)
 

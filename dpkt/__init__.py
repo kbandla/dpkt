@@ -9,8 +9,6 @@ __license__ = 'BSD-3-Clause'
 __url__ = 'https://github.com/kbandla/dpkt'
 __version__ = '1.9.4'
 
-
-
 from .dpkt import *
 
 from . import ah

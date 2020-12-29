@@ -130,7 +130,7 @@ class BGP(dpkt.Packet):
     """Border Gateway Protocol.
 
     BGP is an inter-AS routing protocol.
-    See more about the BGP on \
+    See more about the BGP on
     https://en.wikipedia.org/wiki/Border_Gateway_Protocol
 
     Attributes:
@@ -264,15 +264,15 @@ class BGP(dpkt.Packet):
 
         def __len__(self):
             return 2 + sum(map(len, self.withdrawn)) + \
-                   2 + sum(map(len, self.attributes)) + \
-                   sum(map(len, self.announced))
+                2 + sum(map(len, self.attributes)) + \
+                sum(map(len, self.announced))
 
         def __bytes__(self):
             return struct.pack('>H', sum(map(len, self.withdrawn))) + \
-                   b''.join(map(bytes, self.withdrawn)) + \
-                   struct.pack('>H', sum(map(len, self.attributes))) + \
-                   b''.join(map(bytes, self.attributes)) + \
-                   b''.join(map(bytes, self.announced))
+                b''.join(map(bytes, self.withdrawn)) + \
+                struct.pack('>H', sum(map(len, self.attributes))) + \
+                b''.join(map(bytes, self.attributes)) + \
+                b''.join(map(bytes, self.announced))
 
         class Attribute(dpkt.Packet):
             __hdr__ = (
@@ -589,17 +589,17 @@ class BGP(dpkt.Packet):
 
                 def __len__(self):
                     return self.__hdr_len__ + \
-                           1 + sum(map(len, self.next_hops)) + \
-                           1 + sum(map(len, self.snpas)) + \
-                           sum(map(len, self.announced))
+                        1 + sum(map(len, self.next_hops)) + \
+                        1 + sum(map(len, self.snpas)) + \
+                        sum(map(len, self.announced))
 
                 def __bytes__(self):
                     return self.pack_hdr() + \
-                           struct.pack('B', sum(map(len, self.next_hops))) + \
-                           b''.join(map(bytes, self.next_hops)) + \
-                           struct.pack('B', len(self.snpas)) + \
-                           b''.join(map(bytes, self.snpas)) + \
-                           b''.join(map(bytes, self.announced))
+                        struct.pack('B', sum(map(len, self.next_hops))) + \
+                        b''.join(map(bytes, self.next_hops)) + \
+                        struct.pack('B', len(self.snpas)) + \
+                        b''.join(map(bytes, self.snpas)) + \
+                        b''.join(map(bytes, self.announced))
 
                 class SNPA(object):
                     __hdr__ = (
@@ -700,6 +700,7 @@ class RouteIPV4(dpkt.Packet):
 
     def __bytes__(self):
         return self.pack_hdr() + self.prefix[:(self.len + 7) // 8]
+
 
 class ExtendedRouteIPV4(RouteIPV4):
     __hdr__ = (
@@ -851,19 +852,19 @@ def test_unpack():
     assert (len(b3.update.announced) == 0)
     assert (len(b3.update.attributes) == 6)
     a = b3.update.attributes[0]
-    assert (a.optional == False)
-    assert (a.transitive == True)
-    assert (a.partial == False)
-    assert (a.extended_length == False)
+    assert (a.optional is False)
+    assert (a.transitive is True)
+    assert (a.partial is False)
+    assert (a.extended_length is False)
     assert (a.type == ORIGIN)
     assert (a.len == 1)
     o = a.origin
     assert (o.type == ORIGIN_IGP)
     a = b3.update.attributes[5]
-    assert (a.optional == True)
-    assert (a.transitive == False)
-    assert (a.partial == False)
-    assert (a.extended_length == True)
+    assert (a.optional is True)
+    assert (a.transitive is False)
+    assert (a.partial is False)
+    assert (a.extended_length is True)
     assert (a.type == MP_REACH_NLRI)
     assert (a.len == 30)
     m = a.mp_reach_nlri
@@ -1002,20 +1003,20 @@ def test_bgp_mp_nlri_20_1_mp_reach_nlri_next_hop():
 
     attribute = bgp.update.attributes[0]
     assert (attribute.type == ORIGIN)
-    assert (attribute.optional == False)
-    assert (attribute.transitive == True)
-    assert (attribute.partial == False)
-    assert (attribute.extended_length == False)
+    assert (attribute.optional is False)
+    assert (attribute.transitive is True)
+    assert (attribute.partial is False)
+    assert (attribute.extended_length is False)
     assert (attribute.len == 1)
     o = attribute.origin
     assert (o.type == ORIGIN_IGP)
 
     attribute = bgp.update.attributes[1]
     assert (attribute.type == AS_PATH)
-    assert (attribute.optional == False)
-    assert (attribute.transitive == True)
-    assert (attribute.partial == False)
-    assert (attribute.extended_length == False)
+    assert (attribute.optional is False)
+    assert (attribute.transitive is True)
+    assert (attribute.partial is False)
+    assert (attribute.extended_length is False)
     assert (attribute.flags == 64)
     assert (attribute.len == 4)
     assert (len(attribute.as_path.segments) == 1)
@@ -1027,20 +1028,20 @@ def test_bgp_mp_nlri_20_1_mp_reach_nlri_next_hop():
 
     attribute = bgp.update.attributes[2]
     assert (attribute.type == MULTI_EXIT_DISC)
-    assert (attribute.optional == True)
-    assert (attribute.transitive == False)
-    assert (attribute.partial == False)
-    assert (attribute.extended_length == False)
+    assert (attribute.optional is True)
+    assert (attribute.transitive is False)
+    assert (attribute.partial is False)
+    assert (attribute.extended_length is False)
     assert (attribute.flags == 0x80)
     assert (attribute.len == 4)
     assert (attribute.multi_exit_disc.value == 0)
 
     attribute = bgp.update.attributes[3]
     assert (attribute.type == MP_REACH_NLRI)
-    assert (attribute.optional == True)
-    assert (attribute.transitive == False)
-    assert (attribute.partial == False)
-    assert (attribute.extended_length == False)
+    assert (attribute.optional is True)
+    assert (attribute.transitive is False)
+    assert (attribute.partial is False)
+    assert (attribute.extended_length is False)
     assert (attribute.flags == 0x80)
     assert (attribute.len == 64)
     mp_reach_nlri = attribute.mp_reach_nlri
@@ -1061,6 +1062,7 @@ def test_bgp_mp_nlri_20_1_mp_reach_nlri_next_hop():
     assert (socket.inet_ntop(socket.AF_INET6, mp_reach_nlri.next_hops[0]) == '2001:db8::1')
     assert (socket.inet_ntop(socket.AF_INET6, mp_reach_nlri.next_hops[1]) == 'fe80::c001:bff:fe7e:0')
     assert (mp_reach_nlri.next_hop == b''.join(mp_reach_nlri.next_hops))
+
 
 def test_bgp_add_path_6_1_as_path():
     # test for https://github.com/kbandla/dpkt/issues/481
@@ -1084,20 +1086,20 @@ def test_bgp_add_path_6_1_as_path():
 
     attribute = bgp.update.attributes[0]
     assert (attribute.type == ORIGIN)
-    assert (attribute.optional == False)
-    assert (attribute.transitive == True)
-    assert (attribute.partial == False)
-    assert (attribute.extended_length == False)
+    assert (attribute.optional is False)
+    assert (attribute.transitive is True)
+    assert (attribute.partial is False)
+    assert (attribute.extended_length is False)
     assert (attribute.flags == 0x40)
     assert (attribute.len == 1)
     assert (attribute.origin.type == ORIGIN_IGP)
 
     attribute = bgp.update.attributes[1]
     assert (attribute.type == AS_PATH)
-    assert (attribute.optional == False)
-    assert (attribute.transitive == True)
-    assert (attribute.partial == False)
-    assert (attribute.extended_length == False)
+    assert (attribute.optional is False)
+    assert (attribute.transitive is True)
+    assert (attribute.partial is False)
+    assert (attribute.extended_length is False)
     assert (attribute.flags == 0x40)
     assert (attribute.len == 6)
     assert (len(attribute.as_path.segments) == 1)
@@ -1109,50 +1111,50 @@ def test_bgp_add_path_6_1_as_path():
 
     attribute = bgp.update.attributes[2]
     assert (attribute.type == NEXT_HOP)
-    assert (attribute.optional == False)
-    assert (attribute.transitive == True)
-    assert (attribute.partial == False)
-    assert (attribute.extended_length == False)
+    assert (attribute.optional is False)
+    assert (attribute.transitive is True)
+    assert (attribute.partial is False)
+    assert (attribute.extended_length is False)
     assert (attribute.flags == 0x40)
     assert (attribute.len == 4)
     assert (socket.inet_ntop(socket.AF_INET, bytes(attribute.next_hop)) == '10.0.14.1')
 
     attribute = bgp.update.attributes[3]
     assert (attribute.type == MULTI_EXIT_DISC)
-    assert (attribute.optional == True)
-    assert (attribute.transitive == False)
-    assert (attribute.partial == False)
-    assert (attribute.extended_length == False)
+    assert (attribute.optional is True)
+    assert (attribute.transitive is False)
+    assert (attribute.partial is False)
+    assert (attribute.extended_length is False)
     assert (attribute.flags == 0x80)
     assert (attribute.len == 4)
     assert (attribute.multi_exit_disc.value == 0)
 
     attribute = bgp.update.attributes[4]
     assert (attribute.type == LOCAL_PREF)
-    assert (attribute.optional == False)
-    assert (attribute.transitive == True)
-    assert (attribute.partial == False)
-    assert (attribute.extended_length == False)
+    assert (attribute.optional is False)
+    assert (attribute.transitive is True)
+    assert (attribute.partial is False)
+    assert (attribute.extended_length is False)
     assert (attribute.flags == 0x40)
     assert (attribute.len == 4)
     assert (attribute.local_pref.value == 100)
 
     attribute = bgp.update.attributes[5]
     assert (attribute.type == CLUSTER_LIST)
-    assert (attribute.optional == True)
-    assert (attribute.transitive == False)
-    assert (attribute.partial == False)
-    assert (attribute.extended_length == False)
+    assert (attribute.optional is True)
+    assert (attribute.transitive is False)
+    assert (attribute.partial is False)
+    assert (attribute.extended_length is False)
     assert (attribute.flags == 0x80)
     assert (attribute.len == 4)
     assert (socket.inet_ntop(socket.AF_INET, bytes(attribute.cluster_list)) == '10.0.34.4')
 
     attribute = bgp.update.attributes[6]
     assert (attribute.type == ORIGINATOR_ID)
-    assert (attribute.optional == True)
-    assert (attribute.transitive == False)
-    assert (attribute.partial == False)
-    assert (attribute.extended_length == False)
+    assert (attribute.optional is True)
+    assert (attribute.transitive is False)
+    assert (attribute.partial is False)
+    assert (attribute.extended_length is False)
     assert (attribute.flags == 0x80)
     assert (attribute.len == 4)
     assert (socket.inet_ntop(socket.AF_INET, bytes(attribute.originator_id)) == '10.0.15.1')
@@ -1164,4 +1166,3 @@ if __name__ == '__main__':
     test_bgp_mp_nlri_20_1_mp_reach_nlri_next_hop()
     test_bgp_add_path_6_1_as_path()
     print('Tests Successful...')
-

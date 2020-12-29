@@ -146,7 +146,8 @@ class Reader(object):
         self.__f.seek(FileHdr.__hdr_len__)
         while 1:
             buf = self.__f.read(PktHdr.__hdr_len__)
-            if not buf: break
+            if not buf:
+                break
             hdr = self.__ph(buf)
             buf = self.__f.read(hdr.rec_len - PktHdr.__hdr_len__)
             yield (hdr.ts_sec + (hdr.ts_usec / 1000000.0), buf[:hdr.incl_len])

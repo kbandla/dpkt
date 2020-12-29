@@ -21,7 +21,7 @@ from dpkt import ethernet
 devices = pcapy.findalldevs()
 iface_name = devices[0]
 print('Auto Setting Interface to: {:s}'.format(iface_name))
-interface = pcapy.open_live(iface_name, 65536 , 1 , 0)
+interface = pcapy.open_live(iface_name, 65536, 1, 0)
 
 # Get local ip
 src_ip = socket.inet_pton(socket.AF_INET, interface.getnet())
@@ -53,21 +53,20 @@ u.ulen = len(u)
 
 # build ip packet
 i = ip.IP(
-    dst = broadcast_ip,
-    src = src_ip,
-    data = u,
-    p = ip.IP_PROTO_UDP
+    dst=broadcast_ip,
+    src=src_ip,
+    data=u,
+    p=ip.IP_PROTO_UDP
 )
 i.len = len(i)
 
 # build ethernet frame
 e = ethernet.Ethernet(
-    dst = broadcast_eth_addr,
-    data = i
+    dst=broadcast_eth_addr,
+    data=i
 )
 
 # Inject the packet (send it out)
 interface.sendpacket(bytes(e))
 
 print('DHCP request sent!')
-

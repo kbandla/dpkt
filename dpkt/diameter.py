@@ -77,11 +77,11 @@ class Diameter(dpkt.Packet):
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
         self.cmd = (compat_ord(self.cmd[0]) << 16) | \
-                    (compat_ord(self.cmd[1]) << 8) | \
-                    (compat_ord(self.cmd[2]))
+                   (compat_ord(self.cmd[1]) << 8) | \
+                   (compat_ord(self.cmd[2]))
         self.len = (compat_ord(self.len[0]) << 16) | \
-                    (compat_ord(self.len[1]) << 8) | \
-                    (compat_ord(self.len[2]))
+                   (compat_ord(self.len[1]) << 8) | \
+                   (compat_ord(self.len[2]))
         self.data = self.data[:self.len - self.__hdr_len__]
 
         l = []
@@ -101,6 +101,7 @@ class Diameter(dpkt.Packet):
 
     def __bytes__(self):
         return self.pack_hdr() + b''.join(map(bytes, self.data))
+
 
 class AVP(dpkt.Packet):
     __hdr__ = (
@@ -136,8 +137,8 @@ class AVP(dpkt.Packet):
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
         self.len = (compat_ord(self.len[0]) << 16) | \
-                    (compat_ord(self.len[1]) << 8) | \
-                    (compat_ord(self.len[2]))
+                   (compat_ord(self.len[1]) << 8) | \
+                   (compat_ord(self.len[2]))
 
         if self.vendor_flag:
             self.vendor = struct.unpack('>I', self.data[:4])[0]

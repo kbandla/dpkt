@@ -143,7 +143,7 @@ class H225(dpkt.Packet):
 
     def __bytes__(self):
         return self.tpkt.pack_hdr() + self.pack_hdr() + self.ref_val + \
-               struct.pack('B', self.type) + b''.join(map(bytes, self.data))
+            struct.pack('B', self.type) + b''.join(map(bytes, self.data))
 
     class IE(dpkt.Packet):
         __hdr__ = (

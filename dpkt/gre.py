@@ -145,9 +145,11 @@ def test_gre_v1():
     assert g.data == b"A" * 178
     assert len(g) == len(s)
 
+
 def test_gre_len():
     gre = GRE()
     assert len(gre) == 4
+
 
 if __name__ == '__main__':
     test_gre_v1()

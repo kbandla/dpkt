@@ -149,7 +149,7 @@ class PktHdr(dpkt.Packet):
     Attributes:
         __hdr__: Header fields of pcap header.
         TODO.
-    """
+   """
     __hdr__ = (
         ('tv_sec', 'I', 0),
         ('tv_usec', 'I', 0),
@@ -170,7 +170,7 @@ class FileHdr(dpkt.Packet):
     Attributes:
         __hdr__: Header fields of pcap file header.
         TODO.
-    """
+   """
 
     __hdr__ = (
         ('magic', 'I', TCPDUMP_MAGIC),
@@ -195,7 +195,7 @@ class Writer(object):
     Attributes:
         __hdr__: Header fields of simple pcap dumpfile writer.
         TODO.
-    """
+   """
 
     __le = sys.byteorder == 'little'
 
@@ -221,7 +221,7 @@ class Writer(object):
         Args:
             pkt: `bytes` will be called on this and written to file.
             ts (float): Timestamp in seconds. Defaults to current time.
-        """
+       """
         if ts is None:
             ts = time.time()
 
@@ -233,7 +233,7 @@ class Writer(object):
         Args:
             pkt (bytes): Some `bytes` to write to the file
             ts (float): Timestamp in seconds
-        """
+       """
         n = len(pkt)
         sec = int(ts)
         usec = intround(ts % 1 * self._precision_multiplier)
@@ -248,7 +248,7 @@ class Writer(object):
 
         Args:
             pkts: iterable containing (ts, pkt)
-        """
+       """
         fd = self.__f
         pack_hdr = self._pack_hdr
         precision_multiplier = self._precision_multiplier
@@ -272,7 +272,7 @@ class Reader(object):
     Attributes:
         __hdr__: Header fields of simple pypcap-compatible pcap file reader.
         TODO.
-    """
+   """
 
     def __init__(self, fileobj):
         self.name = getattr(fileobj, 'name', '<%s>' % fileobj.__class__.__name__)
@@ -325,7 +325,7 @@ class Reader(object):
                     or 0 to process all packets until EOF
         callback -- function with (timestamp, pkt, *args) prototype
         *args    -- optional arguments passed to callback on execution
-        """
+       """
         processed = 0
         if cnt > 0:
             for _ in range(cnt):
@@ -373,9 +373,10 @@ class TryExceptException:
                 raise Exception("There should have been an Exception raised")
         return wrapper
 
+
 @TryExceptException(Exception, msg='There should have been an Exception raised')
 def test_TryExceptException():
-    """ Check that we can catch a function which does not throw an exception when it is supposed to """
+    """Check that we can catch a function which does not throw an exception when it is supposed to"""
     @TryExceptException(NotImplementedError)
     def fun():
         pass
@@ -401,6 +402,7 @@ class TestData():
         b'\x18\xb1\x0c\xad\x08\x00\x45\x00\x00\x38\x00\x00\x40\x00\x40\x11\x65\x47\xc0\xa8\xaa\x08\xc0\xa8'
         b'\xaa\x14\x80\x1b\x00\x35\x00\x24\x85\xed'
     )
+
 
 def test_reader():
     data = TestData().pcap
@@ -451,8 +453,9 @@ def test_reader():
 @TryExceptException(ValueError, msg="invalid tcpdump header")
 def test_reader_badheader():
     from .compat import BytesIO
-    fobj = BytesIO(b'\x00'*24)
-    reader = Reader(fobj)
+    fobj = BytesIO(b'\x00' * 24)
+    _ = Reader(fobj)
+
 
 def test_reader_fd():
     data = TestData().pcap
@@ -465,13 +468,15 @@ def test_reader_fd():
         assert reader.fd == fd.fileno()
         assert reader.fileno() == fd.fileno()
 
+
 class WriterTestWrap:
     """
     Decorate a writer test function with an instance of this class.
 
     The test will be provided with a writer object, which it shoud write some pkts to.
 
-    After the test has run, the BytesIO object will be passed to a Reader, which will compare each pkt to the return value of the test.
+    After the test has run, the BytesIO object will be passed to a Reader,
+    which will compare each pkt to the return value of the test.
     """
     def __init__(self, *args, **kwargs):
         self.args = args
@@ -500,11 +505,13 @@ class WriterTestWrap:
                 Writer._Writer__le = _sysle
         return wrapper
 
+
 @WriterTestWrap()
 def test_writer_precision_normal():
     ts, pkt = 1454725786.526401, b'foo'
     writer.writepkt(pkt, ts=ts)  # noqa
     return [(ts, pkt)]
+
 
 @WriterTestWrap(writer={'nano': True})
 def test_writer_precision_nano():
@@ -512,12 +519,14 @@ def test_writer_precision_nano():
     writer.writepkt(pkt, ts=ts)  # noqa
     return [(ts, pkt)]
 
+
 @WriterTestWrap(writer={'nano': False})
 def test_writer_precision_nano_fail():
-    """ if writer is not set to nano, supplying this timestamp should be truncated """
+    """if writer is not set to nano, supplying this timestamp should be truncated"""
     ts, pkt = (Decimal('1454725786.010203045'), b'foo')
     writer.writepkt(pkt, ts=ts)  # noqa
     return [(1454725786.010203, pkt)]
+
 
 @WriterTestWrap()
 def test_writepkt_no_time():
@@ -528,11 +537,13 @@ def test_writepkt_no_time():
     time.time = _tmp
     return [(ts, pkt)]
 
+
 @WriterTestWrap(writer={'snaplen': 10})
 def test_writepkt_snaplen():
     ts, pkt = 1454725786.526401, b'foooo'
     writer.writepkt(pkt, ts)  # noqa
     return [(ts, pkt)]
+
 
 @WriterTestWrap()
 def test_writepkt_with_time():
@@ -540,15 +551,17 @@ def test_writepkt_with_time():
     writer.writepkt(pkt, ts)  # noqa
     return [(ts, pkt)]
 
+
 @WriterTestWrap()
 def test_writepkt_time():
     ts, pkt = 1454725786.526401, b'foooo'
     writer.writepkt_time(pkt, ts)  # noqa
     return [(ts, pkt)]
 
+
 @WriterTestWrap()
 def test_writepkts():
-    """ writing multiple packets from a list """
+    """writing multiple packets from a list"""
     pkts = [
         (1454725786.526401, b"fooo"),
         (1454725787.526401, b"barr"),

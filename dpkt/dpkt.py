@@ -43,7 +43,7 @@ class _MetaPacket(type):
 
 
 class Packet(_MetaPacket("Temp", (object,), {})):
-    """Base packet class, with metaclass magic to generate members from self.__hdr__.
+    r"""Base packet class, with metaclass magic to generate members from self.__hdr__.
 
     Attributes:
         __hdr__: Packet header should be defined as a list of
@@ -135,8 +135,8 @@ class Packet(_MetaPacket("Temp", (object,), {})):
         l.extend(
             ['%s=%r' % (attr_name, attr_value)
              for attr_name, attr_value in iteritems(self.__dict__)
-             if attr_name[0] != '_'                   # exclude _private attributes
-             and attr_name != self.data.__class__.__name__.lower()])  # exclude fields like ip.udp
+             if attr_name[0] != '_' and                   # exclude _private attributes
+                attr_name != self.data.__class__.__name__.lower()])  # exclude fields like ip.udp
         # (4)
         if self.data:
             l.append('data=%r' % self.data)
@@ -178,8 +178,13 @@ class Packet(_MetaPacket("Temp", (object,), {})):
             setattr(self, k, v)
         self.data = buf[self.__hdr_len__:]
 
+
 # XXX - ''.join([(len(`chr(x)`)==3) and chr(x) or '.' for x in range(256)])
-__vis_filter = b'................................ !"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[.]^_`abcdefghijklmnopqrstuvwxyz{|}~.................................................................................................................................'
+__vis_filter = (
+    b'................................ !"#$%&\'()*+,-./0123456789:;<=>?'
+    b'@ABCDEFGHIJKLMNOPQRSTUVWXYZ[.]^_`abcdefghijklmnopqrstuvwxyz{|}~.'
+    b'................................................................'
+    b'................................................................')
 
 
 def hexdump(buf, length=16):
@@ -227,7 +232,7 @@ def test_utils():
 
 
 def test_getitem():
-    """ create a Packet subclass and access its properties """
+    """create a Packet subclass and access its properties"""
     class Foo(Packet):
         __hdr__ = (
             ('foo', 'I', 1),
@@ -247,7 +252,7 @@ def test_getitem():
 
 
 def test_pack_hdr_overflow():
-    """ Try to fit too much data into struct packing """
+    """Try to fit too much data into struct packing"""
     class Foo(Packet):
         __hdr__ = (
             ('foo', 'I', 1),
@@ -264,7 +269,7 @@ def test_pack_hdr_overflow():
 
 
 def test_pack_hdr_tuple():
-    """ Test the unpacking of a tuple for a single format string """
+    """Test the unpacking of a tuple for a single format string"""
     class Foo(Packet):
         __hdr__ = (
             ('bar', 'II', (1, 2)),

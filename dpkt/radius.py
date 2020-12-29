@@ -46,6 +46,7 @@ def parse_attrs(buf):
         attrs.append((t, d))
     return attrs
 
+
 # Codes
 RADIUS_ACCESS_REQUEST = 1
 RADIUS_ACCESS_ACCEPT = 2

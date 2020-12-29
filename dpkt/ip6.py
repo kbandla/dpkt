@@ -286,6 +286,7 @@ class IP6ESPHeader(IP6ExtensionHeader):
         dpkt.Packet.unpack(self, buf)
         self.length = self.__hdr_len__ + len(self.data)
 
+
 EXT_HDRS_CLS = {ip.IP_PROTO_HOPOPTS: IP6HopOptsHeader,
                 ip.IP_PROTO_ROUTING: IP6RoutingHeader,
                 ip.IP_PROTO_FRAGMENT: IP6FragmentHeader,

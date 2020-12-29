@@ -251,7 +251,8 @@ class PostTest:
                 except Exception as e:
                     isexception = True
                     assert isinstance(e, self.kwargs['type'])
-                    assert str(e).startswith(self.kwargs['msg']), "Exception text did not start as expected. Was '{:s}'".format(str(e))
+                    assert str(e).startswith(self.kwargs['msg']),\
+                        "Exception text did not start as expected. Was '{:s}'".format(str(e))
                 assert isexception, "No assertion raised!"
 
             else:
@@ -259,8 +260,9 @@ class PostTest:
                 raise Exception("No test type specified")
         return wrapper
 
+
 def test_posttest():
-    """ Check that PostTest wrapper doesn't fail silently """
+    """Check that PostTest wrapper doesn't fail silently"""
     @PostTest()
     def fun():
         pass
@@ -270,8 +272,14 @@ def test_posttest():
     except Exception as e:
         assert str(e) == 'No test type specified'
 
+
 def test_parse_request():
-    s = b"""POST /main/redirect/ab/1,295,,00.html HTTP/1.0\r\nReferer: http://www.email.com/login/snap/login.jhtml\r\nConnection: Keep-Alive\r\nUser-Agent: Mozilla/4.75 [en] (X11; U; OpenBSD 2.8 i386; Nav)\r\nHost: ltd.snap.com\r\nAccept: image/gif, image/x-xbitmap, image/jpeg, image/pjpeg, image/png, */*\r\nAccept-Encoding: gzip\r\nAccept-Language: en\r\nAccept-Charset: iso-8859-1,*,utf-8\r\nContent-type: application/x-www-form-urlencoded\r\nContent-length: 61\r\n\r\nsn=em&mn=dtest4&pw=this+is+atest&fr=true&login=Sign+in&od=www"""
+    s = (b"""POST /main/redirect/ab/1,295,,00.html HTTP/1.0\r\nReferer: http://www.email.com/login/snap/login.jhtml\r\n"""
+         b"""Connection: Keep-Alive\r\nUser-Agent: Mozilla/4.75 [en] (X11; U; OpenBSD 2.8 i386; Nav)\r\n"""
+         b"""Host: ltd.snap.com\r\nAccept: image/gif, image/x-xbitmap, image/jpeg, image/pjpeg, image/png, */*\r\n"""
+         b"""Accept-Encoding: gzip\r\nAccept-Language: en\r\nAccept-Charset: iso-8859-1,*,utf-8\r\n"""
+         b"""Content-type: application/x-www-form-urlencoded\r\nContent-length: 61\r\n\r\n"""
+         b"""sn=em&mn=dtest4&pw=this+is+atest&fr=true&login=Sign+in&od=www""")
     r = Request(s)
     assert r.method == 'POST'
     assert r.uri == '/main/redirect/ab/1,295,,00.html'
@@ -282,6 +290,7 @@ def test_parse_request():
         assert 'invalid headers parsed!'
     except dpkt.UnpackError:
         pass
+
 
 def test_format_request():
     r = Request()
@@ -314,7 +323,8 @@ def test_chunked_response():
 
 
 def test_multicookie_response():
-    s = b"""HTTP/1.x 200 OK\r\nSet-Cookie: first_cookie=cookie1; path=/; domain=.example.com\r\nSet-Cookie: second_cookie=cookie2; path=/; domain=.example.com\r\nContent-Length: 0\r\n\r\n"""
+    s = (b"""HTTP/1.x 200 OK\r\nSet-Cookie: first_cookie=cookie1; path=/; domain=.example.com\r\n"""
+         b"""Set-Cookie: second_cookie=cookie2; path=/; domain=.example.com\r\nContent-Length: 0\r\n\r\n""")
     r = Response(s)
     assert type(r.headers['set-cookie']) is list
     assert len(r.headers['set-cookie']) == 2
@@ -382,6 +392,7 @@ def test_request_version():
     s = b"""GET / CHEESE/1.0\r\n\r\n"""
     Request(s)
 
+
 def test_valid_header():
     # valid header.
     s = b'POST /main/redirect/ab/1,295,,00.html HTTP/1.0\r\n' \
@@ -401,6 +412,7 @@ def test_valid_header():
     assert r.uri == '/main/redirect/ab/1,295,,00.html'
     assert r.body == b'sn=em&mn=dtest4&pw=this+is+atest&fr=true&login=Sign+in&od=www'
     assert r.headers['content-type'] == 'application/x-www-form-urlencoded'
+
 
 @PostTest(test='assertion', type=dpkt.UnpackError, msg="invalid request: ")
 def test_invalid_header_messy():
@@ -450,11 +462,13 @@ def test_gzip_response():
     body = decompressor.decompress(r.body)
     assert body.startswith(b'This is a very small file')
 
+
 @PostTest(test='assertion', type=dpkt.UnpackError, msg="invalid header: ")
 def test_invalid_header_key():
     s = b'HTTP/1.0 200 OK\r\n' \
         b'Invalid Header: invalid\r\n'
-    r = Response(s)
+    Response(s)
+
 
 @PostTest(test='assertion', type=dpkt.UnpackError, msg="missing chunk size")
 def test_missing_chunk():
@@ -464,7 +478,8 @@ def test_missing_chunk():
         b"\r\n"
         b"\r\n"
     )
-    r = Response(s)
+    Response(s)
+
 
 @PostTest(test='assertion', type=dpkt.UnpackError, msg="premature end of chunked body")
 def test_premature_end():
@@ -475,43 +490,50 @@ def test_premature_end():
         b"2\r\n"
         b"abcd"
     )
-    r = Response(s)
+    Response(s)
+
 
 @PostTest(test='assertion', type=dpkt.UnpackError, msg="short body (missing 65 bytes)")
 def test_short_body():
     s = (
         b"HTTP/1.1 200 OK\r\n"
-        b'Content-Length: 68\r\n' \
+        b"Content-Length: 68\r\n"
         b"\r\n"
         b"a\r\n"
     )
-    r = Response(s)
+    Response(s)
+
 
 def test_message():
-    s = b'Date: Fri, 10 Mar 2017 20:43:08 GMT\r\n'
+    # s = b'Date: Fri, 10 Mar 2017 20:43:08 GMT\r\n'  # FIXME - unused
     r = Message(content_length=68)
     assert r.content_length == 68
     assert len(r) == 2
 
+
 @PostTest(test='assertion', type=dpkt.UnpackError, msg='invalid http method: ')
 def test_invalid_method():
     s = b'INVALID / HTTP/1.0\r\n'
-    r = Request(s)
+    Request(s)
+
 
 @PostTest(test='assertion', type=dpkt.UnpackError, msg="invalid response: ")
 def test_invalid_response_short():
     s = b'A'
-    r = Response(s)
+    Response(s)
+
 
 @PostTest(test='assertion', type=dpkt.UnpackError, msg="invalid response: ")
 def test_invalid_response_proto():
     s = b'HTTT 200 OK'
-    r = Response(s)
+    Response(s)
+
 
 @PostTest(test='assertion', type=dpkt.UnpackError, msg="invalid response: ")
 def test_invalid_response_code():
     s = b'HTTP TWO OK'
-    r = Response(s)
+    Response(s)
+
 
 def test_response_str():
     s = (
@@ -538,6 +560,7 @@ def test_response_str():
 
     for line1, line2 in zip(s_arr, resp_arr):
         assert line1 == line2
+
 
 def test_request_str():
     s = b'GET / HTTP/1.0\r\n'

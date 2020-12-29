@@ -91,13 +91,16 @@ def _align32b(i):
     r = i % 4
     return i if not r else i + 4 - r
 
+
 def _padded(s):
     """Return bytes `s` padded with zeroes to align to the 32-bit boundary"""
     return struct_pack('%ss' % _align32b(len(s)), s)
 
+
 def _padded_tolen(s, tolen):
     """Return bytes `s` padded with `tolen` zeroes to align to the 32-bit boundary"""
     return struct_pack('%ss' % tolen, s)
+
 
 def _padlen(s):
     """Return size of padding required to align str `s` to the 32-bit boundary"""
@@ -105,13 +108,12 @@ def _padlen(s):
 
 
 class _PcapngBlock(dpkt.Packet):
-
     """Base class for a pcapng block with Options"""
 
     __hdr__ = (
         ('type', 'I', 0),  # block type
         ('len', 'I', 12),  # block total length: total size of this block, in octets
-        #( body, variable size )
+        # ( body, variable size )
         ('_len', 'I', 12),  # dup of len
     )
 
@@ -175,7 +177,6 @@ class PcapngBlockLE(_PcapngBlock):
 
 
 class PcapngOption(dpkt.Packet):
-
     """A single Option"""
 
     __hdr__ = (
@@ -217,7 +218,6 @@ class PcapngOptionLE(PcapngOption):
 
 
 class SectionHeaderBlock(_PcapngBlock):
-
     """Section Header block"""
 
     __hdr__ = (
@@ -227,9 +227,10 @@ class SectionHeaderBlock(_PcapngBlock):
         ('v_major', 'H', PCAPNG_VERSION_MAJOR),
         ('v_minor', 'H', PCAPNG_VERSION_MINOR),
         ('sec_len', 'q', -1),  # section length, -1 = auto
-        #( options, variable size )
+        # ( options, variable size )
         ('_len', 'I', 28)
     )
+
     def __bytes__(self):
         opts_buf = self._do_pack_options()
 
@@ -254,7 +255,6 @@ class SectionHeaderBlockLE(SectionHeaderBlock):
 
 
 class InterfaceDescriptionBlock(_PcapngBlock):
-
     """Interface Description block"""
 
     __hdr__ = (
@@ -263,7 +263,7 @@ class InterfaceDescriptionBlock(_PcapngBlock):
         ('linktype', 'H', DLT_EN10MB),
         ('_reserved', 'H', 0),
         ('snaplen', 'I', 1500),
-        #( options, variable size )
+        # ( options, variable size )
         ('_len', 'I', 20)
     )
 
@@ -290,7 +290,6 @@ class InterfaceDescriptionBlockLE(InterfaceDescriptionBlock):
 
 
 class EnhancedPacketBlock(_PcapngBlock):
-
     """Enhanced Packet block"""
 
     __hdr__ = (
@@ -301,8 +300,8 @@ class EnhancedPacketBlock(_PcapngBlock):
         ('ts_low', 'I', 0),  # timestamp low
         ('caplen', 'I', 0),  # captured len, size of pkt_data
         ('pkt_len', 'I', 0),  # actual packet len
-        #( pkt_data, variable size )
-        #( options, variable size )
+        # ( pkt_data, variable size )
+        # ( options, variable size )
         ('_len', 'I', 64)
     )
 
@@ -374,7 +373,7 @@ class Writer(object):
             try:
                 for idb_ in idb:
                     self._validate_block('idb', idb_, InterfaceDescriptionBlock)
-            except (TypeError, ValueError): # not iter or _validate_block failed
+            except (TypeError, ValueError):  # not iter or _validate_block failed
                 self._validate_block('idb', idb, InterfaceDescriptionBlock)
                 idb = [idb]
 
@@ -501,7 +500,6 @@ class Writer(object):
 
 
 class Reader(object):
-
     """Simple pypcap-compatible pcapng file reader."""
 
     def __init__(self, fileobj):
@@ -787,13 +785,14 @@ def test_simple_write_read():
 
 
 def test_pcapng_header():
-    """ Reading an empty file will fail as the header length is incorrect """
+    """Reading an empty file will fail as the header length is incorrect"""
     fobj = BytesIO()
 
     try:
-        reader = Reader(fobj)
+        Reader(fobj)
     except Exception as e:
         assert isinstance(e, ValueError)
+
 
 def define_testdata():
     class TestData(object):
@@ -853,7 +852,10 @@ def define_testdata():
                 b'\x00\x84\x00\x00\x00'
             )
             self.valid_pkts = [
-                (1442984653.210838, b"\x08\x00'\x96\xcb|RT\x00\x125\x02\x08\x00E\x00\x00<\xa4@\x00\x00\x1f\x01'\xa2\xc0\xa8\x03(\n\x00\x02\x0f\x00\x00V\xf0\x00\x01\x00mABCDEFGHIJKLMNOPQRSTUVWABCDEFGHI")
+                (1442984653.210838,
+                 (b"\x08\x00'\x96\xcb|RT\x00\x125\x02\x08\x00E\x00\x00<\xa4@"
+                  b"\x00\x00\x1f\x01'\xa2\xc0\xa8\x03(\n\x00\x02\x0f\x00\x00V"
+                  b"\xf0\x00\x01\x00mABCDEFGHIJKLMNOPQRSTUVWABCDEFGHI"))
             ]
 
             self.valid_epb_be = EnhancedPacketBlock(opts=[
@@ -888,6 +890,7 @@ def define_testdata():
 
     return TestData()
 
+
 def pre_test(f):
     def wrapper(*args, **kwargs):
         fobj = BytesIO()
@@ -898,6 +901,7 @@ def pre_test(f):
 
         return ret
     return wrapper
+
 
 class WriterTestWrap:
     """
@@ -970,6 +974,7 @@ class PostTest:
                 raise Exception("No test type specified")
         return wrapper
 
+
 @PostTest(test='assertion', type=ValueError, msg='invalid pcapng header: not a SHB')
 @pre_test
 def test_shb_header():
@@ -977,12 +982,14 @@ def test_shb_header():
     shb.type = 123456666
     fobj.write(bytes(shb))  # noqa
 
+
 @PostTest(test='assertion', type=ValueError, msg='unknown endianness')
 @pre_test
 def test_shb_bom():
     shb = define_testdata().valid_shb_le
     shb.bom = 12345666
     fobj.write(bytes(shb))  # noqa
+
 
 @PostTest(test='assertion', type=ValueError, msg='unknown pcapng version 123.45')
 @pre_test
@@ -992,16 +999,18 @@ def test_shb_version():
     shb.v_minor = 45
     fobj.write(bytes(shb))  # noqa
 
+
 @PostTest(test='assertion', type=ValueError, msg='IDB not found')
 @pre_test
 def test_no_idb():
     shb = define_testdata().valid_shb_le
     fobj.write(bytes(shb)+b'aaaa')  # noqa
 
+
 @PostTest(test='compare_property', property='idb')
 @pre_test
 def test_idb_opt_offset():
-    """ Test that the timestamp offset is correctly written and read """
+    """Test that the timestamp offset is correctly written and read"""
     shb = define_testdata().valid_shb_le
     idb = define_testdata().valid_idb_le
     idb.opts.insert(0, PcapngOptionLE(
@@ -1011,27 +1020,34 @@ def test_idb_opt_offset():
     fobj.write(bytes(shb)+bytes(idb))  # noqa
     return idb
 
+
 @PostTest(test='compare_property', property='dloff')
 @pre_test
 def test_idb_linktype():
-    """ Test that if the idb.linktype is not in dloff, dloff is set to 0 """
+    """Test that if the idb.linktype is not in dloff, dloff is set to 0"""
     shb = define_testdata().valid_shb_le
     idb = define_testdata().valid_idb_le
     idb.linktype = 3456
     fobj.write(bytes(shb)+bytes(idb))  # noqa
     return 0
 
+
 def test_repr():
-    """ check the __repr__ method for Packet subclass.
+    """check the __repr__ method for Packet subclass.
 
     The __repr__ method currently includes the b'' in the string. This means that python2 and python3 will differ.
     """
     real = repr(define_testdata().valid_shb_le)
 
-    python2 = "SectionHeaderBlockLE(opts=[PcapngOptionLE(code=3, data='64-bit Windows 8.1, build 9600'), PcapngOptionLE(code=4, data='Dumpcap 1.12.7 (v1.12.7-0-g7fc8978 from master-1.12)'), PcapngOptionLE(opt_endofopt)])"
-    python3 = "SectionHeaderBlockLE(opts=[PcapngOptionLE(code=3, data=b'64-bit Windows 8.1, build 9600'), PcapngOptionLE(code=4, data=b'Dumpcap 1.12.7 (v1.12.7-0-g7fc8978 from master-1.12)'), PcapngOptionLE(opt_endofopt)])"
+    python2 = (
+        "SectionHeaderBlockLE(opts=[PcapngOptionLE(code=3, data='64-bit Windows 8.1, build 9600'),"
+        " PcapngOptionLE(code=4, data='Dumpcap 1.12.7 (v1.12.7-0-g7fc8978 from master-1.12)'), PcapngOptionLE(opt_endofopt)])")
+    python3 = (
+        "SectionHeaderBlockLE(opts=[PcapngOptionLE(code=3, data=b'64-bit Windows 8.1, build 9600'),"
+        " PcapngOptionLE(code=4, data=b'Dumpcap 1.12.7 (v1.12.7-0-g7fc8978 from master-1.12)'), PcapngOptionLE(opt_endofopt)])")
 
     assert real in [python2, python3]
+
 
 @pre_test
 def test_filter():
@@ -1045,17 +1061,20 @@ def test_filter():
     except Exception as e:
         assert isinstance(e, NotImplementedError)
 
+
 @PostTest(test='compare_method', method='readpkts')
 @pre_test
 def test_readpkts():
     fobj.write(define_testdata().valid_pcapng)  # noqa
     return define_testdata().valid_pkts
 
+
 @PostTest(test='compare_method', method='next')
 @pre_test
 def test_next():
     fobj.write(define_testdata().valid_pcapng)  # noqa
     return define_testdata().valid_pkts[0]
+
 
 @pre_test
 def test_dispatch():
@@ -1069,6 +1088,7 @@ def test_dispatch():
     reader = Reader(fobj)  # noqa
     assert 1 == reader.dispatch(0, callback)
 
+
 @pre_test
 def test_loop():
     fobj.write(define_testdata().valid_pcapng)  # noqa
@@ -1081,8 +1101,9 @@ def test_loop():
     reader = Reader(fobj)  # noqa
     reader.loop(callback)
 
+
 def test_idb_opt_err():
-    """ Test that options end with opt_endofopt """
+    """Test that options end with opt_endofopt"""
     idb = define_testdata().valid_idb_le
     del idb.opts[-1]
     try:
@@ -1090,6 +1111,7 @@ def test_idb_opt_err():
     except Exception as e:
         assert isinstance(e, dpkt.PackError)
         assert str(e) == 'options must end with opt_endofopt'
+
 
 def test_custom_read_write():
     """Test a full pcapng file with 1 ICMP packet"""
@@ -1134,6 +1156,7 @@ def test_custom_read_write():
     assert fobj.getvalue() == buf
     fobj.close()
 
+
 def test_multi_idb_writer():
     """Test writing multiple interface description blocks into pcapng and read it"""
     fobj = BytesIO()
@@ -1147,9 +1170,10 @@ def test_multi_idb_writer():
     reader = Reader(fobj)
     fobj.close()
 
+
 @pre_test
 def test_writer_validate_instance():
-    """ System endianness and shb endianness should match"""
+    """System endianness and shb endianness should match"""
     shb = 10
 
     try:
@@ -1158,9 +1182,10 @@ def test_writer_validate_instance():
         assert isinstance(e, ValueError)
         assert str(e) == 'shb: expecting class SectionHeaderBlock'
 
+
 @pre_test
 def test_writepkt_epb_ts():
-    """ writepkt should assign ts_high/low for epb if they are 0 """
+    """writepkt should assign ts_high/low for epb if they are 0"""
     global time
     shb, idb, epb = define_testdata().shb_idb_epb_le
     writer = Writer(fobj, shb=shb, idb=idb)  # noqa
@@ -1175,9 +1200,10 @@ def test_writepkt_epb_ts():
     assert epb.ts_high == ts_high
     assert epb.ts_low == ts_low
 
+
 @pre_test
 def test_writer_validate_le():
-    """ System endianness and shb endianness should match"""
+    """System endianness and shb endianness should match"""
     shb = define_testdata().valid_shb_be
     _sysle = Writer._Writer__le
 
@@ -1191,9 +1217,10 @@ def test_writer_validate_le():
 
     Writer._Writer__le = _sysle
 
+
 @pre_test
 def test_writer_validate_be():
-    """ System endianness and shb endianness should match"""
+    """System endianness and shb endianness should match"""
     shb = define_testdata().valid_shb_le
     _sysle = Writer._Writer__le
 
@@ -1207,6 +1234,7 @@ def test_writer_validate_be():
 
     Writer._Writer__le = _sysle
 
+
 @WriterTestWrap()
 def test_writepkt_no_time():
     global time
@@ -1217,11 +1245,13 @@ def test_writepkt_no_time():
     time = _tmp
     return [(ts, pkt)]
 
+
 @WriterTestWrap(writer={'snaplen': 10})
 def test_writepkt_snaplen():
-    ts, pkt = 1454725786.526401, b'foooo'*100
+    ts, pkt = 1454725786.526401, b'foooo' * 100
     writer.writepkt(pkt, ts)  # noqa
     return [(ts, pkt)]
+
 
 @WriterTestWrap()
 def test_writepkt_with_time():
@@ -1229,9 +1259,10 @@ def test_writepkt_with_time():
     writer.writepkt(pkt, ts)  # noqa
     return [(ts, pkt)]
 
+
 @WriterTestWrap()
 def test_writepkts():
-    """ writing multiple packets from a list """
+    """writing multiple packets from a list"""
     pkts = [
         (1454725786.526401, b"fooo"),
         (1454725787.526401, b"barr"),
@@ -1242,8 +1273,10 @@ def test_writepkts():
     writer.writepkts(pkts)  # noqa
     return pkts
 
+
 def test_pcapng_block_pack():
     assert bytes(_PcapngBlock())
+
 
 def test_pcapng_block_unpack():
     block = _PcapngBlock()
@@ -1253,8 +1286,9 @@ def test_pcapng_block_unpack():
     except Exception as e:
         assert isinstance(e, dpkt.NeedData)
 
+
 def test_epb_unpack():
-    """ EnhancedPacketBlocks can only unpack data >64 bytes, the length of their header """
+    """EnhancedPacketBlock can only unpack data >64 bytes, the length of their header"""
     shb, idb, epb = define_testdata().shb_idb_epb_be
     buf = b'quite-long-but-not-long-enough-at-least-32'
     try:
@@ -1262,12 +1296,13 @@ def test_epb_unpack():
     except Exception as e:
         assert isinstance(e, dpkt.NeedData)
 
+
 def test_epb_unpack_length_mismatch():
-    """ Force calculated len to be 0 when unpacking epb, this should fail when unpacking """
+    """Force calculated len to be 0 when unpacking epb, this should fail when unpacking"""
     shb, idb, epb = define_testdata().shb_idb_epb_be
 
     unpackme = bytes(epb)
-    unpackme = unpackme[:-4] + b'\x00'*4
+    unpackme = unpackme[:-4] + b'\x00' * 4
     try:
         epb.unpack(unpackme)
     except Exception as e:
@@ -1276,12 +1311,13 @@ def test_epb_unpack_length_mismatch():
 
 
 def test_pcapng_block_len_no_opts():
-    """ _PcapngBlock should return its own header __len__ if it has no opts """
+    """_PcapngBlock should return its own header __len__ if it has no opts"""
     block = _PcapngBlock()
     assert len(block) == 12
 
+
 def test_reader_file_descriptor():
-    """ Reader has .fd and .fileno() convenience members. Compare them to the actual fobj that was passed in """
+    """Reader has .fd and .fileno() convenience members. Compare them to the actual fobj that was passed in"""
     pcapng = define_testdata().valid_pcapng
     import tempfile
     with tempfile.TemporaryFile() as fobj:
@@ -1292,8 +1328,9 @@ def test_reader_file_descriptor():
         assert reader.fd == fobj.fileno()
         assert reader.fileno() == fobj.fileno()
 
+
 def test_posttest():
-    """ Check that PostTest wrapper doesn't fail silently """
+    """Check that PostTest wrapper doesn't fail silently"""
     @PostTest()
     @pre_test
     def fun():

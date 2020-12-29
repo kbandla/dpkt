@@ -14,14 +14,14 @@ from . import dpkt
 class FLAP(dpkt.Packet):
     """Frame Layer Protocol.
 
-    See more about the FLAP on \
+    See more about the FLAP on
     https://en.wikipedia.org/wiki/OSCAR_protocol#FLAP_header
 
     Attributes:
         __hdr__: Header fields of FLAP.
         data: Message data.
     """
-    
+
     __hdr__ = (
         ('ast', 'B', 0x2a),  # '*'
         ('type', 'B', 0),
@@ -40,13 +40,13 @@ class FLAP(dpkt.Packet):
 class SNAC(dpkt.Packet):
     """Simple Network Atomic Communication.
 
-    See more about the SNAC on \
+    See more about the SNAC on
     https://en.wikipedia.org/wiki/OSCAR_protocol#SNAC_data
 
     Attributes:
         __hdr__: Header fields of SNAC.
     """
-    
+
     __hdr__ = (
         ('family', 'H', 0),
         ('subtype', 'H', 0),
@@ -71,6 +71,7 @@ def tlv(buf):
 
 # TOC 2.0: http://www.firestuff.org/projects/firetalk/doc/toc2.txt
 
+
 def testAIM():
     testdata = b'*\x02\xac\xf3\x00\x81\x00\x03\x00\x0b\x00\x00\xfaEUd\x0eusrnameremoved\x00\x00\x00\n\x00\x01\x00\x02\x12\x90\x00D\x00\x01\x00\x00\x03\x00\x04X\x90T6\x00E\x00\x04\x00\x00\x0f\x93\x00!\x00\x08\x00\x85\x00}\x00}\x00\x00\x00A\x00\x01\x00\x007\x00\x04\x00\x00\x00\x00\x00\r\x00\x00\x00\x19\x00\x00\x00\x1d\x00$\x00\x00\x00\x05\x02\x01\xd2\x04r\x00\x01\x00\x05\x02\x01\xd2\x04r\x00\x03\x00\x05+\x00\x00*\xcc\x00\x81\x00\x05+\x00\x00\x13\xf1'
 
@@ -88,7 +89,7 @@ def testAIM():
     assert snac.reqid == 0xfa455564
     assert snac.data == b'\x0eusrnameremoved\x00\x00\x00\n\x00\x01\x00\x02\x12\x90\x00D\x00\x01\x00\x00\x03\x00\x04X\x90T6\x00E\x00\x04\x00\x00\x0f\x93\x00!\x00\x08\x00\x85\x00}\x00}\x00\x00\x00A\x00\x01\x00\x007\x00\x04\x00\x00\x00\x00\x00\r\x00\x00\x00\x19\x00\x00\x00\x1d\x00$\x00\x00\x00\x05\x02\x01\xd2\x04r\x00\x01\x00\x05\x02\x01\xd2\x04r\x00\x03\x00\x05+\x00\x00*\xcc\x00\x81\x00\x05+\x00\x00\x13\xf1'
 
-    #skip over the buddyname and TLV count in Oncoming Buddy message
+    # skip over the buddyname and TLV count in Oncoming Buddy message
     tlvdata = snac.data[19:]
 
     tlvCount = 0

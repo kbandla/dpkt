@@ -309,7 +309,6 @@ class Radiotap(dpkt.Packet):
         @fcs.setter
         def fcs(self, v): (v << _FCS_SHIFT) | (self.val & ~_FCS_MASK)
 
-
     class LockQuality(dpkt.Packet):
         __hdr__ = (
             ('val', 'H', 0),

@@ -11,7 +11,7 @@ from .compat import iteritems
 class AOE(dpkt.Packet):
     """ATA over Ethernet Protocol.
 
-    See more about the AOE on \
+    See more about the AOE on
     https://en.wikipedia.org/wiki/ATA_over_Ethernet
 
     Attributes:
@@ -30,16 +30,20 @@ class AOE(dpkt.Packet):
     _cmdsw = {}
 
     @property
-    def ver(self): return self.ver_fl >> 4
+    def ver(self):
+        return self.ver_fl >> 4
 
     @ver.setter
-    def ver(self, ver): self.ver_fl = (ver << 4) | (self.ver_fl & 0xf)
+    def ver(self, ver):
+        self.ver_fl = (ver << 4) | (self.ver_fl & 0xf)
 
     @property
-    def fl(self): return self.ver_fl & 0xf
+    def fl(self):
+        return self.ver_fl & 0xf
 
     @fl.setter
-    def fl(self, fl): self.ver_fl = (self.ver_fl & 0xf0) | fl
+    def fl(self, fl):
+        self.ver_fl = (self.ver_fl & 0xf0) | fl
 
     @classmethod
     def set_cmd(cls, cmd, pktclass):
@@ -69,7 +73,7 @@ AOE_CMD_CFG = 1
 AOE_FLAG_RSP = 1 << 3
 
 
-def __load_cmds():
+def _load_cmds():
     prefix = 'AOE_CMD_'
     g = globals()
 
@@ -86,4 +90,4 @@ def __load_cmds():
 def _mod_init():
     """Post-initialization called when all dpkt modules are fully loaded"""
     if not AOE._cmdsw:
-        __load_cmds()
+        _load_cmds()

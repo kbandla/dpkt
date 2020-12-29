@@ -2,10 +2,12 @@
 # -*- coding: utf-8 -*-
 """Dynamic Trunking Protocol."""
 from __future__ import absolute_import
-
 import struct
 
 from . import dpkt
+
+TRUNK_NAME = 0x01
+MAC_ADDR = 0x04
 
 
 class DTP(dpkt.Packet):
@@ -34,6 +36,3 @@ class DTP(dpkt.Packet):
 
     def __bytes__(self):
         return b''.join([struct.pack('>HH', t, len(v)) + v for t, v in self.data])
-
-TRUNK_NAME = 0x01
-MAC_ADDR = 0x04

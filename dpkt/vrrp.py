@@ -64,6 +64,7 @@ class VRRP(dpkt.Packet):
             self.sum = dpkt.in_cksum(self.pack_hdr() + data)
         return self.pack_hdr() + data
 
+
 def test_vrrp():
     # no addresses
     s = b'\x00\x00\x00\x00\x00\x00\xff\xff'

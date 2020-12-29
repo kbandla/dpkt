@@ -47,4 +47,3 @@ class Response(http.Response):
         'headers': {'To': '', 'From': '', 'Call-ID': '', 'CSeq': '', 'Contact': ''}
     }
     __proto = 'SIP'
-

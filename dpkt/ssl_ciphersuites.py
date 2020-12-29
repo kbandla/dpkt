@@ -41,23 +41,23 @@ class CipherSuite(object):
 
     @property
     def kx(self):
-        if self._kx == '': # for PSK
+        if self._kx == '':  # for PSK
             return self._auth
         else:
             return self._kx
 
     @property
     def auth(self):
-        if self._auth == '': # for RSA
+        if self._auth == '':  # for RSA
             return self._kx
         else:
             return self._auth
 
     @property
     def kx_auth(self):
-        if self._auth == '': # for RSA
+        if self._auth == '':  # for RSA
             return self._kx
-        elif self._kx == '': # for PSK
+        elif self._kx == '':  # for PSK
             return self._auth
         else:
             return self._kx + '_' + self._auth
@@ -75,7 +75,7 @@ class CipherSuite(object):
     @property
     def name(self):
         if self._name is None:
-            if self.mac == '': # for CCM and CCM_8 modes
+            if self.mac == '':  # for CCM and CCM_8 modes
                 return 'TLS_' + self.kx_auth + '_WITH_' + self.encoding
             else:
                 return 'TLS_' + self.kx_auth + '_WITH_' + self.encoding + '_' + self.mac
@@ -109,18 +109,16 @@ class CipherSuite(object):
         """In bytes. Default to 1."""
         return self.BLOCK_SIZES.get(self.cipher, 1)
 
+
 # master list of CipherSuite Objects
 # Full list from IANA:
 #   https://www.iana.org/assignments/tls-parameters/tls-parameters.xhtml
 CIPHERSUITES = [
     # not a real cipher suite, can be ignored, see RFC5746
-    CipherSuite(0x00ff, 'NULL', '        ', 'NULL    ', '    ', 'NULL',
-        'TLS_EMPTY_RENEGOTIATION_INFO'),
+    CipherSuite(0x00ff, 'NULL', '        ', 'NULL    ', '    ', 'NULL', 'TLS_EMPTY_RENEGOTIATION_INFO'),
     # RFC7507
-    CipherSuite(0x5600, '', '            ', '', '', '',
-        'TLS_FALLBACK'),
-    CipherSuite(0xffff, '', '            ', '', '', '',
-        'UNKNOWN_CIPHER'),
+    CipherSuite(0x5600, '', '            ', '', '', '', 'TLS_FALLBACK'),
+    CipherSuite(0xffff, '', '            ', '', '', '', 'UNKNOWN_CIPHER'),
 
     # RFC2246 : TLS 1.0
     CipherSuite(0x0000, 'NULL', '        ', 'NULL    ', '    ', 'NULL'),
@@ -130,8 +128,7 @@ CIPHERSUITES = [
     CipherSuite(0x0003, 'RSA_EXPORT', '  ', 'RC4_40  ', '    ', 'MD5'),
     CipherSuite(0x0004, 'RSA', '         ', 'RC4_128 ', '    ', 'MD5'),
     CipherSuite(0x0005, 'RSA', '         ', 'RC4_128 ', '    ', 'SHA'),
-    CipherSuite(0x0006, 'RSA_EXPORT', '  ', 'RC2_40  ', 'CBC ', 'MD5',
-        encoding='RC2_CBC_40'),
+    CipherSuite(0x0006, 'RSA_EXPORT', '  ', 'RC2_40  ', 'CBC ', 'MD5', encoding='RC2_CBC_40'),
     CipherSuite(0x0007, 'RSA', '         ', 'IDEA    ', 'CBC ', 'SHA'),
     CipherSuite(0x0008, 'RSA_EXPORT', '  ', 'DES40   ', 'CBC ', 'SHA'),
     CipherSuite(0x0009, 'RSA', '         ', 'DES     ', 'CBC ', 'SHA'),
@@ -169,15 +166,11 @@ CIPHERSUITES = [
     CipherSuite(0x0024, 'KRB5', '        ', 'RC4_128 ', '    ', 'MD5'),
     CipherSuite(0x0025, 'KRB5', '        ', 'IDEA    ', 'CBC ', 'MD5'),
 
-    CipherSuite(0x0026, 'KRB5_EXPORT', ' ', 'DES40   ', 'CBC ', 'SHA',
-            encoding='DES_CBC_40'),
-    CipherSuite(0x0027, 'KRB5_EXPORT', ' ', 'RC2_40  ', 'CBC ', 'SHA',
-            encoding='RC2_CBC_40'),
+    CipherSuite(0x0026, 'KRB5_EXPORT', ' ', 'DES40   ', 'CBC ', 'SHA', encoding='DES_CBC_40'),
+    CipherSuite(0x0027, 'KRB5_EXPORT', ' ', 'RC2_40  ', 'CBC ', 'SHA', encoding='RC2_CBC_40'),
     CipherSuite(0x0028, 'KRB5_EXPORT', ' ', 'RC4_40  ', '    ', 'SHA'),
-    CipherSuite(0x0029, 'KRB5_EXPORT', ' ', 'DES40   ', 'CBC ', 'MD5',
-            encoding='DES_CBC_40'),
-    CipherSuite(0x002a, 'KRB5_EXPORT', ' ', 'RC2_40  ', 'CBC ', 'MD5',
-            encoding='RC2_CBC_40'),
+    CipherSuite(0x0029, 'KRB5_EXPORT', ' ', 'DES40   ', 'CBC ', 'MD5', encoding='DES_CBC_40'),
+    CipherSuite(0x002a, 'KRB5_EXPORT', ' ', 'RC2_40  ', 'CBC ', 'MD5', encoding='RC2_CBC_40'),
     CipherSuite(0x002b, 'KRB5_EXPORT', ' ', 'RC4_40  ', '    ', 'MD5'),
 
     # RFC4785
@@ -519,11 +512,11 @@ CIPHERSUITES = [
 
     # Unassigned: 0xc0b0-0xcca7
     CipherSuite(0xcc13, 'ECDHE', 'RSA    ', 'CHACHA20', 'POLY1305', 'SHA256',
-        'OLD_TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256'),
+                'OLD_TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256'),
     CipherSuite(0xcc14, 'ECDHE', 'ECDSA  ', 'CHACHA20', 'POLY1305', 'SHA256',
-        'OLD_TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256'),
+                'OLD_TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256'),
     CipherSuite(0xcc15, 'DHE  ', 'RSA    ', 'CHACHA20', 'POLY1305', 'SHA256',
-        'OLD_TLS_DHE_RSA_WITH_CHACHA20_POLY1305_SHA256'),
+                'OLD_TLS_DHE_RSA_WITH_CHACHA20_POLY1305_SHA256'),
 
     # RFC7905
     CipherSuite(0xcca8, 'ECDHE', 'RSA    ', 'CHACHA20', 'POLY1305', 'SHA256'),
@@ -545,12 +538,15 @@ BY_CODE = dict(
 
 # This is a function to avoid artificially increased coverage
 BY_NAME_DICT = None
+
+
 def BY_NAME(name):
     # We initialize the dictionary only on the first call
     global BY_NAME_DICT
     if BY_NAME_DICT is None:
         BY_NAME_DICT = dict((suite.name, suite) for suite in CIPHERSUITES)
     return BY_NAME_DICT[name]
+
 
 NULL_SUITE = BY_CODE[0x0000]
 

@@ -136,17 +136,19 @@ class Gzip(dpkt.Packet):
 
 _hexdecode = binascii.a2b_hex
 
-class TestGzip(object):
 
+class TestGzip(object):
     """This data is created with the gzip command line tool"""
 
     @classmethod
     def setup_class(cls):
-        cls.data = _hexdecode(b'1F8B' # magic
-                              b'080880C185560003' # header
-                              b'68656C6C6F2E74787400' # filename
-                              b'F348CDC9C95728CF2FCA4951E40200' # data
-                              b'41E4A9B20D000000') # checksum
+        cls.data = _hexdecode(
+            b'1F8B'  # magic
+            b'080880C185560003'  # header
+            b'68656C6C6F2E74787400'  # filename
+            b'F348CDC9C95728CF2FCA4951E40200'  # data
+            b'41E4A9B20D000000'  # checksum
+        )
         cls.p = Gzip(cls.data)
 
     def test_method(self):
@@ -166,10 +168,10 @@ class TestGzip(object):
         assert (self.p.os == GZIP_OS_UNIX)
 
     def test_filename(self):
-        assert (self.p.filename == "hello.txt") # always str (utf-8)
+        assert (self.p.filename == "hello.txt")  # always str (utf-8)
 
     def test_decompress(self):
-        assert (self.p.decompress() == b"Hello world!\n") # always bytes
+        assert (self.p.decompress() == b"Hello world!\n")  # always bytes
 
 
 if __name__ == '__main__':
