@@ -3,11 +3,11 @@ from __future__ import absolute_import
 from __future__ import division
 import sys
 
-__author__ = 'Dug Song'
-__author_email__ = 'dugsong@monkey.org'
-__license__ = 'BSD'
-__url__ = 'http://dpkt.googlecode.com/'
-__version__ = '1.9.1'
+__author__ = 'Various'
+__author_email__ = ''
+__license__ = 'BSD-3-Clause'
+__url__ = 'https://github.com/kbandla/dpkt'
+__version__ = '1.9.4'
 
 
 

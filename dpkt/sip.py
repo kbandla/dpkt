@@ -15,7 +15,7 @@ class Request(http.Request):
         __hdr__: Header fields of SIP request.
         TODO.
     """
-    
+
     __hdr_defaults__ = {
         'method': 'INVITE',
         'uri': 'sip:user@example.com',
@@ -39,7 +39,7 @@ class Response(http.Response):
         __hdr__: Header fields of SIP response.
         TODO.
     """
-    
+
     __hdr_defaults__ = {
         'version': '2.0',
         'status': '200',

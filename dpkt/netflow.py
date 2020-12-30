@@ -9,6 +9,7 @@ import struct
 from . import dpkt
 from .compat import compat_izip
 
+
 class NetflowBase(dpkt.Packet):
     """Base class for Cisco Netflow packets.
 

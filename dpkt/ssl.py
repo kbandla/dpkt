@@ -9,6 +9,7 @@ import binascii
 
 from . import dpkt
 from . import ssl_ciphersuites
+from .compat import compat_ord
 
 #
 # Note from April 2011: cde...@gmail.com added code that parses SSL3/TLS messages more in depth.
@@ -20,8 +21,8 @@ from . import ssl_ciphersuites
 class SSL2(dpkt.Packet):
     __hdr__ = (
         ('len', 'H', 0),
-        ('msg', 's', ''),
-        ('pad', 's', ''),
+        ('msg', 's', b''),
+        ('pad', 's', b''),
     )
 
     def unpack(self, buf):
@@ -31,7 +32,7 @@ class SSL2(dpkt.Packet):
             self.msg, self.data = self.data[:n], self.data[n:]
         else:
             n = self.len = self.len & 0x3FFF
-            padlen = ord(self.data[0])
+            padlen = compat_ord(self.data[0])
             self.msg = self.data[1:1 + n]
             self.pad = self.data[1 + n:1 + n + padlen]
             self.data = self.data[1 + n + padlen:]
@@ -351,7 +352,7 @@ class TLSCertificate(dpkt.Packet):
 class TLSUnknownHandshake(dpkt.Packet):
     __hdr__ = tuple()
 
-
+TLSNewSessionTicket = TLSUnknownHandshake
 TLSServerKeyExchange = TLSUnknownHandshake
 TLSCertificateRequest = TLSUnknownHandshake
 TLSServerHelloDone = TLSUnknownHandshake
@@ -366,6 +367,7 @@ HANDSHAKE_TYPES = {
     0: ('HelloRequest', TLSHelloRequest),
     1: ('ClientHello', TLSClientHello),
     2: ('ServerHello', TLSServerHello),
+    4: ('NewSessionTicket', TLSNewSessionTicket),
     11: ('Certificate', TLSCertificate),
     12: ('ServerKeyExchange', TLSServerKeyExchange),
     13: ('CertificateRequest', TLSCertificateRequest),
@@ -450,7 +452,7 @@ def tls_multi_factory(buf):
     """
     i, n = 0, len(buf)
     msgs = []
-    while i < n:
+    while i + 5 <= n:
         v = buf[i + 1:i + 3]
         if v in SSL3_VERSION_BYTES:
             try:
@@ -681,4 +683,21 @@ class TestTLSMultiFactory(object):
 
     def test_second_msg_data(self):
         assert (self.msgs[1].data == _hexdecode(b'BB' * 16))
+
+    def test_incomplete(self):
+        msgs, n = tls_multi_factory(_hexdecode(b'17'))
+        assert (len(msgs) == 0)
+        assert (n == 0)
+        msgs, n = tls_multi_factory(_hexdecode(b'1703'))
+        assert (len(msgs) == 0)
+        assert (n == 0)
+        msgs, n = tls_multi_factory(_hexdecode(b'170301'))
+        assert (len(msgs) == 0)
+        assert (n == 0)
+        msgs, n = tls_multi_factory(_hexdecode(b'17030100'))
+        assert (len(msgs) == 0)
+        assert (n == 0)
+        msgs, n = tls_multi_factory(_hexdecode(b'1703010000'))
+        assert (len(msgs) == 1)
+        assert (n == 5)
 

@@ -16,7 +16,7 @@ class AOECFG(dpkt.Packet):
         __hdr__: Header fields of AOECFG.
         data: Message data.
     """
-    
+
     __hdr__ = (
         ('bufcnt', 'H', 0),
         ('fwver', 'H', 0),

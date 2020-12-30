@@ -53,7 +53,7 @@ GZIP_FENCRYPT_LEN = 12
 class GzipExtra(dpkt.Packet):
     __byte_order__ = '<'
     __hdr__ = (
-        ('id', '2s', ''),
+        ('id', '2s', b''),
         ('len', 'H', 0)
     )
 
@@ -68,9 +68,9 @@ class Gzip(dpkt.Packet):
         ('xflags', 'B', 0),
         ('os', 'B', GZIP_OS_UNIX),
 
-        ('extra', '0s', ''),  # XXX - GZIP_FEXTRA
-        ('filename', '0s', ''),  # XXX - GZIP_FNAME
-        ('comment', '0s', '')  # XXX - GZIP_FCOMMENT
+        ('extra', '0s', b''),  # XXX - GZIP_FEXTRA
+        ('filename', '0s', b''),  # XXX - GZIP_FNAME
+        ('comment', '0s', b'')  # XXX - GZIP_FCOMMENT
     )
 
     def unpack(self, buf):

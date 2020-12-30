@@ -28,7 +28,7 @@ class OSPF(dpkt.Packet):
         ('area', 'I', 0),
         ('sum', 'H', 0),
         ('atype', 'H', 0),
-        ('auth', '8s', '')
+        ('auth', '8s', b'')
     )
 
     def __bytes__(self):

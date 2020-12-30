@@ -131,6 +131,7 @@ class CipherSuite(object):
     def anonymous(self):
         return self.auth.startswith('anon')
 
+      
 # master list of CipherSuite Objects
 # Full list from IANA:
 #   https://www.iana.org/assignments/tls-parameters/tls-parameters.xhtml
@@ -696,4 +697,3 @@ class TestCipherSuites(object):
         assert (BY_CODE[0xcca8] == BY_NAME('TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256'))
         assert (BY_CODE[0xccae] == BY_NAME('TLS_RSA_PSK_WITH_CHACHA20_POLY1305_SHA256'))
         assert (BY_CODE[0xcc15] == BY_NAME('OLD_TLS_DHE_RSA_WITH_CHACHA20_POLY1305_SHA256'))
-

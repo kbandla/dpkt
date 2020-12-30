@@ -9,6 +9,7 @@ import time
 from decimal import Decimal
 
 from . import dpkt
+from .compat import intround
 
 TCPDUMP_MAGIC = 0xa1b2c3d4
 TCPDUMP_MAGIC_NANO = 0xa1b23c4d
@@ -196,33 +197,68 @@ class Writer(object):
         TODO.
     """
 
+    __le = sys.byteorder == 'little'
+
     def __init__(self, fileobj, snaplen=1500, linktype=DLT_EN10MB, nano=False):
         self.__f = fileobj
         self._precision = 9 if nano else 6
+        self._precision_multiplier = 10**self._precision
+
         magic = TCPDUMP_MAGIC_NANO if nano else TCPDUMP_MAGIC
-        if sys.byteorder == 'little':
+        if self.__le:
             fh = LEFileHdr(snaplen=snaplen, linktype=linktype, magic=magic)
+            self._PktHdr = LEPktHdr()
         else:
             fh = FileHdr(snaplen=snaplen, linktype=linktype, magic=magic)
+            self._PktHdr = PktHdr()
+
+        self._pack_hdr = self._PktHdr._pack_hdr
         self.__f.write(bytes(fh))
 
     def writepkt(self, pkt, ts=None):
+        """Write single packet and optional timestamp to file.
+
+        Args:
+            pkt: `bytes` will be called on this and written to file.
+            ts (float): Timestamp in seconds. Defaults to current time.
+        """
         if ts is None:
             ts = time.time()
-        s = bytes(pkt)
-        n = len(s)
+
+        self.writepkt_time(bytes(pkt), ts)
+
+    def writepkt_time(self, pkt, ts):
+        """Write single packet and its timestamp to file.
+
+        Args:
+            pkt (bytes): Some `bytes` to write to the file
+            ts (float): Timestamp in seconds
+        """
+        n = len(pkt)
         sec = int(ts)
-        usec = int(round(ts % 1 * 10 ** self._precision))
-        if sys.byteorder == 'little':
-            ph = LEPktHdr(tv_sec=sec,
-                          tv_usec=usec,
-                          caplen=n, len=n)
-        else:
-            ph = PktHdr(tv_sec=sec,
-                        tv_usec=usec,
-                        caplen=n, len=n)
-        self.__f.write(bytes(ph))
-        self.__f.write(s)
+        usec = intround(ts % 1 * self._precision_multiplier)
+        ph = self._pack_hdr(sec, usec, n, n)
+        self.__f.write(ph + pkt)
+
+    def writepkts(self, pkts):
+        """Write an iterable of packets to file.
+
+        Timestamps should be in seconds.
+        Packets must be of type `bytes` as they will not be cast.
+
+        Args:
+            pkts: iterable containing (ts, pkt)
+        """
+        fd = self.__f
+        pack_hdr = self._pack_hdr
+        precision_multiplier = self._precision_multiplier
+
+        for ts, pkt in pkts:
+            n = len(pkt)
+            sec = int(ts)
+            usec = intround(ts % 1 * precision_multiplier)
+            ph = pack_hdr(sec, usec, n, n)
+            fd.write(ph + pkt)
 
     def close(self):
         self.__f.close()
@@ -276,6 +312,7 @@ class Reader(object):
 
     def __next__(self):
         return next(self.__iter)
+    next = __next__  # Python 2 compat
 
     def dispatch(self, cnt, callback, *args):
         """Collect and process packets with a user callback.
@@ -317,6 +354,38 @@ class Reader(object):
             yield (hdr.tv_sec + (hdr.tv_usec / self._divisor), buf)
 
 
+################################################################################
+#                                    TESTS                                     #
+################################################################################
+class TryExceptException:
+    def __init__(self, exception_type, msg=''):
+        self.exception_type = exception_type
+        self.msg = msg
+
+    def __call__(self, f, *args, **kwargs):
+        def wrapper(*args, **kwargs):
+            try:
+                f()
+            except self.exception_type as e:
+                if self.msg:
+                    assert str(e) == self.msg
+            else:
+                raise Exception("There should have been an Exception raised")
+        return wrapper
+
+@TryExceptException(Exception, msg='There should have been an Exception raised')
+def test_TryExceptException():
+    """ Check that we can catch a function which does not throw an exception when it is supposed to """
+    @TryExceptException(NotImplementedError)
+    def fun():
+        pass
+
+    try:
+        fun()
+    except Exception as e:
+        raise e
+
+
 def test_pcap_endian():
     be = b'\xa1\xb2\xc3\xd4\x00\x02\x00\x04\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x60\x00\x00\x00\x01'
     le = b'\xd4\xc3\xb2\xa1\x02\x00\x04\x00\x00\x00\x00\x00\x00\x00\x00\x00\x60\x00\x00\x00\x01\x00\x00\x00'
@@ -325,13 +394,16 @@ def test_pcap_endian():
     assert (befh.linktype == lefh.linktype)
 
 
-def test_reader():
-    data = (  # full libpcap file with one packet
+class TestData():
+    pcap = (  # full libpcap file with one packet
         b'\xd4\xc3\xb2\xa1\x02\x00\x04\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff\x00\x00\x01\x00\x00\x00'
         b'\xb2\x67\x4a\x42\xae\x91\x07\x00\x46\x00\x00\x00\x46\x00\x00\x00\x00\xc0\x9f\x32\x41\x8c\x00\xe0'
         b'\x18\xb1\x0c\xad\x08\x00\x45\x00\x00\x38\x00\x00\x40\x00\x40\x11\x65\x47\xc0\xa8\xaa\x08\xc0\xa8'
         b'\xaa\x14\x80\x1b\x00\x35\x00\x24\x85\xed'
     )
+
+def test_reader():
+    data = TestData().pcap
 
     # --- BytesIO tests ---
     from .compat import BytesIO
@@ -361,41 +433,128 @@ def test_reader():
     assert reader.dispatch(1, lambda ts, pkt: None) == 1
     assert reader.dispatch(1, lambda ts, pkt: None) == 0
 
+    # test loop() over all packets
+    fobj.seek(0)
+    reader = Reader(fobj)
 
-def test_writer_precision():
-    data = b'foo'
+    class Count:
+        counter = 0
+
+        @classmethod
+        def inc(cls):
+            cls.counter += 1
+
+    reader.loop(lambda ts, pkt: Count.inc())
+    assert Count.counter == 1
+
+
+@TryExceptException(ValueError, msg="invalid tcpdump header")
+def test_reader_badheader():
     from .compat import BytesIO
-
-    # default precision
-    fobj = BytesIO()
-    writer = Writer(fobj)
-    writer.writepkt(data, ts=1454725786.526401)
-    fobj.flush()
-    fobj.seek(0)
-
+    fobj = BytesIO(b'\x00'*24)
     reader = Reader(fobj)
-    ts, buf1 = next(iter(reader))
-    assert ts == 1454725786.526401
-    assert buf1 == b'foo'
 
-    # nano precision
-    from decimal import Decimal
+def test_reader_fd():
+    data = TestData().pcap
 
-    fobj = BytesIO()
-    writer = Writer(fobj, nano=True)
-    writer.writepkt(data, ts=Decimal('1454725786.010203045'))
-    fobj.flush()
-    fobj.seek(0)
+    import tempfile
+    with tempfile.TemporaryFile() as fd:
+        fd.write(data)
+        fd.seek(0)
+        reader = Reader(fd)
+        assert reader.fd == fd.fileno()
+        assert reader.fileno() == fd.fileno()
 
-    reader = Reader(fobj)
-    ts, buf1 = next(iter(reader))
-    assert ts == Decimal('1454725786.010203045')
-    assert buf1 == b'foo'
+class WriterTestWrap:
+    """
+    Decorate a writer test function with an instance of this class.
 
+    The test will be provided with a writer object, which it shoud write some pkts to.
 
-if __name__ == '__main__':
-    test_pcap_endian()
-    test_reader()
-    test_writer_precision()
+    After the test has run, the BytesIO object will be passed to a Reader, which will compare each pkt to the return value of the test.
+    """
+    def __init__(self, *args, **kwargs):
+        self.args = args
+        self.kwargs = kwargs
 
-    print('Tests Successful...')
+    def __call__(self, f, *args, **kwargs):
+        def wrapper(*args, **kwargs):
+            from .compat import BytesIO
+            for little_endian in [True, False]:
+                fobj = BytesIO()
+                _sysle = Writer._Writer__le
+                Writer._Writer__le = little_endian
+                f.__globals__['writer'] = Writer(fobj, **self.kwargs.get('writer', {}))
+                f.__globals__['fobj'] = fobj
+                pkts = f(*args, **kwargs)
+                fobj.flush()
+                fobj.seek(0)
+
+                assert pkts
+                for (ts_out, pkt_out), (ts_in, pkt_in) in zip(pkts, Reader(fobj).readpkts()):
+                    assert ts_out == ts_in
+                    assert pkt_out == pkt_in
+
+                # 'noqa' for flake8 to ignore these since writer was injected into globals
+                writer.close()  # noqa
+                Writer._Writer__le = _sysle
+        return wrapper
+
+@WriterTestWrap()
+def test_writer_precision_normal():
+    ts, pkt = 1454725786.526401, b'foo'
+    writer.writepkt(pkt, ts=ts)  # noqa
+    return [(ts, pkt)]
+
+@WriterTestWrap(writer={'nano': True})
+def test_writer_precision_nano():
+    ts, pkt = Decimal('1454725786.010203045'), b'foo'
+    writer.writepkt(pkt, ts=ts)  # noqa
+    return [(ts, pkt)]
+
+@WriterTestWrap(writer={'nano': False})
+def test_writer_precision_nano_fail():
+    """ if writer is not set to nano, supplying this timestamp should be truncated """
+    ts, pkt = (Decimal('1454725786.010203045'), b'foo')
+    writer.writepkt(pkt, ts=ts)  # noqa
+    return [(1454725786.010203, pkt)]
+
+@WriterTestWrap()
+def test_writepkt_no_time():
+    ts, pkt = 1454725786.526401, b'foooo'
+    _tmp = time.time
+    time.time = lambda: ts
+    writer.writepkt(pkt)  # noqa
+    time.time = _tmp
+    return [(ts, pkt)]
+
+@WriterTestWrap(writer={'snaplen': 10})
+def test_writepkt_snaplen():
+    ts, pkt = 1454725786.526401, b'foooo'
+    writer.writepkt(pkt, ts)  # noqa
+    return [(ts, pkt)]
+
+@WriterTestWrap()
+def test_writepkt_with_time():
+    ts, pkt = 1454725786.526401, b'foooo'
+    writer.writepkt(pkt, ts)  # noqa
+    return [(ts, pkt)]
+
+@WriterTestWrap()
+def test_writepkt_time():
+    ts, pkt = 1454725786.526401, b'foooo'
+    writer.writepkt_time(pkt, ts)  # noqa
+    return [(ts, pkt)]
+
+@WriterTestWrap()
+def test_writepkts():
+    """ writing multiple packets from a list """
+    pkts = [
+        (1454725786.526401, b"fooo"),
+        (1454725787.526401, b"barr"),
+        (3243204320.093211, b"grill"),
+        (1454725789.526401, b"lol"),
+    ]
+
+    writer.writepkts(pkts)  # noqa
+    return pkts
