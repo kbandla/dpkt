@@ -92,11 +92,21 @@ class CipherSuite(object):
         'SHA384': 48,
     }
 
-    # TODO: add RC4_40, RC4_128, RC2_40, IDEA, DES40, DES, 3DES_EDE,
-    #   CAMELLIA_128, CAMELLIA_256, SEED, ARIA_128, ARIA_256, CHACHA20
     BLOCK_SIZES = {
+        '3DES_EDE': 8,
         'AES_128': 16,
         'AES_256': 16,
+        'ARIA': 16,
+        'CAMELLIA_128': 16,
+        'CAMELLIA_256': 16,
+        'CHACHA20': 64,
+        'DES': 8,
+        'DES40': 8,
+        'IDEA': 8,
+        'RC2_40': 8,
+        'RC4_40': None,
+        'RC4_128': None,
+        'SEED': 16,
     }
 
     @property
@@ -108,6 +118,18 @@ class CipherSuite(object):
     def block_size(self):
         """In bytes. Default to 1."""
         return self.BLOCK_SIZES.get(self.cipher, 1)
+
+    @property
+    def pfs(self):
+        return self.kx in ('DHE', 'ECDHE')
+
+    @property
+    def aead(self):
+        return self.mode in ('CCM', 'CCM_8', 'GCM')
+
+    @property
+    def anonymous(self):
+        return self.auth.startswith('anon')
 
 
 # master list of CipherSuite Objects
@@ -616,6 +638,22 @@ class TestCipherSuites(object):
         assert (BY_CODE[0xcc14].auth == 'ECDSA')
         assert (BY_CODE[0xcca8].auth == 'RSA')
         assert (BY_CODE[0xccae].auth == 'PSK')
+
+    def test_pfs(self):
+        assert (BY_NAME('TLS_RSA_WITH_RC4_128_SHA').pfs is False)
+        assert (BY_NAME('TLS_DHE_DSS_WITH_AES_256_CBC_SHA256').pfs is True)
+        assert (BY_NAME('TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA').pfs is True)
+
+    def test_aead(self):
+        assert (BY_NAME('TLS_RSA_WITH_AES_128_CBC_SHA256').aead is False)
+        assert (BY_NAME('TLS_RSA_WITH_AES_256_CCM').aead is True)
+        assert (BY_NAME('TLS_DHE_RSA_WITH_AES_128_CCM_8').aead is True)
+        assert (BY_NAME('TLS_DHE_PSK_WITH_AES_256_GCM_SHA384').aead is True)
+
+    def test_anonymous(self):
+        assert (BY_NAME('TLS_RSA_WITH_RC4_128_SHA').anonymous is False)
+        assert (BY_NAME('TLS_DH_anon_WITH_AES_128_CBC_SHA').anonymous is True)
+        assert (BY_NAME('TLS_DH_anon_EXPORT_WITH_DES40_CBC_SHA').anonymous is True)
 
     def test_by_name_and_code(self):
         # Special cases:

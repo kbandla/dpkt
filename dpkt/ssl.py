@@ -283,14 +283,17 @@ class TLSClientHello(dpkt.Packet):
         # handle ciphersuites
         ciphersuites, parsed = parse_variable_array(self.data[pointer:], 2)
         pointer += parsed
-        self.num_ciphersuites = len(ciphersuites) / 2
+        num_ciphersuites = int(len(ciphersuites) / 2)
+        try:
+            self.ciphersuites = [
+                ssl_ciphersuites.BY_CODE[code] for code in struct.unpack('!' + num_ciphersuites * 'H', ciphersuites)]
+        except KeyError as e:
+            raise SSL3Exception('Unknown or invalid cipher suite type %x' % int(e.args[0]))
         # check len(ciphersuites) % 2 == 0 ?
         # compression methods
-        compression_methods, parsed = parse_variable_array(
-            self.data[pointer:], 1)
+        compression_methods, parsed = parse_variable_array(self.data[pointer:], 1)
         pointer += parsed
-        self.num_compression_methods = parsed - 1
-        self.compression_methods = map(ord, compression_methods)
+        self.compression_methods = struct.unpack('{0}B'.format(len(compression_methods)), compression_methods)
         # Parse extensions if present
         if len(self.data[pointer:]) >= 6:
             self.extensions = parse_extensions(self.data[pointer:])
@@ -307,7 +310,11 @@ class TLSServerHello(dpkt.Packet):
             dpkt.Packet.unpack(self, buf)
             self.session_id, pointer = parse_variable_array(self.data, 1)
             # single cipher suite
-            self.cipher_suite = struct.unpack('!H', self.data[pointer:pointer + 2])[0]
+            try:
+                code = struct.unpack('!H', self.data[pointer:pointer + 2])[0]
+                self.cipher_suite = ssl_ciphersuites.BY_CODE[code]
+            except KeyError as e:
+                raise SSL3Exception('Unknown or invalid cipher suite type %x' % int(e.args[0]))
             pointer += 2
             # single compression method
             self.compression = struct.unpack('!B', self.data[pointer:pointer + 1])[0]
@@ -595,8 +602,8 @@ class TestClientHello(object):
             b"5008220ce5e0e78b6891afe204498c9363feffbe03235a2d9e05b7d990eb708d"  # rand
             b"2009bc0192e008e6fa8fe47998fca91311ba30ddde14a9587dc674b11c3d3e5ed1"  # session id
             # cipher suites
-            b"005400ffc00ac0140088008700390038c00fc00500840035c007c009c011c0130045004400330032"
-            b"c00cc00ec002c0040096004100050004002fc008c01200160013c00dc003feff000ac006c010c00bc00100020001"
+            b"005200ffc00ac0140088008700390038c00fc00500840035c007c009c011c0130045004400330032"
+            b"c00cc00ec002c0040096004100050004002fc008c01200160013c00dc003000ac006c010c00bc00100020001"
             b"0100"  # compresssion methods
             # extensions
             b"00fc0000000e000c0000096c6f63616c686f7374000a00080006001700180019000b000201000023"
@@ -620,16 +627,18 @@ class TestClientHello(object):
     def test_client_random_correct(self):
         assert (self.p.data.random == _hexdecode(b'5008220ce5e0e78b6891afe204498c9363feffbe03235a2d9e05b7d990eb708d'))
 
-    def test_cipher_suite_length(self):
-        # we won't bother testing the identity of each cipher suite in the list.
-        assert (self.p.data.num_ciphersuites == 42)
-        # self.assertEqual(len(self.p.ciphersuites), 42)
+    def test_cipher_suite(self):
+        assert (tuple([c.code for c in self.p.data.ciphersuites]) == struct.unpack('!{0}H'.format(
+            len(self.p.data.ciphersuites)), _hexdecode(
+            b'00ffc00ac0140088008700390038c00fc00500840035c007c009c011c0130045004400330032c00c'
+            b'c00ec002c0040096004100050004002fc008c01200160013c00dc003000ac006c010c00bc00100020001')))
+        assert (len(self.p.data.ciphersuites) == 41)
 
     def test_session_id(self):
         assert (self.p.data.session_id == _hexdecode(b'09bc0192e008e6fa8fe47998fca91311ba30ddde14a9587dc674b11c3d3e5ed1'))
 
     def test_compression_methods(self):
-        assert (self.p.data.num_compression_methods == 1)
+        assert (list(self.p.data.compression_methods) == [0x00, ])
 
     def test_total_length(self):
         assert (len(self.p) == 413)
@@ -655,7 +664,7 @@ class TestServerHello(object):
         assert (self.p.data.random == _hexdecode(b'5008220c8ec43c5462315a7c99f5d5b6bff009ad285b51dc18485f352e9fdecd'))
 
     def test_cipher_suite(self):
-        assert (ssl_ciphersuites.BY_CODE[self.p.data.cipher_suite].name == 'TLS_RSA_WITH_NULL_SHA')
+        assert (self.p.data.cipher_suite.name == 'TLS_RSA_WITH_NULL_SHA')
 
     def test_total_length(self):
         assert (len(self.p) == 81)
