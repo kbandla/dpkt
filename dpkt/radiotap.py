@@ -241,15 +241,17 @@ class Radiotap(dpkt.Packet):
             ('ant', self.ant_present, self.Antenna),
             ('db_ant_sig', self.db_ant_sig_present, self.DbAntennaSignal),
             ('db_ant_noise', self.db_ant_noise_present, self.DbAntennaNoise),
-            ('rx_flags', self.rx_flags_present, self.RxFlags)
+            ('rx_flags', self.rx_flags_present, self.RxFlags),
+            ('chanplus', self.chanplus_present, self.ChannelPlus)
         ]
 
         offset = self.__hdr_len__ + len(self.present_flags)
 
         for name, present_bit, parser in field_decoder:
             if present_bit:
-                if parser.__alignment__ > 1:
-                    padding = offset % parser.__alignment__
+                ali = parser.__alignment__
+                if ali > 1 and offset % ali:
+                    padding = ali - offset % ali
                     buf = buf[padding:]
                     offset += padding
                 field = parser(buf)
@@ -257,6 +259,7 @@ class Radiotap(dpkt.Packet):
                 setattr(self, name, field)
                 self.fields.append(field)
                 buf = buf[len(field):]
+                offset += len(field)
 
         if len(self.data) > 0:
             if self.flags_present and self.flags.fcs:
@@ -275,12 +278,12 @@ class Radiotap(dpkt.Packet):
 
     class AntennaNoise(RadiotapField):
         __hdr__ = (
-            ('db', 'B', 0),
+            ('db', 'b', 0),
         )
 
     class AntennaSignal(RadiotapField):
         __hdr__ = (
-            ('db', 'B', 0),
+            ('db', 'b', 0),
         )
 
     class Channel(RadiotapField):
@@ -429,8 +432,29 @@ def test_fcs():
     assert(rt.flags.fcs == 1)
 
 
+def test_radiotap_3():  # xchannel aka channel plus field
+    s = (
+        b'\x00\x00\x20\x00\x67\x08\x04\x00\x84\x84\x66\x25\x00\x00\x00\x00\x22\x0c\xd6\xa0\x01\x00\x00\x00\x40'
+        b'\x01\x00\x00\x3c\x14\x24\x11\x08\x02\x00\x00\xff\xff\xff\xff\xff\xff\x06\x03\x7f\x07\xa0\x16\x00\x19'
+        b'\xe3\xd3\x53\x52\x00\x8e\xaa\xaa\x03\x00\x00\x00\x08\x06\x00\x01\x08\x00\x06\x04\x00\x01\x00\x19\xe3'
+        b'\xd3\x53\x52\xa9\xfe\xf7\x00\x00\x00\x00\x00\x00\x00\x4f\x67\x32\x38'
+    )
+    rt = Radiotap(s)
+    assert rt.ant_noise.db == -96
+    assert rt.ant_sig.db == -42
+    assert rt.ant.index == 1
+    assert rt.chanplus_present
+    assert rt.chanplus.flags == 0x140
+    assert rt.chanplus.freq == 5180
+    assert rt.chanplus.channel == 36
+    assert rt.chanplus.maxpower == 17
+    assert len(rt.fields) == 7
+    assert repr(rt.data).startswith('IEEE80211')
+
+
 if __name__ == '__main__':
     test_radiotap_1()
     test_radiotap_2()
+    test_radiotap_3()
     test_fcs()
     print('Tests Successful...')
