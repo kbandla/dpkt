@@ -66,13 +66,13 @@ class TableDump(dpkt.Packet):
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
         plen = self.attr_len
-        l = []
+        l_ = []
         while plen > 0:
             attr = bgp.BGP.Update.Attribute(self.data)
             self.data = self.data[len(attr):]
             plen -= len(attr)
-            l.append(attr)
-        self.attributes = l
+            l_.append(attr)
+        self.attributes = l_
 
 
 class BGP4MPMessage(dpkt.Packet):

@@ -43,7 +43,7 @@ class _MetaPacket(type):
 
 
 class Packet(_MetaPacket("Temp", (object,), {})):
-    """Base packet class, with metaclass magic to generate members from self.__hdr__.
+    r"""Base packet class, with metaclass magic to generate members from self.__hdr__.
 
     Attributes:
         __hdr__: Packet header should be defined as a list of
@@ -119,28 +119,28 @@ class Packet(_MetaPacket("Temp", (object,), {})):
         # 3. dynamically added fields from self.__dict__, unless they are _private
         # 4. self.data when it's present
 
-        l = []
+        l_ = []
         # maintain order of fields as defined in __hdr__
         for field_name, _, _ in getattr(self, '__hdr__', []):
             field_value = getattr(self, field_name)
             if field_value != self.__hdr_defaults__[field_name]:
                 if field_name[0] != '_':
-                    l.append('%s=%r' % (field_name, field_value))  # (1)
+                    l_.append('%s=%r' % (field_name, field_value))  # (1)
                 else:
                     # interpret _private fields as name of properties joined by underscores
                     for prop_name in field_name.split('_'):        # (2)
                         if isinstance(getattr(self.__class__, prop_name, None), property):
-                            l.append('%s=%r' % (prop_name, getattr(self, prop_name)))
+                            l_.append('%s=%r' % (prop_name, getattr(self, prop_name)))
         # (3)
-        l.extend(
+        l_.extend(
             ['%s=%r' % (attr_name, attr_value)
              for attr_name, attr_value in iteritems(self.__dict__)
-             if attr_name[0] != '_'                   # exclude _private attributes
-             and attr_name != self.data.__class__.__name__.lower()])  # exclude fields like ip.udp
+             if attr_name[0] != '_' and                   # exclude _private attributes
+                attr_name != self.data.__class__.__name__.lower()])  # exclude fields like ip.udp
         # (4)
         if self.data:
-            l.append('data=%r' % self.data)
-        return '%s(%s)' % (self.__class__.__name__, ', '.join(l))
+            l_.append('data=%r' % self.data)
+        return '%s(%s)' % (self.__class__.__name__, ', '.join(l_))
 
     def __str__(self):
         return str(self.__bytes__())
@@ -178,8 +178,13 @@ class Packet(_MetaPacket("Temp", (object,), {})):
             setattr(self, k, v)
         self.data = buf[self.__hdr_len__:]
 
+
 # XXX - ''.join([(len(`chr(x)`)==3) and chr(x) or '.' for x in range(256)])
-__vis_filter = b'................................ !"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[.]^_`abcdefghijklmnopqrstuvwxyz{|}~.................................................................................................................................'
+__vis_filter = (
+    b'................................ !"#$%&\'()*+,-./0123456789:;<=>?'
+    b'@ABCDEFGHIJKLMNOPQRSTUVWXYZ[.]^_`abcdefghijklmnopqrstuvwxyz{|}~.'
+    b'................................................................'
+    b'................................................................')
 
 
 def hexdump(buf, length=16):
@@ -227,7 +232,7 @@ def test_utils():
 
 
 def test_getitem():
-    """ create a Packet subclass and access its properties """
+    """create a Packet subclass and access its properties"""
     class Foo(Packet):
         __hdr__ = (
             ('foo', 'I', 1),
@@ -247,7 +252,7 @@ def test_getitem():
 
 
 def test_pack_hdr_overflow():
-    """ Try to fit too much data into struct packing """
+    """Try to fit too much data into struct packing"""
     class Foo(Packet):
         __hdr__ = (
             ('foo', 'I', 1),
@@ -264,7 +269,7 @@ def test_pack_hdr_overflow():
 
 
 def test_pack_hdr_tuple():
-    """ Test the unpacking of a tuple for a single format string """
+    """Test the unpacking of a tuple for a single format string"""
     class Foo(Packet):
         __hdr__ = (
             ('bar', 'II', (1, 2)),

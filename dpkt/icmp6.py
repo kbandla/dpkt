@@ -48,7 +48,7 @@ class ICMP6(dpkt.Packet):
         __hdr__: Header fields of ICMPv6.
         TODO.
     """
-    
+
     __hdr__ = (
         ('type', 'B', 0),
         ('code', 'B', 0),
@@ -63,12 +63,14 @@ class ICMP6(dpkt.Packet):
             from . import ip6
             self.data = self.ip6 = ip6.IP6(self.data)
 
-    class Unreach(Error): pass
+    class Unreach(Error):
+        pass
 
     class TooBig(Error):
         __hdr__ = (('mtu', 'I', 1232), )
 
-    class TimeExceed(Error): pass
+    class TimeExceed(Error):
+        pass
 
     class ParamProb(Error):
         __hdr__ = (('ptr', 'I', 0), )

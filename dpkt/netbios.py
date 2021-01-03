@@ -12,23 +12,23 @@ from .compat import compat_ord
 
 def encode_name(name):
     """Return the NetBIOS first-level encoded name."""
-    l = []
+    l_ = []
     for c in struct.pack('16s', name.encode()):
         c = compat_ord(c)
-        l.append(chr((c >> 4) + 0x41))
-        l.append(chr((c & 0xf) + 0x41))
-    return ''.join(l)
+        l_.append(chr((c >> 4) + 0x41))
+        l_.append(chr((c & 0xf) + 0x41))
+    return ''.join(l_)
 
 
 def decode_name(nbname):
     """Return the NetBIOS first-level decoded nbname."""
     if len(nbname) != 32:
         return nbname
-    l = []
+    l_ = []
     for i in range(0, 32, 2):
-        l.append(chr(((ord(nbname[i]) - 0x41) << 4) |
-                     ((ord(nbname[i + 1]) - 0x41) & 0xf)))
-    return ''.join(l).split('\x00', 1)[0]
+        l_.append(chr(((ord(nbname[i]) - 0x41) << 4) |
+                      ((ord(nbname[i + 1]) - 0x41) & 0xf)))
+    return ''.join(l_).split('\x00', 1)[0]
 
 
 # RR types
@@ -113,15 +113,15 @@ class NS(dns.DNS):
             elif self.type == NS_NBSTAT:
                 num = ord(self.rdata[0])
                 off = 1
-                l = []
+                l_ = []
                 for i in range(num):
                     name = self.rdata[off:off + 15].split(None, 1)[0].split('\x00', 1)[0]
                     service = ord(self.rdata[off + 15])
                     off += 16
                     flags = struct.unpack('>H', self.rdata[off:off + 2])[0]
                     off += 2
-                    l.append((name, service, flags))
-                self.nodenames = l
+                    l_.append((name, service, flags))
+                self.nodenames = l_
                 # XXX - skip stats
 
     # FIXME: dns.DNS.pack_name does not exist; dns.pack_name has a different signature

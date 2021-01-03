@@ -188,7 +188,7 @@ class SCCP(dpkt.Packet):
         __hdr__: Header fields of SCCP.
         TODO.
     """
-    
+
     __byte_order__ = '<'
     __hdr__ = (
         ('len', 'I', 0),

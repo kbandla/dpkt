@@ -130,7 +130,7 @@ class BGP(dpkt.Packet):
     """Border Gateway Protocol.
 
     BGP is an inter-AS routing protocol.
-    See more about the BGP on \
+    See more about the BGP on
     https://en.wikipedia.org/wiki/Border_Gateway_Protocol
 
     Attributes:
@@ -172,14 +172,14 @@ class BGP(dpkt.Packet):
 
         def unpack(self, buf):
             dpkt.Packet.unpack(self, buf)
-            l = []
+            l_ = []
             plen = self.param_len
             while plen > 0:
                 param = self.Parameter(self.data)
                 self.data = self.data[len(param):]
                 plen -= len(param)
-                l.append(param)
-            self.data = self.parameters = l
+                l_.append(param)
+            self.data = self.parameters = l_
 
         def __len__(self):
             return self.__hdr_len__ + sum(map(len, self.parameters))
@@ -232,47 +232,47 @@ class BGP(dpkt.Packet):
             # Withdrawn Routes
             wlen = struct.unpack('>H', self.data[:2])[0]
             self.data = self.data[2:]
-            l = []
+            l_ = []
             while wlen > 0:
                 route = RouteIPV4(self.data)
                 self.data = self.data[len(route):]
                 wlen -= len(route)
-                l.append(route)
-            self.withdrawn = l
+                l_.append(route)
+            self.withdrawn = l_
 
             # Path Attributes
             plen = struct.unpack('>H', self.data[:2])[0]
             self.data = self.data[2:]
-            l = []
+            l_ = []
             while plen > 0:
                 attr = self.Attribute(self.data)
                 self.data = self.data[len(attr):]
                 plen -= len(attr)
-                l.append(attr)
-            self.attributes = l
+                l_.append(attr)
+            self.attributes = l_
 
             # Announced Routes
-            l = []
+            l_ = []
             while self.data:
                 if len(self.data) % 9 == 0:
                     route = ExtendedRouteIPV4(self.data)
                 else:
                     route = RouteIPV4(self.data)
                 self.data = self.data[len(route):]
-                l.append(route)
-            self.announced = l
+                l_.append(route)
+            self.announced = l_
 
         def __len__(self):
             return 2 + sum(map(len, self.withdrawn)) + \
-                   2 + sum(map(len, self.attributes)) + \
-                   sum(map(len, self.announced))
+                2 + sum(map(len, self.attributes)) + \
+                sum(map(len, self.announced))
 
         def __bytes__(self):
             return struct.pack('>H', sum(map(len, self.withdrawn))) + \
-                   b''.join(map(bytes, self.withdrawn)) + \
-                   struct.pack('>H', sum(map(len, self.attributes))) + \
-                   b''.join(map(bytes, self.attributes)) + \
-                   b''.join(map(bytes, self.announced))
+                b''.join(map(bytes, self.withdrawn)) + \
+                struct.pack('>H', sum(map(len, self.attributes))) + \
+                b''.join(map(bytes, self.attributes)) + \
+                b''.join(map(bytes, self.announced))
 
         class Attribute(dpkt.Packet):
             __hdr__ = (
@@ -375,7 +375,7 @@ class BGP(dpkt.Packet):
 
                 def unpack(self, buf):
                     self.data = buf
-                    l = []
+                    l_ = []
                     as4 = len(self.data) == 6
                     while self.data:
                         if as4:
@@ -383,8 +383,8 @@ class BGP(dpkt.Packet):
                         else:
                             seg = self.ASPathSegment(self.data)
                         self.data = self.data[len(seg):]
-                        l.append(seg)
-                    self.data = self.segments = l
+                        l_.append(seg)
+                    self.data = self.segments = l_
 
                 def __len__(self):
                     return sum(map(len, self.data))
@@ -400,12 +400,12 @@ class BGP(dpkt.Packet):
 
                     def unpack(self, buf):
                         dpkt.Packet.unpack(self, buf)
-                        l = []
+                        l_ = []
                         for i in range(self.len):
                             AS = struct.unpack('>H', self.data[:2])[0]
                             self.data = self.data[2:]
-                            l.append(AS)
-                        self.data = self.path = l
+                            l_.append(AS)
+                        self.data = self.path = l_
 
                     def __len__(self):
                         return self.__hdr_len__ + 2 * len(self.path)
@@ -424,13 +424,13 @@ class BGP(dpkt.Packet):
 
                     def unpack(self, buf):
                         dpkt.Packet.unpack(self, buf)
-                        l = []
+                        l_ = []
                         for i in range(self.len):
                             if len(self.data) >= 4:
                                 AS = struct.unpack('>I', self.data[:4])[0]
                                 self.data = self.data[4:]
-                                l.append(AS)
-                        self.path = l
+                                l_.append(AS)
+                        self.path = l_
 
                     def __len__(self):
                         return self.__hdr_len__ + 4 * len(self.path)
@@ -479,7 +479,7 @@ class BGP(dpkt.Packet):
 
                 def unpack(self, buf):
                     self.data = buf
-                    l = []
+                    l_ = []
                     while self.data:
                         val = struct.unpack('>I', self.data[:4])[0]
                         if (0x00000000 <= val <= 0x0000ffff) or (0xffff0000 <= val <= 0xffffffff):
@@ -487,8 +487,8 @@ class BGP(dpkt.Packet):
                         else:
                             comm = self.Community(self.data[:4])
                         self.data = self.data[len(comm):]
-                        l.append(comm)
-                    self.data = self.list = l
+                        l_.append(comm)
+                    self.data = self.list = l_
 
                 def __len__(self):
                     return sum(map(len, self.data))
@@ -519,12 +519,12 @@ class BGP(dpkt.Packet):
 
                 def unpack(self, buf):
                     self.data = buf
-                    l = []
+                    l_ = []
                     while self.data:
                         id = struct.unpack('>I', self.data[:4])[0]
                         self.data = self.data[4:]
-                        l.append(id)
-                    self.data = self.list = l
+                        l_.append(id)
+                    self.data = self.list = l_
 
                 def __len__(self):
                     return 4 * len(self.list)
@@ -548,27 +548,27 @@ class BGP(dpkt.Packet):
                     hop_len = 4
                     if self.afi == AFI_IPV6:
                         hop_len = 16
-                    l = []
+                    l_ = []
                     nlen = struct.unpack('B', self.data[:1])[0]
                     self.data = self.data[1:]
                     # next_hop is kept for backward compatibility
                     self.next_hop = self.data[:nlen]
                     while nlen > 0:
                         hop = self.data[:hop_len]
-                        l.append(hop)
+                        l_.append(hop)
                         self.data = self.data[hop_len:]
                         nlen -= hop_len
-                    self.next_hops = l
+                    self.next_hops = l_
 
                     # SNPAs
-                    l = []
+                    l_ = []
                     num_snpas = struct.unpack('B', self.data[:1])[0]
                     self.data = self.data[1:]
                     for i in range(num_snpas):
                         snpa = self.SNPA(self.data)
                         self.data = self.data[len(snpa):]
-                        l.append(snpa)
-                    self.snpas = l
+                        l_.append(snpa)
+                    self.snpas = l_
 
                     if self.afi == AFI_IPV4:
                         Route = RouteIPV4
@@ -580,26 +580,26 @@ class BGP(dpkt.Packet):
                         Route = RouteGeneric
 
                     # Announced Routes
-                    l = []
+                    l_ = []
                     while self.data:
                         route = Route(self.data)
                         self.data = self.data[len(route):]
-                        l.append(route)
-                    self.data = self.announced = l
+                        l_.append(route)
+                    self.data = self.announced = l_
 
                 def __len__(self):
                     return self.__hdr_len__ + \
-                           1 + sum(map(len, self.next_hops)) + \
-                           1 + sum(map(len, self.snpas)) + \
-                           sum(map(len, self.announced))
+                        1 + sum(map(len, self.next_hops)) + \
+                        1 + sum(map(len, self.snpas)) + \
+                        sum(map(len, self.announced))
 
                 def __bytes__(self):
                     return self.pack_hdr() + \
-                           struct.pack('B', sum(map(len, self.next_hops))) + \
-                           b''.join(map(bytes, self.next_hops)) + \
-                           struct.pack('B', len(self.snpas)) + \
-                           b''.join(map(bytes, self.snpas)) + \
-                           b''.join(map(bytes, self.announced))
+                        struct.pack('B', sum(map(len, self.next_hops))) + \
+                        b''.join(map(bytes, self.next_hops)) + \
+                        struct.pack('B', len(self.snpas)) + \
+                        b''.join(map(bytes, self.snpas)) + \
+                        b''.join(map(bytes, self.announced))
 
                 class SNPA(object):
                     __hdr__ = (
@@ -629,12 +629,12 @@ class BGP(dpkt.Packet):
                         Route = RouteGeneric
 
                     # Withdrawn Routes
-                    l = []
+                    l_ = []
                     while self.data:
                         route = Route(self.data)
                         self.data = self.data[len(route):]
-                        l.append(route)
-                    self.data = self.withdrawn = l
+                        l_.append(route)
+                    self.data = self.withdrawn = l_
 
                 def __len__(self):
                     return self.__hdr_len__ + sum(map(len, self.data))
@@ -700,6 +700,7 @@ class RouteIPV4(dpkt.Packet):
 
     def __bytes__(self):
         return self.pack_hdr() + self.prefix[:(self.len + 7) // 8]
+
 
 class ExtendedRouteIPV4(RouteIPV4):
     __hdr__ = (
@@ -789,16 +790,57 @@ class RouteEVPN(dpkt.Packet):
 
 
 __bgp1 = b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x13\x04'
-__bgp2 = b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x63\x02\x00\x00\x00\x48\x40\x01\x01\x00\x40\x02\x0a\x01\x02\x01\xf4\x01\xf4\x02\x01\xfe\xbb\x40\x03\x04\xc0\xa8\x00\x0f\x40\x05\x04\x00\x00\x00\x64\x40\x06\x00\xc0\x07\x06\xfe\xba\xc0\xa8\x00\x0a\xc0\x08\x0c\xfe\xbf\x00\x01\x03\x16\x00\x04\x01\x54\x00\xfa\x80\x09\x04\xc0\xa8\x00\x0f\x80\x0a\x04\xc0\xa8\x00\xfa\x16\xc0\xa8\x04'
-__bgp3 = b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x79\x02\x00\x00\x00\x62\x40\x01\x01\x00\x40\x02\x00\x40\x05\x04\x00\x00\x00\x64\xc0\x10\x08\x00\x02\x01\x2c\x00\x00\x01\x2c\xc0\x80\x24\x00\x00\xfd\xe9\x40\x01\x01\x00\x40\x02\x04\x02\x01\x15\xb3\x40\x05\x04\x00\x00\x00\x2c\x80\x09\x04\x16\x05\x05\x05\x80\x0a\x04\x16\x05\x05\x05\x90\x0e\x00\x1e\x00\x01\x80\x0c\x00\x00\x00\x00\x00\x00\x00\x00\x0c\x04\x04\x04\x00\x60\x18\x77\x01\x00\x00\x01\xf4\x00\x00\x01\xf4\x85'
-__bgp4 = b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x2d\x01\x04\x00\xed\x00\x5a\xc6\x6e\x83\x7d\x10\x02\x06\x01\x04\x00\x01\x00\x01\x02\x02\x80\x00\x02\x02\x02\x00'
+__bgp2 = (
+    b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x63\x02\x00\x00\x00\x48\x40\x01'
+    b'\x01\x00\x40\x02\x0a\x01\x02\x01\xf4\x01\xf4\x02\x01\xfe\xbb\x40\x03\x04\xc0\xa8\x00\x0f\x40\x05\x04'
+    b'\x00\x00\x00\x64\x40\x06\x00\xc0\x07\x06\xfe\xba\xc0\xa8\x00\x0a\xc0\x08\x0c\xfe\xbf\x00\x01\x03\x16'
+    b'\x00\x04\x01\x54\x00\xfa\x80\x09\x04\xc0\xa8\x00\x0f\x80\x0a\x04\xc0\xa8\x00\xfa\x16\xc0\xa8\x04'
+)
+__bgp3 = (
+    b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x79\x02\x00\x00\x00\x62\x40\x01'
+    b'\x01\x00\x40\x02\x00\x40\x05\x04\x00\x00\x00\x64\xc0\x10\x08\x00\x02\x01\x2c\x00\x00\x01\x2c\xc0\x80'
+    b'\x24\x00\x00\xfd\xe9\x40\x01\x01\x00\x40\x02\x04\x02\x01\x15\xb3\x40\x05\x04\x00\x00\x00\x2c\x80\x09'
+    b'\x04\x16\x05\x05\x05\x80\x0a\x04\x16\x05\x05\x05\x90\x0e\x00\x1e\x00\x01\x80\x0c\x00\x00\x00\x00\x00'
+    b'\x00\x00\x00\x0c\x04\x04\x04\x00\x60\x18\x77\x01\x00\x00\x01\xf4\x00\x00\x01\xf4\x85'
+)
+__bgp4 = (
+    b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x2d\x01\x04\x00\xed\x00\x5a\xc6'
+    b'\x6e\x83\x7d\x10\x02\x06\x01\x04\x00\x01\x00\x01\x02\x02\x80\x00\x02\x02\x02\x00'
+)
 
 # BGP-EVPN type 1-4 packets for testing.
-__bgp5 = b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x60\x02\x00\x00\x00\x49\x40\x01\x01\x00\x40\x02\x00\x40\x05\x04\x00\x00\x00\x64\xc0\x10\x10\x03\x0c\x00\x00\x00\x00\x00\x08\x00\x02\x03\xe8\x00\x00\x00\x02\x90\x0e\x00\x24\x00\x19\x46\x04\x01\x01\x01\x02\x00\x01\x19\x00\x01\x01\x01\x01\x02\x00\x02\x05\x00\x00\x03\xe8\x00\x00\x04\x00\x00\x00\x00\x00\x02\x00\x00\x02'
-__bgp6 = b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x6f\x02\x00\x00\x00\x58\x40\x01\x01\x00\x40\x02\x00\x40\x05\x04\x00\x00\x00\x64\xc0\x10\x10\x03\x0c\x00\x00\x00\x00\x00\x08\x00\x02\x03\xe8\x00\x00\x00\x02\x90\x0e\x00\x33\x00\x19\x46\x04\x01\x01\x01\x02\x00\x02\x28\x00\x01\x01\x01\x01\x02\x00\x02\x05\x00\x00\x03\xe8\x00\x00\x04\x00\x00\x00\x00\x00\x02\x30\xcc\xaa\x02\x9c\xd8\x29\x20\xc0\xb4\x01\x02\x00\x00\x02\x00\x00\x00'
-__bgp7 = b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x58\x02\x00\x00\x00\x41\x40\x01\x01\x00\x40\x02\x00\x40\x05\x04\x00\x00\x00\x64\xc0\x10\x10\x03\x0c\x00\x00\x00\x00\x00\x08\x00\x02\x03\xe8\x00\x00\x00\x02\x90\x0e\x00\x1c\x00\x19\x46\x04\x01\x01\x01\x02\x00\x03\x11\x00\x01\x01\x01\x01\x02\x00\x02\x00\x00\x00\x02\x20\xc0\xb4\x01\x02'
-__bgp8 = b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x5f\x02\x00\x00\x00\x48\x40\x01\x01\x00\x40\x02\x00\x40\x05\x04\x00\x00\x00\x64\xc0\x10\x10\x03\x0c\x00\x00\x00\x00\x00\x08\x00\x02\x03\xe8\x00\x00\x00\x02\x90\x0e\x00\x23\x00\x19\x46\x04\x01\x01\x01\x02\x00\x04\x18\x00\x01\x01\x01\x01\x02\x00\x02\x05\x00\x00\x03\xe8\x00\x00\x04\x00\x00\x20\xc0\xb4\x01\x02'
-__bgp9 = b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x7b\x02\x00\x00\x00\x64\x40\x01\x01\x00\x40\x02\x00\x40\x05\x04\x00\x00\x00\x64\xc0\x10\x10\x03\x0c\x00\x00\x00\x00\x00\x08\x00\x02\x03\xe8\x00\x00\x00\x02\x90\x0e\x00\x3f\x00\x19\x46\x04\x01\x01\x01\x02\x00\x02\x34\x00\x01\x01\x01\x01\x02\x00\x02\x05\x00\x00\x03\xe8\x00\x00\x04\x00\x00\x00\x00\x00\x02\x30\xcc\xaa\x02\x9c\xd8\x29\x80\xc0\xb4\x01\x02\xc0\xb4\x01\x02\xc0\xb4\x01\x02\xc0\xb4\x01\x02\x00\x00\x02\x00\x00\x00'
+__bgp5 = (
+    b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x60\x02\x00\x00\x00\x49\x40\x01'
+    b'\x01\x00\x40\x02\x00\x40\x05\x04\x00\x00\x00\x64\xc0\x10\x10\x03\x0c\x00\x00\x00\x00\x00\x08\x00\x02'
+    b'\x03\xe8\x00\x00\x00\x02\x90\x0e\x00\x24\x00\x19\x46\x04\x01\x01\x01\x02\x00\x01\x19\x00\x01\x01\x01'
+    b'\x01\x02\x00\x02\x05\x00\x00\x03\xe8\x00\x00\x04\x00\x00\x00\x00\x00\x02\x00\x00\x02'
+)
+__bgp6 = (
+    b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x6f\x02\x00\x00\x00\x58\x40\x01'
+    b'\x01\x00\x40\x02\x00\x40\x05\x04\x00\x00\x00\x64\xc0\x10\x10\x03\x0c\x00\x00\x00\x00\x00\x08\x00\x02'
+    b'\x03\xe8\x00\x00\x00\x02\x90\x0e\x00\x33\x00\x19\x46\x04\x01\x01\x01\x02\x00\x02\x28\x00\x01\x01\x01'
+    b'\x01\x02\x00\x02\x05\x00\x00\x03\xe8\x00\x00\x04\x00\x00\x00\x00\x00\x02\x30\xcc\xaa\x02\x9c\xd8\x29'
+    b'\x20\xc0\xb4\x01\x02\x00\x00\x02\x00\x00\x00'
+)
+__bgp7 = (
+    b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x58\x02\x00\x00\x00\x41\x40\x01'
+    b'\x01\x00\x40\x02\x00\x40\x05\x04\x00\x00\x00\x64\xc0\x10\x10\x03\x0c\x00\x00\x00\x00\x00\x08\x00\x02'
+    b'\x03\xe8\x00\x00\x00\x02\x90\x0e\x00\x1c\x00\x19\x46\x04\x01\x01\x01\x02\x00\x03\x11\x00\x01\x01\x01'
+    b'\x01\x02\x00\x02\x00\x00\x00\x02\x20\xc0\xb4\x01\x02'
+)
+__bgp8 = (
+    b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x5f\x02\x00\x00\x00\x48\x40\x01'
+    b'\x01\x00\x40\x02\x00\x40\x05\x04\x00\x00\x00\x64\xc0\x10\x10\x03\x0c\x00\x00\x00\x00\x00\x08\x00\x02'
+    b'\x03\xe8\x00\x00\x00\x02\x90\x0e\x00\x23\x00\x19\x46\x04\x01\x01\x01\x02\x00\x04\x18\x00\x01\x01\x01'
+    b'\x01\x02\x00\x02\x05\x00\x00\x03\xe8\x00\x00\x04\x00\x00\x20\xc0\xb4\x01\x02'
+)
+__bgp9 = (
+    b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x7b\x02\x00\x00\x00\x64\x40\x01'
+    b'\x01\x00\x40\x02\x00\x40\x05\x04\x00\x00\x00\x64\xc0\x10\x10\x03\x0c\x00\x00\x00\x00\x00\x08\x00\x02'
+    b'\x03\xe8\x00\x00\x00\x02\x90\x0e\x00\x3f\x00\x19\x46\x04\x01\x01\x01\x02\x00\x02\x34\x00\x01\x01\x01'
+    b'\x01\x02\x00\x02\x05\x00\x00\x03\xe8\x00\x00\x04\x00\x00\x00\x00\x00\x02\x30\xcc\xaa\x02\x9c\xd8\x29'
+    b'\x80\xc0\xb4\x01\x02\xc0\xb4\x01\x02\xc0\xb4\x01\x02\xc0\xb4\x01\x02\x00\x00\x02\x00\x00\x00'
+)
 
 
 def test_pack():
@@ -851,19 +893,19 @@ def test_unpack():
     assert (len(b3.update.announced) == 0)
     assert (len(b3.update.attributes) == 6)
     a = b3.update.attributes[0]
-    assert (a.optional == False)
-    assert (a.transitive == True)
-    assert (a.partial == False)
-    assert (a.extended_length == False)
+    assert (not a.optional)
+    assert (a.transitive)
+    assert (not a.partial)
+    assert (not a.extended_length)
     assert (a.type == ORIGIN)
     assert (a.len == 1)
     o = a.origin
     assert (o.type == ORIGIN_IGP)
     a = b3.update.attributes[5]
-    assert (a.optional == True)
-    assert (a.transitive == False)
-    assert (a.partial == False)
-    assert (a.extended_length == True)
+    assert (a.optional)
+    assert (not a.transitive)
+    assert (not a.partial)
+    assert (a.extended_length)
     assert (a.type == MP_REACH_NLRI)
     assert (a.len == 30)
     m = a.mp_reach_nlri
@@ -991,7 +1033,13 @@ def test_unpack():
 
 def test_bgp_mp_nlri_20_1_mp_reach_nlri_next_hop():
     # test for https://github.com/kbandla/dpkt/issues/485
-    __bgp = b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x6c\x02\x00\x00\x00\x55\x40\x01\x01\x00\x40\x02\x04\x02\x01\xfd\xe9\x80\x04\x04\x00\x00\x00\x00\x80\x0e\x40\x00\x02\x01\x20\x20\x01\x0d\xb8\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\xfe\x80\x00\x00\x00\x00\x00\x00\xc0\x01\x0b\xff\xfe\x7e\x00\x00\x00\x40\x20\x01\x0d\xb8\x00\x01\x00\x02\x40\x20\x01\x0d\xb8\x00\x01\x00\x01\x40\x20\x01\x0d\xb8\x00\x01\x00\x00'
+    __bgp = (
+        b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x6c\x02\x00\x00\x00\x55\x40\x01'
+        b'\x01\x00\x40\x02\x04\x02\x01\xfd\xe9\x80\x04\x04\x00\x00\x00\x00\x80\x0e\x40\x00\x02\x01\x20\x20\x01'
+        b'\x0d\xb8\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\xfe\x80\x00\x00\x00\x00\x00\x00\xc0\x01\x0b'
+        b'\xff\xfe\x7e\x00\x00\x00\x40\x20\x01\x0d\xb8\x00\x01\x00\x02\x40\x20\x01\x0d\xb8\x00\x01\x00\x01\x40'
+        b'\x20\x01\x0d\xb8\x00\x01\x00\x00'
+    )
     assert (__bgp == bytes(BGP(__bgp)))
     bgp = BGP(__bgp)
     assert (len(bgp.data) == 89)
@@ -1002,20 +1050,20 @@ def test_bgp_mp_nlri_20_1_mp_reach_nlri_next_hop():
 
     attribute = bgp.update.attributes[0]
     assert (attribute.type == ORIGIN)
-    assert (attribute.optional == False)
-    assert (attribute.transitive == True)
-    assert (attribute.partial == False)
-    assert (attribute.extended_length == False)
+    assert (not attribute.optional)
+    assert (attribute.transitive)
+    assert (not attribute.partial)
+    assert (not attribute.extended_length)
     assert (attribute.len == 1)
     o = attribute.origin
     assert (o.type == ORIGIN_IGP)
 
     attribute = bgp.update.attributes[1]
     assert (attribute.type == AS_PATH)
-    assert (attribute.optional == False)
-    assert (attribute.transitive == True)
-    assert (attribute.partial == False)
-    assert (attribute.extended_length == False)
+    assert (not attribute.optional)
+    assert (attribute.transitive)
+    assert (not attribute.partial)
+    assert (not attribute.extended_length)
     assert (attribute.flags == 64)
     assert (attribute.len == 4)
     assert (len(attribute.as_path.segments) == 1)
@@ -1027,20 +1075,20 @@ def test_bgp_mp_nlri_20_1_mp_reach_nlri_next_hop():
 
     attribute = bgp.update.attributes[2]
     assert (attribute.type == MULTI_EXIT_DISC)
-    assert (attribute.optional == True)
-    assert (attribute.transitive == False)
-    assert (attribute.partial == False)
-    assert (attribute.extended_length == False)
+    assert (attribute.optional)
+    assert (not attribute.transitive)
+    assert (not attribute.partial)
+    assert (not attribute.extended_length)
     assert (attribute.flags == 0x80)
     assert (attribute.len == 4)
     assert (attribute.multi_exit_disc.value == 0)
 
     attribute = bgp.update.attributes[3]
     assert (attribute.type == MP_REACH_NLRI)
-    assert (attribute.optional == True)
-    assert (attribute.transitive == False)
-    assert (attribute.partial == False)
-    assert (attribute.extended_length == False)
+    assert (attribute.optional)
+    assert (not attribute.transitive)
+    assert (not attribute.partial)
+    assert (not attribute.extended_length)
     assert (attribute.flags == 0x80)
     assert (attribute.len == 64)
     mp_reach_nlri = attribute.mp_reach_nlri
@@ -1062,10 +1110,17 @@ def test_bgp_mp_nlri_20_1_mp_reach_nlri_next_hop():
     assert (socket.inet_ntop(socket.AF_INET6, mp_reach_nlri.next_hops[1]) == 'fe80::c001:bff:fe7e:0')
     assert (mp_reach_nlri.next_hop == b''.join(mp_reach_nlri.next_hops))
 
+
 def test_bgp_add_path_6_1_as_path():
     # test for https://github.com/kbandla/dpkt/issues/481
-    # Error processing BGP data: packet 6 : message 1 of bgp-add-path.cap https://packetlife.net/media/captures/bgp-add-path.cap
-    __bgp = b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x59\x02\x00\x00\x00\x30\x40\x01\x01\x00\x40\x02\x06\x02\x01\x00\x00\xfb\xff\x40\x03\x04\x0a\x00\x0e\x01\x80\x04\x04\x00\x00\x00\x00\x40\x05\x04\x00\x00\x00\x64\x80\x0a\x04\x0a\x00\x22\x04\x80\x09\x04\x0a\x00\x0f\x01\x00\x00\x00\x01\x20\x05\x05\x05\x05\x00\x00\x00\x01\x20\xc0\xa8\x01\x05'
+    # Error processing BGP data: packet 6 : message 1 of bgp-add-path.cap
+    # https://packetlife.net/media/captures/bgp-add-path.cap
+    __bgp = (
+        b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x59\x02\x00\x00\x00\x30\x40\x01'
+        b'\x01\x00\x40\x02\x06\x02\x01\x00\x00\xfb\xff\x40\x03\x04\x0a\x00\x0e\x01\x80\x04\x04\x00\x00\x00\x00'
+        b'\x40\x05\x04\x00\x00\x00\x64\x80\x0a\x04\x0a\x00\x22\x04\x80\x09\x04\x0a\x00\x0f\x01\x00\x00\x00\x01'
+        b'\x20\x05\x05\x05\x05\x00\x00\x00\x01\x20\xc0\xa8\x01\x05'
+    )
     bgp = BGP(__bgp)
     assert (__bgp == bytes(bgp))
     assert (len(bgp) == 89)
@@ -1084,20 +1139,20 @@ def test_bgp_add_path_6_1_as_path():
 
     attribute = bgp.update.attributes[0]
     assert (attribute.type == ORIGIN)
-    assert (attribute.optional == False)
-    assert (attribute.transitive == True)
-    assert (attribute.partial == False)
-    assert (attribute.extended_length == False)
+    assert (not attribute.optional)
+    assert (attribute.transitive)
+    assert (not attribute.partial)
+    assert (not attribute.extended_length)
     assert (attribute.flags == 0x40)
     assert (attribute.len == 1)
     assert (attribute.origin.type == ORIGIN_IGP)
 
     attribute = bgp.update.attributes[1]
     assert (attribute.type == AS_PATH)
-    assert (attribute.optional == False)
-    assert (attribute.transitive == True)
-    assert (attribute.partial == False)
-    assert (attribute.extended_length == False)
+    assert (not attribute.optional)
+    assert (attribute.transitive)
+    assert (not attribute.partial)
+    assert (not attribute.extended_length)
     assert (attribute.flags == 0x40)
     assert (attribute.len == 6)
     assert (len(attribute.as_path.segments) == 1)
@@ -1109,50 +1164,50 @@ def test_bgp_add_path_6_1_as_path():
 
     attribute = bgp.update.attributes[2]
     assert (attribute.type == NEXT_HOP)
-    assert (attribute.optional == False)
-    assert (attribute.transitive == True)
-    assert (attribute.partial == False)
-    assert (attribute.extended_length == False)
+    assert (not attribute.optional)
+    assert (attribute.transitive)
+    assert (not attribute.partial)
+    assert (not attribute.extended_length)
     assert (attribute.flags == 0x40)
     assert (attribute.len == 4)
     assert (socket.inet_ntop(socket.AF_INET, bytes(attribute.next_hop)) == '10.0.14.1')
 
     attribute = bgp.update.attributes[3]
     assert (attribute.type == MULTI_EXIT_DISC)
-    assert (attribute.optional == True)
-    assert (attribute.transitive == False)
-    assert (attribute.partial == False)
-    assert (attribute.extended_length == False)
+    assert (attribute.optional)
+    assert (not attribute.transitive)
+    assert (not attribute.partial)
+    assert (not attribute.extended_length)
     assert (attribute.flags == 0x80)
     assert (attribute.len == 4)
     assert (attribute.multi_exit_disc.value == 0)
 
     attribute = bgp.update.attributes[4]
     assert (attribute.type == LOCAL_PREF)
-    assert (attribute.optional == False)
-    assert (attribute.transitive == True)
-    assert (attribute.partial == False)
-    assert (attribute.extended_length == False)
+    assert (not attribute.optional)
+    assert (attribute.transitive)
+    assert (not attribute.partial)
+    assert (not attribute.extended_length)
     assert (attribute.flags == 0x40)
     assert (attribute.len == 4)
     assert (attribute.local_pref.value == 100)
 
     attribute = bgp.update.attributes[5]
     assert (attribute.type == CLUSTER_LIST)
-    assert (attribute.optional == True)
-    assert (attribute.transitive == False)
-    assert (attribute.partial == False)
-    assert (attribute.extended_length == False)
+    assert (attribute.optional)
+    assert (not attribute.transitive)
+    assert (not attribute.partial)
+    assert (not attribute.extended_length)
     assert (attribute.flags == 0x80)
     assert (attribute.len == 4)
     assert (socket.inet_ntop(socket.AF_INET, bytes(attribute.cluster_list)) == '10.0.34.4')
 
     attribute = bgp.update.attributes[6]
     assert (attribute.type == ORIGINATOR_ID)
-    assert (attribute.optional == True)
-    assert (attribute.transitive == False)
-    assert (attribute.partial == False)
-    assert (attribute.extended_length == False)
+    assert (attribute.optional)
+    assert (not attribute.transitive)
+    assert (not attribute.partial)
+    assert (not attribute.extended_length)
     assert (attribute.flags == 0x80)
     assert (attribute.len == 4)
     assert (socket.inet_ntop(socket.AF_INET, bytes(attribute.originator_id)) == '10.0.15.1')
@@ -1164,4 +1219,3 @@ if __name__ == '__main__':
     test_bgp_mp_nlri_20_1_mp_reach_nlri_next_hop()
     test_bgp_add_path_6_1_as_path()
     print('Tests Successful...')
-

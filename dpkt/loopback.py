@@ -37,15 +37,17 @@ class Loopback(dpkt.Packet):
         elif self.family > 1500:
             self.data = ethernet.Ethernet(self.data)
 
+
 def test_ethernet_unpack():
     buf = b'\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x08\x00'
     hdr = b'\x00\x02\x00\x02'
 
-    lo = Loopback(hdr + buf) 
+    lo = Loopback(hdr + buf)
     assert lo.family == 33554944
     assert isinstance(lo.data, ethernet.Ethernet)
     assert lo.data.src == b'\x07\x08\t\n\x0b\x0c'
     assert lo.data.dst == b'\x01\x02\x03\x04\x05\x06'
+
 
 def test_ip_unpack():
     buf = b'E\x00\x004\xbd\x04@\x00@\x06\x7f\xbd\x7f\x00\x00\x02\x7f\x00\x00\x01'
@@ -57,9 +59,11 @@ def test_ip_unpack():
         assert lo.data.src == b'\x7f\x00\x00\x02'
         assert lo.data.dst == b'\x7f\x00\x00\x01'
 
+
 def test_ip6_unpack():
     import struct
-    buf = b'`\x00\x00\x00\x00\x14\x068&\x07\xf8\xb0@\x0c\x0c\x03\x00\x00\x00\x00\x00\x00\x00\x1a \x01\x04p\xe5\xbf\xde\xadIW!t\xe8,H\x87'
+    buf = (b'\x60\x00\x00\x00\x00\x14\x06\x38\x26\x07\xf8\xb0\x40\x0c\x0c\x03\x00\x00\x00\x00\x00\x00'
+           b'\x00\x1a\x20\x01\x04\x70\xe5\xbf\xde\xad\x49\x57\x21\x74\xe8\x2c\x48\x87')
     hdr_suffix = b'\x00' * 3
 
     for family in (24, 28, 30):

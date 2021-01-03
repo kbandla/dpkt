@@ -45,7 +45,7 @@ class PIM(dpkt.Packet):
 
 
 def test_pim():
-    pimdata =  PIM(b'\x20\x00\x9f\xf4\x00\x01\x00\x02\x00\x69')
+    pimdata = PIM(b'\x20\x00\x9f\xf4\x00\x01\x00\x02\x00\x69')
     assert pimdata.v == 2
     assert pimdata.type == 0
 

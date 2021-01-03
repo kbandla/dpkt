@@ -46,7 +46,6 @@ def utctime(buf):
     Returns:
         A floating point number, indicates seconds since the Epoch.
     """
-
     yy = int(buf[:2])
     mn = int(buf[2:4])
     dd = int(buf[4:6])
@@ -81,31 +80,30 @@ def decode(buf):
     Raises:
         UnpackError: An error occurred the ASN.1 length exceed.
     """
-
     msg = []
     while buf:
         t = compat_ord(buf[0])
         constructed = t & CONSTRUCTED
         tag = t & TAGMASK
-        l = compat_ord(buf[1])
+        l_ = compat_ord(buf[1])
         c = 0
-        if constructed and l == 128:
+        if constructed and l_ == 128:
             # XXX - constructed, indefinite length
             msg.append((t, decode(buf[2:])))
-        elif l >= 128:
-            c = l & 127
+        elif l_ >= 128:
+            c = l_ & 127
             if c == 1:
-                l = compat_ord(buf[2])
+                l_ = compat_ord(buf[2])
             elif c == 2:
-                l = struct.unpack('>H', buf[2:4])[0]
+                l_ = struct.unpack('>H', buf[2:4])[0]
             elif c == 3:
-                l = struct.unpack('>I', buf[1:5])[0] & 0xfff
+                l_ = struct.unpack('>I', buf[1:5])[0] & 0xfff
                 c = 2
             elif c == 4:
-                l = struct.unpack('>I', buf[2:6])[0]
+                l_ = struct.unpack('>I', buf[2:6])[0]
             else:
                 # XXX - can be up to 127 bytes, but...
-                raise dpkt.UnpackError('excessive long-form ASN.1 length %d' % l)
+                raise dpkt.UnpackError('excessive long-form ASN.1 length %d' % l_)
 
         # Skip type, length
         buf = buf[2 + c:]
@@ -114,32 +112,42 @@ def decode(buf):
         if constructed:
             msg.append((t, decode(buf)))
         elif tag == INTEGER:
-            if l == 0:
+            if l_ == 0:
                 n = 0
-            elif l == 1:
+            elif l_ == 1:
                 n = compat_ord(buf[0])
-            elif l == 2:
+            elif l_ == 2:
                 n = struct.unpack('>H', buf[:2])[0]
-            elif l == 3:
+            elif l_ == 3:
                 n = struct.unpack('>I', buf[:4])[0] >> 8
-            elif l == 4:
+            elif l_ == 4:
                 n = struct.unpack('>I', buf[:4])[0]
             else:
-                raise dpkt.UnpackError('excessive integer length > %d bytes' % l)
+                raise dpkt.UnpackError('excessive integer length > %d bytes' % l_)
             msg.append((t, n))
         elif tag == UTC_TIME:
-            msg.append((t, utctime(buf[:l])))
+            msg.append((t, utctime(buf[:l_])))
         else:
-            msg.append((t, buf[:l]))
+            msg.append((t, buf[:l_]))
 
         # Skip content
-        buf = buf[l:]
+        buf = buf[l_:]
     return msg
 
 
 def test_asn1():
-    s = b'0\x82\x02Q\x02\x01\x0bc\x82\x02J\x04xcn=Douglas J Song 1, ou=Information Technology Division, ou=Faculty and Staff, ou=People, o=University of Michigan, c=US\n\x01\x00\n\x01\x03\x02\x01\x00\x02\x01\x00\x01\x01\x00\x87\x0bobjectclass0\x82\x01\xb0\x04\rmemberOfGroup\x04\x03acl\x04\x02cn\x04\x05title\x04\rpostalAddress\x04\x0ftelephoneNumber\x04\x04mail\x04\x06member\x04\thomePhone\x04\x11homePostalAddress\x04\x0bobjectClass\x04\x0bdescription\x04\x18facsimileTelephoneNumber\x04\x05pager\x04\x03uid\x04\x0cuserPassword\x04\x08joinable\x04\x10associatedDomain\x04\x05owner\x04\x0erfc822ErrorsTo\x04\x08ErrorsTo\x04\x10rfc822RequestsTo\x04\nRequestsTo\x04\tmoderator\x04\nlabeledURL\x04\nonVacation\x04\x0fvacationMessage\x04\x05drink\x04\x0elastModifiedBy\x04\x10lastModifiedTime\x04\rmodifiersname\x04\x0fmodifytimestamp\x04\x0ccreatorsname\x04\x0fcreatetimestamp'
+    s = (b'0\x82\x02Q\x02\x01\x0bc\x82\x02J\x04xcn=Douglas J Song 1, ou=Information Technology Division,'
+         b' ou=Faculty and Staff, ou=People, o=University of Michigan, c=US\n\x01\x00\n\x01\x03\x02\x01'
+         b'\x00\x02\x01\x00\x01\x01\x00\x87\x0bobjectclass0\x82\x01\xb0\x04\rmemberOfGroup\x04\x03acl'
+         b'\x04\x02cn\x04\x05title\x04\rpostalAddress\x04\x0ftelephoneNumber\x04\x04mail\x04\x06member'
+         b'\x04\thomePhone\x04\x11homePostalAddress\x04\x0bobjectClass\x04\x0bdescription\x04\x18'
+         b'facsimileTelephoneNumber\x04\x05pager\x04\x03uid\x04\x0cuserPassword\x04\x08joinable\x04\x10'
+         b'associatedDomain\x04\x05owner\x04\x0erfc822ErrorsTo\x04\x08ErrorsTo\x04\x10rfc822RequestsTo\x04\n'
+         b'RequestsTo\x04\tmoderator\x04\nlabeledURL\x04\nonVacation\x04\x0fvacationMessage\x04\x05drink\x04\x0e'
+         b'lastModifiedBy\x04\x10lastModifiedTime\x04\rmodifiersname\x04\x0fmodifytimestamp\x04\x0ccreatorsname'
+         b'\x04\x0fcreatetimestamp')
     assert (decode(s) == [(48, [(2, 11), (99, [(4, b'cn=Douglas J Song 1, ou=Information Technology Division, ou=Faculty and Staff, ou=People, o=University of Michigan, c=US'), (10, b'\x00'), (10, b'\x03'), (2, 0), (2, 0), (1, b'\x00'), (135, b'objectclass'), (48, [(4, b'memberOfGroup'), (4, b'acl'), (4, b'cn'), (4, b'title'), (4, b'postalAddress'), (4, b'telephoneNumber'), (4, b'mail'), (4, b'member'), (4, b'homePhone'), (4, b'homePostalAddress'), (4, b'objectClass'), (4, b'description'), (4, b'facsimileTelephoneNumber'), (4, b'pager'), (4, b'uid'), (4, b'userPassword'), (4, b'joinable'), (4, b'associatedDomain'), (4, b'owner'), (4, b'rfc822ErrorsTo'), (4, b'ErrorsTo'), (4, b'rfc822RequestsTo'), (4, b'RequestsTo'), (4, b'moderator'), (4, b'labeledURL'), (4, b'onVacation'), (4, b'vacationMessage'), (4, b'drink'), (4, b'lastModifiedBy'), (4, b'lastModifiedTime'), (4, b'modifiersname'), (4, b'modifytimestamp'), (4, b'creatorsname'), (4, b'createtimestamp')])])])])
+
 
 if __name__ == '__main__':
     test_asn1()

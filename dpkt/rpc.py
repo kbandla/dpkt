@@ -61,8 +61,7 @@ class RPC(dpkt.Packet):
             return 8 + len(self.data)
 
         def __bytes__(self):
-            return self.pack_hdr() + struct.pack('>I', len(self.data)) + \
-                   bytes(self.data)
+            return self.pack_hdr() + struct.pack('>I', len(self.data)) + bytes(self.data)
 
     class Call(dpkt.Packet):
         __hdr__ = (
@@ -83,9 +82,9 @@ class RPC(dpkt.Packet):
 
         def __bytes__(self):
             return dpkt.Packet.__bytes__(self) + \
-                   bytes(getattr(self, 'cred', RPC.Auth())) + \
-                   bytes(getattr(self, 'verf', RPC.Auth())) + \
-                   bytes(self.data)
+                bytes(getattr(self, 'cred', RPC.Auth())) + \
+                bytes(getattr(self, 'verf', RPC.Auth())) + \
+                bytes(self.data)
 
     class Reply(dpkt.Packet):
         __hdr__ = (('stat', 'I', MSG_ACCEPTED), )
@@ -104,14 +103,16 @@ class RPC(dpkt.Packet):
                     self.data = buf[12:]
 
             def __len__(self):
-                if self.stat == PROG_MISMATCH: n = 8
-                else: n = 0
+                if self.stat == PROG_MISMATCH:
+                    n = 8
+                else:
+                    n = 0
                 return len(self.verf) + 4 + n + len(self.data)
 
             def __bytes__(self):
                 if self.stat == PROG_MISMATCH:
-                    return bytes(self.verf) + struct.pack('>III', self.stat,
-                                                        self.low, self.high) + self.data
+                    return bytes(self.verf) + \
+                        struct.pack('>III', self.stat, self.low, self.high) + self.data
                 return bytes(self.verf) + dpkt.Packet.__bytes__(self)
 
         class Reject(dpkt.Packet):
@@ -127,9 +128,12 @@ class RPC(dpkt.Packet):
                     self.data = self.data[4:]
 
             def __len__(self):
-                if self.stat == RPC_MISMATCH: n = 8
-                elif self.stat == AUTH_ERROR: n = 4
-                else: n = 0
+                if self.stat == RPC_MISMATCH:
+                    n = 8
+                elif self.stat == AUTH_ERROR:
+                    n = 4
+                else:
+                    n = 0
                 return 4 + n + len(self.data)
 
             def __bytes__(self):
@@ -155,17 +159,17 @@ class RPC(dpkt.Packet):
 
 
 def unpack_xdrlist(cls, buf):
-    l = []
+    l_ = []
     while buf:
         if buf.startswith(b'\x00\x00\x00\x01'):
             p = cls(buf[4:])
-            l.append(p)
+            l_.append(p)
             buf = p.data
         elif buf.startswith(b'\x00\x00\x00\x00'):
             break
         else:
             raise dpkt.UnpackError('invalid XDR list')
-    return l
+    return l_
 
 
 def pack_xdrlist(*args):

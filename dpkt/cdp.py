@@ -3,8 +3,6 @@
 """Cisco Discovery Protocol."""
 from __future__ import absolute_import
 
-import struct
-
 from . import dpkt
 
 CDP_DEVID = 1  # string
@@ -44,8 +42,9 @@ class CDP(dpkt.Packet):
     )
 
     class TLV(dpkt.Packet):
-        """When constructing the packet, len is not mandatory: 
-        if not provided, then self.data must be this exact TLV payload"""
+        """When constructing the packet, len is not mandatory:
+        if not provided, then self.data must be this exact TLV payload
+        """
 
         __hdr__ = (
             ('type', 'H', 0),
@@ -77,29 +76,30 @@ class CDP(dpkt.Packet):
             ('p', 'B', 0xcc),  # IP
             ('alen', 'H', 4)  # address length
         )
+
         def data_len(self):
             return self.alen
 
     class TLV_Addresses(TLV):
         __hdr__ = (
             ('type', 'H', CDP_ADDRESS),
-            ('len', 'H', 0),    #17),
+            ('len', 'H', 0),    # 17),
             ('Addresses', 'L', 1),
         )
 
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
         buf = self.data
-        l = []
+        l_ = []
         while buf:
             # find the right TLV according to Type value
             tlv_find_type = self.TLV(buf).type
             # if this TLV is not in tlv_types, use the default TLV class
             tlv = self.tlv_types.get(tlv_find_type, self.TLV)(buf)
-            l.append(bytes(tlv))
+            l_.append(bytes(tlv))
             buf = buf[len(tlv):]
-        self.tlvs = l
-        self.data = b''.join(l)
+        self.tlvs = l_
+        self.data = b''.join(l_)
 
     def __len__(self):
         return self.__hdr_len__ + len(self.data)
@@ -118,17 +118,19 @@ def test_cdp():
     import socket
     from . import ethernet
 
-    ss = (b'\x02\xb4\xdf\x93\x00\x01\x00\x09\x63\x69\x73\x63\x6f\x00\x02\x00\x11\x00\x00\x00\x01\x01\x01\xcc\x00\x04\xc0\xa8\x01\x67')
+    ss = (b'\x02\xb4\xdf\x93\x00\x01\x00\x09\x63\x69\x73\x63\x6f\x00\x02\x00\x11\x00\x00\x00\x01'
+          b'\x01\x01\xcc\x00\x04\xc0\xa8\x01\x67')
     rr1 = CDP(ss)
-    assert bytes(rr1) == ss    
+    assert bytes(rr1) == ss
 
     # construction
-    ss = (b'\x02\xb4\xdf\x93\x00\x01\x00\x09\x63\x69\x73\x63\x6f\x00\x02\x00\x11\x00\x00\x00\x01\x01\x01\xcc\x00\x04\xc0\xa8\x01\x67')
+    ss = (b'\x02\xb4\xdf\x93\x00\x01\x00\x09\x63\x69\x73\x63\x6f\x00\x02\x00\x11\x00\x00\x00\x01'
+          b'\x01\x01\xcc\x00\x04\xc0\xa8\x01\x67')
     p1 = CDP.TLV_Addresses(data=CDP.Address(data=socket.inet_aton('192.168.1.103')))
     p2 = CDP.TLV(type=CDP_DEVID, data=b'cisco')
     data = p2.pack() + p1.pack()
     rr2 = CDP(data=data)
-    assert bytes(rr2) == ss    
+    assert bytes(rr2) == ss
 
     s = (b'\x01\x00\x0c\xcc\xcc\xcc\xc4\x022k\x00\x00\x01T\xaa\xaa\x03\x00\x00\x0c \x00\x02\xb4,B'
          b'\x00\x01\x00\x06R2\x00\x05\x00\xffCisco IOS Software, 3700 Software (C3745-ADVENTERPRI'
@@ -142,6 +144,7 @@ def test_cdp():
     assert len(eth.data.data.tlvs) == 8  # number of CDP TLVs; ensures they are decoded
     assert str(eth) == str(s)
     assert len(eth) == len(s)
+
 
 if __name__ == '__main__':
     test_cdp()

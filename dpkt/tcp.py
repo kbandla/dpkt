@@ -66,6 +66,7 @@ class TCP(dpkt.Packet):
         self.opts = buf[self.__hdr_len__:self.__hdr_len__ + ol]
         self.data = buf[self.__hdr_len__ + ol:]
 
+
 # Options (opt_type) - http://www.iana.org/assignments/tcp-parameters
 TCP_OPT_EOL = 0  # end of option list
 TCP_OPT_NOP = 1  # no operation
@@ -104,8 +105,8 @@ def parse_opts(buf):
         if o > TCP_OPT_NOP:
             try:
                 # advance buffer at least 2 bytes = 1 type + 1 length
-                l = max(2, compat_ord(buf[1]))
-                d, buf = buf[2:l], buf[l:]
+                l_ = max(2, compat_ord(buf[1]))
+                d, buf = buf[2:l_], buf[l_:]
             except (IndexError, ValueError):
                 # print 'bad option', repr(str(buf))
                 opts.append(None)  # XXX
@@ -149,6 +150,7 @@ def test_parse_opts():
     opts = parse_opts(buf)
     assert opts == [None]
 
+
 def test_offset():
     tcpheader = TCP(b'\x01\xbb\xc0\xd7\xb6\x56\xa8\xb9\xd1\xac\xaa\xb1\x50\x18\x40\x00\x56\xf8\x00\x00')
     assert tcpheader.off == 5
@@ -156,6 +158,7 @@ def test_offset():
     # test setting header offset
     tcpheader.off = 8
     assert bytes(tcpheader) == b'\x01\xbb\xc0\xd7\xb6\x56\xa8\xb9\xd1\xac\xaa\xb1\x80\x18\x40\x00\x56\xf8\x00\x00'
+
 
 if __name__ == '__main__':
     # Runs all the test associated with this class/file

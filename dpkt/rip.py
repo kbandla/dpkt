@@ -31,16 +31,16 @@ class RIP(dpkt.Packet):
 
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
-        l = []
+        l_ = []
         self.auth = None
         while self.data:
             rte = RTE(self.data[:20])
             if rte.family == 0xFFFF:
                 self.auth = Auth(self.data[:20])
             else:
-                l.append(rte)
+                l_.append(rte)
             self.data = self.data[20:]
-        self.data = self.rtes = l
+        self.data = self.rtes = l_
 
     def __len__(self):
         n = self.__hdr_len__
@@ -75,7 +75,8 @@ class Auth(dpkt.Packet):
     )
 
 
-__s = b'\x02\x02\x00\x00\x00\x02\x00\x00\x01\x02\x03\x00\xff\xff\xff\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x02\x00\x00\xc0\xa8\x01\x08\xff\xff\xff\xfc\x00\x00\x00\x00\x00\x00\x00\x01'
+__s = (b'\x02\x02\x00\x00\x00\x02\x00\x00\x01\x02\x03\x00\xff\xff\xff\x00\x00\x00\x00\x00\x00\x00'
+       b'\x00\x01\x00\x02\x00\x00\xc0\xa8\x01\x08\xff\xff\xff\xfc\x00\x00\x00\x00\x00\x00\x00\x01')
 
 
 def test_rtp_pack():

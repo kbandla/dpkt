@@ -32,7 +32,7 @@ class RFB(dpkt.Packet):
         __hdr__: Header fields of RADIUS.
         TODO.
     """
-    
+
     __hdr__ = (
         ('type', 'B', 0),
     )

@@ -47,24 +47,24 @@ class SCTP(dpkt.Packet):
 
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
-        l = []
+        l_ = []
         while self.data:
             chunk = Chunk(self.data)
-            l.append(chunk)
+            l_.append(chunk)
             self.data = self.data[len(chunk):]
-        self.chunks = l
+        self.chunks = l_
 
     def __len__(self):
         return self.__hdr_len__ + sum(len(x) for x in self.chunks)
 
     def __bytes__(self):
-        l = [bytes(x) for x in self.chunks]
+        l_ = [bytes(x) for x in self.chunks]
         if self.sum == 0:
             s = crc32c.add(0xffffffff, self.pack_hdr())
-            for x in l:
+            for x in l_:
                 s = crc32c.add(s, x)
             self.sum = crc32c.done(s)
-        return self.pack_hdr() + b''.join(l)
+        return self.pack_hdr() + b''.join(l_)
 
 
 class Chunk(dpkt.Packet):
@@ -94,7 +94,10 @@ class Chunk(dpkt.Packet):
         return self.pack_hdr() + bytes(self.data) + self.padding
 
 
-__s = b'\x80\x44\x00\x50\x00\x00\x00\x00\x30\xba\xef\x54\x01\x00\x00\x3c\x3b\xb9\x9c\x46\x00\x01\xa0\x00\x00\x0a\xff\xff\x2b\x2d\x7e\xb2\x00\x05\x00\x08\x9b\xe6\x18\x9b\x00\x05\x00\x08\x9b\xe6\x18\x9c\x00\x0c\x00\x06\x00\x05\x00\x00\x80\x00\x00\x04\xc0\x00\x00\x04\xc0\x06\x00\x08\x00\x00\x00\x00'
+__s = (b'\x80\x44\x00\x50\x00\x00\x00\x00\x30\xba\xef\x54\x01\x00\x00\x3c\x3b\xb9\x9c\x46\x00\x01'
+       b'\xa0\x00\x00\x0a\xff\xff\x2b\x2d\x7e\xb2\x00\x05\x00\x08\x9b\xe6\x18\x9b\x00\x05\x00\x08'
+       b'\x9b\xe6\x18\x9c\x00\x0c\x00\x06\x00\x05\x00\x00\x80\x00\x00\x04\xc0\x00\x00\x04\xc0\x06'
+       b'\x00\x08\x00\x00\x00\x00')
 
 
 def test_sctp_pack():

@@ -41,9 +41,9 @@ class TFTP(dpkt.Packet):
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
         if self.opcode in (OP_RRQ, OP_WRQ):
-            l = self.data.split(b'\x00')
-            self.filename = l[0]
-            self.mode = l[1]
+            l_ = self.data.split(b'\x00')
+            self.filename = l_[0]
+            self.mode = l_[1]
             self.data = b''
         elif self.opcode in (OP_DATA, OP_ACK):
             self.block = struct.unpack('>H', self.data[:2])[0]

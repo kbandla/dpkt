@@ -286,6 +286,7 @@ class IP6ESPHeader(IP6ExtensionHeader):
         dpkt.Packet.unpack(self, buf)
         self.length = self.__hdr_len__ + len(self.data)
 
+
 EXT_HDRS_CLS = {ip.IP_PROTO_HOPOPTS: IP6HopOptsHeader,
                 ip.IP_PROTO_ROUTING: IP6RoutingHeader,
                 ip.IP_PROTO_FRAGMENT: IP6FragmentHeader,
@@ -453,7 +454,7 @@ def test_ip6_gen_tcp_ack():
     _p, exthdrs = ipp.headers_str()
     ipp.plen = len(exthdrs) + len(ipp.data)
 
-    _b = bytes(ipp)
+    assert bytes(ipp)
 
     assert ipp.p == ip.IP_PROTO_TCP
     assert ipp.nxt == ip.IP_PROTO_HOPOPTS
