@@ -95,3 +95,42 @@ class BGP4MPMessage_32(dpkt.Packet):
         ('src_ip', 'I', 0),
         ('dst_ip', 'I', 0)
     )
+
+
+def test_tabledump():
+    from binascii import unhexlify
+    buf_tabledump = unhexlify(
+        '0001'           # view
+        '0002'           # seq
+        '00000003'       # prefix
+        '04'             # prefix_len
+        '05'             # status
+        '00000006'       # originated_ts
+        '00000007'       # peer_ip
+        '0008'           # peer_as
+
+        '0002'           # attr_len
+    )
+    buf_attrs = unhexlify(
+        '01'  # flags
+        '01'  # type (ORIGIN)
+
+        '01'  # length
+        '02'  # Origin.type (INCOMPLETE)
+    )
+    buf = buf_tabledump + buf_attrs
+    table_dump = TableDump(buf)
+    assert table_dump.view == 1
+    assert table_dump.seq == 2
+    assert table_dump.prefix == 3
+    assert table_dump.prefix_len == 4
+    assert table_dump.status == 5
+    assert table_dump.originated_ts == 6
+    assert table_dump.peer_ip == 7
+    assert table_dump.peer_as == 8
+    assert table_dump.attr_len == 2
+
+    assert len(table_dump.attributes) == 1
+    attr = table_dump.attributes[0]
+    assert isinstance(attr, bgp.BGP.Update.Attribute)
+    assert isinstance(attr.data, bgp.BGP.Update.Attribute.Origin)
