@@ -35,3 +35,30 @@ class OSPF(dpkt.Packet):
         if not self.sum:
             self.sum = dpkt.in_cksum(dpkt.Packet.__bytes__(self))
         return dpkt.Packet.__bytes__(self)
+
+
+def test_creation():
+    ospf = OSPF()
+    assert ospf.v == 0
+    assert ospf.type == 0
+    assert ospf.len == 0
+    assert ospf.router == 0
+    assert ospf.area == 0
+    assert ospf.sum == 0
+    assert ospf.atype == 0
+    assert ospf.auth == b''
+
+    # sum is 0, so it will be recalculated
+    assert bytes(ospf) == b''.join([
+        b'\x00' * 12,
+        b'\xff\xff',
+        b'\x00' * 10
+    ])
+
+    ospf.sum = 0x1234
+    # sum is not 0, so it will be used
+    assert bytes(ospf) == b''.join([
+        b'\x00' * 12,
+        b'\x12\x34',
+        b'\x00' * 10
+    ])
