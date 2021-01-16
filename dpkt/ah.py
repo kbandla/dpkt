@@ -5,6 +5,7 @@
 from __future__ import absolute_import
 
 from . import dpkt
+from . import ip
 
 
 class AH(dpkt.Packet):
@@ -31,7 +32,6 @@ class AH(dpkt.Packet):
         dpkt.Packet.unpack(self, buf)
         self.auth = self.data[:self.len]
         buf = self.data[self.len:]
-        from . import ip
 
         try:
             self.data = ip.IP.get_proto(self.nxt)(buf)
@@ -44,3 +44,40 @@ class AH(dpkt.Packet):
 
     def __bytes__(self):
         return self.pack_hdr() + bytes(self.auth) + bytes(self.data)
+
+def test_default_creation():
+    ah = AH()
+    assert ah.nxt == 0
+    assert ah.len == 0
+    assert ah.rsvd == 0
+    assert ah.spi == 0
+    assert ah.seq == 0
+    assert len(ah) == ah.__hdr_len__
+    assert bytes(ah) == b'\x00' * 12
+
+def test_creation_from_buf():
+    from binascii import unhexlify
+    buf_ip = unhexlify(
+        '04' # IP
+        '0000000000000000000000'
+        '4500002200000000401172c001020304'
+        '01020304006f00de000ebf35666f6f626172'
+    )
+
+    ah = AH(buf_ip)
+    assert ah.nxt == 4  # IP
+    assert isinstance(ah.data, ip.IP)
+    assert len(ah) == 46
+    assert bytes(ah) == buf_ip
+
+    buf_not_ip = unhexlify(
+        '37' # Not registered
+        '0000000000000000000000'
+        '4500002200000000401172c001020304'
+        '01020304006f00de000ebf35666f6f626172'
+    )
+    ah_not_ip = AH(buf_not_ip)
+    assert ah_not_ip.nxt == 0x37
+    assert isinstance(ah_not_ip.data, bytes)
+    assert len(ah_not_ip) == 46
+    assert bytes(ah_not_ip) == buf_not_ip
