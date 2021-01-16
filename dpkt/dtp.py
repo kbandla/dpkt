@@ -36,3 +36,27 @@ class DTP(dpkt.Packet):
 
     def __bytes__(self):
         return b''.join([struct.pack('>HH', t, len(v)) + v for t, v in self.data])
+
+
+def test_creation():
+    dtp1 = DTP()
+    assert dtp1.v == 0
+
+    from binascii import unhexlify
+    buf = unhexlify(
+        '04'
+        '0001'  # type
+        '0002'  # length
+        '1234'  # value
+    )
+
+    dtp2 = DTP(buf)
+    assert dtp2.v == 4
+    assert len(dtp2.data) == 1
+    tlvs = dtp2.data
+    tlv = tlvs[0]
+    key, value = tlv
+    assert key == 1
+    assert value == unhexlify('1234')
+
+    assert bytes(dtp2) == buf[1:]
