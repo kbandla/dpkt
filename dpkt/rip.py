@@ -75,27 +75,48 @@ class Auth(dpkt.Packet):
     )
 
 
-__s = (b'\x02\x02\x00\x00\x00\x02\x00\x00\x01\x02\x03\x00\xff\xff\xff\x00\x00\x00\x00\x00\x00\x00'
-       b'\x00\x01\x00\x02\x00\x00\xc0\xa8\x01\x08\xff\xff\xff\xfc\x00\x00\x00\x00\x00\x00\x00\x01')
+def test_creation_with_auth():
+    from binascii import unhexlify
 
+    buf_auth = unhexlify(
+        'ffff'              # rsvd
+        '0002'              # type
+        '0123456789abcdef'  # auth
+        '0123456789abcdef'  # auth
+    )
+    auth_direct = Auth(buf_auth)
+    assert bytes(auth_direct) == buf_auth
 
-def test_rtp_pack():
-    r = RIP(__s)
-    assert (__s == bytes(r))
+    buf_rte = unhexlify(
+        '0002'      # family
+        '0000'      # route_tag
+        '01020300'  # addr
+        'ffffff00'  # subnet
+        '00000000'  # next_hop
+        '00000001'  # metric
+    )
 
+    rte = RTE(buf_rte)
+    assert bytes(rte) == buf_rte
 
-def test_rtp_unpack():
-    r = RIP(__s)
-    assert (r.auth is None)
-    assert (len(r.rtes) == 2)
+    buf_rip = unhexlify(
+        '02'    # cmd
+        '02'    # v
+        '0000'  # rsvd
+    )
+    rip = RIP(buf_rip + buf_auth + buf_rte)
 
-    rte = r.rtes[1]
-    assert (rte.family == 2)
-    assert (rte.route_tag == 0)
-    assert (rte.metric == 1)
+    assert rip.auth
+    assert rip.auth.rsvd == 0xffff
+    assert rip.auth.type == 2
+    assert rip.auth.auth == unhexlify('0123456789abcdef') * 2
 
+    assert len(rip.rtes) == 1
 
-if __name__ == '__main__':
-    test_rtp_pack()
-    test_rtp_unpack()
-    print('Tests Successful...')
+    rte = rip.rtes[0]
+    assert rte.family == 2
+    assert rte.route_tag == 0
+    assert rte.metric == 1
+
+    assert bytes(rip) == buf_rip + buf_auth + buf_rte
+    assert len(rip) == len(buf_rip + buf_auth + buf_rte)
