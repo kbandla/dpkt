@@ -15,10 +15,10 @@ class EDP(dpkt.Packet):
         ('mac', '6s', b'')
     )
 
-    def __str__(self):
+    def __bytes__(self):
         if not self.sum:
-            self.sum = dpkt.in_cksum(dpkt.Packet.__str__(self))
-        return dpkt.Packet.__str__(self)
+            self.sum = dpkt.in_cksum(dpkt.Packet.__bytes__(self))
+        return dpkt.Packet.__bytes__(self)
 
 
 class TestEDP(object):
@@ -28,23 +28,23 @@ class TestEDP(object):
 
     @classmethod
     def setup_class(cls):
-        cls.p = EDP(
-            b'\x01\x00\x01\x3c\x9e\x76\x00\x1b\x00\x00\x08\x00\x27\x2d\x90\xed\x99\x02\x00\x24\x00\x00'
-            b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x0f\x02\x02\x07\x00\x00\x00\x00\x00\x00\x00\x00'
-            b'\x00\x00\x00\x00\x00\x00\x00\x00\x99\x01\x01\x04\x45\x58\x4f\x53\x2d\x32\x00\x00\x00\x00'
-            b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-            b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-            b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-            b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-            b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-            b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-            b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-            b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-            b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-            b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-            b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-            b'\x00\x00\x00\x00\x99\x00\x00\x04'
+        from binascii import unhexlify
+        cls.buf = unhexlify(
+            '01'      # version
+            '00'      # reserved
+            '013c'    # hlen
+            '9e76'    # sum
+            '001b'    # seq
+            '0000'    # mid
+            '080027'  # mac
+            '2d90ed990200240000000000000000000000000f020207000000000000000000000000000000009901010445584f532d32000000000000000'
+            '00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+            '00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+            '00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+            '00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+            '00000000000000000000000000000000099000004'
         )
+        cls.p = EDP(cls.buf)
 
     def test_version(self):
         assert (self.p.version == 1)
@@ -66,3 +66,12 @@ class TestEDP(object):
 
     def test_mac(self):
         assert (self.p.mac == b"\x08\x00'-\x90\xed")
+
+    def test_bytes(self):
+        assert bytes(self.p) == self.buf
+
+        # force recalculation of the checksum
+        edp = EDP(self.buf)
+        edp.sum = 0
+        assert edp.sum == 0
+        assert bytes(edp) == self.buf
