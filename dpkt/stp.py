@@ -83,7 +83,13 @@ def test_stp():
     assert stp.pack_hdr()[-2:] == b'\x64\x00'  # 100 << 8
 
 
-if __name__ == '__main__':
-    # Runs all the test associated with this class/file
-    test_stp()
-    print('Tests Successful...')
+def test_properties():
+    stp = STP()
+    stp.age = 10
+    assert stp.age == 10
+
+    stp.max_age = 20
+    assert stp.max_age == 20
+
+    stp.hello = 1234
+    assert stp.hello == 1234
