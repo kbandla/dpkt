@@ -437,6 +437,17 @@ def test_frag():
     assert (ip.offset == 1480)
 
 
+def test_property_setters():
+    ip = IP()
+    assert ip.v == 4
+    ip.v = 6
+    assert ip.v == 6
+
+    assert ip.hl == 5
+    ip.hl = 7
+    assert ip.hl == 7
+
+
 if __name__ == '__main__':
     test_ip()
     test_dict()
