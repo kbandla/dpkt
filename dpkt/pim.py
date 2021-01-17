@@ -45,11 +45,33 @@ class PIM(dpkt.Packet):
 
 
 def test_pim():
-    pimdata = PIM(b'\x20\x00\x9f\xf4\x00\x01\x00\x02\x00\x69')
+    from binascii import unhexlify
+    buf = unhexlify(
+        '20'            # _v_type
+        '00'            # rsvd
+        'df93'          # sum
+
+        '000100020069'  # data
+    )
+    pimdata = PIM(buf)
+    assert bytes(pimdata) == buf
+    # force checksum recalculation
+    pimdata = PIM(buf)
+    pimdata.sum = 0
+    assert pimdata.sum == 0
+    assert bytes(pimdata) == buf
+
     assert pimdata.v == 2
     assert pimdata.type == 0
 
     # test setters
+    buf_modified = unhexlify(
+        '31'            # _v_type
+        '00'            # rsvd
+        'df93'          # sum
+
+        '000100020069'  # data
+    )
     pimdata.v = 3
     pimdata.type = 1
-    assert bytes(pimdata) == b'\x31\x00\x9f\xf4\x00\x01\x00\x02\x00\x69'
+    assert bytes(pimdata) == buf_modified
