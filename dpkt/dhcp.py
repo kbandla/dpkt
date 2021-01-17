@@ -190,6 +190,7 @@ def test_dhcp():
 
     dhcp = DHCP(s)
     assert (s == bytes(dhcp))
+    assert len(dhcp) == 300
     assert isinstance(dhcp.chaddr, bytes)
     assert isinstance(dhcp.sname, bytes)
     assert isinstance(dhcp.file, bytes)
@@ -199,6 +200,38 @@ def test_dhcp():
     assert isinstance(dhcp.chaddr, bytes)
     assert isinstance(dhcp.sname, bytes)
     assert isinstance(dhcp.file, bytes)
+
+
+def test_no_opts():
+    from binascii import unhexlify
+    buf_small_hdr = unhexlify(
+        '00'        # op
+        '00'        # hrd
+        '06'        # hln
+        '12'        # hops
+        'deadbeef'  # xid
+        '1234'      # secs
+        '9866'      # flags
+        '00000000'  # ciaddr
+        '00000000'  # yiaddr
+        '00000000'  # siaddr
+        '00000000'  # giaddr
+    )
+
+    buf = b''.join([
+        buf_small_hdr,
+        b'\x00' * 16,   # chaddr
+        b'\x11' * 64,   # sname
+        b'\x22' * 128,  # file
+        b'\x44' * 4,    # magic
+
+        b'\x00'         # data
+    ])
+
+    dhcp = DHCP(buf)
+    assert dhcp.opts == []
+    assert dhcp.data == b''
+    assert dhcp.pack_opts() == b''
 
 
 if __name__ == '__main__':
