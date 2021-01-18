@@ -857,6 +857,136 @@ def test_action_block_ack_delete():
     assert ieee.action.block_ack_delba.reason_code == 1
 
 
+def test_ieee80211_properties():
+    ieee80211 = IEEE80211()
+    assert ieee80211.version == 0
+    ieee80211.version = 1
+    assert ieee80211.version == 1
+
+    assert ieee80211.type == 0
+    ieee80211.type = 1
+    assert ieee80211.type == 1
+
+    assert ieee80211.subtype == 0
+    ieee80211.subtype = 1
+    assert ieee80211.subtype == 1
+
+    assert ieee80211.to_ds == 0
+    ieee80211.to_ds = 1
+    assert ieee80211.to_ds == 1
+
+    assert ieee80211.from_ds == 0
+    ieee80211.from_ds = 1
+    assert ieee80211.from_ds == 1
+
+    assert ieee80211.more_frag == 0
+    ieee80211.more_frag = 1
+    assert ieee80211.more_frag == 1
+
+    assert ieee80211.retry == 0
+    ieee80211.retry = 0
+    assert ieee80211.retry == 0
+
+    assert ieee80211.pwr_mgt == 0
+    ieee80211.pwr_mgt = 0
+    assert ieee80211.pwr_mgt == 0
+
+    assert ieee80211.more_data == 0
+    ieee80211.more_data = 0
+    assert ieee80211.more_data == 0
+
+    assert ieee80211.wep == 0
+    ieee80211.wep = 1
+    assert ieee80211.wep == 1
+
+    assert ieee80211.order == 0
+    ieee80211.order = 1
+    assert ieee80211.order == 1
+
+
+def test_blockack_properties():
+    blockack = IEEE80211.BlockAck()
+    assert blockack.compressed == 0
+    blockack.compressed = 1
+    assert blockack.compressed == 1
+
+    assert blockack.ack_policy == 0
+    blockack.ack_policy = 1
+    assert blockack.ack_policy == 1
+
+    assert blockack.multi_tid == 0
+    blockack.multi_tid = 1
+    assert blockack.multi_tid == 1
+
+    assert blockack.tid == 0
+    blockack.tid = 1
+    assert blockack.tid == 1
+
+
+def test_ieee80211_unpack():
+    import pytest
+    from binascii import unhexlify
+
+    buf = unhexlify(
+        '4000'  # subtype set to M_PROBE_REQ
+        '0000'
+
+        # MGMT_Frame
+        '000000000000'  # dst
+        '000000000000'  # src
+        '000000000000'  # bssid
+        '0000'          # frag_seq
+    )
+    ieee80211 = IEEE80211(buf)
+    assert ieee80211.ies == []
+
+    buf = unhexlify(
+        '9000'  # subtype set to M_ATIM
+        '0000'
+
+        # MGMT_Frame
+        '000000000000'  # dst
+        '000000000000'  # src
+        '000000000000'  # bssid
+        '0000'          # frag_seq
+    )
+    ieee80211 = IEEE80211(buf)
+    assert not hasattr(ieee80211, 'ies')
+
+    buf = unhexlify(
+        '0c00'  # type set to invalid value
+        '0000'
+    )
+    with pytest.raises(dpkt.UnpackError, match="KeyError: type=3 subtype=0"):
+        IEEE80211(buf)
+
+
+def test_blockack_unpack():
+    from binascii import unhexlify
+    # unpack a non-compressed BlockAck
+    buf = unhexlify(
+        '000000000000'
+        '000000000000'
+        '0000'   # compressed flag not set
+        '0000'
+    ) + b'\xff' * 128
+
+    blockack = IEEE80211.BlockAck(buf)
+    assert blockack.bmp == b'\xff' * 128
+    assert blockack.data == b''
+
+
+def test_action_unpack():
+    import pytest
+    from binascii import unhexlify
+    buf = unhexlify(
+        '01'  # category
+        '00'  # code (non-existent)
+    )
+    with pytest.raises(dpkt.UnpackError, match="KeyError: category=1 code=0"):
+        IEEE80211.Action(buf)
+
+
 if __name__ == '__main__':
     # Runs all the test associated with this class/file
     test_802211_ack()
