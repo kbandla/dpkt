@@ -28,6 +28,7 @@ class IGMP(dpkt.Packet):
             self.sum = dpkt.in_cksum(dpkt.Packet.__bytes__(self))
         return dpkt.Packet.__bytes__(self)
 
+
 def test_construction_no_sum():
     igmp = IGMP()
     assert igmp.type == 0
@@ -37,6 +38,7 @@ def test_construction_no_sum():
 
     assert bytes(igmp) == b'\x00\x00' + b'\xff\xff' + b'\x00' * 4
 
+
 def test_construction_sum_set():
     igmp = IGMP(sum=1)
     assert igmp.type == 0
@@ -44,4 +46,4 @@ def test_construction_sum_set():
     assert igmp.sum == 1
     assert igmp.group == b'\x00' * 4
 
-    assert bytes(igmp) == b'\x00\x00\x00\x01' + b'\x00'* 4
+    assert bytes(igmp) == b'\x00\x00\x00\x01' + b'\x00' * 4

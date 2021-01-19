@@ -531,7 +531,7 @@ def test_ip6_properties():
 
 def test_proto_accessors():
     class Proto:
-        ...
+        pass
 
     assert 'PROTO' not in IP6._protosw
     IP6.set_proto('PROTO', Proto)

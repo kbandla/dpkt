@@ -233,6 +233,8 @@ def test_utils():
 
 def test_getitem():
     """create a Packet subclass and access its properties"""
+    import pytest
+
     class Foo(Packet):
         __hdr__ = (
             ('foo', 'I', 1),
@@ -245,14 +247,14 @@ def test_getitem():
     assert foo.bar == 3
     assert foo['bar'] == 3
 
-    try:
+    with pytest.raises(KeyError):
         foo['grill']
-    except Exception as e:
-        assert isinstance(e, KeyError)
 
 
 def test_pack_hdr_overflow():
     """Try to fit too much data into struct packing"""
+    import pytest
+
     class Foo(Packet):
         __hdr__ = (
             ('foo', 'I', 1),
@@ -260,12 +262,8 @@ def test_pack_hdr_overflow():
         )
 
     foo = Foo(foo=2**32)
-    try:
+    with pytest.raises(PackError):
         bytes(foo)
-    except PackError:
-        pass
-    else:
-        assert False, "There should have been an exception raised"
 
 
 def test_pack_hdr_tuple():

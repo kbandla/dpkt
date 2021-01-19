@@ -80,7 +80,7 @@ class RPC(dpkt.Packet):
             self.data = self.data[len(self.cred) + len(self.verf):]
 
         def __len__(self):
-            return len(str(self))  # XXX
+            return len(bytes(self))  # XXX
 
         def __bytes__(self):
             return dpkt.Packet.__bytes__(self) + \
@@ -210,7 +210,8 @@ def test_call():
     assert call2.vers == 0
     assert call2.proc == 0
 
-    assert len(call2) == 131
+    assert len(call2) == 32
+    assert bytes(call2) == buf
 
 
 def test_reply():

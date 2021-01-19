@@ -377,7 +377,7 @@ def test_request_version():
 
     import pytest
     s = b"""GET / CHEESE/1.0\r\n\r\n"""
-    with pytest.raises(dpkt.UnpackError, match="invalid http version: 'CHEESE/1.0'"):
+    with pytest.raises(dpkt.UnpackError, match="invalid http version: u?'CHEESE/1.0'"):
         Request(s)
 
 
@@ -455,19 +455,19 @@ def test_invalid():
     import pytest
 
     s = b'INVALID / HTTP/1.0\r\n'
-    with pytest.raises(dpkt.UnpackError, match="invalid http method: 'INVALID'"):
+    with pytest.raises(dpkt.UnpackError, match="invalid http method: u?'INVALID'"):
         Request(s)
 
     s = b'A'
-    with pytest.raises(dpkt.UnpackError, match="invalid response: b'A'"):
+    with pytest.raises(dpkt.UnpackError, match="invalid response: b?'A'"):
         Response(s)
 
     s = b'HTTT 200 OK'
-    with pytest.raises(dpkt.UnpackError, match="invalid response: b'HTTT 200 OK'"):
+    with pytest.raises(dpkt.UnpackError, match="invalid response: b?'HTTT 200 OK'"):
         Response(s)
 
     s = b'HTTP TWO OK'
-    with pytest.raises(dpkt.UnpackError, match="invalid response: b'HTTP TWO OK'"):
+    with pytest.raises(dpkt.UnpackError, match="invalid response: b?'HTTP TWO OK'"):
         Response(s)
 
     s = (
@@ -507,7 +507,7 @@ def test_invalid():
 
     # messy header.
     s_messy_header = b'aaaaaaaaa\r\nbbbbbbbbb'
-    with pytest.raises(dpkt.UnpackError, match="invalid request: 'aaaaaaaa"):
+    with pytest.raises(dpkt.UnpackError, match="invalid request: u?'aaaaaaaa"):
         Request(s_messy_header)
 
 

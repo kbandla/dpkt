@@ -234,6 +234,7 @@ __s = (
 def test_pack():
     h = H225(__s)
     assert (__s == bytes(h))
+    assert len(h) == 1038  # len(__s) == 1041
 
 
 def test_unpack():
@@ -254,6 +255,47 @@ def test_unpack():
     ie = h.data[2]
     assert (ie.type == USER_TO_USER)
     assert (ie.len == 1008)
+
+
+def test_tpkt_unpack_errors():
+    import pytest
+    from binascii import unhexlify
+
+    # invalid version
+    buf_tpkt_version0 = unhexlify(
+        '00'    # v
+        '00'    # rsvd
+        '0000'  # len
+    )
+    with pytest.raises(dpkt.UnpackError, match="invalid TPKT version"):
+        H225(buf_tpkt_version0)
+
+    # invalid reserved value
+    buf_tpkt_rsvd = unhexlify(
+        '03'    # v
+        'ff'    # rsvd
+        '0000'  # len
+    )
+    with pytest.raises(dpkt.UnpackError, match="invalid TPKT reserved value"):
+        H225(buf_tpkt_rsvd)
+
+    # invalid len
+    buf_tpkt_len = unhexlify(
+        '03'    # v
+        '00'    # rsvd
+        'ffff'  # len
+    )
+    with pytest.raises(dpkt.UnpackError, match="invalid TPKT length"):
+        H225(buf_tpkt_len)
+
+
+def test_unpack_ie():
+    ie = H225.IE(b'\x80')
+    assert ie.len == 0
+    assert ie.data is None
+    assert len(ie) == 1
+    # __bytes__ attempts to concat None to bytes
+    # assert bytes(ie) == b'\x80'
 
 
 if __name__ == '__main__':

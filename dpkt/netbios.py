@@ -195,7 +195,7 @@ class NS(dns.DNS):
             if self.type == NS_A:
                 self.ip = self.rdata
             elif self.type == NS_NBSTAT:
-                num_names = self.rdata[0]
+                num_names = compat_ord(self.rdata[0])
 
                 self.nodenames = [
                     self._node_name_struct.unpack_from(
@@ -282,10 +282,13 @@ def test_node_to_service_name_keyerror():
 
 
 def test_rr():
-    rr = NS.RR()
-    assert len(bytes(rr)) == 1036
-
+    import pytest
     from binascii import unhexlify
+
+    rr = NS.RR()
+    with pytest.raises(NotImplementedError):
+        len(rr)
+
     buf = unhexlify(''.join([
         '01',        # A record
         '0001',      # DNS_IN
@@ -321,7 +324,6 @@ def test_rr_nbstat():
         (b'ABCDEFGHIJKLMNO', 0x2f, 0x0102),
         (b'PQRSTUVWXYZABCD', 0x43, 0x0304),
     ]
-    assert 0
 
 
 def test_ns():

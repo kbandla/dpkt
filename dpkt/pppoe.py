@@ -171,7 +171,7 @@ def test_pppoe_unpack_error():
         "11"    # v/type
         "00"    # code
         "0011"  # session
-        "0066"  # len
+        "0066"  # len
 
         "00"    # data
     )
@@ -186,7 +186,7 @@ def test_ppp_pack_hdr():
     from binascii import unhexlify
 
     buf = unhexlify(
-        '01'  # protocol, with compression bit set
+        '01'  # protocol, with compression bit set
 
         'ff'  # incomplete data
     )

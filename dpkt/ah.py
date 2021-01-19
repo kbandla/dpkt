@@ -45,6 +45,7 @@ class AH(dpkt.Packet):
     def __bytes__(self):
         return self.pack_hdr() + bytes(self.auth) + bytes(self.data)
 
+
 def test_default_creation():
     ah = AH()
     assert ah.nxt == 0
@@ -55,10 +56,11 @@ def test_default_creation():
     assert len(ah) == ah.__hdr_len__
     assert bytes(ah) == b'\x00' * 12
 
+
 def test_creation_from_buf():
     from binascii import unhexlify
     buf_ip = unhexlify(
-        '04' # IP
+        '04'  # IP
         '0000000000000000000000'
         '4500002200000000401172c001020304'
         '01020304006f00de000ebf35666f6f626172'
@@ -71,7 +73,7 @@ def test_creation_from_buf():
     assert bytes(ah) == buf_ip
 
     buf_not_ip = unhexlify(
-        '37' # Not registered
+        '37'  # Not registered
         '0000000000000000000000'
         '4500002200000000401172c001020304'
         '01020304006f00de000ebf35666f6f626172'
