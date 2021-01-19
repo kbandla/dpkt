@@ -169,8 +169,10 @@ __t = (b'\x01\x00\x00\x2c\x80\x00\x01\x18\x00\x00\x00\x00\x00\x00\x41\xc8\x00\x0
 def test_pack():
     d = Diameter(__s)
     assert (__s == bytes(d))
+    assert len(d) == len(__s)
     d = Diameter(__t)
     assert (__t == bytes(d))
+    assert len(d) == len(__t)
 
 
 def test_unpack():
@@ -198,6 +200,24 @@ def test_unpack():
     assert (len(avp) == 16)
     assert (avp.vendor == 3735928559)
     assert (avp.data == b'\x68\x30\x30\x32')
+
+
+def test_diameter_properties():
+    diameter = Diameter()
+    for prop in ['request_flag', 'proxiable_flag', 'error_flag', 'retransmit_flag']:
+        assert hasattr(diameter, prop)
+        assert getattr(diameter, prop) == 0
+        setattr(diameter, prop, 1)
+        assert getattr(diameter, prop) == 1
+
+
+def test_avp_properties():
+    avp = AVP()
+    for prop in ['vendor_flag', 'mandatory_flag', 'protected_flag']:
+        assert hasattr(avp, prop)
+        assert getattr(avp, prop) == 0
+        setattr(avp, prop, 1)
+        assert getattr(avp, prop) == 1
 
 
 if __name__ == '__main__':
