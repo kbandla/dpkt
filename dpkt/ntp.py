@@ -96,9 +96,3 @@ def test_ntp_unpack():
     assert (n.li == ALARM_CONDITION)
     assert (n.v == 3)
     assert (n.mode == CLIENT)
-
-
-if __name__ == '__main__':
-    test_ntp_pack()
-    test_ntp_unpack()
-    print('Tests Successful...')

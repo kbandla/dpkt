@@ -184,8 +184,3 @@ def test_sre_creation():
     )
     sre = GRE.SRE(buf)
     assert sre.data == b'\xff\xff'
-
-
-if __name__ == '__main__':
-    test_gre_v1()
-    test_gre_len()

@@ -91,8 +91,3 @@ def test_llc():
     llc_pkt = LLC(ssap=6, dsap=6, data=ip.IP(s[8:]))
     assert isinstance(llc_pkt.data, ip.IP)
     assert str(llc_pkt) == str(b'\x06\x06\x03' + s[8:])
-
-
-if __name__ == '__main__':
-    test_llc()
-    print('Tests Successful...')

@@ -811,26 +811,3 @@ def test_eth_8023_llc_trailer():  # https://github.com/kbandla/dpkt/issues/438
     # FCS computation
     eth.fcs = None
     assert bytes(eth) == d
-
-
-if __name__ == '__main__':
-    test_eth()
-    test_eth_init_with_data()
-    test_mpls_label()
-    test_802dot1q_tag()
-    test_isl_tag()
-    test_eth_802dot1q()
-    test_eth_802dot1q_stacked()
-    test_eth_mpls_stacked()
-    test_isl_eth_llc_stp()
-    test_eth_llc_snap_cdp()
-    test_eth_llc_ipx()
-    test_eth_pppoe()
-    test_eth_2mpls_ecw_eth_llc_stp()
-    test_eth_802dot1ad_802dot1q_ip()
-    test_eth_pack()
-    test_eth_802dot1q_with_unfamiliar_data()
-    test_eth_802dot1q_with_arp_data()
-    test_eth_8023_llc_trailer()
-
-    print('Tests Successful...')

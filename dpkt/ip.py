@@ -448,12 +448,3 @@ def test_property_setters():
     assert ip.hl == 7
 
 
-if __name__ == '__main__':
-    test_ip()
-    test_dict()
-    test_hl()
-    test_opt()
-    test_zerolen()
-    test_constuctor()
-    test_frag()
-    print('Tests Successful...')

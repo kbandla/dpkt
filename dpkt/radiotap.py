@@ -495,11 +495,3 @@ def test_flags():
     assert flags.fcs == 0
     flags.fcs = 1
     assert flags.fcs == 1
-
-
-if __name__ == '__main__':
-    test_radiotap_1()
-    test_radiotap_2()
-    test_radiotap_3()
-    test_fcs()
-    print('Tests Successful...')

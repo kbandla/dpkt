@@ -218,9 +218,3 @@ def test_avp_properties():
         assert getattr(avp, prop) == 0
         setattr(avp, prop, 1)
         assert getattr(avp, prop) == 1
-
-
-if __name__ == '__main__':
-    test_pack()
-    test_unpack()
-    print('Tests Successful...')

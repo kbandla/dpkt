@@ -232,8 +232,3 @@ def test_no_opts():
     assert dhcp.opts == []
     assert dhcp.data == b''
     assert dhcp.pack_opts() == b''
-
-
-if __name__ == '__main__':
-    test_dhcp()
-    print('Tests Successful...')

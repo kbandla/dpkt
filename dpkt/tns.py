@@ -47,9 +47,3 @@ def test_tns():
         t = TNS(s[:-10])
     except dpkt.NeedData:
         pass
-
-
-if __name__ == '__main__':
-    test_tns()
-
-    print('Tests Successful...')

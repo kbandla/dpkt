@@ -308,8 +308,3 @@ def test_decode():
         (2, 1193046),
         (2, 0),
     ]
-
-
-if __name__ == '__main__':
-    test_asn1()
-    print('Tests Successful...')

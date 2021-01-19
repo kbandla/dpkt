@@ -157,10 +157,3 @@ def test_sctp_data_chunk():  # https://github.com/kbandla/dpkt/issues/499
 
     # test packing of the padded chunk
     assert bytes(ch) == d[SCTP.__hdr_len__:]
-
-
-if __name__ == '__main__':
-    test_sctp_pack()
-    test_sctp_unpack()
-    test_sctp_data_chunk()
-    print('Tests Successful...')

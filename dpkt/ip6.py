@@ -536,17 +536,3 @@ def test_proto_accessors():
     assert 'PROTO' not in IP6._protosw
     IP6.set_proto('PROTO', Proto)
     assert IP6.get_proto('PROTO') == Proto
-
-
-if __name__ == '__main__':
-    test_ipg()
-    test_ip6_routing_header()
-    test_ip6_fragment_header()
-    test_ip6_options_header()
-    test_ip6_ah_header()
-    test_ip6_esp_header()
-    test_ip6_extension_headers()
-    test_ip6_all_extension_headers()
-    test_ip6_gen_tcp_ack()
-    test_ip6_opts()
-    print('Tests Successful...')

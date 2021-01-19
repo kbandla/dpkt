@@ -296,9 +296,3 @@ def test_unpack_ie():
     assert len(ie) == 1
     # __bytes__ attempts to concat None to bytes
     # assert bytes(ie) == b'\x80'
-
-
-if __name__ == '__main__':
-    test_pack()
-    test_unpack()
-    print('Tests Successful...')

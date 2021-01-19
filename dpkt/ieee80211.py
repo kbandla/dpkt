@@ -985,18 +985,3 @@ def test_action_unpack():
     )
     with pytest.raises(dpkt.UnpackError, match="KeyError: category=1 code=0"):
         IEEE80211.Action(buf)
-
-
-if __name__ == '__main__':
-    # Runs all the test associated with this class/file
-    test_802211_ack()
-    test_80211_beacon()
-    test_80211_data()
-    test_80211_data_qos()
-    test_bug()
-    test_data_ds()
-    test_compressed_block_ack()
-    test_action_block_ack_request()
-    test_action_block_ack_response()
-    test_action_block_ack_delete()
-    print('Tests Successful...')
