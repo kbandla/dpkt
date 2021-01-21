@@ -146,6 +146,43 @@ def test_cdp():
     assert len(eth) == len(s)
 
 
-if __name__ == '__main__':
-    test_cdp()
-    print('Tests Successful...')
+def test_tlv():
+    from binascii import unhexlify
+    # len field set to 0
+    buf_no_len = unhexlify(
+        '0000'  # type
+        '0000'  # len
+        'abcd'  # data
+    )
+
+    buf_with_len = unhexlify(
+        '0000'  # type
+        '0006'  # len
+        'abcd'  # data
+    )
+    tlv = CDP.TLV(buf_no_len)
+    assert tlv.type == 0
+    assert tlv.len == 0
+    assert tlv.data_len() == 2
+    assert tlv.data == b'\xab\xcd'
+    assert bytes(tlv) == buf_with_len
+
+    # len field set manually
+    tlv = CDP.TLV(buf_with_len)
+    assert tlv.type == 0
+    assert tlv.len == 6
+    assert tlv.data_len() == 2
+    assert tlv.data == b'\xab\xcd'
+    assert bytes(tlv) == buf_with_len
+
+
+def test_address():
+    from binascii import unhexlify
+    buf = unhexlify(
+        '00'    # ptype
+        '11'    # plen
+        '22'    # p
+        '3333'  # alen
+    )
+    address = CDP.Address(buf)
+    assert address.data_len() == 0x3333

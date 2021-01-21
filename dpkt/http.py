@@ -51,13 +51,14 @@ def parse_body(f, headers):
             if n == 0:
                 found_end = True
             buf = f.read(n)
-
             if f.readline().strip():
                 break
 
             if n and len(buf) == n:
                 l_.append(buf)
             else:
+                # only possible when len(buf) < n, which will happen if the
+                # file object ends before reading a complete file chunk
                 break
         if not found_end:
             raise dpkt.NeedData('premature end of chunked body')
@@ -236,43 +237,6 @@ class Response(Message):
         return str_out.encode("ascii", "ignore") + Message.__bytes__(self)
 
 
-class PostTest:
-    def __init__(self, *args, **kwargs):
-        self.args = args
-        self.kwargs = kwargs
-
-    def __call__(self, f, *args, **kwargs):
-        def wrapper(*args, **kwargs):
-            test_type = self.kwargs.get('test')
-            if test_type == 'assertion':
-                isexception = False
-                try:
-                    ret = f(*args, **kwargs)
-                except Exception as e:
-                    isexception = True
-                    assert isinstance(e, self.kwargs['type'])
-                    assert str(e).startswith(self.kwargs['msg']),\
-                        "Exception text did not start as expected. Was '{:s}'".format(str(e))
-                assert isexception, "No assertion raised!"
-
-            else:
-                ret = f(*args, **kwargs)
-                raise Exception("No test type specified")
-        return wrapper
-
-
-def test_posttest():
-    """Check that PostTest wrapper doesn't fail silently"""
-    @PostTest()
-    def fun():
-        pass
-
-    try:
-        fun()
-    except Exception as e:
-        assert str(e) == 'No test type specified'
-
-
 def test_parse_request():
     s = (b"""POST /main/redirect/ab/1,295,,00.html HTTP/1.0\r\nReferer: http://www.email.com/login/snap/login.jhtml\r\n"""
          b"""Connection: Keep-Alive\r\nUser-Agent: Mozilla/4.75 [en] (X11; U; OpenBSD 2.8 i386; Nav)\r\n"""
@@ -285,11 +249,8 @@ def test_parse_request():
     assert r.uri == '/main/redirect/ab/1,295,,00.html'
     assert r.body == b'sn=em&mn=dtest4&pw=this+is+atest&fr=true&login=Sign+in&od=www'
     assert r.headers['content-type'] == 'application/x-www-form-urlencoded'
-    try:
-        Request(s[:60])
-        assert 'invalid headers parsed!'
-    except dpkt.UnpackError:
-        pass
+
+    Request(s[:60])
 
 
 def test_format_request():
@@ -315,8 +276,34 @@ def test_format_request():
 
 
 def test_chunked_response():
-    s = b"""HTTP/1.1 200 OK\r\nCache-control: no-cache\r\nPragma: no-cache\r\nContent-Type: text/javascript; charset=utf-8\r\nContent-Encoding: gzip\r\nTransfer-Encoding: chunked\r\nSet-Cookie: S=gmail=agg:gmail_yj=v2s:gmproxy=JkU; Domain=.google.com; Path=/\r\nServer: GFE/1.3\r\nDate: Mon, 12 Dec 2005 22:33:23 GMT\r\n\r\na\r\n\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\x00\r\n152\r\nm\x91MO\xc4 \x10\x86\xef\xfe\n\x82\xc9\x9eXJK\xe9\xb6\xee\xc1\xe8\x1e6\x9e4\xf1\xe0a5\x86R\xda\x12Yh\x80\xba\xfa\xef\x85\xee\x1a/\xf21\x99\x0c\xef0<\xc3\x81\xa0\xc3\x01\xe6\x10\xc1<\xa7eYT5\xa1\xa4\xac\xe1\xdb\x15:\xa4\x9d\x0c\xfa5K\x00\xf6.\xaa\xeb\x86\xd5y\xcdHY\x954\x8e\xbc*h\x8c\x8e!L7Y\xe6\'\xeb\x82WZ\xcf>8\x1ed\x87\x851X\xd8c\xe6\xbc\x17Z\x89\x8f\xac \x84e\xde\n!]\x96\x17i\xb5\x02{{\xc2z0\x1e\x0f#7\x9cw3v\x992\x9d\xfc\xc2c8\xea[/EP\xd6\xbc\xce\x84\xd0\xce\xab\xf7`\'\x1f\xacS\xd2\xc7\xd2\xfb\x94\x02N\xdc\x04\x0f\xee\xba\x19X\x03TtW\xd7\xb4\xd9\x92\n\xbcX\xa7;\xb0\x9b\'\x10$?F\xfd\xf3CzPt\x8aU\xef\xb8\xc8\x8b-\x18\xed\xec<\xe0\x83\x85\x08!\xf8"[\xb0\xd3j\x82h\x93\xb8\xcf\xd8\x9b\xba\xda\xd0\x92\x14\xa4a\rc\reM\xfd\x87=X;h\xd9j;\xe0db\x17\xc2\x02\xbd\xb0F\xc2in#\xfb:\xb6\xc4x\x15\xd6\x9f\x8a\xaf\xcf)\x0b^\xbc\xe7i\x11\x80\x8b\x00D\x01\xd8/\x82x\xf6\xd8\xf7J(\xae/\x11p\x1f+\xc4p\t:\xfe\xfd\xdf\xa3Y\xfa\xae4\x7f\x00\xc5\xa5\x95\xa1\xe2\x01\x00\x00\r\n0\r\n\r\n"""
-    r = Response(s)
+    from binascii import unhexlify
+    header = (
+        b"HTTP/1.1 200 OK\r\n"
+        b"Cache-control: no-cache\r\n"
+        b"Pragma: no-cache\r\n"
+        b"Content-Type: text/javascript; charset=utf-8\r\n"
+        b"Content-Encoding: gzip\r\n"
+        b"Transfer-Encoding: chunked\r\n"
+        b"Set-Cookie: S=gmail=agg:gmail_yj=v2s:gmproxy=JkU; Domain=.google.com; Path=/\r\n"
+        b"Server: GFE/1.3\r\n"
+        b"Date: Mon, 12 Dec 2005 22:33:23 GMT\r\n"
+        b"\r\n"
+    )
+    body = unhexlify(
+        '610d0a1f8b08000000000000000d0a3135320d0a6d914d4fc4201086effe0a82c99e58'
+        '4a4be9b6eec1e81e369e34f1e061358652da12596880bafaef85ee1a2ff231990cef30'
+        '3cc381a0c301e610c13ca765595435a1a4ace1db153aa49d0cfa354b00f62eaaeb86d5'
+        '79cd485995348ebc2a688c8e214c3759e627eb82575acf3e381e6487853158d863e6bc'
+        '175a898fac208465de0a215d961769b5027b7bc27a301e0f23379c77337699329dfcc2'
+        '6338ea5b2f4550d6bcce84d0ceabf760271fac53d2c7d2fb94024edc040feeba195803'
+        '547457d7b4d9920abc58a73bb09b2710243f46fdf3437a50748a55efb8c88b2d18edec'
+        '3ce083850821f8225bb0d36a826893b8cfd89bbadad09214a4610d630d654dfd873d58'
+        '3b68d96a3be0646217c202bdb046c2696e23fb3ab6c47815d69f8aafcf290b5ebce769'
+        '11808b004401d82f8278f6d8f74a28ae2f11701f2bc470093afefddfa359faae347f00'
+        'c5a595a1e20100000d0a300d0a0d0a'
+    )
+    buf = header + body
+    r = Response(buf)
     assert r.version == '1.1'
     assert r.status == '200'
     assert r.reason == 'OK'
@@ -375,7 +362,6 @@ def test_body_forbidden_response():
     assert len(result) == 2
 
 
-@PostTest(test='assertion', type=dpkt.UnpackError, msg="invalid http version: ")
 def test_request_version():
     s = b"""GET / HTTP/1.0\r\n\r\n"""
     r = Request(s)
@@ -389,8 +375,10 @@ def test_request_version():
     assert r.uri == '/'
     assert r.version == '0.9'
 
+    import pytest
     s = b"""GET / CHEESE/1.0\r\n\r\n"""
-    Request(s)
+    with pytest.raises(dpkt.UnpackError, match="invalid http version: u?'CHEESE/1.0'"):
+        Request(s)
 
 
 def test_valid_header():
@@ -412,13 +400,6 @@ def test_valid_header():
     assert r.uri == '/main/redirect/ab/1,295,,00.html'
     assert r.body == b'sn=em&mn=dtest4&pw=this+is+atest&fr=true&login=Sign+in&od=www'
     assert r.headers['content-type'] == 'application/x-www-form-urlencoded'
-
-
-@PostTest(test='assertion', type=dpkt.UnpackError, msg="invalid request: ")
-def test_invalid_header_messy():
-    # messy header.
-    s_messy_header = b'aaaaaaaaa\r\nbbbbbbbbb'
-    Request(s_messy_header)
 
 
 def test_weird_end_header():
@@ -463,47 +444,6 @@ def test_gzip_response():
     assert body.startswith(b'This is a very small file')
 
 
-@PostTest(test='assertion', type=dpkt.UnpackError, msg="invalid header: ")
-def test_invalid_header_key():
-    s = b'HTTP/1.0 200 OK\r\n' \
-        b'Invalid Header: invalid\r\n'
-    Response(s)
-
-
-@PostTest(test='assertion', type=dpkt.UnpackError, msg="missing chunk size")
-def test_missing_chunk():
-    s = (
-        b"HTTP/1.1 200 OK\r\n"
-        b"Transfer-Encoding: chunked\r\n"
-        b"\r\n"
-        b"\r\n"
-    )
-    Response(s)
-
-
-@PostTest(test='assertion', type=dpkt.UnpackError, msg="premature end of chunked body")
-def test_premature_end():
-    s = (
-        b"HTTP/1.1 200 OK\r\n"
-        b"Transfer-Encoding: chunked\r\n"
-        b"\r\n"
-        b"2\r\n"
-        b"abcd"
-    )
-    Response(s)
-
-
-@PostTest(test='assertion', type=dpkt.UnpackError, msg="short body (missing 65 bytes)")
-def test_short_body():
-    s = (
-        b"HTTP/1.1 200 OK\r\n"
-        b"Content-Length: 68\r\n"
-        b"\r\n"
-        b"a\r\n"
-    )
-    Response(s)
-
-
 def test_message():
     # s = b'Date: Fri, 10 Mar 2017 20:43:08 GMT\r\n'  # FIXME - unused
     r = Message(content_length=68)
@@ -511,28 +451,64 @@ def test_message():
     assert len(r) == 2
 
 
-@PostTest(test='assertion', type=dpkt.UnpackError, msg='invalid http method: ')
-def test_invalid_method():
+def test_invalid():
+    import pytest
+
     s = b'INVALID / HTTP/1.0\r\n'
-    Request(s)
+    with pytest.raises(dpkt.UnpackError, match="invalid http method: u?'INVALID'"):
+        Request(s)
 
-
-@PostTest(test='assertion', type=dpkt.UnpackError, msg="invalid response: ")
-def test_invalid_response_short():
     s = b'A'
-    Response(s)
+    with pytest.raises(dpkt.UnpackError, match="invalid response: b?'A'"):
+        Response(s)
 
-
-@PostTest(test='assertion', type=dpkt.UnpackError, msg="invalid response: ")
-def test_invalid_response_proto():
     s = b'HTTT 200 OK'
-    Response(s)
+    with pytest.raises(dpkt.UnpackError, match="invalid response: b?'HTTT 200 OK'"):
+        Response(s)
 
-
-@PostTest(test='assertion', type=dpkt.UnpackError, msg="invalid response: ")
-def test_invalid_response_code():
     s = b'HTTP TWO OK'
-    Response(s)
+    with pytest.raises(dpkt.UnpackError, match="invalid response: b?'HTTP TWO OK'"):
+        Response(s)
+
+    s = (
+        b'HTTP/1.0 200 OK\r\n'
+        b'Invalid Header: invalid\r\n'
+    )
+    with pytest.raises(dpkt.UnpackError, match="invalid header: "):
+        Response(s)
+
+    s = (
+        b"HTTP/1.1 200 OK\r\n"
+        b"Transfer-Encoding: chunked\r\n"
+        b"\r\n"
+        b"\r\n"
+    )
+    with pytest.raises(dpkt.UnpackError, match="missing chunk size"):
+        Response(s)
+
+    s = (
+        b"HTTP/1.1 200 OK\r\n"
+        b"Transfer-Encoding: chunked\r\n"
+        b"\r\n"
+        b"2\r\n"
+        b"abcd"
+    )
+    with pytest.raises(dpkt.NeedData, match="premature end of chunked body"):
+        Response(s)
+
+    s = (
+        b"HTTP/1.1 200 OK\r\n"
+        b"Content-Length: 68\r\n"
+        b"\r\n"
+        b"a\r\n"
+    )
+    with pytest.raises(dpkt.NeedData, match=r"short body \(missing 65 bytes\)"):
+        Response(s)
+
+    # messy header.
+    s_messy_header = b'aaaaaaaaa\r\nbbbbbbbbb'
+    with pytest.raises(dpkt.UnpackError, match="invalid request: u?'aaaaaaaa"):
+        Request(s_messy_header)
 
 
 def test_response_str():
@@ -567,3 +543,18 @@ def test_request_str():
     r = Request(s)
     req = 'GET / HTTP/1.0\r\n\r\n'
     assert req == str(r)
+
+
+def test_parse_body():
+    import pytest
+    from .compat import BytesIO
+    buf = BytesIO(
+        b'05\r\n'  # size
+        b'ERR'     # longer than size
+    )
+    buf.seek(0)
+    headers = {
+        'transfer-encoding': 'chunked',
+    }
+    with pytest.raises(dpkt.NeedData, match="premature end of chunked body"):
+        parse_body(buf, headers)

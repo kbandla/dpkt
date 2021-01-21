@@ -41,8 +41,3 @@ def test_aoeata():
          b'\x24\x00\xde\x8e\x84\x42\xab\xd1\x00\x50\x00\x35\xe1\x29\x20\xd9\x00\x00\x00\x22\x9b\xf0\xe2\x04\x65\x6b')
     aoeata = AOEATA(s)
     assert (bytes(aoeata) == s)
-
-
-if __name__ == '__main__':
-    test_aoeata()
-    print('Tests Successful...')

@@ -452,9 +452,46 @@ def test_radiotap_3():  # xchannel aka channel plus field
     assert repr(rt.data).startswith('IEEE80211')
 
 
-if __name__ == '__main__':
-    test_radiotap_1()
-    test_radiotap_2()
-    test_radiotap_3()
-    test_fcs()
-    print('Tests Successful...')
+def test_radiotap_properties():
+    from binascii import unhexlify
+    buf = unhexlify(
+        '00'
+        '00'
+        '0018'
+
+        '0000000000000000000000000000000000000000'
+    )
+    radiotap = Radiotap(buf)
+    property_keys = [
+        'tsft', 'flags', 'rate', 'channel', 'fhss', 'ant_sig', 'ant_noise',
+        'lock_qual', 'tx_attn', 'db_tx_attn', 'dbm_tx_power', 'ant',
+        'db_ant_sig', 'db_ant_noise', 'rx_flags', 'chanplus'
+    ]
+    for prop in [key + '_present' for key in property_keys]:
+        print(prop)
+        assert hasattr(radiotap, prop)
+        assert getattr(radiotap, prop) == 0
+        # TODO: Reinstate these tests when present_flags is of the correct type
+        # setattr(radiotap, prop, 1)
+        # assert getattr(radiotap, prop) == 1
+
+
+def test_radiotap_unpack_fcs():
+    from binascii import unhexlify
+    buf = unhexlify(
+        '00'     # version
+        '00'     # pad
+        '1800'   # length
+
+        '6e48000011026c09a000a8810200000000000000'
+        'd40000000012f0b61ca4ffffffff'
+    )
+    radiotap = Radiotap(buf)
+    assert radiotap.data.fcs_present == 1
+
+
+def test_flags():
+    flags = Radiotap.Flags(b'\x00')
+    assert flags.fcs == 0
+    flags.fcs = 1
+    assert flags.fcs == 1

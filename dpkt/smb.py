@@ -99,8 +99,3 @@ def test_smb():
     smb.uid = 0x800
     assert str(smb) == str(b'\xffSMB\x00\x00\x00\x00\x00\x00\x00\x00\x08\x00\x00\x00\x00\x00\x00'
                            b'\x00\x00\x00\x00\x00\x00\x00\x20\x10\x00\x08\x00\x00')
-
-
-if __name__ == '__main__':
-    test_smb()
-    print('Tests Successful...')

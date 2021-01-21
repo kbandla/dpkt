@@ -1211,11 +1211,3 @@ def test_bgp_add_path_6_1_as_path():
     assert (attribute.flags == 0x80)
     assert (attribute.len == 4)
     assert (socket.inet_ntop(socket.AF_INET, bytes(attribute.originator_id)) == '10.0.15.1')
-
-
-if __name__ == '__main__':
-    test_pack()
-    test_unpack()
-    test_bgp_mp_nlri_20_1_mp_reach_nlri_next_hop()
-    test_bgp_add_path_6_1_as_path()
-    print('Tests Successful...')

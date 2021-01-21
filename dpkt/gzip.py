@@ -172,10 +172,3 @@ class TestGzip(object):
 
     def test_decompress(self):
         assert (self.p.decompress() == b"Hello world!\n")  # always bytes
-
-
-if __name__ == '__main__':
-    import sys
-
-    gz = Gzip(open(sys.argv[1]).read())
-    print(repr(gz), repr(gz.decompress()))

@@ -692,3 +692,10 @@ class TestCipherSuites(object):
         assert (BY_CODE[0xcca8] == BY_NAME('TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256'))
         assert (BY_CODE[0xccae] == BY_NAME('TLS_RSA_PSK_WITH_CHACHA20_POLY1305_SHA256'))
         assert (BY_CODE[0xcc15] == BY_NAME('OLD_TLS_DHE_RSA_WITH_CHACHA20_POLY1305_SHA256'))
+
+    def test_repr(self):
+        cs = CipherSuite(0x0009, 'RSA', '         ', 'DES     ', 'CBC ', 'SHA')
+        assert repr(cs) == "CipherSuite(TLS_RSA_WITH_DES_CBC_SHA)"
+
+        assert cs.mac_size == 20
+        assert cs.block_size == 8

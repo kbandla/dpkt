@@ -109,8 +109,3 @@ def test_packing():
 
     p.p = 0xc021  # LCP
     assert p.pack_hdr() == b"\xff\x03\xc0\x21"
-
-
-if __name__ == '__main__':
-    # Runs all the test associated with this class/file
-    test_ppp()
