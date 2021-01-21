@@ -96,10 +96,3 @@ def test_stun_padded():
     assert len(attrs) == 6
     assert attrs[0] == (USERNAME, b'pLyZHR:GwL3AHBovubLvCqn')
     assert attrs[4][0] == MESSAGE_INTEGRITY
-
-
-if __name__ == '__main__':
-    test_stun_response()
-    test_stun_padded()
-
-    print('Tests Successful...')

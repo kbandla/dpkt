@@ -224,3 +224,43 @@ class SCCP(dpkt.Packet):
             setattr(self, p.__class__.__name__.lower(), p)
         except (KeyError, dpkt.UnpackError):
             pass
+
+
+def test_sccp():
+    import pytest
+    from binascii import unhexlify
+    buf = unhexlify(
+        '08000000'  # len
+        '00000000'  # rsvd
+        '03000000'  # msgid (KEYPAD_BUTTON)
+
+        'abcdef01'  # msg
+        '23456789'  # daat
+    )
+    sccp = SCCP(buf)
+    assert sccp.msg == b'\xab\xcd\xef\x01'
+    assert sccp.data == b'\x23\x45\x67\x89'
+    assert isinstance(sccp.keypadbutton, KeypadButton)
+
+    # len is too long for data, raises NeedData
+    buf = unhexlify(
+        '88880000'  # len
+        '00000000'  # rsvd
+        '00000003'  # msgid (KEYPAD_BUTTON)
+
+        'abcdef01'  # msg
+    )
+    with pytest.raises(dpkt.NeedData):
+        SCCP(buf)
+
+    # msgid is invalid, raises KeyError on _msgsw (silently caught)
+    buf = unhexlify(
+        '08000000'  # len
+        '00000000'  # rsvd
+        '00000003'  # msgid (invalid)
+
+        'abcdef01'  # msg
+    )
+    sccp = SCCP(buf)
+    assert sccp.msg == b'\xab\xcd\xef\x01'
+    assert sccp.data == b''

@@ -151,3 +151,16 @@ def test_rtp():
     assert (rtp.seq == 1234)
     assert (rtp.ts == 5678)
     assert (rtp.ssrc == 0xabcdef01)
+
+
+def test_rtp_properties():
+    from .compat import compat_izip
+
+    rtp = RTP()
+    properties = ['version', 'p', 'x', 'cc', 'm', 'pt']
+    defaults = [2, 0, 0, 0, 0, 0]
+    for prop, default in compat_izip(properties, defaults):
+        assert hasattr(rtp, prop)
+        assert getattr(rtp, prop) == default
+        setattr(rtp, prop, 1)
+        assert getattr(rtp, prop) == 1

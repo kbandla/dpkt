@@ -114,7 +114,7 @@ class GRE(dpkt.Packet):
             vals = []
             for f in fields:
                 vals.append(getattr(self, f))
-            opt_s = struct.pack(b''.join(fmts), *vals)
+            opt_s = struct.pack(''.join(fmts), *vals)
         else:
             opt_s = b''
         return self.pack_hdr() + opt_s + b''.join(map(bytes, self.sre)) + bytes(self.data)
@@ -147,10 +147,40 @@ def test_gre_v1():
 
 
 def test_gre_len():
+    from binascii import unhexlify
+
     gre = GRE()
     assert len(gre) == 4
 
+    buf = unhexlify("3081880a0067178000068fb100083a76") + b"\x41" * 103
+    gre = GRE(buf)
+    correct = unhexlify(
+      '3081880a67008017b18f0600763a08004141414141414141414141414141414141414141'
+      '414141414141414141414141414141414141414141414141414141414141414141414141'
+      '414141414141414141414141414141414141414141414141414141414141414141414141'
+      '4141414141414141414141'
+    )
+    assert bytes(gre) == correct
 
-if __name__ == '__main__':
-    test_gre_v1()
-    test_gre_len()
+
+def test_gre_accessors():
+    gre = GRE()
+    for attr in ['v', 'recur']:
+        print(attr)
+        assert hasattr(gre, attr)
+        assert getattr(gre, attr) == 0
+        setattr(gre, attr, 1)
+        assert getattr(gre, attr) == 1
+
+
+def test_sre_creation():
+    from binascii import unhexlify
+    buf = unhexlify(
+        '0000'  # family
+        '00'    # off
+        '05'    # len
+
+        'ffff'
+    )
+    sre = GRE.SRE(buf)
+    assert sre.data == b'\xff\xff'

@@ -154,4 +154,46 @@ def test_ppp_short():
     pytest.raises(dpkt.NeedData, PPP, b"\x00")
 
 
+def test_pppoe_properties():
+    pppoe = PPPoE()
+    assert pppoe.v == 1
+    pppoe.v = 7
+    assert pppoe.v == 7
+
+    assert pppoe.type == 1
+    pppoe.type = 5
+    assert pppoe.type == 5
+
+
+def test_pppoe_unpack_error():
+    from binascii import unhexlify
+    buf = unhexlify(
+        "11"    # v/type
+        "00"    # code
+        "0011"  # session
+        "0066"  # len
+
+        "00"    # data
+    )
+    # this initialization swallows the UnpackError raised
+    pppoe = PPPoE(buf)
+    # unparsed data is still available
+    assert pppoe.data == b'\x00'
+
+
+def test_ppp_pack_hdr():
+    import pytest
+    from binascii import unhexlify
+
+    buf = unhexlify(
+        '01'  # protocol, with compression bit set
+
+        'ff'  # incomplete data
+    )
+    ppp = PPP(buf)
+    ppp.p = 1234567
+    with pytest.raises(dpkt.PackError):
+        ppp.pack_hdr()
+
+
 # XXX - TODO TLVs, etc.

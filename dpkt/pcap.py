@@ -305,7 +305,7 @@ class Reader(object):
         return self.__fh.linktype
 
     def setfilter(self, value, optimize=1):
-        return NotImplementedError
+        raise NotImplementedError
 
     def readpkts(self):
         return list(self)
@@ -405,6 +405,8 @@ class TestData():
 
 
 def test_reader():
+    import pytest
+
     data = TestData().pcap
 
     # --- BytesIO tests ---
@@ -416,6 +418,10 @@ def test_reader():
     assert reader.name == '<BytesIO>'
     _, buf1 = next(iter(reader))
     assert buf1 == data[FileHdr.__hdr_len__ + PktHdr.__hdr_len__:]
+    assert reader.datalink() == 1
+
+    with pytest.raises(NotImplementedError):
+        reader.setfilter(1, 2)
 
     # --- dispatch() tests ---
 
@@ -448,6 +454,35 @@ def test_reader():
 
     reader.loop(lambda ts, pkt: Count.inc())
     assert Count.counter == 1
+
+
+def test_reader_dloff():
+    from binascii import unhexlify
+    buf_filehdr = unhexlify(
+        'a1b2c3d4'    # TCPDUMP_MAGIC
+        '0001'        # v_major
+        '0002'        # v_minor
+        '00000000'    # thiszone
+        '00000000'    # sigfigs
+        '00000100'    # snaplen
+        '00000023'    # linktype (not known)
+    )
+
+    buf_pkthdr = unhexlify(
+        '00000003'  # tv_sec
+        '00000005'  # tv_usec
+        '00000004'  # caplen
+        '00000004'  # len
+    )
+
+    from .compat import BytesIO
+    fobj = BytesIO(buf_filehdr + buf_pkthdr + b'\x11'*4)
+    reader = Reader(fobj)
+
+    # confirm that if the linktype is unknown, it defaults to 0
+    assert reader.dloff == 0
+
+    assert next(reader) == (3.000005, b'\x11'*4)
 
 
 @TryExceptException(ValueError, msg="invalid tcpdump header")

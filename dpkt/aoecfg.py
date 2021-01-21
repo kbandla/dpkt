@@ -31,8 +31,3 @@ def test_aoecfg():
          b'\x00\x00\x00\x12\x34\x00\x00\x00\x00\x04\x00' + b'\0xed' * 1024)
     aoecfg = AOECFG(s[14 + 10:])
     assert (aoecfg.bufcnt == 0x1234)
-
-
-if __name__ == '__main__':
-    test_aoecfg()
-    print('Tests Successful...')

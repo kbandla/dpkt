@@ -461,6 +461,7 @@ def test_ip6_gen_tcp_ack():
 
 
 def test_ip6_opts():
+    import pytest
     # https://github.com/kbandla/dpkt/issues/477
     s = (b'\x52\x54\x00\xf3\x83\x6f\x52\x54\x00\x86\x33\xd9\x86\xdd\x60\x00\x00\x00\x05\x08\x3a\xff'
          b'\xfd\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\xfd\x00\x00\x00\x00\x00'
@@ -479,21 +480,59 @@ def test_ip6_opts():
     assert Ethernet(s).ip6.icmp6
     assert Ethernet(s).ip6.icmp6.data
 
-    try:
+    with pytest.raises(dpkt.NeedData):
         IP6(Ethernet(s).ip6.icmp6.data)  # should raise NeedData
-    except dpkt.NeedData:
+
+    from binascii import unhexlify
+    buf_ip6_opts = unhexlify(
+        '00'  # nxt
+        '00'  # len
+
+        '000000000000'  # only padding
+    )
+    ip6opt = IP6OptsHeader(buf_ip6_opts)
+    assert ip6opt.options == []
+    assert ip6opt.data == b'\x00' * 6
+
+
+def test_ip6_routing_properties():
+    ip6rh = IP6RoutingHeader()
+    assert ip6rh.sl_bits == 0
+    ip6rh.sl_bits = 1024
+    assert ip6rh.sl_bits == 1024
+
+
+def test_ip6_fragment_properties():
+    ip6fh = IP6FragmentHeader()
+    assert ip6fh.frag_off == 0
+    ip6fh.frag_off = 12345
+    assert ip6fh.frag_off == 12345
+
+    assert ip6fh.m_flag == 0
+    ip6fh.m_flag = 1
+    assert ip6fh.m_flag == 1
+
+
+def test_ip6_properties():
+    ip6 = IP6()
+
+    assert ip6.v == 6
+    ip6.v = 10
+    assert ip6.v == 10
+
+    assert ip6.fc == 0
+    ip6.fc = 5
+    assert ip6.fc == 5
+
+    assert ip6.flow == 0
+    ip6.flow = 4
+    assert ip6.flow == 4
+
+
+def test_proto_accessors():
+    class Proto:
         pass
 
-
-if __name__ == '__main__':
-    test_ipg()
-    test_ip6_routing_header()
-    test_ip6_fragment_header()
-    test_ip6_options_header()
-    test_ip6_ah_header()
-    test_ip6_esp_header()
-    test_ip6_extension_headers()
-    test_ip6_all_extension_headers()
-    test_ip6_gen_tcp_ack()
-    test_ip6_opts()
-    print('Tests Successful...')
+    assert 'PROTO' not in IP6._protosw
+    IP6.set_proto('PROTO', Proto)
+    assert IP6.get_proto('PROTO') == Proto

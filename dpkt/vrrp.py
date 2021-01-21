@@ -94,9 +94,3 @@ def test_vrrp():
     v.v = 3
     v.type = 2
     assert bytes(v)[0] == b'\x32'[0]
-
-
-if __name__ == '__main__':
-    test_vrrp()
-
-    print('Tests Successful...')

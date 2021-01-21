@@ -136,19 +136,175 @@ def decode(buf):
 
 
 def test_asn1():
-    s = (b'0\x82\x02Q\x02\x01\x0bc\x82\x02J\x04xcn=Douglas J Song 1, ou=Information Technology Division,'
-         b' ou=Faculty and Staff, ou=People, o=University of Michigan, c=US\n\x01\x00\n\x01\x03\x02\x01'
-         b'\x00\x02\x01\x00\x01\x01\x00\x87\x0bobjectclass0\x82\x01\xb0\x04\rmemberOfGroup\x04\x03acl'
-         b'\x04\x02cn\x04\x05title\x04\rpostalAddress\x04\x0ftelephoneNumber\x04\x04mail\x04\x06member'
-         b'\x04\thomePhone\x04\x11homePostalAddress\x04\x0bobjectClass\x04\x0bdescription\x04\x18'
-         b'facsimileTelephoneNumber\x04\x05pager\x04\x03uid\x04\x0cuserPassword\x04\x08joinable\x04\x10'
-         b'associatedDomain\x04\x05owner\x04\x0erfc822ErrorsTo\x04\x08ErrorsTo\x04\x10rfc822RequestsTo\x04\n'
-         b'RequestsTo\x04\tmoderator\x04\nlabeledURL\x04\nonVacation\x04\x0fvacationMessage\x04\x05drink\x04\x0e'
-         b'lastModifiedBy\x04\x10lastModifiedTime\x04\rmodifiersname\x04\x0fmodifytimestamp\x04\x0ccreatorsname'
-         b'\x04\x0fcreatetimestamp')
-    assert (decode(s) == [(48, [(2, 11), (99, [(4, b'cn=Douglas J Song 1, ou=Information Technology Division, ou=Faculty and Staff, ou=People, o=University of Michigan, c=US'), (10, b'\x00'), (10, b'\x03'), (2, 0), (2, 0), (1, b'\x00'), (135, b'objectclass'), (48, [(4, b'memberOfGroup'), (4, b'acl'), (4, b'cn'), (4, b'title'), (4, b'postalAddress'), (4, b'telephoneNumber'), (4, b'mail'), (4, b'member'), (4, b'homePhone'), (4, b'homePostalAddress'), (4, b'objectClass'), (4, b'description'), (4, b'facsimileTelephoneNumber'), (4, b'pager'), (4, b'uid'), (4, b'userPassword'), (4, b'joinable'), (4, b'associatedDomain'), (4, b'owner'), (4, b'rfc822ErrorsTo'), (4, b'ErrorsTo'), (4, b'rfc822RequestsTo'), (4, b'RequestsTo'), (4, b'moderator'), (4, b'labeledURL'), (4, b'onVacation'), (4, b'vacationMessage'), (4, b'drink'), (4, b'lastModifiedBy'), (4, b'lastModifiedTime'), (4, b'modifiersname'), (4, b'modifytimestamp'), (4, b'creatorsname'), (4, b'createtimestamp')])])])])
+    s = (
+        b'0\x82\x02Q\x02\x01\x0bc\x82\x02J\x04xcn=Douglas J Song 1, ou=Information Technology Division,'
+        b' ou=Faculty and Staff, ou=People, o=University of Michigan, c=US\n\x01\x00\n\x01\x03\x02\x01'
+        b'\x00\x02\x01\x00\x01\x01\x00\x87\x0bobjectclass0\x82\x01\xb0\x04\rmemberOfGroup\x04\x03acl'
+        b'\x04\x02cn\x04\x05title\x04\rpostalAddress\x04\x0ftelephoneNumber\x04\x04mail\x04\x06member'
+        b'\x04\thomePhone\x04\x11homePostalAddress\x04\x0bobjectClass\x04\x0bdescription\x04\x18'
+        b'facsimileTelephoneNumber\x04\x05pager\x04\x03uid\x04\x0cuserPassword\x04\x08joinable\x04\x10'
+        b'associatedDomain\x04\x05owner\x04\x0erfc822ErrorsTo\x04\x08ErrorsTo\x04\x10rfc822RequestsTo\x04\n'
+        b'RequestsTo\x04\tmoderator\x04\nlabeledURL\x04\nonVacation\x04\x0fvacationMessage\x04\x05drink\x04\x0e'
+        b'lastModifiedBy\x04\x10lastModifiedTime\x04\rmodifiersname\x04\x0fmodifytimestamp\x04\x0ccreatorsname'
+        b'\x04\x0fcreatetimestamp'
+    )
+    assert decode(s) == [
+        (48, [
+            (2, 11),
+            (99, [
+                (4, (
+                    b'cn=Douglas J Song 1, '
+                    b'ou=Information Technology Division, '
+                    b'ou=Faculty and Staff, '
+                    b'ou=People, '
+                    b'o=University of Michigan, '
+                    b'c=US'
+                )),
+                (10, b'\x00'),
+                (10, b'\x03'),
+                (2, 0),
+                (2, 0),
+                (1, b'\x00'),
+                (135, b'objectclass'),
+                (48, [
+                    (4, b'memberOfGroup'),
+                    (4, b'acl'),
+                    (4, b'cn'),
+                    (4, b'title'),
+                    (4, b'postalAddress'),
+                    (4, b'telephoneNumber'),
+                    (4, b'mail'),
+                    (4, b'member'),
+                    (4, b'homePhone'),
+                    (4, b'homePostalAddress'),
+                    (4, b'objectClass'),
+                    (4, b'description'),
+                    (4, b'facsimileTelephoneNumber'),
+                    (4, b'pager'),
+                    (4, b'uid'),
+                    (4, b'userPassword'),
+                    (4, b'joinable'),
+                    (4, b'associatedDomain'),
+                    (4, b'owner'),
+                    (4, b'rfc822ErrorsTo'),
+                    (4, b'ErrorsTo'),
+                    (4, b'rfc822RequestsTo'),
+                    (4, b'RequestsTo'),
+                    (4, b'moderator'),
+                    (4, b'labeledURL'),
+                    (4, b'onVacation'),
+                    (4, b'vacationMessage'),
+                    (4, b'drink'),
+                    (4, b'lastModifiedBy'),
+                    (4, b'lastModifiedTime'),
+                    (4, b'modifiersname'),
+                    (4, b'modifytimestamp'),
+                    (4, b'creatorsname'),
+                    (4, b'createtimestamp'),
+                ])
+            ])
+        ])
+    ]
 
 
-if __name__ == '__main__':
-    test_asn1()
-    print('Tests Successful...')
+def test_utctime():
+    buf = (
+        '201005'  # yymndd
+        '012345'  # hhmmss
+        '+1234'   # +hhmm
+    )
+    assert utctime(buf) == 1601815785.0
+
+    buf = (
+        '201005'  # yymndd
+        '012345'  # hhmmss
+        '-1234'   # -hhmm
+    )
+    assert utctime(buf) == 1601906265.0
+
+
+def test_decode():
+    import pytest
+    from binascii import unhexlify
+    buf = unhexlify(
+        '20'   # CONSTRUCTED
+        '80'   # 128 | 0
+    )
+    assert decode(buf) == [(32, []), (32, [])]
+
+    # unpacking UTC_TIME
+    buf = unhexlify(
+        '17'  # t: code: UTC_TIME
+        '81'  # l_: code: 128 | 1 (constructed
+        '22'  # data len
+        '3230313030353031323334352b30303030'
+
+    )
+    assert decode(buf) == [(23, 1601861025.0)]
+
+    # unpacking 2-byte size; zero-length integer
+    buf = unhexlify(
+        '02'    # t: INTEGER
+        '82'    # l_: 128 | 2
+        '0000'  # new l_
+    )
+    assert decode(buf) == [(2, 0)]
+
+    # unpacking 3-byte size
+    buf = unhexlify(
+        '02'        # t: INTEGER
+        '83'        # l_: 128 | 3
+        '000001'    # new l_
+    )
+    assert decode(buf) == [(2, 1)]
+
+    # unpacking 4-byte size
+    buf = unhexlify(
+        '02'        # t: INTEGER
+        '84'        # l_: 128 | 4
+        '00000002'  # new l_
+        'abcd'
+    )
+    assert decode(buf) == [(2, 43981)]
+
+    # unpacking 4-byte size
+    buf = unhexlify(
+        '02'        # t: INTEGER
+        '85'        # l_: 128 | 5
+    )
+    with pytest.raises(dpkt.UnpackError, match="excessive long-form ASN.1 length 133"):
+        decode(buf)
+
+    # unpacking 1-byte size; 4-byte integer
+    buf = unhexlify(
+        '02'        # t: INTEGER
+        '81'        # l_: 128 | 1
+        '04'        # new l_
+        '12345678'  # integer
+    )
+    assert decode(buf) == [(2, 305419896)]
+
+    # unpacking 1-byte size; 4-byte integer
+    buf = unhexlify(
+        '02'        # t: INTEGER
+        '81'        # l_: 128 | 1
+        '05'        # new l_
+    )
+    with pytest.raises(dpkt.UnpackError, match="excessive integer length > 5 bytes"):
+        decode(buf)
+
+    # unpacking 1-byte size; 3-byte integer
+    buf = unhexlify(
+        '02'        # t: INTEGER
+        '81'        # l_: 128 | 1
+        '03'        # new l_
+        '123456'    # integer
+
+        '02'        # t: INTEGER
+        '81'        # l_: 128 | 1
+        '00'        # new l_
+    )
+    assert decode(buf) == [
+        (2, 1193046),
+        (2, 0),
+    ]
