@@ -5,7 +5,7 @@ from __future__ import absolute_import
 from __future__ import print_function
 
 import struct
-import time
+from calendar import timegm
 
 from . import dpkt
 from .compat import compat_ord
@@ -57,13 +57,14 @@ def utctime(buf):
     except TypeError:
         ss = 0
         buf = buf[10:]
+
     if buf[0] == '+':
         hh -= int(buf[1:3])
         mm -= int(buf[3:5])
     elif buf[0] == '-':
         hh += int(buf[1:3])
         mm += int(buf[3:5])
-    return time.mktime((2000 + yy, mn, dd, hh, mm, ss, 0, 0, 0))
+    return timegm((2000 + yy, mn, dd, hh, mm, ss, 0, 0, 0))
 
 
 def decode(buf):
