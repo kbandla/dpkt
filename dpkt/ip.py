@@ -105,8 +105,15 @@ class IP(dpkt.Packet):
                 s = dpkt.in_cksum_add(0, s)
                 s = dpkt.in_cksum_add(s, p)
                 self.data.sum = dpkt.in_cksum_done(s)
+
+                # RFC 768 (Fields):
+                # If the computed checksum is zero, it is transmitted as all
+                # ones (the equivalent in one's complement arithmetic). An all
+                # zero transmitted checksum value means that the transmitter
+                # generated no checksum (for debugging or for higher level
+                # protocols that don't care).
                 if self.p == 17 and self.data.sum == 0:
-                    self.data.sum = 0xffff  # RFC 768
+                    self.data.sum = 0xffff
                     # XXX - skip transports which don't need the pseudoheader
         return self.pack_hdr() + bytes(self.opts) + bytes(self.data)
 
@@ -448,3 +455,17 @@ def test_property_setters():
     assert ip.hl == 7
 
 
+def test_default_udp_checksum():
+    from dpkt.udp import UDP
+
+    udp = UDP(sport=1, dport=0xffdb)
+    ip = IP(src=b'\x00\x00\x00\x01', dst=b'\x00\x00\x00\x01', p=17, data=udp)
+    assert ip.p == 17
+    assert ip.data.sum == 0
+
+    # this forces recalculation of the data layer checksum
+    bytes(ip)
+
+    # during calculation the checksum was evaluated to 0x0000
+    # this was then conditionally set to 0xffff per RFC768
+    assert ip.data.sum == 0xffff
