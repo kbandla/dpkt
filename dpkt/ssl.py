@@ -22,18 +22,31 @@ from .compat import compat_ord
 class SSL2(dpkt.Packet):
     __hdr__ = (
         ('len', 'H', 0),
-        ('msg', 's', b''),
-        ('pad', 's', b''),
     )
 
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
+        # In SSL, all data sent is encapsulated in a record, an object which is
+        # composed of a header and some non-zero amount of data. Each record header
+        # contains a two or three byte length code. If the most significant bit is
+        # set in the first byte of the record length code then the record has
+        # no padding and the total header length will be 2 bytes, otherwise the
+        # record has padding and the total header length will be 3 bytes. The
+        # record header is transmitted before the data portion of the record.
         if self.len & 0x8000:
             n = self.len = self.len & 0x7FFF
             self.msg, self.data = self.data[:n], self.data[n:]
         else:
+            # Note that in the long header case (3 bytes total), the second most
+            # significant bit in the first byte has special meaning. When zero,
+            # the record being sent is a data record. When one, the record
+            # being sent is a security escape (there are currently no examples
+            # of security escapes; this is reserved for future versions of the
+            # protocol). In either case, the length code describes how much
+            # data is in the record.
             n = self.len = self.len & 0x3FFF
             padlen = compat_ord(self.data[0])
+
             self.msg = self.data[1:1 + n]
             self.pad = self.data[1 + n:1 + n + padlen]
             self.data = self.data[1 + n + padlen:]
@@ -832,3 +845,29 @@ class TestTLSMultiFactory(object):
         msgs, n = tls_multi_factory(_hexdecode(b'1703010000'))
         assert (len(msgs) == 1)
         assert (n == 5)
+
+
+def test_ssl2():
+    from binascii import unhexlify
+    buf_padding = unhexlify(
+        '0001'  # len
+        '02'    # padlen
+        '03'    # msg
+        '0405'  # pad
+        '0607'  # data
+    )
+    ssl2 = SSL2(buf_padding)
+    assert ssl2.len == 1
+    assert ssl2.msg == b'\x03'
+    assert ssl2.pad == b'\x04\x05'
+    assert ssl2.data == b'\x06\x07'
+
+    buf_no_padding = unhexlify(
+        '8001'  # len
+        '03'    # msg
+        '0607'  # data
+    )
+    ssl2 = SSL2(buf_no_padding)
+    assert ssl2.len == 1
+    assert ssl2.msg == b'\x03'
+    assert ssl2.data == b'\x06\x07'
