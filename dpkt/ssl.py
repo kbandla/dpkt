@@ -804,6 +804,7 @@ class TestTLSCertificate(object):
 
 class TestTLSMultiFactory(object):
     """Made up test data"""
+    import pytest
 
     @classmethod
     def setup_class(cls):
@@ -846,6 +847,9 @@ class TestTLSMultiFactory(object):
         assert (len(msgs) == 1)
         assert (n == 5)
 
+        with self.pytest.raises(SSL3Exception, match='Bad TLS version in buf: '):
+            tls_multi_factory(_hexdecode(b'000000000000'))
+
 
 def test_ssl2():
     from binascii import unhexlify
@@ -871,3 +875,85 @@ def test_ssl2():
     assert ssl2.len == 1
     assert ssl2.msg == b'\x03'
     assert ssl2.data == b'\x06\x07'
+
+
+def test_clienthello_invalidcipher():
+    # NOTE: this test relies on ciphersuite 0x001c not being in ssl_ciphersuites.py CIPHERSUITES.
+    # IANA has reserved this value to avoid conflict with SSLv3, but if it gets reassigned,
+    # a new value should be chosen to fix this test.
+    import pytest
+    from binascii import unhexlify
+
+    buf = unhexlify(
+        '0301'  # version
+        '0000000000000000000000000000000000000000000000000000000000000000'  # random
+        '01'    # session_id length
+        '02'    # session_id
+        '0002'  # ciphersuites len
+        '001c'  # ciphersuite (reserved; not implemented
+    )
+    with pytest.raises(SSL3Exception, match='Unknown or invalid cipher suite type 1c'):
+        TLSClientHello(buf)
+
+
+def test_serverhello_invalidcipher():
+    # NOTE: this test relies on ciphersuite 0x001c not being in ssl_ciphersuites.py CIPHERSUITES.
+    # IANA has reserved this value to avoid conflict with SSLv3, but if it gets reassigned,
+    # a new value should be chosen to fix this test.
+    import pytest
+    from binascii import unhexlify
+
+    buf = unhexlify(
+        '0301'  # version
+        '0000000000000000000000000000000000000000000000000000000000000000'  # random
+        '01'    # session_id length
+        '02'    # session_id
+        '001c'  # ciphersuite (reserved; not implemented
+    )
+    with pytest.raises(SSL3Exception, match='Unknown or invalid cipher suite type 1c'):
+        TLSServerHello(buf)
+
+    # remove the final byte from the ciphersuite so it will fail unpacking
+    buf = buf[:-1]
+    with pytest.raises(dpkt.NeedData):
+        TLSServerHello(buf)
+
+
+def test_tlscertificate_unpacking_error():
+    import pytest
+    from binascii import unhexlify
+    buf = unhexlify(
+        '000003'  # certs len
+        '0000'    # certs (invalid, as size < 3)
+    )
+    with pytest.raises(dpkt.NeedData):
+        TLSCertificate(buf)
+
+
+def test_tlshandshake_invalid_type():
+    import pytest
+    from binascii import unhexlify
+    buf = unhexlify(
+        '7b'      # type (invalid)
+        '000000'  # length_bytes
+    )
+    with pytest.raises(SSL3Exception, match='Unknown or invalid handshake type 123'):
+        TLSHandshake(buf)
+
+
+def test_sslfactory():
+    from binascii import unhexlify
+    buf_tls31 = unhexlify(
+        '00'     # type
+        '0301'   # version
+        '0000'   # length
+    )
+    tls = SSLFactory(buf_tls31)
+    assert isinstance(tls, TLSRecord)
+
+    buf_ssl2 = unhexlify(
+        '00'    # type
+        '0000'  # not an SSL3+ version
+    )
+    ssl2 = SSLFactory(buf_ssl2)
+    assert isinstance(ssl2, SSL2)
