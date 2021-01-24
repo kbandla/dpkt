@@ -80,7 +80,16 @@ class Radiotap(dpkt.Packet):
     def _is_present(self, bit):
         index = bit // 8
         mask = 1 << (bit % 8)
-        return 1 if (compat_ord(self.present_flags[index]) & mask) else 0
+        return 1 if self.present_flags[index] & mask else 0
+
+    def _set_bit(self, bit, val):
+        # present_flags is a bytearray, this gets the element
+        index = bit // 8
+        # mask retrieves every bit except our one
+        mask = ~(1 << (bit % 8) & 0xff)
+        # retrieve all of the bits, then or in the val at the appropriate place
+        # as the mask does not return the value at `bit`, if `val` is zero, the bit remains zero
+        self.present_flags[index] = (self.present_flags[index] & mask) | (val << bit % 8)
 
     @property
     def tsft_present(self):
@@ -88,7 +97,7 @@ class Radiotap(dpkt.Packet):
 
     @tsft_present.setter
     def tsft_present(self, val):
-        self.present_flags |= val << _TSFT_SHIFT
+        self._set_bit(_TSFT_SHIFT, val)
 
     @property
     def flags_present(self):
@@ -96,7 +105,7 @@ class Radiotap(dpkt.Packet):
 
     @flags_present.setter
     def flags_present(self, val):
-        self.present_flags |= val << _FLAGS_SHIFT
+        self._set_bit(_FLAGS_SHIFT, val)
 
     @property
     def rate_present(self):
@@ -104,7 +113,7 @@ class Radiotap(dpkt.Packet):
 
     @rate_present.setter
     def rate_present(self, val):
-        self.present_flags |= val << _RATE_SHIFT
+        self._set_bit(_RATE_SHIFT, val)
 
     @property
     def channel_present(self):
@@ -112,7 +121,7 @@ class Radiotap(dpkt.Packet):
 
     @channel_present.setter
     def channel_present(self, val):
-        self.present_flags |= val << _CHANNEL_SHIFT
+        self._set_bit(_CHANNEL_SHIFT, val)
 
     @property
     def fhss_present(self):
@@ -120,7 +129,7 @@ class Radiotap(dpkt.Packet):
 
     @fhss_present.setter
     def fhss_present(self, val):
-        self.present_flags |= val << _FHSS_SHIFT
+        self._set_bit(_FHSS_SHIFT, val)
 
     @property
     def ant_sig_present(self):
@@ -128,7 +137,7 @@ class Radiotap(dpkt.Packet):
 
     @ant_sig_present.setter
     def ant_sig_present(self, val):
-        self.present_flags |= val << _ANT_SIG_SHIFT
+        self._set_bit(_ANT_SIG_SHIFT, val)
 
     @property
     def ant_noise_present(self):
@@ -136,7 +145,7 @@ class Radiotap(dpkt.Packet):
 
     @ant_noise_present.setter
     def ant_noise_present(self, val):
-        self.present_flags |= val << _ANT_NOISE_SHIFT
+        self._set_bit(_ANT_NOISE_SHIFT, val)
 
     @property
     def lock_qual_present(self):
@@ -144,7 +153,7 @@ class Radiotap(dpkt.Packet):
 
     @lock_qual_present.setter
     def lock_qual_present(self, val):
-        self.present_flags |= val << _LOCK_QUAL_SHIFT
+        self._set_bit(_LOCK_QUAL_SHIFT, val)
 
     @property
     def tx_attn_present(self):
@@ -152,7 +161,7 @@ class Radiotap(dpkt.Packet):
 
     @tx_attn_present.setter
     def tx_attn_present(self, val):
-        self.present_flags |= val << _TX_ATTN_SHIFT
+        self._set_bit(_TX_ATTN_SHIFT, val)
 
     @property
     def db_tx_attn_present(self):
@@ -160,7 +169,7 @@ class Radiotap(dpkt.Packet):
 
     @db_tx_attn_present.setter
     def db_tx_attn_present(self, val):
-        self.present_flags |= val << _DB_TX_ATTN_SHIFT
+        self._set_bit(_DB_TX_ATTN_SHIFT, val)
 
     @property
     def dbm_tx_power_present(self):
@@ -168,7 +177,7 @@ class Radiotap(dpkt.Packet):
 
     @dbm_tx_power_present.setter
     def dbm_tx_power_present(self, val):
-        self.present_flags |= val << _DBM_TX_POWER_SHIFT
+        self._set_bit(_DBM_TX_POWER_SHIFT, val)
 
     @property
     def ant_present(self):
@@ -176,7 +185,7 @@ class Radiotap(dpkt.Packet):
 
     @ant_present.setter
     def ant_present(self, val):
-        self.present_flags |= val << _ANTENNA_SHIFT
+        self._set_bit(_ANTENNA_SHIFT, val)
 
     @property
     def db_ant_sig_present(self):
@@ -184,7 +193,7 @@ class Radiotap(dpkt.Packet):
 
     @db_ant_sig_present.setter
     def db_ant_sig_present(self, val):
-        self.present_flags |= val << _DB_ANT_SIG_SHIFT
+        self._set_bit(_DB_ANT_SIG_SHIFT, val)
 
     @property
     def db_ant_noise_present(self):
@@ -192,7 +201,7 @@ class Radiotap(dpkt.Packet):
 
     @db_ant_noise_present.setter
     def db_ant_noise_present(self, val):
-        self.present_flags |= val << _DB_ANT_NOISE_SHIFT
+        self._set_bit(_DB_ANT_NOISE_SHIFT, val)
 
     @property
     def rx_flags_present(self):
@@ -200,7 +209,7 @@ class Radiotap(dpkt.Packet):
 
     @rx_flags_present.setter
     def rx_flags_present(self, val):
-        self.present_flags |= val << _RX_FLAGS_SHIFT
+        self._set_bit(_RX_FLAGS_SHIFT, val)
 
     @property
     def chanplus_present(self):
@@ -208,7 +217,7 @@ class Radiotap(dpkt.Packet):
 
     @chanplus_present.setter
     def chanplus_present(self, val):
-        self.present_flags |= val << _CHANNELPLUS_SHIFT
+        self._set_bit(_CHANNELPLUS_SHIFT, val)
 
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
@@ -217,11 +226,11 @@ class Radiotap(dpkt.Packet):
         self.fields = []
         buf = buf[self.__hdr_len__:]
 
-        self.present_flags = buf[:4]
+        self.present_flags = bytearray(buf[:4])
         buf = buf[4:]
         ext_bit = _EXT_SHIFT
         while self._is_present(ext_bit):
-            self.present_flags += buf[:4]
+            self.present_flags += bytearray(buf[:4])
             buf = buf[4:]
             ext_bit += 32
 
@@ -308,7 +317,6 @@ class Radiotap(dpkt.Packet):
         def fcs(self):
             return (self.val & _FCS_MASK) >> _FCS_SHIFT
 
-        # TODO: untested
         @fcs.setter
         def fcs(self, v):
             self.val = (v << _FCS_SHIFT) | (v & ~_FCS_MASK)
@@ -471,9 +479,12 @@ def test_radiotap_properties():
         print(prop)
         assert hasattr(radiotap, prop)
         assert getattr(radiotap, prop) == 0
-        # TODO: Reinstate these tests when present_flags is of the correct type
-        # setattr(radiotap, prop, 1)
-        # assert getattr(radiotap, prop) == 1
+
+        setattr(radiotap, prop, 1)
+        assert getattr(radiotap, prop) == 1
+
+        setattr(radiotap, prop, 0)
+        assert getattr(radiotap, prop) == 0
 
 
 def test_radiotap_unpack_fcs():

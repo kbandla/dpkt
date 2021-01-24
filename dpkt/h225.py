@@ -157,7 +157,7 @@ class H225(dpkt.Packet):
             # single-byte IE
             if self.type & 0x80:
                 self.len = 0
-                self.data = None
+                self.data = b''
             # multi-byte IE
             else:
                 # special PER-encoded UUIE
@@ -182,7 +182,7 @@ class H225(dpkt.Packet):
 
         def __bytes__(self):
             if self.type & 0x80:
-                length_str = None
+                length_str = b''
             else:
                 if self.type == USER_TO_USER:
                     length_str = struct.pack('>H', self.len)
@@ -292,7 +292,6 @@ def test_tpkt_unpack_errors():
 def test_unpack_ie():
     ie = H225.IE(b'\x80')
     assert ie.len == 0
-    assert ie.data is None
+    assert ie.data == b''
     assert len(ie) == 1
-    # __bytes__ attempts to concat None to bytes
-    # assert bytes(ie) == b'\x80'
+    assert bytes(ie) == b'\x80'
