@@ -4,6 +4,7 @@
 from __future__ import absolute_import
 
 import time
+from abc import abstractmethod
 
 from . import dpkt
 from .compat import intround
@@ -97,6 +98,28 @@ class FileWriter(object):
     def close(self):
         self._f.close()
 
+    def writepkt(self, pkt, ts=None):
+        """Write single packet and optional timestamp to file.
+
+        Args:
+            pkt: `bytes` will be called on this and written to file.
+            ts (float): Timestamp in seconds. Defaults to current time.
+       """
+        if ts is None:
+            ts = time.time()
+
+        self.writepkt_time(bytes(pkt), ts)
+
+    @abstractmethod
+    def writepkt_time(self, pkt, ts):
+        """Write single packet and its timestamp to file.
+
+        Args:
+            pkt (bytes): Some `bytes` to write to the file
+            ts (float): Timestamp in seconds
+        """
+        pass
+
 
 class Writer(FileWriter):
     """Simple snoop dumpfile writer.
@@ -116,18 +139,6 @@ class Writer(FileWriter):
         self._pack_hdr = self._PktHdr._pack_hdr
 
         self.write(bytes(fh))
-
-    def writepkt(self, pkt, ts=None):
-        """Write single packet and optional timestamp to file.
-
-        Args:
-            pkt: `bytes` will be called on this and written to file.
-            ts (float): Timestamp in seconds. Defaults to current time.
-       """
-        if ts is None:
-            ts = time.time()
-
-        self.writepkt_time(bytes(pkt), ts)
 
     def writepkt_time(self, pkt, ts):
         """Write single packet and its timestamp to file.
@@ -157,7 +168,7 @@ class Writer(FileWriter):
 
         Args:
             pkts: iterable containing (ts, pkt)
-       """
+        """
         # take local references to these variables so we don't need to
         # dereference every time in the loop
         write = self.write
@@ -175,9 +186,73 @@ class Writer(FileWriter):
                 int(ts),
                 intround(ts % 1 * self.precision_multiplier),
             )
-            fd.write(pkt_header + pkt + b'\x00' * pad_len)
+            write(pkt_header + pkt + b'\x00' * pad_len)
 
-class Reader(object):
+
+class FileReader(object):
+    def __init__(self, fileobj):
+        self.name = getattr(fileobj, 'name', '<%s>' % fileobj.__class__.__name__)
+        self._f = fileobj
+        self.filter = ''
+
+    @property
+    def fd(self):
+        return self._f.fileno()
+
+    def fileno(self):
+        return self.fd
+
+    def setfilter(self, value, optimize=1):
+        raise NotImplementedError
+
+    def readpkts(self):
+        return list(self)
+
+    def dispatch(self, cnt, callback, *args):
+        """Collect and process packets with a user callback.
+
+        Return the number of packets processed, or 0 for a savefile.
+
+        Arguments:
+
+        cnt      -- number of packets to process;
+                    or 0 to process all packets until EOF
+        callback -- function with (timestamp, pkt, *args) prototype
+        *args    -- optional arguments passed to callback on execution
+       """
+        processed = 0
+        if cnt > 0:
+            for _ in range(cnt):
+                try:
+                    ts, pkt = next(self)
+                except StopIteration:
+                    break
+                callback(ts, pkt, *args)
+                processed += 1
+        else:
+            for ts, pkt in self:
+                callback(ts, pkt, *args)
+                processed += 1
+        return processed
+
+    def loop(self, callback, *args):
+        """
+        Convenience method which will apply the callback to all packets.
+
+        Returns the number of packets processed.
+
+        Arguments:
+
+        callback -- function with (timestamp, pkt, *args) prototype
+        *args    -- optional arguments passed to callback on execution
+        """
+        return self.dispatch(0, callback, *args)
+
+    def __iter__(self):
+        return self
+
+
+class Reader(FileReader):
     """Simple pypcap-compatible snoop file reader.
 
     TODO: Longer class information....
@@ -187,54 +262,34 @@ class Reader(object):
     """
 
     def __init__(self, fileobj):
-        self.name = fileobj.name
-        self.fd = fileobj.fileno()
-        self.__f = fileobj
-        buf = self.__f.read(FileHdr.__hdr_len__)
-        self.__fh = FileHdr(buf)
-        self.__ph = PktHdr
-        if self.__fh.magic != SNOOP_MAGIC:
-            raise ValueError('invalid snoop header')
-        self.dloff = dltoff[self.__fh.linktype]
-        self.filter = ''
+        super(Reader, self).__init__(fileobj)
 
-    def fileno(self):
-        return self.fd
+        buf = self._f.read(FileHdr.__hdr_len__)
+        self._fh = FileHdr(buf)
+        self._ph = PktHdr
+
+        if self._fh.magic != SNOOP_MAGIC:
+            raise ValueError('invalid snoop header')
+
+        self.dloff = dltoff[self._fh.linktype]
 
     def datalink(self):
-        return self.__fh.linktype
+        return self._fh.linktype
 
-    def setfilter(self, value, optimize=1):
-        return NotImplementedError
+    def __next__(self):
+        buf = self._f.read(self._ph.__hdr_len__)
+        if not buf:
+            raise StopIteration
 
-    def readpkts(self):
-        return list(self)
-
-    def dispatch(self, cnt, callback, *args):
-        if cnt > 0:
-            for i in range(cnt):
-                ts, pkt = next(self)
-                callback(ts, pkt, *args)
-        else:
-            for ts, pkt in self:
-                callback(ts, pkt, *args)
-
-    def loop(self, callback, *args):
-        self.dispatch(0, callback, *args)
-
-    def __iter__(self):
-        self.__f.seek(FileHdr.__hdr_len__)
-        while 1:
-            buf = self.__f.read(PktHdr.__hdr_len__)
-            if not buf:
-                break
-            hdr = self.__ph(buf)
-            buf = self.__f.read(hdr.rec_len - PktHdr.__hdr_len__)
-            yield (hdr.ts_sec + (hdr.ts_usec / 1000000.0), buf[:hdr.incl_len])
+        hdr = self._ph(buf)
+        buf = self._f.read(hdr.rec_len - self._ph.__hdr_len__)
+        return (hdr.ts_sec + (hdr.ts_usec / 1000000.0), buf[:hdr.incl_len])
+    next = __next__
 
 
 def test_snoop_pkt_header():
     from binascii import unhexlify
+
     buf = unhexlify(
         '000000010000000200000003000000040000000500000006'
     )
@@ -251,6 +306,7 @@ def test_snoop_pkt_header():
 
 def test_snoop_file_header():
     from binascii import unhexlify
+
     buf = unhexlify(
         '000000000000000b000000160000014d'
     )
@@ -261,20 +317,24 @@ def test_snoop_file_header():
 
 
 class TestSnoopWriter(object):
-    from .compat import BytesIO
-    from binascii import unhexlify
-
     @classmethod
     def setup_class(cls):
-        cls.fobj = TestSnoopWriter.BytesIO()
+        from .compat import BytesIO
+        from binascii import unhexlify
+
+        cls.fobj = BytesIO()
         # write the file header only
         cls.writer = Writer(cls.fobj)
 
-        cls.pkt = TestSnoopWriter.unhexlify(
+        cls.file_header = unhexlify(
+            '736e6f6f700000000000000200000004'
+        )
+
+        cls.pkt = unhexlify(
             '000000010000000200000003000000040000000500000006'
         )
 
-        cls.pkt_and_header = TestSnoopWriter.unhexlify(
+        cls.pkt_and_header = unhexlify(
             '00000018'  # orig_len
             '00000018'  # incl_len
             '00000030'  # rec_len
@@ -287,14 +347,10 @@ class TestSnoopWriter(object):
         )
 
     def test_snoop_file_writer_filehdr(self):
-        correct_header = TestSnoopWriter.unhexlify(
-            '736e6f6f700000000000000200000004'
-        )
-
         # jump to the start and read the file header
         self.fobj.seek(0)
         buf = self.fobj.read()
-        assert buf == correct_header
+        assert buf == self.file_header
 
     def test_writepkt(self):
         loc = self.fobj.tell()
@@ -343,10 +399,69 @@ class TestSnoopWriter(object):
         assert self.fobj.closed
 
 
-class TestFileWriter(object):
-    from .compat import BytesIO
+class TestSnoopReader(object):
+    @classmethod
+    def setup_class(cls):
+        from binascii import unhexlify
+
+        cls.header = unhexlify(
+            '736e6f6f700000000000000200000004'
+        )
+
+        cls.pkt_header = unhexlify(
+            '00000018'  # orig_len
+            '00000018'  # incl_len
+            '00000030'  # rec_len
+            '00000000'  # cum_drops
+            '00000000'  # ts_sec
+            '00000000'  # ts_usec
+        )
+
+        cls.pkt_bytes = unhexlify(
+            # data
+            '000000010000000200000003000000040000000500000006'
+        )
+
     def setup_method(self):
-        self.fobj = TestFileWriter.BytesIO()
+        from .compat import BytesIO
+
+        self.fobj = BytesIO(
+            self.header + self.pkt_header + self.pkt_bytes
+        )
+        self.reader = Reader(self.fobj)
+
+    def test_open(self):
+        assert self.reader.dloff == 14
+        assert self.reader.datalink() == SDL_ETHER
+
+    def test_invalid_magic(self):
+        import pytest
+
+        self.fobj.seek(0)
+        self.fobj.write(b'\x00' * 4)
+        self.fobj.seek(0)
+
+        with pytest.raises(ValueError, match='invalid snoop header'):
+            Reader(self.fobj)
+
+    def test_read_pkt(self):
+        ts, pkt = next(self.reader)
+        assert ts == 0
+        assert pkt == self.pkt_bytes
+
+    def test_readpkts(self):
+        pkts = self.reader.readpkts()
+        assert len(pkts) == 1
+        ts, buf = pkts[0]
+        assert ts == 0
+        assert buf == self.pkt_bytes
+
+
+class TestFileWriter(object):
+    def setup_method(self):
+        from .compat import BytesIO
+
+        self.fobj = BytesIO()
         self.writer = FileWriter(self.fobj)
 
     def test_write(self):
@@ -359,3 +474,82 @@ class TestFileWriter(object):
         assert not self.fobj.closed
         self.writer.close()
         assert self.fobj.closed
+
+
+class TestFileReader(object):
+    """
+    Testing for the FileReader superclass which Reader inherits from.
+    """
+    pkts = [
+        (0, b'000001'),
+        (1, b'000002'),
+        (2, b'000003'),
+    ]
+
+    class SampleReader(FileReader):
+        """
+        Very simple class which returns index as timestamp, and
+        unparsed buffer as packet
+        """
+        def __init__(self, fobj):
+            super(TestFileReader.SampleReader, self).__init__(fobj)
+
+            self._iter = iter(TestFileReader.pkts)
+
+        def __next__(self):
+            return next(self._iter)
+        next = __next__
+
+    def setup_method(self):
+        import tempfile
+
+        self.fd = tempfile.TemporaryFile()
+        self.reader = self.SampleReader(self.fd)
+
+    def test_attributes(self):
+        import pytest
+
+        assert self.reader.name == self.fd.name
+        assert self.reader.fd == self.fd.fileno()
+        assert self.reader.fileno() == self.fd.fileno()
+        assert self.reader.filter == ''
+
+        with pytest.raises(NotImplementedError):
+            self.reader.setfilter(1, 2)
+
+    def test_readpkts_list(self):
+        pkts = self.reader.readpkts()
+        print(len(pkts))
+        for idx, (ts, buf) in enumerate(pkts):
+            assert ts == idx
+            assert buf == self.pkts[idx][1]
+
+    def test_readpkts_iter(self):
+        for idx, (ts, buf) in enumerate(self.reader):
+            assert ts == idx
+            assert buf == self.pkts[idx][1]
+
+    def test_dispatch_all(self):
+        assert self.reader.dispatch(0, lambda ts, pkt: None) == 3
+
+    def test_dispatch_some(self):
+        assert self.reader.dispatch(2, lambda ts, pkt: None) == 2
+
+    def test_dispatch_termination(self):
+        assert self.reader.dispatch(20, lambda ts, pkt: None) == 3
+
+    def test_loop(self):
+        class Count:
+            counter = 0
+
+            @classmethod
+            def inc(cls):
+                cls.counter += 1
+
+        assert self.reader.loop(lambda ts, pkt: Count.inc()) == 3
+        assert Count.counter == 3
+
+    def test_next(self):
+        ts, buf = next(self.reader)
+        assert ts == 0
+        assert buf == self.pkts[0][1]
