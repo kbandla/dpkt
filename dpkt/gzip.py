@@ -67,11 +67,13 @@ class Gzip(dpkt.Packet):
         ('mtime', 'I', 0),
         ('xflags', 'B', 0),
         ('os', 'B', GZIP_OS_UNIX),
-
-        ('extra', '0s', b''),  # XXX - GZIP_FEXTRA
-        ('filename', '0s', b''),  # XXX - GZIP_FNAME
-        ('comment', '0s', b'')  # XXX - GZIP_FCOMMENT
     )
+
+    def __init__(self, *args, **kwargs):
+        self.extra = None
+        self.filename = None
+        self.comment = None
+        super(Gzip, self).__init__(*args, **kwargs)
 
     def unpack(self, buf):
         super(Gzip, self).unpack(buf)
@@ -113,7 +115,7 @@ class Gzip(dpkt.Packet):
             l_.append(s)
         if self.filename:
             self.flags |= GZIP_FNAME
-            l_.append(self.filename)
+            l_.append(self.filename.encode('utf-8'))
             l_.append(b'\x00')
         if self.comment:
             self.flags |= GZIP_FCOMMENT
@@ -124,9 +126,17 @@ class Gzip(dpkt.Packet):
 
     def compress(self):
         """Compress self.data."""
-        c = zlib.compressobj(9, zlib.DEFLATED, -zlib.MAX_WBITS,
-                             zlib.DEF_MEM_LEVEL, 0)
-        self.data = c.compress(self.data)
+        c = zlib.compressobj(
+            zlib.Z_BEST_COMPRESSION,
+            zlib.DEFLATED,
+            -zlib.MAX_WBITS,
+            zlib.DEF_MEM_LEVEL,
+            zlib.Z_DEFAULT_STRATEGY,
+        )
+        c.compress(self.data)
+
+        # .compress will return nothing if len(self.data) < the window size.
+        self.data = c.flush()
 
     def decompress(self):
         """Return decompressed payload."""
