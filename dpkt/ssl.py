@@ -804,8 +804,6 @@ class TestTLSCertificate(object):
 
 class TestTLSMultiFactory(object):
     """Made up test data"""
-    import pytest
-
     @classmethod
     def setup_class(cls):
         cls.data = _hexdecode(b'1703010010'  # header 1
@@ -831,6 +829,8 @@ class TestTLSMultiFactory(object):
         assert (self.msgs[1].data == _hexdecode(b'BB' * 16))
 
     def test_incomplete(self):
+        import pytest
+
         msgs, n = tls_multi_factory(_hexdecode(b'17'))
         assert (len(msgs) == 0)
         assert (n == 0)
@@ -847,7 +847,7 @@ class TestTLSMultiFactory(object):
         assert (len(msgs) == 1)
         assert (n == 5)
 
-        with self.pytest.raises(SSL3Exception, match='Bad TLS version in buf: '):
+        with pytest.raises(SSL3Exception, match='Bad TLS version in buf: '):
             tls_multi_factory(_hexdecode(b'000000000000'))
 
 
