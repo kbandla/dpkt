@@ -173,9 +173,69 @@ def test_sre_creation():
     buf = unhexlify(
         '0000'  # family
         '00'    # off
-        '05'    # len
+        '02'    # len
 
         'ffff'
     )
     sre = GRE.SRE(buf)
     assert sre.data == b'\xff\xff'
+    assert len(sre) == 6
+    assert bytes(sre) == buf
+
+
+def test_gre_nested_sre():
+    from binascii import unhexlify
+    buf = unhexlify(
+        '4000'  # flags (GRE_RP)
+        '0800'  # p (ETH_TYPE_IP)
+
+        '0001'  # sum
+        '0002'  # off
+
+        # SRE entry
+        '0003'  # family
+        '04'    # off
+        '02'    # len
+
+        'ffff'
+
+        # SRE entry (no len => last element)
+        '0006'  # family
+        '00'    # off
+        '00'    # len
+    )
+
+    gre = GRE(buf)
+    assert hasattr(gre, 'sre')
+    assert isinstance(gre.sre, list)
+    assert len(gre.sre) == 2
+    assert len(gre) == len(buf)
+    assert bytes(gre) == buf
+    assert gre.data == b''
+
+
+def test_gre_next_layer():
+    from binascii import unhexlify
+
+    from . import ipx
+
+    buf = unhexlify(
+        '0000'  # flags (NONE)
+        '8137'  # p (ETH_TYPE_IPX)
+
+        # IPX packet
+        '0000'          # sum
+        '0001'          # len
+        '02'            # tc
+        '03'            # pt
+        '0102030405060708090a0b0c'  # dst
+        'c0b0a0908070605040302010'  # src
+    )
+    gre = GRE(buf)
+    assert hasattr(gre, 'ipx')
+    assert isinstance(gre.data, ipx.IPX)
+    assert gre.data.tc == 2
+    assert gre.data.src == unhexlify('c0b0a0908070605040302010')
+    assert gre.data.dst == unhexlify('0102030405060708090a0b0c')
+    assert len(gre) == len(buf)
+    assert bytes(gre) == buf
