@@ -114,7 +114,7 @@ class GRE(dpkt.Packet):
             vals = []
             for f in fields:
                 vals.append(getattr(self, f))
-            opt_s = struct.pack(''.join(fmts), *vals)
+            opt_s = struct.pack('!' + ''.join(fmts), *vals)
         else:
             opt_s = b''
         return self.pack_hdr() + opt_s + b''.join(map(bytes, self.sre)) + bytes(self.data)
@@ -154,13 +154,8 @@ def test_gre_len():
 
     buf = unhexlify("3081880a0067178000068fb100083a76") + b"\x41" * 103
     gre = GRE(buf)
-    correct = unhexlify(
-      '3081880a67008017b18f0600763a08004141414141414141414141414141414141414141'
-      '414141414141414141414141414141414141414141414141414141414141414141414141'
-      '414141414141414141414141414141414141414141414141414141414141414141414141'
-      '4141414141414141414141'
-    )
-    assert bytes(gre) == correct
+    assert bytes(gre) == buf
+    assert len(gre) == len(buf)
 
 
 def test_gre_accessors():
