@@ -405,7 +405,6 @@ class VLANtagISL(dpkt.Packet):
 
 
 def test_eth():
-    from . import ip  # IPv6 needs this to build its protocol stack
     from . import ip6
     from . import tcp
     s = (b'\x00\xb0\xd0\xe1\x80\x72\x00\x11\x24\x8c\x11\xde\x86\xdd\x60\x00\x00\x00'
@@ -514,14 +513,20 @@ def test_eth_802dot1q():
 
 
 def test_eth_802dot1q_stacked():  # 2 VLAN tags
-    from . import arp
+    from binascii import unhexlify
+
+    import pytest
+
     from . import ip
-    s = (b'\x00\x1b\xd4\x1b\xa4\xd8\x00\x13\xc3\xdf\xae\x18\x81\x00\x00\x76\x81\x00\x00\x0a\x08\x00'
-         b'\x45\x00\x00\x64\x00\x0f\x00\x00\xff\x01\x92\x9b\x0a\x76\x0a\x01\x0a\x76\x0a\x02\x08\x00'
-         b'\xce\xb7\x00\x03\x00\x00\x00\x00\x00\x00\x00\x1f\xaf\x70\xab\xcd\xab\xcd\xab\xcd\xab\xcd'
-         b'\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd'
-         b'\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd'
-         b'\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd\xab\xcd')
+
+    s = unhexlify(
+        '001bd41ba4d80013c3dfae18810000768100000a0800'
+        '45000064000f0000ff01929b0a760a010a760a020800'
+        'ceb70003000000000000001faf70abcdabcdabcdabcd'
+        'abcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcd'
+        'abcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcd'
+        'abcdabcdabcdabcdabcdabcd'
+    )
     eth = Ethernet(s)
     assert eth.type == ETH_TYPE_8021Q
     assert len(eth.vlan_tags) == 2
@@ -533,12 +538,16 @@ def test_eth_802dot1q_stacked():  # 2 VLAN tags
     assert isinstance(eth.data, ip.IP)
 
     # construction
-    assert str(eth) == str(s), 'pack 1'
-    assert str(eth) == str(s), 'pack 2'
     assert len(eth) == len(s)
+    assert bytes(eth) == s
+
+    # test packing failure with too many tags
+    eth.vlan_tags += eth.vlan_tags[0]  # just duplicate the first tag
+    with pytest.raises(dpkt.PackError, match='maximum is 2 VLAN tags per Ethernet frame'):
+        bytes(eth)
 
     # construction with kwargs
-    eth2 = Ethernet(src=eth.src, dst=eth.dst, vlan_tags=eth.vlan_tags, data=eth.data)
+    eth2 = Ethernet(src=eth.src, dst=eth.dst, vlan_tags=eth.vlan_tags[:2], data=eth.data)
 
     # construction sets ip.type to 802.1ad instead of 802.1q so account for it
     assert str(eth2) == str(s[:12] + b'\x88\xa8' + s[14:])
@@ -546,6 +555,10 @@ def test_eth_802dot1q_stacked():  # 2 VLAN tags
     # construction w/o the tags
     del eth.vlan_tags, eth.cfi, eth.vlanid, eth.priority
     assert str(eth) == str(s[:12] + b'\x08\x00' + s[22:])
+
+
+def test_eth_vlan_arp():
+    from . import arp
 
     # 2 VLAN tags + ARP
     s = (b'\xff\xff\xff\xff\xff\xff\xca\x03\x0d\xb4\x00\x1c\x81\x00\x00\x64\x81\x00\x00\xc8\x08\x06'
@@ -667,7 +680,6 @@ def test_eth_llc_ipx():  # 802.3 Ethernet - LLC - IPX
 
 
 def test_eth_pppoe():   # Eth - PPPoE - IPv6 - UDP - DHCP6
-    from . import ip  # IPv6 needs this to build its protocol stack
     from . import ip6
     from . import ppp
     from . import pppoe
@@ -811,3 +823,29 @@ def test_eth_8023_llc_trailer():  # https://github.com/kbandla/dpkt/issues/438
     # FCS computation
     eth.fcs = None
     assert bytes(eth) == d
+
+
+def test_eth_novell():
+    from binascii import unhexlify
+
+    import dpkt
+
+    buf = unhexlify(
+        '010203040506'  # dst
+        '0708090a0b0c'  # src
+        '0000'          # type (ignored)
+        'ffff'          # indicates Novell
+
+        # IPX packet
+        '0000'          # sum
+        '0001'          # len
+        '02'            # tc
+        '03'            # pt
+        '0102030405060708090a0b0c'  # dst
+        '0102030405060708090a0b0c'  # src
+    )
+
+    eth = Ethernet(buf)
+    assert isinstance(eth.data, dpkt.ipx.IPX)
+    assert eth.data.tc == 2
+    assert eth.data.data == b''
