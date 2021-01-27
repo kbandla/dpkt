@@ -22,18 +22,31 @@ from .compat import compat_ord
 class SSL2(dpkt.Packet):
     __hdr__ = (
         ('len', 'H', 0),
-        ('msg', 's', b''),
-        ('pad', 's', b''),
     )
 
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
+        # In SSL, all data sent is encapsulated in a record, an object which is
+        # composed of a header and some non-zero amount of data. Each record header
+        # contains a two or three byte length code. If the most significant bit is
+        # set in the first byte of the record length code then the record has
+        # no padding and the total header length will be 2 bytes, otherwise the
+        # record has padding and the total header length will be 3 bytes. The
+        # record header is transmitted before the data portion of the record.
         if self.len & 0x8000:
             n = self.len = self.len & 0x7FFF
             self.msg, self.data = self.data[:n], self.data[n:]
         else:
+            # Note that in the long header case (3 bytes total), the second most
+            # significant bit in the first byte has special meaning. When zero,
+            # the record being sent is a data record. When one, the record
+            # being sent is a security escape (there are currently no examples
+            # of security escapes; this is reserved for future versions of the
+            # protocol). In either case, the length code describes how much
+            # data is in the record.
             n = self.len = self.len & 0x3FFF
             padlen = compat_ord(self.data[0])
+
             self.msg = self.data[1:1 + n]
             self.pad = self.data[1 + n:1 + n + padlen]
             self.data = self.data[1 + n + padlen:]
@@ -791,7 +804,6 @@ class TestTLSCertificate(object):
 
 class TestTLSMultiFactory(object):
     """Made up test data"""
-
     @classmethod
     def setup_class(cls):
         cls.data = _hexdecode(b'1703010010'  # header 1
@@ -817,6 +829,8 @@ class TestTLSMultiFactory(object):
         assert (self.msgs[1].data == _hexdecode(b'BB' * 16))
 
     def test_incomplete(self):
+        import pytest
+
         msgs, n = tls_multi_factory(_hexdecode(b'17'))
         assert (len(msgs) == 0)
         assert (n == 0)
@@ -832,3 +846,114 @@ class TestTLSMultiFactory(object):
         msgs, n = tls_multi_factory(_hexdecode(b'1703010000'))
         assert (len(msgs) == 1)
         assert (n == 5)
+
+        with pytest.raises(SSL3Exception, match='Bad TLS version in buf: '):
+            tls_multi_factory(_hexdecode(b'000000000000'))
+
+
+def test_ssl2():
+    from binascii import unhexlify
+    buf_padding = unhexlify(
+        '0001'  # len
+        '02'    # padlen
+        '03'    # msg
+        '0405'  # pad
+        '0607'  # data
+    )
+    ssl2 = SSL2(buf_padding)
+    assert ssl2.len == 1
+    assert ssl2.msg == b'\x03'
+    assert ssl2.pad == b'\x04\x05'
+    assert ssl2.data == b'\x06\x07'
+
+    buf_no_padding = unhexlify(
+        '8001'  # len
+        '03'    # msg
+        '0607'  # data
+    )
+    ssl2 = SSL2(buf_no_padding)
+    assert ssl2.len == 1
+    assert ssl2.msg == b'\x03'
+    assert ssl2.data == b'\x06\x07'
+
+
+def test_clienthello_invalidcipher():
+    # NOTE: this test relies on ciphersuite 0x001c not being in ssl_ciphersuites.py CIPHERSUITES.
+    # IANA has reserved this value to avoid conflict with SSLv3, but if it gets reassigned,
+    # a new value should be chosen to fix this test.
+    import pytest
+    from binascii import unhexlify
+
+    buf = unhexlify(
+        '0301'  # version
+        '0000000000000000000000000000000000000000000000000000000000000000'  # random
+        '01'    # session_id length
+        '02'    # session_id
+        '0002'  # ciphersuites len
+        '001c'  # ciphersuite (reserved; not implemented
+    )
+    with pytest.raises(SSL3Exception, match='Unknown or invalid cipher suite type 1c'):
+        TLSClientHello(buf)
+
+
+def test_serverhello_invalidcipher():
+    # NOTE: this test relies on ciphersuite 0x001c not being in ssl_ciphersuites.py CIPHERSUITES.
+    # IANA has reserved this value to avoid conflict with SSLv3, but if it gets reassigned,
+    # a new value should be chosen to fix this test.
+    import pytest
+    from binascii import unhexlify
+
+    buf = unhexlify(
+        '0301'  # version
+        '0000000000000000000000000000000000000000000000000000000000000000'  # random
+        '01'    # session_id length
+        '02'    # session_id
+        '001c'  # ciphersuite (reserved; not implemented
+    )
+    with pytest.raises(SSL3Exception, match='Unknown or invalid cipher suite type 1c'):
+        TLSServerHello(buf)
+
+    # remove the final byte from the ciphersuite so it will fail unpacking
+    buf = buf[:-1]
+    with pytest.raises(dpkt.NeedData):
+        TLSServerHello(buf)
+
+
+def test_tlscertificate_unpacking_error():
+    import pytest
+    from binascii import unhexlify
+    buf = unhexlify(
+        '000003'  # certs len
+        '0000'    # certs (invalid, as size < 3)
+    )
+    with pytest.raises(dpkt.NeedData):
+        TLSCertificate(buf)
+
+
+def test_tlshandshake_invalid_type():
+    import pytest
+    from binascii import unhexlify
+    buf = unhexlify(
+        '7b'      # type (invalid)
+        '000000'  # length_bytes
+    )
+    with pytest.raises(SSL3Exception, match='Unknown or invalid handshake type 123'):
+        TLSHandshake(buf)
+
+
+def test_sslfactory():
+    from binascii import unhexlify
+    buf_tls31 = unhexlify(
+        '00'     # type
+        '0301'   # version
+        '0000'   # length
+    )
+    tls = SSLFactory(buf_tls31)
+    assert isinstance(tls, TLSRecord)
+
+    buf_ssl2 = unhexlify(
+        '00'    # type
+        '0000'  # not an SSL3+ version
+    )
+    ssl2 = SSLFactory(buf_ssl2)
+    assert isinstance(ssl2, SSL2)
