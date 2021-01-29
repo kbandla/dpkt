@@ -276,3 +276,40 @@ def test_pack_hdr_tuple():
     foo = Foo()
     b = bytes(foo)
     assert b == b'\x00\x00\x00\x01\x00\x00\x00\x02'
+
+
+def test_unpacking_failure():
+    # during dynamic-sized unpacking in the subclass there may be struct.errors raised,
+    # but if the header has unpacked correctly, a different error is raised by the superclass
+    import pytest
+
+    class TestPacket(Packet):
+        __hdr__ = (('test', 'B', 0),)
+
+        def unpack(self, buf):
+            Packet.unpack(self, buf)
+            self.attribute = struct.unpack('B', buf[1:])
+
+    with pytest.raises(UnpackError, match="invalid TestPacket: "):
+        TestPacket(b'\x00')  # header will unpack successfully
+
+
+def test_repr():
+    class TestPacket(Packet):
+        __hdr__ = (('_a_b', 'B', 0),)
+
+        @property
+        def a(self):
+            return self._a_b >> 4
+
+        @property
+        def b(self):
+            return self._a_b & 0xf
+
+    # default values so no output
+    test_packet = TestPacket()
+    assert repr(test_packet) == "TestPacket()"
+
+    # non-default values
+    test_packet = TestPacket(b'\x12')
+    assert repr(test_packet) == "TestPacket(a=1, b=2)"
