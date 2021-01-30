@@ -152,7 +152,7 @@ class BGP(dpkt.Packet):
         elif self.type == UPDATE:
             self.data = self.update = self.Update(self.data)
         elif self.type == NOTIFICATION:
-            self.data = self.notifiation = self.Notification(self.data)
+            self.data = self.notification = self.Notification(self.data)
         elif self.type == KEEPALIVE:
             self.data = self.keepalive = self.Keepalive(self.data)
         elif self.type == ROUTE_REFRESH:
@@ -601,7 +601,7 @@ class BGP(dpkt.Packet):
                         b''.join(map(bytes, self.snpas)) + \
                         b''.join(map(bytes, self.announced))
 
-                class SNPA(object):
+                class SNPA(dpkt.Packet):
                     __hdr__ = (
                         ('len', 'B', 0),
                     )
