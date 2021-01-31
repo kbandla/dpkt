@@ -105,3 +105,13 @@ def test_telnet():
            ([b'admin', b'foobar', b'enable', b'foobar', b'', b'show ip int Vlan 666'], {}),
            ([b'werd', b'yoda', b'darthvader'], {b'USER': b'dugsong', b'DISPLAY': b'doughboy.citi.umich.edu:0.0'})]
     assert (list(map(strip_options, l_)) == exp)
+
+
+def test_trailing_null():
+    from binascii import unhexlify
+    buf = unhexlify(
+        '0100020000'
+    )
+    b, d = strip_options(buf)
+    assert b == [b'\x01', b'\x02']
+    assert d == {}
