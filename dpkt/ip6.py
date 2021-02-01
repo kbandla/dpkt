@@ -120,10 +120,8 @@ class IP6(dpkt.Packet):
             s = struct.pack('>16s16sxBH', self.src, self.dst, self.p, len(p))
             s = dpkt.in_cksum_add(0, s)
             s = dpkt.in_cksum_add(s, p)
-            try:
-                self.data.sum = dpkt.in_cksum_done(s)
-            except AttributeError:
-                pass
+            self.data.sum = dpkt.in_cksum_done(s)
+
         return self.pack_hdr() + hdr_str + bytes(self.data)
 
     @classmethod
