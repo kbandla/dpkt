@@ -204,15 +204,6 @@ class NS(dns.DNS):
                 ]
                 # XXX - skip stats
 
-    # FIXME: dns.DNS.pack_name does not exist; dns.pack_name has a different signature
-    def pack_name(self, buf, name):
-        return dns.DNS.pack_name(self, buf, encode_name(name))
-
-    # FIXME: dns.DNS.unpack_name does not exist; dns.unpack_name?
-    def unpack_name(self, buf, off):
-        name, off = dns.DNS.unpack_name(self, buf, off)
-        return decode_name(name), off
-
 
 class Session(dpkt.Packet):
     """NetBIOS Session Service."""
