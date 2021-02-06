@@ -4,14 +4,13 @@
 # pylint: disable=no-member
 # pylint: disable=attribute-defined-outside-init
 from __future__ import print_function
-from __future__ import absolute_import
 
 from struct import pack as struct_pack, unpack as struct_unpack
 from time import time
 import sys
 
-from . import dpkt
-from .compat import BytesIO, intround
+from dpkt import dpkt
+from dpkt.compat import BytesIO, intround
 
 BYTE_ORDER_MAGIC = 0x1A2B3C4D
 BYTE_ORDER_MAGIC_LE = 0x4D3C2B1A
@@ -918,7 +917,7 @@ class WriterTestWrap:
 
     def __call__(self, f, *args, **kwargs):
         def wrapper(*args, **kwargs):
-            from .compat import BytesIO
+            from dpkt.compat import BytesIO
             for little_endian in [True, False]:
                 fobj = BytesIO()
                 _sysle = Writer._Writer__le

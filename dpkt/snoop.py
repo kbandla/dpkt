@@ -1,13 +1,12 @@
 # $Id$
 # -*- coding: utf-8 -*-
 """Snoop file format."""
-from __future__ import absolute_import
 
 import time
 from abc import abstractmethod
 
-from . import dpkt
-from .compat import intround
+from dpkt import dpkt
+from dpkt.compat import intround
 
 # RFC 1761
 
@@ -319,7 +318,7 @@ def test_snoop_file_header():
 class TestSnoopWriter(object):
     @classmethod
     def setup_class(cls):
-        from .compat import BytesIO
+        from dpkt.compat import BytesIO
         from binascii import unhexlify
 
         cls.fobj = BytesIO()
@@ -423,7 +422,7 @@ class TestSnoopReader(object):
         )
 
     def setup_method(self):
-        from .compat import BytesIO
+        from dpkt.compat import BytesIO
 
         self.fobj = BytesIO(
             self.header + self.pkt_header + self.pkt_bytes
@@ -459,7 +458,7 @@ class TestSnoopReader(object):
 
 class TestFileWriter(object):
     def setup_method(self):
-        from .compat import BytesIO
+        from dpkt.compat import BytesIO
 
         self.fobj = BytesIO()
         self.writer = FileWriter(self.fobj)

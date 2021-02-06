@@ -2,12 +2,11 @@
 # -*- coding: utf-8 -*-
 """Diameter."""
 from __future__ import print_function
-from __future__ import absolute_import
 
 import struct
 
-from . import dpkt
-from .compat import compat_ord
+from dpkt import dpkt
+from dpkt.compat import compat_ord
 
 # Diameter Base Protocol - RFC 3588
 # http://tools.ietf.org/html/rfc3588

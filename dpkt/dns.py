@@ -2,13 +2,12 @@
 # -*- coding: utf-8 -*-
 """Domain Name System."""
 from __future__ import print_function
-from __future__ import absolute_import
 
 import struct
 import codecs
 
-from . import dpkt
-from .compat import compat_ord
+from dpkt import dpkt
+from dpkt.compat import compat_ord
 
 DNS_Q = 0
 DNS_R = 1

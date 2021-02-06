@@ -1,9 +1,8 @@
 # $Id: ospf.py 23 2006-11-08 15:45:33Z dugsong $
 # -*- coding: utf-8 -*-
 """Open Shortest Path First."""
-from __future__ import absolute_import
 
-from . import dpkt
+from dpkt import dpkt
 
 AUTH_NONE = 0
 AUTH_PASSWORD = 1

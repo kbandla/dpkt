@@ -2,12 +2,11 @@
 # -*- coding: utf-8 -*-
 """GNU zip."""
 from __future__ import print_function
-from __future__ import absolute_import
 
 import struct
 import zlib
 
-from . import dpkt
+from dpkt import dpkt
 
 
 # RFC 1952

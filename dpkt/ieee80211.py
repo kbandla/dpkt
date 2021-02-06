@@ -2,12 +2,11 @@
 # -*- coding: utf-8 -*-
 """IEEE 802.11."""
 from __future__ import print_function
-from __future__ import absolute_import
 
 import struct
 
-from . import dpkt
-from .compat import ntole
+from dpkt import dpkt
+from dpkt.compat import ntole
 
 # Frame Types
 MGMT_TYPE = 0
@@ -728,7 +727,7 @@ def test_80211_data():
                          b'\x38\x2b\x4f\x08\x50\x10\x42\x04')
     assert ieee.fcs == struct.unpack('<I', b'\xac\x17\x00\x00')[0]
 
-    from . import llc
+    from dpkt import llc
     llc_pkt = llc.LLC(ieee.data_frame.data)
     ip_pkt = llc_pkt.data
     assert ip_pkt.dst == b'\x3f\xf5\xd1\x69'

@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 """ATA over Ethernet ATA command"""
 from __future__ import print_function
-from __future__ import absolute_import
 
-from . import dpkt
+from dpkt import dpkt
 
 ATA_DEVICE_IDENTIFY = 0xec
 

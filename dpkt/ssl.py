@@ -2,14 +2,13 @@
 # Portion Copyright 2012 Google Inc. All rights reserved.
 # -*- coding: utf-8 -*-
 """Secure Sockets Layer / Transport Layer Security."""
-from __future__ import absolute_import
 
 import struct
 import binascii
 
-from . import dpkt
-from . import ssl_ciphersuites
-from .compat import compat_ord
+from dpkt import dpkt
+from dpkt import ssl_ciphersuites
+from dpkt.compat import compat_ord
 
 #
 # Note from April 2011: cde...@gmail.com added code that parses SSL3/TLS messages more in depth.

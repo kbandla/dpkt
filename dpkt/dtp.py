@@ -1,10 +1,9 @@
 # $Id: dtp.py 23 2006-11-08 15:45:33Z dugsong $
 # -*- coding: utf-8 -*-
 """Dynamic Trunking Protocol."""
-from __future__ import absolute_import
 import struct
 
-from . import dpkt
+from dpkt import dpkt
 
 TRUNK_NAME = 0x01
 MAC_ADDR = 0x04

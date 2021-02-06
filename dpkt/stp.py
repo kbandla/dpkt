@@ -2,9 +2,8 @@
 # -*- coding: utf-8 -*-
 """Spanning Tree Protocol."""
 from __future__ import print_function
-from __future__ import absolute_import
 
-from . import dpkt
+from dpkt import dpkt
 
 
 class STP(dpkt.Packet):

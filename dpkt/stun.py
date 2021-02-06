@@ -2,11 +2,10 @@
 # -*- coding: utf-8 -*-
 """Simple Traversal of UDP through NAT."""
 from __future__ import print_function
-from __future__ import absolute_import
 
 import struct
 
-from . import dpkt
+from dpkt import dpkt
 
 # STUN - RFC 3489
 # http://tools.ietf.org/html/rfc3489

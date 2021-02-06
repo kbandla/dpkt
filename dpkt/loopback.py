@@ -1,12 +1,11 @@
 # $Id: loopback.py 38 2007-03-17 03:33:16Z dugsong $
 # -*- coding: utf-8 -*-
 """Platform-dependent loopback header."""
-from __future__ import absolute_import
 
-from . import dpkt
-from . import ethernet
-from . import ip
-from . import ip6
+from dpkt import dpkt
+from dpkt import ethernet
+from dpkt import ip
+from dpkt import ip6
 
 
 class Loopback(dpkt.Packet):

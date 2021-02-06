@@ -2,12 +2,11 @@
 # -*- coding: utf-8 -*-
 """Internet Protocol, version 6."""
 from __future__ import print_function
-from __future__ import absolute_import
 
-from . import dpkt
-from . import ip
-from . import tcp
-from .compat import compat_ord
+from dpkt import dpkt
+from dpkt import ip
+from dpkt import tcp
+from dpkt.compat import compat_ord
 import struct
 
 # The allowed extension headers and their classes (in order according to RFC).

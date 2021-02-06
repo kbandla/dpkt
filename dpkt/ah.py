@@ -2,10 +2,9 @@
 # -*- coding: utf-8 -*-
 
 """Authentication Header."""
-from __future__ import absolute_import
 
-from . import dpkt
-from . import ip
+from dpkt import dpkt
+from dpkt import ip
 
 
 class AH(dpkt.Packet):

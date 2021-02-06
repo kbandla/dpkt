@@ -1,7 +1,6 @@
 """Extreme Discovery Protocol."""
-from __future__ import absolute_import
 
-import dpkt
+from dpkt import dpkt
 
 
 class EDP(dpkt.Packet):

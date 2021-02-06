@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import print_function
-from __future__ import absolute_import
 
 import struct
 
-from . import dpkt
-from . import stp
+from dpkt import dpkt
+from dpkt import stp
 
 
 class LLC(dpkt.Packet):
@@ -31,7 +30,7 @@ class LLC(dpkt.Packet):
         return self.dsap == self.ssap == 0xaa
 
     def unpack(self, buf):
-        from .ethernet import Ethernet, ETH_TYPE_IP, ETH_TYPE_IPX
+        from dpkt.ethernet import Ethernet, ETH_TYPE_IP, ETH_TYPE_IPX
 
         dpkt.Packet.unpack(self, buf)
         if self.is_snap:
@@ -57,7 +56,7 @@ class LLC(dpkt.Packet):
             oui = getattr(self, 'oui', 0)
             _type = getattr(self, 'type', 0)
             if not _type and isinstance(self.data, dpkt.Packet):
-                from .ethernet import Ethernet
+                from dpkt.ethernet import Ethernet
                 try:
                     _type = Ethernet.get_type_rev(self.data.__class__)
                 except KeyError:
@@ -70,8 +69,8 @@ class LLC(dpkt.Packet):
 
 
 def test_llc():
-    from . import ip
-    from . import ethernet
+    from dpkt import ip
+    from dpkt import ethernet
     s = (b'\xaa\xaa\x03\x00\x00\x00\x08\x00\x45\x00\x00\x28\x07\x27\x40\x00\x80\x06\x1d'
          b'\x39\x8d\xd4\x37\x3d\x3f\xf5\xd1\x69\xc0\x5f\x01\xbb\xb2\xd6\xef\x23\x38\x2b'
          b'\x4f\x08\x50\x10\x42\x04\xac\x17\x00\x00')
@@ -96,7 +95,7 @@ def test_llc():
 def test_unpack_sap_ip():
     from binascii import unhexlify
 
-    from . import ip
+    from dpkt import ip
 
     buf_llc = unhexlify(
         '06'  # dsap (SAP_IP)

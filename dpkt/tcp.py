@@ -2,10 +2,9 @@
 # -*- coding: utf-8 -*-
 """Transmission Control Protocol."""
 from __future__ import print_function
-from __future__ import absolute_import
 
-from . import dpkt
-from .compat import compat_ord
+from dpkt import dpkt
+from dpkt.compat import compat_ord
 
 # TCP control flags
 TH_FIN = 0x01  # end of data

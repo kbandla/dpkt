@@ -2,10 +2,9 @@
 # -*- coding: utf-8 -*-
 """Stream Control Transmission Protocol."""
 from __future__ import print_function
-from __future__ import absolute_import
 
-from . import dpkt
-from . import crc32c
+from dpkt import dpkt
+from dpkt import crc32c
 
 # Stream Control Transmission Protocol
 # http://tools.ietf.org/html/rfc2960

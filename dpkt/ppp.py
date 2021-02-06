@@ -1,11 +1,10 @@
 # $Id: ppp.py 65 2010-03-26 02:53:51Z dugsong $
 # -*- coding: utf-8 -*-
 """Point-to-Point Protocol."""
-from __future__ import absolute_import
 
 import struct
 
-from . import dpkt
+from dpkt import dpkt
 
 # XXX - finish later
 

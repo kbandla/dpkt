@@ -1,9 +1,8 @@
 # $Id: cdp.py 23 2006-11-08 15:45:33Z dugsong $
 # -*- coding: utf-8 -*-
 """Cisco Discovery Protocol."""
-from __future__ import absolute_import
 
-from . import dpkt
+from dpkt import dpkt
 
 CDP_DEVID = 1  # string
 CDP_ADDRESS = 2
@@ -116,7 +115,7 @@ class CDP(dpkt.Packet):
 
 def test_cdp():
     import socket
-    from . import ethernet
+    from dpkt import ethernet
 
     ss = (b'\x02\xb4\xdf\x93\x00\x01\x00\x09\x63\x69\x73\x63\x6f\x00\x02\x00\x11\x00\x00\x00\x01'
           b'\x01\x01\xcc\x00\x04\xc0\xa8\x01\x67')

@@ -2,13 +2,12 @@
 # -*- coding: utf-8 -*-
 """Border Gateway Protocol."""
 from __future__ import print_function
-from __future__ import absolute_import
 
 import struct
 import socket
 
-from . import dpkt
-from .compat import compat_ord
+from dpkt import dpkt
+from dpkt.compat import compat_ord
 
 
 # Border Gateway Protocol 4 - RFC 4271

@@ -1,13 +1,12 @@
 # $Id: dpkt.py 43 2007-08-02 22:42:59Z jon.oberheide $
 # -*- coding: utf-8 -*-
 """Simple packet creation and parsing."""
-from __future__ import absolute_import
 
 import copy
 import struct
 from functools import partial
 
-from .compat import compat_ord, compat_izip, iteritems, ntole
+from dpkt.compat import compat_ord, compat_izip, iteritems, ntole
 
 
 class Error(Exception):

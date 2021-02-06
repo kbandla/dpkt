@@ -2,12 +2,11 @@
 # -*- coding: utf-8 -*-
 """Cisco Netflow."""
 from __future__ import print_function
-from __future__ import absolute_import
 
 import struct
 
-from . import dpkt
-from .compat import compat_izip
+from dpkt import dpkt
+from dpkt.compat import compat_izip
 
 
 class NetflowBase(dpkt.Packet):

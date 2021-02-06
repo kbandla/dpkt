@@ -1,10 +1,9 @@
 # $Id: radius.py 23 2006-11-08 15:45:33Z dugsong $
 # -*- coding: utf-8 -*-
 """Remote Authentication Dial-In User Service."""
-from __future__ import absolute_import
 
-from . import dpkt
-from .compat import compat_ord
+from dpkt import dpkt
+from dpkt.compat import compat_ord
 
 # http://www.untruth.org/~josh/security/radius/radius-auth.html
 # RFC 2865

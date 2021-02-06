@@ -5,14 +5,13 @@ Ethernet II, LLC (802.3+802.2), LLC/SNAP, and Novell raw 802.3,
 with automatic 802.1q, MPLS, PPPoE, and Cisco ISL decapsulation.
 """
 from __future__ import print_function
-from __future__ import absolute_import
 
 import struct
 from zlib import crc32
 
-from . import dpkt
-from . import llc
-from .compat import compat_ord, iteritems, isstr
+from dpkt import dpkt
+from dpkt import llc
+from dpkt.compat import compat_ord, iteritems, isstr
 
 ETH_CRC_LEN = 4
 ETH_HDR_LEN = 14
@@ -405,8 +404,8 @@ class VLANtagISL(dpkt.Packet):
 
 
 def test_eth():
-    from . import ip6
-    from . import tcp
+    from dpkt import ip6
+    from dpkt import tcp
     s = (b'\x00\xb0\xd0\xe1\x80\x72\x00\x11\x24\x8c\x11\xde\x86\xdd\x60\x00\x00\x00'
          b'\x00\x28\x06\x40\xfe\x80\x00\x00\x00\x00\x00\x00\x02\x11\x24\xff\xfe\x8c'
          b'\x11\xde\xfe\x80\x00\x00\x00\x00\x00\x00\x02\xb0\xd0\xff\xfe\xe1\x80\x72'
@@ -435,7 +434,7 @@ def test_eth_zero_ethtype():
 
 def test_eth_init_with_data():
     # initialize with a data string, test that it gets unpacked
-    from . import arp
+    from dpkt import arp
     eth1 = Ethernet(
         dst=b'PQRSTU', src=b'ABCDEF', type=ETH_TYPE_ARP,
         data=b'\x00\x01\x08\x00\x06\x04\x00\x01123456abcd7890abwxyz')
@@ -484,7 +483,7 @@ def test_isl_tag():
 
 
 def test_eth_802dot1q():
-    from . import ip
+    from dpkt import ip
     s = (b'\x00\x60\x08\x9f\xb1\xf3\x00\x40\x05\x40\xef\x24\x81\x00\x90\x20\x08'
          b'\x00\x45\x00\x00\x34\x3b\x64\x40\x00\x40\x06\xb7\x9b\x83\x97\x20\x81'
          b'\x83\x97\x20\x15\x04\x95\x17\x70\x51\xd4\xee\x9c\x51\xa5\x5b\x36\x80'
@@ -517,7 +516,7 @@ def test_eth_802dot1q_stacked():  # 2 VLAN tags
 
     import pytest
 
-    from . import ip
+    from dpkt import ip
 
     s = unhexlify(
         '001bd41ba4d80013c3dfae18810000768100000a0800'
@@ -558,7 +557,7 @@ def test_eth_802dot1q_stacked():  # 2 VLAN tags
 
 
 def test_eth_vlan_arp():
-    from . import arp
+    from dpkt import arp
 
     # 2 VLAN tags + ARP
     s = (b'\xff\xff\xff\xff\xff\xff\xca\x03\x0d\xb4\x00\x1c\x81\x00\x00\x64\x81\x00\x00\xc8\x08\x06'
@@ -572,8 +571,8 @@ def test_eth_vlan_arp():
 
 
 def test_eth_mpls_stacked():  # Eth - MPLS - MPLS - IP - ICMP
-    from . import ip
-    from . import icmp
+    from dpkt import ip
+    from dpkt import icmp
     s = (b'\x00\x30\x96\xe6\xfc\x39\x00\x30\x96\x05\x28\x38\x88\x47\x00\x01\x20\xff\x00\x01\x01\xff'
          b'\x45\x00\x00\x64\x00\x50\x00\x00\xff\x01\xa7\x06\x0a\x1f\x00\x01\x0a\x22\x00\x01\x08\x00'
          b'\xbd\x11\x0f\x65\x12\xa0\x00\x00\x00\x00\x00\x53\x9e\xe0' + b'\xab\xcd' * 32)
@@ -600,7 +599,7 @@ def test_eth_mpls_stacked():  # Eth - MPLS - MPLS - IP - ICMP
 
 
 def test_isl_eth_llc_stp():  # ISL - 802.3 Ethernet(w/FCS) - LLC - STP
-    from . import stp
+    from dpkt import stp
     s = (b'\x01\x00\x0c\x00\x00\x03\x00\x02\xfd\x2c\xb8\x97\x00\x00\xaa\xaa\x03\x00\x00\x00\x02\x9b'
          b'\x00\x00\x00\x00\x01\x80\xc2\x00\x00\x00\x00\x02\xfd\x2c\xb8\x98\x00\x26\x42\x42\x03\x00'
          b'\x00\x00\x00\x00\x80\x00\x00\x02\xfd\x2c\xb8\x83\x00\x00\x00\x00\x80\x00\x00\x02\xfd\x2c'
@@ -642,7 +641,7 @@ def test_isl_eth_llc_stp():  # ISL - 802.3 Ethernet(w/FCS) - LLC - STP
 
 
 def test_eth_llc_snap_cdp():  # 802.3 Ethernet - LLC/SNAP - CDP
-    from . import cdp
+    from dpkt import cdp
     s = (b'\x01\x00\x0c\xcc\xcc\xcc\xc4\x022k\x00\x00\x01T\xaa\xaa\x03\x00\x00\x0c \x00\x02\xb4,B'
          b'\x00\x01\x00\x06R2\x00\x05\x00\xffCisco IOS Software, 3700 Software (C3745-ADVENTERPRI'
          b'SEK9_SNA-M), Version 12.4(25d), RELEASE SOFTWARE (fc1)\nTechnical Support: http://www.'
@@ -662,7 +661,7 @@ def test_eth_llc_snap_cdp():  # 802.3 Ethernet - LLC/SNAP - CDP
 
 
 def test_eth_llc_ipx():  # 802.3 Ethernet - LLC - IPX
-    from . import ipx
+    from dpkt import ipx
     s = (b'\xff\xff\xff\xff\xff\xff\x00\xb0\xd0\x22\xf7\xf3\x00\x54\xe0\xe0\x03\xff\xff\x00\x50\x00'
          b'\x14\x00\x00\x00\x00\xff\xff\xff\xff\xff\xff\x04\x55\x00\x00\x00\x00\x00\xb0\xd0\x22\xf7'
          b'\xf3\x04\x55\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
@@ -680,10 +679,10 @@ def test_eth_llc_ipx():  # 802.3 Ethernet - LLC - IPX
 
 
 def test_eth_pppoe():   # Eth - PPPoE - IPv6 - UDP - DHCP6
-    from . import ip6
-    from . import ppp
-    from . import pppoe
-    from . import udp
+    from dpkt import ip6
+    from dpkt import ppp
+    from dpkt import pppoe
+    from dpkt import udp
     s = (b'\xca\x01\x0e\x88\x00\x06\xcc\x05\x0e\x88\x00\x00\x88\x64\x11\x00\x00\x11\x00\x64\x57\x6e'
          b'\x00\x00\x00\x00\x3a\x11\xff\xfe\x80\x00\x00\x00\x00\x00\x00\xce\x05\x0e\xff\xfe\x88\x00'
          b'\x00\xff\x02\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x02\x02\x22\x02\x23\x00'
@@ -704,7 +703,7 @@ def test_eth_pppoe():   # Eth - PPPoE - IPv6 - UDP - DHCP6
 
 
 def test_eth_2mpls_ecw_eth_llc_stp():  # Eth - MPLS - MPLS - PW ECW - 802.3 Eth(no FCS) - LLC - STP
-    from . import stp
+    from dpkt import stp
     s = (b'\xcc\x01\x0d\x5c\x00\x10\xcc\x00\x0d\x5c\x00\x10\x88\x47\x00\x01\x20\xfe\x00\x01\x01\xff'
          b'\x00\x00\x00\x00\x01\x80\xc2\x00\x00\x00\xcc\x04\x0d\x5c\xf0\x00\x00\x26\x42\x42\x03\x00'
          b'\x00\x00\x00\x00\x80\x00\xcc\x04\x0d\x5c\x00\x00\x00\x00\x00\x00\x80\x00\xcc\x04\x0d\x5c'
@@ -733,7 +732,7 @@ def test_eth_2mpls_ecw_eth_llc_stp():  # Eth - MPLS - MPLS - PW ECW - 802.3 Eth(
 
 # QinQ: Eth - 802.1ad - 802.1Q - IP
 def test_eth_802dot1ad_802dot1q_ip():
-    from . import ip
+    from dpkt import ip
     s = (b'\x00\x10\x94\x00\x00\x0c\x00\x10\x94\x00\x00\x14\x88\xa8\x00\x1e\x81\x00\x00\x64\x08\x00'
          b'\x45\x00\x05\xc2\x54\xb0\x00\x00\xff\xfd\xdd\xbf\xc0\x55\x01\x16\xc0\x55\x01\x0e' +
          1434 * b'\x00' + b'\x4f\xdc\xcd\x64\x20\x8d\xb6\x4e\xa8\x45\xf8\x80\xdd\x0c\xf9\x72\xc4'
@@ -791,7 +790,7 @@ def test_eth_802dot1q_with_unfamiliar_data():
 
 
 def test_eth_802dot1q_with_arp_data():  # https://github.com/kbandla/dpkt/issues/460
-    from .arp import ARP
+    from dpkt.arp import ARP
     e = Ethernet(src=b'foobar', dst=b'\xff' * 6)
     v = VLANtag8021Q(pri=0, cfi=0, id=1)
     e.vlan_tags = [v]

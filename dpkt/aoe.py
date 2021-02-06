@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 """ATA over Ethernet Protocol."""
-from __future__ import absolute_import
 
 import struct
 
-from . import dpkt
-from .compat import iteritems
+from dpkt import dpkt
+from dpkt.compat import iteritems
 
 
 class AOE(dpkt.Packet):

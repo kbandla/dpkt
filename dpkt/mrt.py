@@ -1,10 +1,9 @@
 # $Id: mrt.py 29 2007-01-26 02:29:07Z jon.oberheide $
 # -*- coding: utf-8 -*-
 """Multi-threaded Routing Toolkit."""
-from __future__ import absolute_import
 
-from . import dpkt
-from . import bgp
+from dpkt import dpkt
+from dpkt import bgp
 
 # Multi-threaded Routing Toolkit
 # http://www.ietf.org/internet-drafts/draft-ietf-grow-mrt-03.txt

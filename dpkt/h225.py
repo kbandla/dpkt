@@ -2,12 +2,11 @@
 # -*- coding: utf-8 -*-
 """ITU-T H.225.0 Call Signaling."""
 from __future__ import print_function
-from __future__ import absolute_import
 
 import struct
 
-from . import dpkt
-from . import tpkt
+from dpkt import dpkt
+from dpkt import tpkt
 
 
 # H225 Call Signaling

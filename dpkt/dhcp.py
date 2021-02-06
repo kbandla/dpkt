@@ -2,13 +2,12 @@
 # -*- coding: utf-8 -*-
 """Dynamic Host Configuration Protocol."""
 from __future__ import print_function
-from __future__ import absolute_import
 
 import struct
 
-from . import arp
-from . import dpkt
-from .compat import compat_ord
+from dpkt import arp
+from dpkt import dpkt
+from dpkt.compat import compat_ord
 
 DHCP_OP_REQUEST = 1
 DHCP_OP_REPLY = 2

@@ -2,9 +2,8 @@
 # -*- coding: utf-8 -*-
 """Routing Information Protocol."""
 from __future__ import print_function
-from __future__ import absolute_import
 
-from . import dpkt
+from dpkt import dpkt
 
 # RIP v2 - RFC 2453
 # http://tools.ietf.org/html/rfc2453

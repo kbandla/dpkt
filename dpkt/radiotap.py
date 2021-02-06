@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 """Radiotap"""
 from __future__ import print_function
-from __future__ import absolute_import
 
-from . import dpkt
-from . import ieee80211
-from .compat import compat_ord
+from dpkt import dpkt
+from dpkt import ieee80211
+from dpkt.compat import compat_ord
 
 # Ref: http://www.radiotap.org
 # Fields Ref: http://www.radiotap.org/defined-fields/all

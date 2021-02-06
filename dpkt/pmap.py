@@ -1,9 +1,8 @@
 # $Id: pmap.py 23 2006-11-08 15:45:33Z dugsong $
 # -*- coding: utf-8 -*-
 """Portmap / rpcbind."""
-from __future__ import absolute_import
 
-from . import dpkt
+from dpkt import dpkt
 
 PMAP_PROG = 100000
 PMAP_PROCDUMP = 4

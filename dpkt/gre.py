@@ -1,14 +1,13 @@
 # $Id: gre.py 75 2010-08-03 14:42:19Z jon.oberheide $
 # -*- coding: utf-8 -*-
 """Generic Routing Encapsulation."""
-from __future__ import absolute_import
 
 import struct
 import codecs
 
-from . import dpkt
-from . import ethernet
-from .compat import compat_izip
+from dpkt import dpkt
+from dpkt import ethernet
+from dpkt.compat import compat_izip
 
 GRE_CP = 0x8000  # Checksum Present
 GRE_RP = 0x4000  # Routing Present
@@ -217,7 +216,7 @@ def test_gre_nested_sre():
 def test_gre_next_layer():
     from binascii import unhexlify
 
-    from . import ipx
+    from dpkt import ipx
 
     buf = unhexlify(
         '0000'  # flags (NONE)

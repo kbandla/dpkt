@@ -1,7 +1,7 @@
 """Various Utility Functions"""
 import socket
-from .compat import compat_ord
-from .dns import DNS
+from dpkt.compat import compat_ord
+from dpkt.dns import DNS
 
 
 def mac_to_str(address):

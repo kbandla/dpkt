@@ -3,7 +3,7 @@
 """Network Time Protocol."""
 from __future__ import print_function
 
-from . import dpkt
+from dpkt import dpkt
 
 # NTP v4
 

@@ -2,10 +2,9 @@
 # -*- coding: utf-8 -*-
 """Hypertext Transfer Protocol."""
 from __future__ import print_function
-from __future__ import absolute_import
 from collections import OrderedDict
-from . import dpkt
-from .compat import BytesIO, iteritems
+from dpkt import dpkt
+from dpkt.compat import BytesIO, iteritems
 
 
 def parse_headers(f):
@@ -547,7 +546,7 @@ def test_request_str():
 
 def test_parse_body():
     import pytest
-    from .compat import BytesIO
+    from dpkt.compat import BytesIO
     buf = BytesIO(
         b'05\r\n'  # size
         b'ERR'     # longer than size

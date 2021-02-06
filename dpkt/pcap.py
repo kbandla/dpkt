@@ -2,14 +2,13 @@
 # -*- coding: utf-8 -*-
 """Libpcap file format."""
 from __future__ import print_function
-from __future__ import absolute_import
 
 import sys
 import time
 from decimal import Decimal
 
-from . import dpkt
-from .compat import intround
+from dpkt import dpkt
+from dpkt.compat import intround
 
 TCPDUMP_MAGIC = 0xa1b2c3d4
 TCPDUMP_MAGIC_NANO = 0xa1b23c4d
@@ -410,7 +409,7 @@ def test_reader():
     data = TestData().pcap
 
     # --- BytesIO tests ---
-    from .compat import BytesIO
+    from dpkt.compat import BytesIO
 
     # BytesIO
     fobj = BytesIO(data)
@@ -475,7 +474,7 @@ def test_reader_dloff():
         '00000004'  # len
     )
 
-    from .compat import BytesIO
+    from dpkt.compat import BytesIO
     fobj = BytesIO(buf_filehdr + buf_pkthdr + b'\x11'*4)
     reader = Reader(fobj)
 
@@ -487,7 +486,7 @@ def test_reader_dloff():
 
 @TryExceptException(ValueError, msg="invalid tcpdump header")
 def test_reader_badheader():
-    from .compat import BytesIO
+    from dpkt.compat import BytesIO
     fobj = BytesIO(b'\x00' * 24)
     _ = Reader(fobj)
 
@@ -519,7 +518,7 @@ class WriterTestWrap:
 
     def __call__(self, f, *args, **kwargs):
         def wrapper(*args, **kwargs):
-            from .compat import BytesIO
+            from dpkt.compat import BytesIO
             for little_endian in [True, False]:
                 fobj = BytesIO()
                 _sysle = Writer._Writer__le
