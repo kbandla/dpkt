@@ -37,14 +37,29 @@ Documentation
 
 https://dpkt.readthedocs.org/
 
-Recent News
-===========
-The DPKT code base now supports both Python2 and Python3 thanks to the efforts of @kylekeppler @jonathanslenders @sunhao2014 and many `more <https://github.com/kbandla/dpkt/graphs/contributors>`__.
+Recent Stuff 
+============
+(2020-02-07) Released 1.9.5, thanks a bunch to all contributors but mostly to @crocogorical for doing most of the work :)
 
-Given the large amount of work that went into the Python3 support there's bound to be a few wrinkles that crop up.
-
-- Please submit an Issue if you find a problem
-- The legacy/stable release is dpkt==1.8.8 (https://github.com/kbandla/dpkt/releases), please use this release if you have any troubles.
+1.9.5 Changelog:
+    - New example showing how to process truncated DNS packets (examples/print_dns_truncated.py).
+    - Corrected typo in BGP.notification attribute.
+    - BGP.Update.Attribute.MPReachNLRI.SNPA now inherits from dpkt.Packet.
+    - Byteorder is now specified when packing GRE optional fields.
+    - #517: Improvement to Radiotap class, supporting multi-byte and misaligned flags fields. Endianness is now enforced.
+    - Github issue template added for bug reporting.
+    - Compliance with flake8 formatting.
+    - asn1.py::utctime method now returns time in UTC, instead of local.
+    - Allow multiple InterfaceDescriptionBlocks with pcapng.Writer.
+    - SCTP decoder DATA chunk padding aligned to 4-bytes, and improved handling of .data field.
+    - IEEE80211 DELBA frame now works on big and little-endian architectures.
+    - Introduce compat.ntole which converts from network byte order to little-endian byte order, regardless of host endianness.
+    - Ethernet class now attempts to unpack the padding and trailer if present.
+    - Added anonymous property to cipher suites, which returns True if the cipher suite starts with 'anon'.
+    - Added pfs (Perfect Forward Secrecy) and aead (Authenticated Encryption with Additional Data) properties to cipher suites.
+    - Added old CHACHA20-POLY1305 related cipher suites to TLS CipherSuite list.
+    - Remove redundant num_compression_methods from TLSClientHello
+    - Testing improved from 90% coverage to over 99%.
 
 About
 =====
