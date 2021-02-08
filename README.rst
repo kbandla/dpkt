@@ -39,7 +39,8 @@ https://dpkt.readthedocs.org/
 
 Recent Stuff 
 ============
-(2020-02-07) Released 1.9.5, thanks a bunch to all contributors but mostly to @crocogorical for doing most of the work :)
+**[2021-02-07]** 
+Released 1.9.5, thanks a bunch to all contributors but mostly to @crocogorical for doing most of the work :)
 
 1.9.5 Changelog:
     - New example showing how to process truncated DNS packets (examples/print_dns_truncated.py).
