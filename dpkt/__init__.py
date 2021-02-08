@@ -7,7 +7,7 @@ __author__ = 'Various'
 __author_email__ = ''
 __license__ = 'BSD-3-Clause'
 __url__ = 'https://github.com/kbandla/dpkt'
-__version__ = '1.9.4'
+__version__ = '1.9.5'
 
 from .dpkt import *
 
