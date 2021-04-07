@@ -27,6 +27,7 @@ M_DISASSOC = 10
 M_AUTH = 11
 M_DEAUTH = 12
 M_ACTION = 13
+M_ACTION_NO_ACK = 14
 C_BLOCK_ACK_REQ = 8
 C_BLOCK_ACK = 9
 C_PS_POLL = 10
@@ -296,7 +297,8 @@ class IEEE80211(dpkt.Packet):
             M_AUTH: ('auth', self.Auth),
             M_PROBE_RESP: ('probe_resp', self.Beacon),
             M_DEAUTH: ('deauth', self.Deauth),
-            M_ACTION: ('action', self.Action)
+            M_ACTION: ('action', self.Action),
+            M_ACTION_NO_ACK: ('action_no_ack', self.Action)
         }
 
         c_decoder = {
