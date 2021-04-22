@@ -256,7 +256,7 @@ class IP6FragmentHeader(IP6ExtensionHeader):
 
     @m_flag.setter
     def m_flag(self, v):
-        self.frag_off_resv_m = (self.frag_off_resv_m & ~0xfffe) | v
+        self.frag_off_resv_m = (self.frag_off_resv_m & 0xfffe) | (v & 1)
 
 
 class IP6AHHeader(IP6ExtensionHeader):
@@ -340,13 +340,18 @@ def test_ip6_routing_header():
 
 
 def test_ip6_fragment_header():
-    s = b'\x06\xee\xff\xfb\x00\x00\xff\xff'
+    s = b'\x06\xee\xff\xf9\x00\x00\xff\xff'
     fh = IP6FragmentHeader(s)
     # s2 = str(fh) variable 's2' is not used
     assert fh.nxt == 6
     assert fh.id == 65535
     assert fh.frag_off == 8191
     assert fh.m_flag == 1
+
+    # test packing
+    fh.frag_off_resv_m = 0
+    fh.frag_off = 8191
+    fh.m_flag = 1
     assert bytes(fh) == s
 
     # IP6 with fragment header
