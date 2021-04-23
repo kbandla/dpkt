@@ -328,6 +328,13 @@ CIPHERSUITES = [
     CipherSuite(0x00c4, 'DHE ', 'RSA     ', 'CAMELLIA_256', 'CBC', 'SHA256'),
     CipherSuite(0x00c5, 'DH  ', 'anon    ', 'CAMELLIA_256', 'CBC', 'SHA256'),
 
+    # RFC8446 TLS 1.3
+    CipherSuite(0x1301, '    ', '        ', 'AES_128 ', 'GCM     ', 'SHA256'),
+    CipherSuite(0x1302, '    ', '        ', 'AES_256 ', 'GCM     ', 'SHA384'),
+    CipherSuite(0x1303, '    ', '        ', 'CHACHA20', 'POLY1305', 'SHA256'),
+    CipherSuite(0x1304, '    ', '        ', 'AES_128 ', 'CCM     ', 'SHA256'),
+    CipherSuite(0x1305, '    ', '        ', 'AES_128 ', 'CCM_8   ', 'SHA256'),
+
     # RFC4492
     CipherSuite(0xc001, 'ECDH ', 'ECDSA  ', 'NULL    ', '    ', 'SHA'),
     CipherSuite(0xc002, 'ECDH ', 'ECDSA  ', 'RC4_128 ', '    ', 'SHA'),
@@ -676,6 +683,7 @@ class TestCipherSuites(object):
         assert (BY_CODE[0x00ab] == BY_NAME('TLS_DHE_PSK_WITH_AES_256_GCM_SHA384'))
         assert (BY_CODE[0x00b0] == BY_NAME('TLS_PSK_WITH_NULL_SHA256'))
         assert (BY_CODE[0x00bb] == BY_NAME('TLS_DH_DSS_WITH_CAMELLIA_128_CBC_SHA256'))
+        assert (BY_CODE[0x1303] == BY_NAME('TLS_CHACHA20_POLY1305_SHA256'))
         assert (BY_CODE[0xc008] == BY_NAME('TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA'))
         assert (BY_CODE[0xc016] == BY_NAME('TLS_ECDH_anon_WITH_RC4_128_SHA'))
         assert (BY_CODE[0xc01d] == BY_NAME('TLS_SRP_SHA_WITH_AES_128_CBC_SHA'))
