@@ -418,8 +418,13 @@ def test_ip6_extension_headers():
     do = b'\x3b\x02\x01\x02\x00\x00\xc9\x10\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
     _ip.extension_hdrs[60] = IP6DstOptsHeader(do)
     assert len(_ip.extension_hdrs) == 5
-    # NOTE: this is a legacy unit test predating the addition of .all_extension_headers
+
+    # this is a legacy unit test predating the addition of .all_extension_headers
     # this way of adding extension headers does not update .all_extension_headers
+    # so we need to kick .all_extension_headers to force the __len__() method pick up
+    # the updated legacy attribute and calculate the len correctly
+    del _ip.all_extension_headers
+    assert len(_ip) == len(p) + len(o) + len(fh) + len(ah) + len(do)
 
 
 def test_ip6_all_extension_headers():  # https://github.com/kbandla/dpkt/pull/403
