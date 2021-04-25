@@ -12,6 +12,7 @@ from zlib import crc32
 
 from . import dpkt
 from . import llc
+from .utils import mac_to_str
 from .compat import compat_ord, iteritems, isstr
 
 ETH_CRC_LEN = 4
@@ -70,6 +71,11 @@ class Ethernet(dpkt.Packet):
     )
     _typesw = {}
     _typesw_rev = {}  # reverse mapping
+
+    __pprint_funcs__ = {
+        'dst': mac_to_str,
+        'src': mac_to_str,
+    }
 
     def __init__(self, *args, **kwargs):
         self._next_type = None

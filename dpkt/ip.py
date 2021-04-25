@@ -6,6 +6,7 @@ from __future__ import absolute_import
 
 from . import dpkt
 from .compat import iteritems
+from .utils import inet_to_str
 
 
 class IP(dpkt.Packet):
@@ -30,6 +31,12 @@ class IP(dpkt.Packet):
         ('src', '4s', b'\x00' * 4),
         ('dst', '4s', b'\x00' * 4)
     )
+
+    __pprint_funcs__ = {
+        'dst': inet_to_str,
+        'src': inet_to_str,
+    }
+
     _protosw = {}
     opts = b''
 
