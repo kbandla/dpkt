@@ -63,6 +63,7 @@ class IP6(dpkt.Packet):
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
         self.extension_hdrs = {}
+
         # NOTE: self.extension_hdrs is not accurate, as it doesn't support duplicate header types.
         # According to RFC-1883 "Each extension header should occur at most once, except for the
         # Destination Options header which should occur at most twice".
@@ -103,6 +104,7 @@ class IP6(dpkt.Packet):
             # get the nxt header from the last one
             nxt = self.all_extension_headers[-1].nxt
             return nxt, b''.join(bytes(ext) for ext in self.all_extension_headers)
+
         # Output extension headers in order defined in RFC1883 (except dest opts)
         header_str = b""
         if hasattr(self, 'extension_hdrs'):
@@ -123,6 +125,14 @@ class IP6(dpkt.Packet):
             self.data.sum = dpkt.in_cksum_done(s)
 
         return self.pack_hdr() + hdr_str + bytes(self.data)
+
+    def __len__(self):
+        baselen = self.__hdr_len__ + len(self.data)
+        if hasattr(self, 'all_extension_headers') and self.all_extension_headers:
+            return baselen + sum(len(hh) for hh in self.all_extension_headers)
+        elif hasattr(self, 'extension_hdrs') and self.extension_hdrs:
+            return baselen + sum(len(hh) for hh in self.extension_hdrs.values())
+        return baselen
 
     @classmethod
     def set_proto(cls, p, pktclass):
@@ -409,6 +419,13 @@ def test_ip6_extension_headers():
     _ip.extension_hdrs[60] = IP6DstOptsHeader(do)
     assert len(_ip.extension_hdrs) == 5
 
+    # this is a legacy unit test predating the addition of .all_extension_headers
+    # this way of adding extension headers does not update .all_extension_headers
+    # so we need to kick .all_extension_headers to force the __len__() method pick up
+    # the updated legacy attribute and calculate the len correctly
+    del _ip.all_extension_headers
+    assert len(_ip) == len(p) + len(o) + len(fh) + len(ah) + len(do)
+
 
 def test_ip6_all_extension_headers():  # https://github.com/kbandla/dpkt/pull/403
     s = (b'\x60\x00\x00\x00\x00\x47\x3c\x40\xfe\xd0\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01'
@@ -425,6 +442,7 @@ def test_ip6_all_extension_headers():  # https://github.com/kbandla/dpkt/pull/40
     assert isinstance(hdrs[3], IP6FragmentHeader)
     assert isinstance(hdrs[5], IP6DstOptsHeader)
     assert bytes(_ip) == s
+    assert len(_ip) == len(s)
 
 
 def test_ip6_gen_tcp_ack():
