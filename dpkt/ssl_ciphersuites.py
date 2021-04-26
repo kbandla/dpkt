@@ -329,11 +329,11 @@ CIPHERSUITES = [
     CipherSuite(0x00c5, 'DH  ', 'anon    ', 'CAMELLIA_256', 'CBC', 'SHA256'),
 
     # RFC8446 TLS 1.3
-    CipherSuite(0x1301, '    ', '        ', 'AES_128 ', 'GCM     ', 'SHA256'),
-    CipherSuite(0x1302, '    ', '        ', 'AES_256 ', 'GCM     ', 'SHA384'),
-    CipherSuite(0x1303, '    ', '        ', 'CHACHA20', 'POLY1305', 'SHA256'),
-    CipherSuite(0x1304, '    ', '        ', 'AES_128 ', 'CCM     ', 'SHA256'),
-    CipherSuite(0x1305, '    ', '        ', 'AES_128 ', 'CCM_8   ', 'SHA256'),
+    CipherSuite(0x1301, '    ', '        ', 'AES_128 ', 'GCM     ', 'SHA256', name='TLS_AES_128_GCM_SHA256'),
+    CipherSuite(0x1302, '    ', '        ', 'AES_256 ', 'GCM     ', 'SHA384', name='TLS_AES_256_GCM_SHA384'),
+    CipherSuite(0x1303, '    ', '        ', 'CHACHA20', 'POLY1305', 'SHA256', name='TLS_CHACHA20_POLY1305_SHA256'),
+    CipherSuite(0x1304, '    ', '        ', 'AES_128 ', 'CCM     ', 'SHA256', name='TLS_AES_128_CCM_SHA256'),
+    CipherSuite(0x1305, '    ', '        ', 'AES_128 ', 'CCM_8   ', 'SHA256', name='TLS_AES_128_CCM_8_SHA256'),
 
     # RFC4492
     CipherSuite(0xc001, 'ECDH ', 'ECDSA  ', 'NULL    ', '    ', 'SHA'),
