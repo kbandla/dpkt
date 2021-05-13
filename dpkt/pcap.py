@@ -128,6 +128,7 @@ DLT_ZWAVE_R1_R2 = 261
 DLT_ZWAVE_R3 = 262
 DLT_WATTSTOPPER_DLM = 263
 DLT_ISO_14443 = 264
+DLT_LINUX_SLL2 = 276
 
 if sys.platform.find('openbsd') != -1:
     DLT_LOOP = 12
@@ -138,7 +139,7 @@ else:
 
 dltoff = {DLT_NULL: 4, DLT_EN10MB: 14, DLT_IEEE802: 22, DLT_ARCNET: 6,
           DLT_SLIP: 16, DLT_PPP: 4, DLT_FDDI: 21, DLT_PFLOG: 48, DLT_PFSYNC: 4,
-          DLT_LOOP: 4, DLT_LINUX_SLL: 16}
+          DLT_LOOP: 4, DLT_LINUX_SLL: 16, DLT_LINUX_SLL2: 20}
 
 
 class PktHdr(dpkt.Packet):

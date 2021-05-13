@@ -62,6 +62,7 @@ from . import sccp
 from . import sctp
 from . import sip
 from . import sll
+from . import sll2
 from . import smb
 from . import ssl
 from . import stp
