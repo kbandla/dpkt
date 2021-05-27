@@ -154,11 +154,10 @@ class Packet(_MetaPacket("Temp", (object,), {})):
 
         def add_field(fn, fv):
             """name=value,  # pretty-print form (if available)"""
-            l_.append('%s=%r,' % (fn, fv))
             try:
-                l_[-1] += '  # %s' % self.__pprint_funcs__[fn](fv)
+                l_.append('%s=%r,  # %s' % (fn, fv, self.__pprint_funcs__[fn](fv)))
             except KeyError:
-                pass
+                l_.append('%s=%r,' % (fn, fv))
 
         for field_name, _, _ in getattr(self, '__hdr__', []):
             field_value = getattr(self, field_name)
