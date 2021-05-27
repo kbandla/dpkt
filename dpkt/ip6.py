@@ -8,6 +8,7 @@ from . import dpkt
 from . import ip
 from . import tcp
 from .compat import compat_ord
+from .utils import inet_to_str
 import struct
 
 # The allowed extension headers and their classes (in order according to RFC).
@@ -34,6 +35,12 @@ class IP6(dpkt.Packet):
         ('src', '16s', b''),
         ('dst', '16s', b'')
     )
+
+    __pprint_funcs__ = {
+        'src': inet_to_str,
+        'dst': inet_to_str
+    }
+
     _protosw = ip.IP._protosw
 
     @property

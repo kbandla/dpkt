@@ -35,6 +35,7 @@ class IP(dpkt.Packet):
     __pprint_funcs__ = {
         'dst': inet_to_str,
         'src': inet_to_str,
+        'sum': hex,  # display checksum in hex
     }
 
     _protosw = {}
