@@ -1,7 +1,7 @@
 # $Id: dpkt.py 43 2007-08-02 22:42:59Z jon.oberheide $
 # -*- coding: utf-8 -*-
 """Simple packet creation and parsing."""
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 
 import copy
 import struct
