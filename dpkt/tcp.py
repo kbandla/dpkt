@@ -22,6 +22,29 @@ TCP_PORT_MAX = 65535  # maximum port
 TCP_WIN_MAX = 65535  # maximum (unscaled) window
 
 
+def tcp_flags_to_str(val):
+    ff = []
+    if val & TH_FIN:
+        ff.append('FIN')
+    if val & TH_SYN:
+        ff.append('SYN')
+    if val & TH_RST:
+        ff.append('RST')
+    if val & TH_PUSH:
+        ff.append('PUSH')
+    if val & TH_ACK:
+        ff.append('ACK')
+    if val & TH_URG:
+        ff.append('URG')
+    if val & TH_ECE:
+        ff.append('ECE')
+    if val & TH_CWR:
+        ff.append('CWR')
+    if val & TH_NS:
+        ff.append('NS')
+    return ','.join(ff)
+
+
 class TCP(dpkt.Packet):
     """Transmission Control Protocol.
 
@@ -50,6 +73,11 @@ class TCP(dpkt.Packet):
         ('sum', 'H', 0),
         ('urp', 'H', 0)
     )
+
+    __pprint_funcs__ = {
+        'flags': tcp_flags_to_str,
+        'sum': hex,  # display checksum in hex
+    }
 
     opts = b''
 
@@ -188,6 +216,13 @@ def test_offset():
     # test setting header offset
     tcpheader.off = 8
     assert bytes(tcpheader) == b'\x01\xbb\xc0\xd7\xb6\x56\xa8\xb9\xd1\xac\xaa\xb1\x80\x18\x40\x00\x56\xf8\x00\x00'
+
+
+def test_tcp_flags_to_str():
+    assert tcp_flags_to_str(0x18) == 'PUSH,ACK'
+    assert tcp_flags_to_str(0x12) == 'SYN,ACK'
+    # for code coverage
+    assert tcp_flags_to_str(0x1ff) == 'FIN,SYN,RST,PUSH,ACK,URG,ECE,CWR,NS'
 
 
 def test_tcp_unpack():
