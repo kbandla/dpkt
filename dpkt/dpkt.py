@@ -150,40 +150,33 @@ class Packet(_MetaPacket("Temp", (object,), {})):
 
     def pprint(self, indent=1):
         """Human friendly pretty-print."""
+        l_ = []
 
-        def get_pp_value(fn, fv):
+        def add_field(fn, fv):
+            """name=value,  # pretty-print form (if available)"""
+            l_.append('%s=%r,' % (fn, fv))
             try:
-                return self.__pprint_funcs__[fn](fv)
+                l_[-1] += '  # %s' % self.__pprint_funcs__[fn](fv)
             except KeyError:
                 pass
 
-        l_ = []
         for field_name, _, _ in getattr(self, '__hdr__', []):
             field_value = getattr(self, field_name)
             if field_name[0] != '_':
-                l_.append('%s=%r,' % (field_name, field_value))
-                pp_value = get_pp_value(field_name, field_value)  # (1)
-                if pp_value:
-                    l_[-1] += '  # %s' % pp_value
+                add_field(field_name, field_value)
             else:
                 # interpret _private fields as name of properties joined by underscores
                 for prop_name in field_name.split('_'):           # (2)
                     if isinstance(getattr(self.__class__, prop_name, None), property):
-                        field_value = getattr(self, prop_name)
-                        l_.append('%s=%r,' % (prop_name, field_value))
-                        pp_value = get_pp_value(field_name, field_value)
-                        if pp_value:
-                            l_[-1] += '  # %s' % pp_value
+                        prop_value = getattr(self, prop_name)
+                        add_field(prop_name, prop_value)
         # (3)
         for attr_name, attr_value in iteritems(self.__dict__):
             if (attr_name[0] != '_' and                   # exclude _private attributes
                attr_name != self.data.__class__.__name__.lower()):  # exclude fields like ip.udp
-                l_.append('%s=%r,' % (attr_name, attr_value))
-                pp_value = get_pp_value(attr_name, attr_value)
-                if pp_value:
-                    l_[-1] += '  # %s' % pp_value
+                add_field(attr_name, attr_value)
 
-        print('%s(' % self.__class__.__name__)
+        print('%s(' % self.__class__.__name__)  # class name, opening brace
         for ii in l_:
             print(' ' * indent, '%s' % ii)
 
@@ -191,11 +184,11 @@ class Packet(_MetaPacket("Temp", (object,), {})):
         if self.data:
             if hasattr(self.data, 'pprint'):
                 print(' ' * indent, 'data=', end='')
-                self.data.pprint(indent=indent + 2)
+                self.data.pprint(indent=indent + 2)  # descend to lower layers
             else:
                 print(' ' * indent, 'data=%r,' % self.data)
         print(' ' * (indent - 1), end='')
-        print(')  # %s' % self.__class__.__name__)
+        print(')  # %s' % self.__class__.__name__)  # closing brace  # class name
 
     def __str__(self):
         return str(self.__bytes__())
