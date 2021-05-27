@@ -42,8 +42,8 @@ class _MetaPacket(type):
 
         # optional map of functions for pretty printing
         # {field_name: callable(field_value) -> str, ..}
-        if not hasattr(t, '__pprint_funcs__'):
-            t.__pprint_funcs__ = {}
+        # define as needed in the child protocol classes
+        #t.__pprint_funcs__ = {}  - disabled here to keep the base class lightweight
 
         return t
 
@@ -156,7 +156,7 @@ class Packet(_MetaPacket("Temp", (object,), {})):
             """name=value,  # pretty-print form (if available)"""
             try:
                 l_.append('%s=%r,  # %s' % (fn, fv, self.__pprint_funcs__[fn](fv)))
-            except KeyError:
+            except (AttributeError, KeyError):
                 l_.append('%s=%r,' % (fn, fv))
 
         for field_name, _, _ in getattr(self, '__hdr__', []):
