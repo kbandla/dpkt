@@ -182,9 +182,9 @@ class Packet(_MetaPacket("Temp", (object,), {})):
 
         # (4)
         if self.data:
-            if hasattr(self.data, 'pprint'):
+            if isinstance(self.data, Packet):  # recursively descend to lower layers
                 print(' ' * indent, 'data=', end='')
-                self.data.pprint(indent=indent + 2)  # descend to lower layers
+                self.data.pprint(indent=indent + 2)
             else:
                 print(' ' * indent, 'data=%r,' % self.data)
         print(' ' * (indent - 1), end='')
