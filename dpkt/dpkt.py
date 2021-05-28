@@ -185,7 +185,7 @@ class Packet(_MetaPacket("Temp", (object,), {})):
                 print(' ' * indent, 'data=', end='')
                 self.data.pprint(indent=indent + 2)
             else:
-                print(' ' * indent, 'data=%r,' % self.data)
+                print(' ' * indent, 'data=%r' % self.data)
         print(' ' * (indent - 1), end='')
         print(')  # %s' % self.__class__.__name__)  # closing brace  # class name
 
