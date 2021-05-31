@@ -122,8 +122,10 @@ class IP6(dpkt.Packet):
 
     def __bytes__(self):
         self.p, hdr_str = self.headers_str()
-        if (self.p == 6 or self.p == 17 or self.p == 58) and not self.data.sum:
-            # XXX - set TCP, UDP, and ICMPv6 checksums
+
+        # set TCP, UDP, and ICMPv6 checksums
+        if ((self.p == 6 or self.p == 17 or self.p == 58) and
+           hasattr(self.data, 'sum') and not self.data.sum):
             p = bytes(self.data)
             s = struct.pack('>16s16sxBH', self.src, self.dst, self.p, len(p))
             s = dpkt.in_cksum_add(0, s)
@@ -582,6 +584,9 @@ def test_ip6_fragment_no_decode():  # https://github.com/kbandla/dpkt/issues/575
     s = (b'\x60\x00\x00\x00\x01\x34\x2c\x35\x20\x01\x05\x00\x00\x60\x00\x00'
          b'\x00\x00\x00\x00\x00\x00\x00\x30\x20\x01\x06\x38\x05\x01\x8e\xfe'
          b'\xcc\x4a\x48\x39\xfa\x79\x04\xdc'
-         b'\x61\x72\x31\xb9\xc1\x0f\xcf\x7c\x61\x62\x63\x64\x65\x66\x67\x68')  # partial data
+         b'\x11\x72\x31\xb9\xc1\x0f\xcf\x7c\x61\x62\x63\x64\x65\x66\x67\x68')  # partial data
     frag2 = IP6(s)
     assert type(frag2.data) == bytes
+
+    # test packing
+    assert bytes(frag2) == s
