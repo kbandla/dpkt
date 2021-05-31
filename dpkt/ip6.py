@@ -91,6 +91,12 @@ class IP6(dpkt.Packet):
         if next_ext_hdr is not None:
             self.p = next_ext_hdr
 
+        # do not decode fragments after the first fragment
+        # https://github.com/kbandla/dpkt/issues/575
+        if self.nxt == 44 and ext.frag_off > 0:  # 44 = IP_PROTO_FRAGMENT
+            self.data = buf
+            return
+
         try:
             self.data = self._protosw[next_ext_hdr](buf)
             setattr(self, self.data.__class__.__name__.lower(), self.data)
