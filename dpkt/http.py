@@ -47,7 +47,11 @@ def parse_body(f, headers):
                 sz = f.readline().split(None, 1)[0]
             except IndexError:
                 raise dpkt.UnpackError('missing chunk size')
-            n = int(sz, 16)
+            try:
+                n = int(sz, 16)
+            except ValueError:
+                raise dpkt.UnpackError('invalid chunk size')
+
             if n == 0:
                 found_end = True
             buf = f.read(n)
@@ -484,6 +488,15 @@ def test_invalid():
         b"\r\n"
     )
     with pytest.raises(dpkt.UnpackError, match="missing chunk size"):
+        Response(s)
+
+    s = (
+        b"HTTP/1.1 200 OK\r\n"
+        b"Transfer-Encoding: chunked\r\n"
+        b"\r\n"
+        b"\x01\r\na"
+    )
+    with pytest.raises(dpkt.UnpackError, match="invalid chunk size"):
         Response(s)
 
     s = (
