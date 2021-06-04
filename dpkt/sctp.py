@@ -51,6 +51,8 @@ class SCTP(dpkt.Packet):
         while self.data:
             chunk = Chunk(self.data)
             l_.append(chunk)
+            if len(chunk) == 0 or len(chunk) >= len(self.data):
+                break
             self.data = self.data[len(chunk):]
         self.chunks = l_
 
