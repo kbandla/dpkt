@@ -52,6 +52,7 @@ class SCTP(dpkt.Packet):
             chunk = Chunk(self.data)
             l_.append(chunk)
             if len(chunk) == 0:
+                self.data = b''
                 break
             self.data = self.data[len(chunk):]
         self.chunks = l_
@@ -159,3 +160,25 @@ def test_sctp_data_chunk():  # https://github.com/kbandla/dpkt/issues/499
 
     # test packing of the padded chunk
     assert bytes(ch) == d[SCTP.__hdr_len__:]
+  
+
+
+def test_malformed_sctp_data_chunk():  
+    # packet 7964 from '4.pcap' downloaded from https://research.unsw.edu.au/projects/unsw-nb15-dataset
+    d = (b'\x27\x0f\xe1\xc3\xc2\x73\x4d\x32\x4f\x54\x27\x8c' #header
+         b'\x0b\x00\x00\x04' #chunk 0, COOKIE_ACK chunk
+         b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00') #chunk 1, malformed DATA chunk, size labeled as 0
+
+
+    sctp = SCTP(d)
+    assert sctp.chunks
+    assert len(sctp.chunks) == 2
+
+    ch = sctp.chunks[1]
+    assert ch.type == DATA
+    assert ch.len == 0
+    assert len(ch) == 0 
+    assert ch.data == b'\x00\x00'
+    
+    # no remaining sctp data
+    assert sctp.data == b''
