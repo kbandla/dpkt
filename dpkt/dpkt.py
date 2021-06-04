@@ -91,8 +91,9 @@ class Packet(_MetaPacket("Temp", (object,), {})):
                 raise UnpackError('invalid %s: %r' %
                                   (self.__class__.__name__, args[0]))
         else:
-            for k in self.__hdr_fields__:
-                setattr(self, k, copy.copy(self.__hdr_defaults__[k]))
+            if hasattr(self, '__hdr_fields__'):
+                for k in self.__hdr_fields__:
+                    setattr(self, k, copy.copy(self.__hdr_defaults__[k]))
 
             for k, v in iteritems(kwargs):
                 setattr(self, k, v)
@@ -103,14 +104,25 @@ class Packet(_MetaPacket("Temp", (object,), {})):
     def __len__(self):
         return self.__hdr_len__ + len(self.data)
 
+    # legacy
     def __iter__(self):
-        return iter(zip(self.__class__.__hdr_fields__, map(self.__getitem__, self.__class__.__hdr_fields__)))
+        return iter((fld, getattr(self, fld)) for fld in self.__class__.__hdr_fields__)
 
-    def __getitem__(self, k):
+    def __getitem__(self, kls):
+        """Return the 1st occurence of the underlying <kls> data layer, raise KeyError otherwise."""
+        dd = self.data
+        while isinstance(dd, Packet):
+            if dd.__class__ == kls:
+                return dd
+            dd = dd.data
+        raise KeyError(kls)
+
+    def __contains__(self, kls):
+        """Return True is the given <kls> data layer is present in the stack."""
         try:
-            return getattr(self, k)
-        except AttributeError:
-            raise KeyError
+            return bool(self.__getitem__(kls))
+        except KeyError:
+            return False
 
     def __repr__(self):
         # Collect and display protocol fields in order:
@@ -231,24 +243,44 @@ def test_utils():
     assert (c == 51150)
 
 
-def test_getitem():
-    """create a Packet subclass and access its properties"""
+# test Packet.__getitem__ and __contains__ methods
+def test_getitem_contains():
     import pytest
 
     class Foo(Packet):
-        __hdr__ = (
-            ('foo', 'I', 1),
-            ('bar', 'H', 2),
-        )
+        __hdr__ = (('foo', 'I', 0),)
 
-    foo = Foo(foo=2, bar=3)
-    assert foo.foo == 2
-    assert foo['foo'] == 2
-    assert foo.bar == 3
-    assert foo['bar'] == 3
+    class Bar(Packet):
+        __hdr__ = (('bar', 'I', 0),)
+
+    class Baz(Packet):
+        __hdr__ = (('baz', 'I', 0),)
+
+    class Zeb(Packet):
+        pass
+
+    ff = Foo(foo=1, data=Bar(bar=2, data=Baz(attr=Zeb())))
+
+    # __contains__
+    assert Bar in ff
+    assert Baz in ff
+    assert Baz in ff.data
+    assert Zeb not in ff
+    assert Zeb not in Baz()
+
+    # __getitem__
+    assert isinstance(ff[Bar], Bar)
+    assert isinstance(ff[Baz], Baz)
+
+    assert isinstance(ff[Bar][Baz], Baz)
+    with pytest.raises(KeyError):
+        ff[Baz][Bar]
 
     with pytest.raises(KeyError):
-        foo['grill']
+        ff[Zeb]
+
+    with pytest.raises(KeyError):
+        Bar()[Baz]
 
 
 def test_pack_hdr_overflow():
