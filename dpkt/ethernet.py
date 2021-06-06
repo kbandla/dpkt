@@ -12,6 +12,7 @@ from zlib import crc32
 
 from . import dpkt
 from . import llc
+from .utils import mac_to_str
 from .compat import compat_ord, iteritems, isstr
 
 ETH_CRC_LEN = 4
@@ -70,6 +71,11 @@ class Ethernet(dpkt.Packet):
     )
     _typesw = {}
     _typesw_rev = {}  # reverse mapping
+
+    __pprint_funcs__ = {
+        'dst': mac_to_str,
+        'src': mac_to_str,
+    }
 
     def __init__(self, *args, **kwargs):
         self._next_type = None
@@ -849,3 +855,13 @@ def test_eth_novell():
     assert isinstance(eth.data, dpkt.ipx.IPX)
     assert eth.data.tc == 2
     assert eth.data.data == b''
+
+
+def test_eth_pprint():
+    d = (b'\xfe\xff\x20\x00\x01\x00\x00\x00\x01\x00\x00\x00\x08\x00\x45\x00\x00\x4b\x0f\x49\x00'
+         b'\x00\x80\x11\x63\xa5\x91\xfe\xa0\xed\x91\xfd\x02\xcb\x0b\xc1\x00\x35\x00\x37\x10\xaf'
+         b'\x00\x23\x01\x00\x00\x01\x00\x00\x00\x00\x00\x00\x07\x70\x61\x67\x65\x61\x64\x32\x11'
+         b'\x67\x6f\x6f\x67\x6c\x65\x73\x79\x6e\x64\x69\x63\x61\x74\x69\x6f\x6e\x03\x63\x6f\x6d'
+         b'\x00\x00\x01\x00\x01')
+    eth = Ethernet(d)
+    eth.pprint()  # exercise .pprint() for the coverage tests

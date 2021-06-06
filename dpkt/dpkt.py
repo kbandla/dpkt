@@ -1,7 +1,7 @@
 # $Id: dpkt.py 43 2007-08-02 22:42:59Z jon.oberheide $
 # -*- coding: utf-8 -*-
 """Simple packet creation and parsing."""
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 
 import copy
 import struct
@@ -39,6 +39,12 @@ class _MetaPacket(type):
             t.__hdr_len__ = struct.calcsize(t.__hdr_fmt__)
             t.__hdr_defaults__ = dict(compat_izip(
                 t.__hdr_fields__, [x[2] for x in st]))
+
+        # optional map of functions for pretty printing
+        # {field_name: callable(field_value) -> str, ..}
+        # define as needed in the child protocol classes
+        #t.__pprint_funcs__ = {}  - disabled here to keep the base class lightweight
+
         return t
 
 
@@ -141,6 +147,47 @@ class Packet(_MetaPacket("Temp", (object,), {})):
         if self.data:
             l_.append('data=%r' % self.data)
         return '%s(%s)' % (self.__class__.__name__, ', '.join(l_))
+
+    def pprint(self, indent=1):
+        """Human friendly pretty-print."""
+        l_ = []
+
+        def add_field(fn, fv):
+            """name=value,  # pretty-print form (if available)"""
+            try:
+                l_.append('%s=%r,  # %s' % (fn, fv, self.__pprint_funcs__[fn](fv)))
+            except (AttributeError, KeyError):
+                l_.append('%s=%r,' % (fn, fv))
+
+        for field_name, _, _ in getattr(self, '__hdr__', []):
+            field_value = getattr(self, field_name)
+            if field_name[0] != '_':
+                add_field(field_name, field_value)
+            else:
+                # interpret _private fields as name of properties joined by underscores
+                for prop_name in field_name.split('_'):           # (2)
+                    if isinstance(getattr(self.__class__, prop_name, None), property):
+                        prop_value = getattr(self, prop_name)
+                        add_field(prop_name, prop_value)
+        # (3)
+        for attr_name, attr_value in iteritems(self.__dict__):
+            if (attr_name[0] != '_' and                   # exclude _private attributes
+               attr_name != self.data.__class__.__name__.lower()):  # exclude fields like ip.udp
+                add_field(attr_name, attr_value)
+
+        print('%s(' % self.__class__.__name__)  # class name, opening brace
+        for ii in l_:
+            print(' ' * indent, '%s' % ii)
+
+        # (4)
+        if self.data:
+            if isinstance(self.data, Packet):  # recursively descend to lower layers
+                print(' ' * indent, 'data=', end='')
+                self.data.pprint(indent=indent + 2)
+            else:
+                print(' ' * indent, 'data=%r' % self.data)
+        print(' ' * (indent - 1), end='')
+        print(')  # %s' % self.__class__.__name__)  # closing brace  # class name
 
     def __str__(self):
         return str(self.__bytes__())
