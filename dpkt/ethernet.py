@@ -330,22 +330,14 @@ class MPLSlabel(dpkt.Packet):
     )
     # field names are according to RFC3032
 
-    def unpack(self, buf):
-        dpkt.Packet.unpack(self, buf)
-        self.val = (self._val_exp_s_ttl & 0xfffff000) >> 12  # label value, 20 bits
-        self.exp = (self._val_exp_s_ttl & 0x00000e00) >> 9   # experimental use, 3 bits
-        self.s = (self._val_exp_s_ttl & 0x00000100) >> 8     # bottom of stack flag, 1 bit
-        self.ttl = self._val_exp_s_ttl & 0x000000ff          # time to live, 8 bits
-        self.data = b''
-
-    def pack_hdr(self):
-        self._val_exp_s_ttl = (
-            ((self.val & 0xfffff) << 12) |
-            ((self.exp & 7) << 9) |
-            ((self.s & 1) << 8) |
-            ((self.ttl & 0xff))
-        )
-        return dpkt.Packet.pack_hdr(self)
+    __bit_fields__ = {
+        '_val_exp_s_ttl': [
+            ('val', 20),  # label value, 20 bits
+            ('exp', 3),   # experimental use, 3 bits
+            ('s', 1),     # bottom of stack flag, 1 bit
+            ('ttl', 8),   # time to live, 8 bits
+        ]
+    }
 
     def as_tuple(self):  # backward-compatible representation
         return (self.val, self.exp, self.ttl)
@@ -358,21 +350,13 @@ class VLANtag8021Q(dpkt.Packet):
         ('_pri_cfi_id', 'H', 0),
         ('type', 'H', ETH_TYPE_IP)
     )
-
-    def unpack(self, buf):
-        dpkt.Packet.unpack(self, buf)
-        self.pri = (self._pri_cfi_id & 0xe000) >> 13   # priority, 3 bits
-        self.cfi = (self._pri_cfi_id & 0x1000) >> 12   # canonical format indicator, 1 bit
-        self.id = self._pri_cfi_id & 0x0fff           # VLAN id, 12 bits
-        self.data = b''
-
-    def pack_hdr(self):
-        self._pri_cfi_id = (
-            ((self.pri & 7) << 13) |
-            ((self.cfi & 1) << 12) |
-            ((self.id & 0xfff))
-        )
-        return dpkt.Packet.pack_hdr(self)
+    __bit_fields__ = {
+        '_pri_cfi_id': [
+            ('pri', 3),  # priority, 3 bits
+            ('cfi', 1),  # canonical format indicator, 1 bit
+            ('id', 12),  # VLAN id, 12 bits
+        ]
+    }
 
     def as_tuple(self):
         return (self.id, self.pri, self.cfi)
@@ -392,19 +376,16 @@ class VLANtagISL(dpkt.Packet):
         ('indx', 'H', 0),
         ('res', 'H', 0)
     )
-
-    def unpack(self, buf):
-        dpkt.Packet.unpack(self, buf)
-        self.type = (self._type_pri & 0xf0) >> 4  # encapsulation type, 4 bits; 0 means Ethernet
-        self.pri = self._type_pri & 0x03  # user defined bits, 2 bits are used; means priority
-        self.id = self._id_bpdu >> 1  # VLAN id
-        self.bpdu = self._id_bpdu & 1
-        self.data = b''
-
-    def pack_hdr(self):
-        self._type_pri = ((self.type & 0xf) << 4) | (self.pri & 0x3)
-        self._id_bpdu = ((self.id & 0x7fff) << 1) | (self.bpdu & 1)
-        return dpkt.Packet.pack_hdr(self)
+    __bit_fields__ = {
+        '_type_pri': [
+            ('type', 4),  # encapsulation type, 4 bits; 0 means Ethernet
+            ('pri', 4)    # user defined bits, 2 lo bits are used; means priority
+        ],
+        '_id_bpdu': [
+            ('id', 15),   # vlan id, 15 bits
+            ('bpdu', 1)   # bridge protocol data unit indicator
+        ]
+    }
 
 
 # Unit tests

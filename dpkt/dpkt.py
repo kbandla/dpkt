@@ -29,6 +29,45 @@ class PackError(Error):
 class _MetaPacket(type):
     def __new__(cls, clsname, clsbases, clsdict):
         t = type.__new__(cls, clsname, clsbases, clsdict)
+
+        # create getter and setter properties for the bit fields
+        bit_fields = getattr(t, '__bit_fields__', {})
+        for ph_name, field_defs in bit_fields.items():  # ph_name: name of the placeholder variable
+            bits_total = sum(bf[1] for bf in field_defs)  # total size in bits
+            bits_used = 0
+
+            for (bf_name, bf_size) in field_defs:
+                if not bf_name.startswith('_'):  # do not create properties for _private fields
+                    shift = bits_total - bits_used - bf_size
+                    mask = (2**bf_size - 1) << shift  # all zeroes except the field bits
+                    mask_inv = (2**bits_total - 1) - mask  # inverse mask
+
+                    def make_getter(ph_name=ph_name, mask=mask, shift=shift):
+                        def getter_func(self):
+                            ph_val = getattr(self, ph_name)
+                            return (ph_val & mask) >> shift
+                        return getter_func
+
+                    def make_setter(ph_name=ph_name, mask_inv=mask_inv, shift=shift):
+                        def setter_func(self, bf_val):
+                            ph_val = getattr(self, ph_name)
+                            val = (bf_val << shift) | (ph_val & mask_inv)
+                            setattr(self, ph_name, val)
+                        return setter_func
+
+                    clsdict[bf_name] = property(make_getter(), make_setter())
+                    # TODO: we could add property delete to set the field back to its default value
+
+                bits_used += bf_size
+                assert bits_total - bits_used >= 0
+            assert bits_used == bits_total
+
+            # make sure the sizes match
+            for hdr in getattr(t, '__hdr__', []):
+                if hdr[0] == ph_name:
+                    assert bits_total == struct.calcsize(hdr[1]) * 8
+                    break
+
         st = getattr(t, '__hdr__', None)
         if st is not None:
             # XXX - __slots__ only created in __new__()

@@ -35,37 +35,18 @@ class IP6(dpkt.Packet):
         ('src', '16s', b''),
         ('dst', '16s', b'')
     )
-
+    __bit_fields__ = {
+        '_v_fc_flow': [
+            ('v', 4),      # version, 4 hi bits
+            ('fc', 8),     # traffic class, 8 bits
+            ('flow', 20),  # flow label, 20 lo bits
+        ]
+    }
     __pprint_funcs__ = {
         'src': inet_to_str,
         'dst': inet_to_str
     }
-
     _protosw = ip.IP._protosw
-
-    @property
-    def v(self):
-        return self._v_fc_flow >> 28
-
-    @v.setter
-    def v(self, v):
-        self._v_fc_flow = (self._v_fc_flow & ~0xf0000000) | (v << 28)
-
-    @property
-    def fc(self):
-        return (self._v_fc_flow >> 20) & 0xff
-
-    @fc.setter
-    def fc(self, v):
-        self._v_fc_flow = (self._v_fc_flow & ~0xff00000) | (v << 20)
-
-    @property
-    def flow(self):
-        return self._v_fc_flow & 0xfffff
-
-    @flow.setter
-    def flow(self, v):
-        self._v_fc_flow = (self._v_fc_flow & ~0xfffff) | (v & 0xfffff)
 
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
@@ -225,16 +206,14 @@ class IP6RoutingHeader(IP6ExtensionHeader):
         ('len', 'B', 0),  # extension data length in 8 octect units (ignoring first 8 octets) (<= 46 for type 0)
         ('type', 'B', 0),  # routing type (currently, only 0 is used)
         ('segs_left', 'B', 0),  # remaining segments in route, until destination (<= 23)
-        ('rsvd_sl_bits', 'I', 0),  # reserved (1 byte), strict/loose bitmap for addresses
+        ('_rsvd_sl_bits', 'I', 0)
     )
-
-    @property
-    def sl_bits(self):
-        return self.rsvd_sl_bits & 0xffffff
-
-    @sl_bits.setter
-    def sl_bits(self, v):
-        self.rsvd_sl_bits = (self.rsvd_sl_bits & ~0xfffff) | (v & 0xfffff)
+    __bit_fields__ = {
+        '_rsvd_sl_bits': [
+            ('_rsvd', 8),    # reserved (1 byte)
+            ('sl_bits', 24)  # strict/loose bitmap for addresses
+        ]
+    }
 
     def unpack(self, buf):
         hdr_size = 8
@@ -257,38 +236,29 @@ class IP6RoutingHeader(IP6ExtensionHeader):
 class IP6FragmentHeader(IP6ExtensionHeader):
     __hdr__ = (
         ('nxt', 'B', 0),  # next extension header protocol
-        ('resv', 'B', 0),  # reserved, set to 0
-        ('frag_off_resv_m', 'H', 0),  # frag offset (13 bits), reserved zero (2 bits), More frags flag
+        ('_resv', 'B', 0),  # reserved, set to 0
+        ('_frag_off_resv_m', 'H', 0),
         ('id', 'I', 0)  # fragments id
     )
+    __bit_fields__ = {
+        '_frag_off_resv_m': [
+            ('frag_off', 13),  # frag offset, 13 bits
+            ('_resv', 2),      # reserved zero (2 bits)
+            ('m_flag', 1),     # more frags flag
+        ]
+    }
 
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
         self.length = self.__hdr_len__
         self.data = b''
 
-    @property
-    def frag_off(self):
-        return self.frag_off_resv_m >> 3
-
-    @frag_off.setter
-    def frag_off(self, v):
-        self.frag_off_resv_m = (self.frag_off_resv_m & ~0xfff8) | (v << 3)
-
-    @property
-    def m_flag(self):
-        return self.frag_off_resv_m & 1
-
-    @m_flag.setter
-    def m_flag(self, v):
-        self.frag_off_resv_m = (self.frag_off_resv_m & 0xfffe) | (v & 1)
-
 
 class IP6AHHeader(IP6ExtensionHeader):
     __hdr__ = (
         ('nxt', 'B', 0),  # next extension header protocol
         ('len', 'B', 0),  # length of header in 4 octet units (ignoring first 2 units)
-        ('resv', 'H', 0),  # reserved, 2 bytes of 0
+        ('_resv', 'H', 0),  # reserved, 2 bytes of 0
         ('spi', 'I', 0),  # SPI security parameter index
         ('seq', 'I', 0)  # sequence no.
     )
@@ -541,8 +511,8 @@ def test_ip6_routing_properties():
 def test_ip6_fragment_properties():
     ip6fh = IP6FragmentHeader()
     assert ip6fh.frag_off == 0
-    ip6fh.frag_off = 12345
-    assert ip6fh.frag_off == 12345
+    ip6fh.frag_off = 1234
+    assert ip6fh.frag_off == 1234
 
     assert ip6fh.m_flag == 0
     ip6fh.m_flag = 1

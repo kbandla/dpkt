@@ -30,79 +30,43 @@ class IP(dpkt.Packet):
         ('tos', 'B', 0),
         ('len', 'H', 20),
         ('id', 'H', 0),
-        ('off', 'H', 0),
+        ('_off', 'H', 0),  # XXX - ip.off is deprecated and renamed to ip._off
         ('ttl', 'B', 64),
         ('p', 'B', 0),
         ('sum', 'H', 0),
         ('src', '4s', b'\x00' * 4),
         ('dst', '4s', b'\x00' * 4)
     )
-
+    __bit_fields__ = {
+        '_v_hl': [
+            ('v', 4),   # version, 4 bits
+            ('hl', 4),  # header len, 4 bits
+        ],
+        '_off': [
+            ('rf', 1),  # reserved bit
+            ('df', 1),  # don't fragment
+            ('mf', 1),  # more fragments
+            ('offset', 13)  # fragment offset, 13 bits
+        ]
+    }
     __pprint_funcs__ = {
         'dst': inet_to_str,
         'src': inet_to_str,
         'sum': hex,  # display checksum in hex
         'p': get_ip_proto_name
     }
-
     _protosw = {}
     opts = b''
 
     def __init__(self, *args, **kwargs):
         super(IP, self).__init__(*args, **kwargs)
 
+        self.off = self._off  # XXX - compatibility; to be deprecated
+
         # If IP packet is not initialized by string and the len field has
         # been rewritten.
         if not args and 'len' not in kwargs:
             self.len = self.__len__()
-
-    @property
-    def v(self):
-        return self._v_hl >> 4
-
-    @v.setter
-    def v(self, v):
-        self._v_hl = (v << 4) | (self._v_hl & 0xf)
-
-    @property
-    def hl(self):
-        return self._v_hl & 0xf
-
-    @hl.setter
-    def hl(self, hl):
-        self._v_hl = (self._v_hl & 0xf0) | hl
-
-    @property
-    def rf(self):
-        return (self.off >> 15) & 0x1
-
-    @rf.setter
-    def rf(self, rf):
-        self.off = (self.off & ~IP_RF) | (rf << 15)
-
-    @property
-    def df(self):
-        return (self.off >> 14) & 0x1
-
-    @df.setter
-    def df(self, df):
-        self.off = (self.off & ~IP_DF) | (df << 14)
-
-    @property
-    def mf(self):
-        return (self.off >> 13) & 0x1
-
-    @mf.setter
-    def mf(self, mf):
-        self.off = (self.off & ~IP_MF) | (mf << 13)
-
-    @property
-    def offset(self):
-        return (self.off & IP_OFFMASK) << 3
-
-    @offset.setter
-    def offset(self, offset):
-        self.off = (self.off & ~IP_OFFMASK) | (offset >> 3)
 
     def __len__(self):
         return self.__hdr_len__ + len(self.opts) + len(self.data)
@@ -111,7 +75,7 @@ class IP(dpkt.Packet):
         self.len = self.__len__()
         if self.sum == 0:
             self.sum = dpkt.in_cksum(self.pack_hdr() + bytes(self.opts))
-            if (self.p == 6 or self.p == 17) and (self.off & (IP_MF | IP_OFFMASK)) == 0 and \
+            if (self.p == 6 or self.p == 17) and (self._off & (IP_MF | IP_OFFMASK)) == 0 and \
                     isinstance(self.data, dpkt.Packet) and self.data.sum == 0:
                 # Set zeroed TCP and UDP checksums for non-fragments.
                 p = bytes(self.data)
@@ -122,9 +86,9 @@ class IP(dpkt.Packet):
 
                 # RFC 768 (Fields):
                 # If the computed checksum is zero, it is transmitted as all
-                # ones (the equivalent in one's complement arithmetic). An all
-                # zero transmitted checksum value means that the transmitter
-                # generated no checksum (for debugging or for higher level
+                # ones (the equivalent in one's complement arithmetic). An all
+                # zero transmitted checksum value means that the transmitter
+                # generated no checksum (for debugging or for higher level
                 # protocols that don't care).
                 if self.p == 17 and self.data.sum == 0:
                     self.data.sum = 0xffff

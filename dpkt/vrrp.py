@@ -26,24 +26,15 @@ class VRRP(dpkt.Packet):
         ('advtime', 'B', 0),
         ('sum', 'H', 0),
     )
+    __bit_fields__ = {
+        '_v_type': [
+            ('v', 4),
+            ('type', 4)
+        ]
+    }
+
     addrs = ()
     auth = ''
-
-    @property
-    def v(self):  # high 4 bits of _v_type
-        return self._v_type >> 4
-
-    @v.setter
-    def v(self, v):
-        self._v_type = (self._v_type & 0x0f) | (v << 4)
-
-    @property
-    def type(self):  # low 4 bits of _v_type
-        return self._v_type & 0x0f
-
-    @type.setter
-    def type(self, v):
-        self._v_type = (self._v_type & 0xf0) | (v & 0x0f)
 
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)

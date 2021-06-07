@@ -34,22 +34,12 @@ class PPPoE(dpkt.Packet):
         ('session', 'H', 0),
         ('len', 'H', 0)  # payload length
     )
-
-    @property
-    def v(self):
-        return self._v_type >> 4
-
-    @v.setter
-    def v(self, v):
-        self._v_type = (v << 4) | (self._v_type & 0xf)
-
-    @property
-    def type(self):
-        return self._v_type & 0xf
-
-    @type.setter
-    def type(self, t):
-        self._v_type = (self._v_type & 0xf0) | t
+    __bit_fields__ = {
+        '_v_type': [
+            ('v', 4),
+            ('type', 4)
+        ]
+    }
 
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)

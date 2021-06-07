@@ -20,30 +20,20 @@ class AOE(dpkt.Packet):
     """
 
     __hdr__ = (
-        ('ver_fl', 'B', 0x10),
+        ('_ver_fl', 'B', 0x10),
         ('err', 'B', 0),
         ('maj', 'H', 0),
         ('min', 'B', 0),
         ('cmd', 'B', 0),
         ('tag', 'I', 0),
     )
+    __bit_fields__ = {
+        '_ver_fl': [
+            ('ver', 4),
+            ('fl', 4)
+        ]
+    }
     _cmdsw = {}
-
-    @property
-    def ver(self):
-        return self.ver_fl >> 4
-
-    @ver.setter
-    def ver(self, ver):
-        self.ver_fl = (ver << 4) | (self.ver_fl & 0xf)
-
-    @property
-    def fl(self):
-        return self.ver_fl & 0xf
-
-    @fl.setter
-    def fl(self, fl):
-        self.ver_fl = (self.ver_fl & 0xf0) | fl
 
     @classmethod
     def set_cmd(cls, cmd, pktclass):
@@ -90,13 +80,13 @@ def _mod_init():
 def test_creation():
     aoe = AOE()
     # hdr fields
-    assert aoe.ver_fl == 0x10
+    assert aoe._ver_fl == 0x10
     assert aoe.err == 0
     assert aoe.maj == 0
     assert aoe.min == 0
     assert aoe.cmd == 0
     assert aoe.tag == 0
-    assert bytes(aoe) == b'\x10' + b'\x00'*9
+    assert bytes(aoe) == b'\x10' + b'\x00' * 9
 
 
 def test_properties():
@@ -108,11 +98,11 @@ def test_properties():
     # property setters
     aoe.ver = 2
     assert aoe.ver == 2
-    assert aoe.ver_fl == 0x20
+    assert aoe._ver_fl == 0x20
 
     aoe.fl = 12
     assert aoe.fl == 12
-    assert aoe.ver_fl == 0x2C
+    assert aoe._ver_fl == 0x2C
 
 
 def test_unpack():

@@ -73,42 +73,18 @@ class TCP(dpkt.Packet):
         ('sum', 'H', 0),
         ('urp', 'H', 0)
     )
-
+    __bit_fields__ = {
+        '_off_flags': [
+            ('off', 4),    # 4 hi bits
+            ('_rsv', 3),   # 3 bits reserved
+            ('flags', 9),  # 9 lo bits
+        ]
+    }
     __pprint_funcs__ = {
         'flags': tcp_flags_to_str,
         'sum': hex,  # display checksum in hex
     }
-
     opts = b''
-
-    # getters and setters to process _off_flags
-
-    #   0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
-    # +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
-    # |               |           | N | C | E | U | A | P | R | S | F |
-    # | Header Length | Reserved  | S | W | C | R | C | S | S | Y | I |
-    # |               |           |   | R | E | G | K | H | T | N | N |
-    # +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
-
-    @property
-    def off(self):
-        # 2-byte word = 16 bits; shift right 12 bits to get 4 hi bits
-        return self._off_flags >> 12
-
-    @off.setter
-    def off(self, off):
-        # 2-byte word with 4 hi bits zeroed = 0b0000111111111111 = 0x0fff
-        self._off_flags = (off << 12) | (self._off_flags & 0xfff)
-
-    @property
-    def flags(self):
-        # 9 lo bits 0b111111111 = 0x1ff
-        return self._off_flags & 0x1ff
-
-    @flags.setter
-    def flags(self, flags):
-        # 2-byte word with 9 lo bits zeroed = 0b1111111000000000 = 0xfe00
-        self._off_flags = (self._off_flags & 0xfe00) | flags
 
     def __len__(self):
         return self.__hdr_len__ + len(self.opts) + len(self.data)
