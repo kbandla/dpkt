@@ -55,8 +55,15 @@ class _MetaPacket(type):
                             setattr(self, ph_name, val)
                         return setter_func
 
-                    clsdict[bf_name] = property(make_getter(), make_setter())
-                    # TODO: we could add property delete to set the field back to its default value
+                    # delete property to set the bit field back to its default value
+                    def make_delete(ph_name=ph_name, mask=mask, mask_inv=mask_inv):
+                        def delete_func(self):
+                            ph_val = getattr(self, ph_name)
+                            ph_val_new = (self.__hdr_defaults__[ph_name] & mask) | (ph_val & mask_inv)
+                            setattr(self, ph_name, ph_val_new)
+                        return delete_func
+
+                    clsdict[bf_name] = property(make_getter(), make_setter(), make_delete())
 
                 bits_used += bf_size
                 assert bits_total - bits_used >= 0

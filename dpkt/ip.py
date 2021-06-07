@@ -428,10 +428,15 @@ def test_property_setters():
     assert ip.v == 4
     ip.v = 6
     assert ip.v == 6
+    # test property delete
+    del ip.v
+    assert ip.v == 4  # back to default
 
     assert ip.hl == 5
     ip.hl = 7
     assert ip.hl == 7
+    del ip.hl
+    assert ip.hl == 5
 
 
 def test_default_udp_checksum():

@@ -534,6 +534,14 @@ def test_ip6_properties():
     ip6.flow = 4
     assert ip6.flow == 4
 
+    # property delete
+    del ip6.v
+    del ip6.fc
+    del ip6.flow
+    assert ip6.v == 6
+    assert ip6.fc == 0
+    assert ip6.flow == 0
+
 
 def test_proto_accessors():
     class Proto:
