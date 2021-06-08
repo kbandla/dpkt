@@ -11,7 +11,7 @@ from .utils import inet_to_str
 _ip_proto_names = {}  # {1: 'ICMP', 6: 'TCP', 17: 'UDP', etc.}
 
 
-def get_proto_name(p):
+def get_ip_proto_name(p):
     return _ip_proto_names.get(p, None)
 
 
@@ -42,7 +42,7 @@ class IP(dpkt.Packet):
         'dst': inet_to_str,
         'src': inet_to_str,
         'sum': hex,  # display checksum in hex
-        'p': get_proto_name
+        'p': get_ip_proto_name
     }
 
     _protosw = {}
@@ -487,5 +487,5 @@ def test_default_udp_checksum():
 
 
 def test_get_proto_name():
-    assert get_proto_name(6) == 'TCP'
-    assert get_proto_name(999) is None
+    assert get_ip_proto_name(6) == 'TCP'
+    assert get_ip_proto_name(999) is None
