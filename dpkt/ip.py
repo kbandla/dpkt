@@ -8,6 +8,12 @@ from . import dpkt
 from .compat import iteritems
 from .utils import inet_to_str
 
+_ip_proto_names = {}  # {1: 'ICMP', 6: 'TCP', 17: 'UDP', etc.}
+
+
+def get_proto_name(p):
+    return _ip_proto_names.get(p, None)
+
 
 class IP(dpkt.Packet):
     """Internet Protocol.
@@ -36,6 +42,7 @@ class IP(dpkt.Packet):
         'dst': inet_to_str,
         'src': inet_to_str,
         'sum': hex,  # display checksum in hex
+        'p': get_proto_name
     }
 
     _protosw = {}
@@ -108,8 +115,7 @@ class IP(dpkt.Packet):
                     isinstance(self.data, dpkt.Packet) and self.data.sum == 0:
                 # Set zeroed TCP and UDP checksums for non-fragments.
                 p = bytes(self.data)
-                s = dpkt.struct.pack('>4s4sxBH', self.src, self.dst,
-                                     self.p, len(p))
+                s = dpkt.struct.pack('>4s4sxBH', self.src, self.dst, self.p, len(p))
                 s = dpkt.in_cksum_add(0, s)
                 s = dpkt.in_cksum_add(s, p)
                 self.data.sum = dpkt.in_cksum_done(s)
@@ -345,10 +351,11 @@ def __load_protos():
     g = globals()
     for k, v in iteritems(g):
         if k.startswith('IP_PROTO_'):
-            name = k[9:].lower()
+            name = k[9:]
+            _ip_proto_names[v] = name
             try:
-                mod = __import__(name, g, level=1)
-                IP.set_proto(v, getattr(mod, name.upper()))
+                mod = __import__(name.lower(), g, level=1)
+                IP.set_proto(v, getattr(mod, name))
             except (ImportError, AttributeError):
                 continue
 
@@ -477,3 +484,8 @@ def test_default_udp_checksum():
     # during calculation the checksum was evaluated to 0x0000
     # this was then conditionally set to 0xffff per RFC768
     assert ip.data.sum == 0xffff
+
+
+def test_get_proto_name():
+    assert get_proto_name(6) == 'TCP'
+    assert get_proto_name(999) is None
