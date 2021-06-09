@@ -75,7 +75,7 @@ def pack_name(name, off, label_ptrs):
     for i, label in enumerate(labels):
         key = b'.'.join(labels[i:]).upper()
         ptr = label_ptrs.get(key)
-        if not ptr:
+        if ptr is None:
             if len(key) > 1:
                 ptr = off + len(buf)
                 if ptr < 0xc000:
