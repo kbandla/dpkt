@@ -185,7 +185,7 @@ class Packet(_MetaPacket("Temp", (object,), {})):
         for attr_name, attr_value in iteritems(self.__dict__):
             if (attr_name[0] != '_' and                   # exclude _private attributes
                attr_name != self.data.__class__.__name__.lower()):  # exclude fields like ip.udp
-                if type(attr_value) == list:  # expand lists to print one item per line
+                if type(attr_value) == list and attr_value:  # expand non-empty lists to print one item per line
                     l_.append('%s=[' % attr_name)
                     for av1 in attr_value:
                         l_.append('  ' + repr(av1) + ',')  # XXX - TODO: support pretty-print

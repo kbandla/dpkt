@@ -591,6 +591,9 @@ def test_eth_mpls_stacked():  # Eth - MPLS - MPLS - IP - ICMP
     assert isinstance(eth.data, ip.IP)
     assert isinstance(eth.data.data, icmp.ICMP)
 
+    # exercise .pprint() for the coverage tests
+    eth.pprint()
+
     # construction
     assert str(eth) == str(s), 'pack 1'
     assert str(eth) == str(s), 'pack 2'
@@ -855,11 +858,3 @@ def test_eth_novell():
     assert isinstance(eth.data, dpkt.ipx.IPX)
     assert eth.data.tc == 2
     assert eth.data.data == b''
-
-
-def test_eth_pprint():
-    d = (b'\xff\xff\xff\xff\xff\xff\xca\x03\x0d\xb4\x00\x1c\x81\x00\x00\x64\x81\x00\x00\xc8\x08\x06'
-         b'\x00\x01\x08\x00\x06\x04\x00\x01\xca\x03\x0d\xb4\x00\x1c\xc0\xa8\x02\xc8\x00\x00\x00\x00'
-         b'\x00\x00\xc0\xa8\x02\xfe\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00')
-    eth = Ethernet(d)
-    eth.pprint()  # exercise .pprint() for the coverage tests
