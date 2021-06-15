@@ -132,6 +132,14 @@ class CipherSuite(object):
         return self.auth.startswith('anon')
 
 
+class UnknownCipherSuite(object):
+    def __init__(self, code):
+        self.code = code
+
+    def __repr__(self):
+        return 'UnknownCipherSuite(0x%04x)' % self.code
+
+
 # master list of CipherSuite Objects
 # Full list from IANA:
 #   https://www.iana.org/assignments/tls-parameters/tls-parameters.xhtml

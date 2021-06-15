@@ -211,6 +211,7 @@ def parse_extensions(buf):
         ext_data, parsed = parse_variable_array(buf[pointer:], 2)
         extensions.append((ext_type, ext_data))
         pointer += parsed
+
     return extensions
 
 
@@ -292,21 +293,21 @@ class TLSClientHello(dpkt.Packet):
         dpkt.Packet.unpack(self, buf)
         # now session, cipher suites, extensions are in self.data
         self.session_id, pointer = parse_variable_array(self.data, 1)
-        # print 'pointer',pointer
+
         # handle ciphersuites
         ciphersuites, parsed = parse_variable_array(self.data[pointer:], 2)
         pointer += parsed
         num_ciphersuites = int(len(ciphersuites) / 2)
-        try:
-            self.ciphersuites = [
-                ssl_ciphersuites.BY_CODE[code] for code in struct.unpack('!' + num_ciphersuites * 'H', ciphersuites)]
-        except KeyError as e:
-            raise SSL3Exception('Unknown or invalid cipher suite type %x' % int(e.args[0]))
+        self.ciphersuites = [
+            ssl_ciphersuites.BY_CODE.get(code, ssl_ciphersuites.UnknownCipherSuite(code))
+            for code in struct.unpack('!' + num_ciphersuites * 'H', ciphersuites)]
         # check len(ciphersuites) % 2 == 0 ?
+
         # compression methods
         compression_methods, parsed = parse_variable_array(self.data[pointer:], 1)
         pointer += parsed
         self.compression_methods = struct.unpack('{0}B'.format(len(compression_methods)), compression_methods)
+
         # Parse extensions if present
         if len(self.data[pointer:]) >= 6:
             self.extensions = parse_extensions(self.data[pointer:])
@@ -322,22 +323,29 @@ class TLSServerHello(dpkt.Packet):
         try:
             dpkt.Packet.unpack(self, buf)
             self.session_id, pointer = parse_variable_array(self.data, 1)
+
             # single cipher suite
-            try:
-                code = struct.unpack('!H', self.data[pointer:pointer + 2])[0]
-                self.cipher_suite = ssl_ciphersuites.BY_CODE[code]
-            except KeyError as e:
-                raise SSL3Exception('Unknown or invalid cipher suite type %x' % int(e.args[0]))
+            code = struct.unpack('!H', self.data[pointer:pointer + 2])[0]
+            self.ciphersuite = \
+                ssl_ciphersuites.BY_CODE.get(code, ssl_ciphersuites.UnknownCipherSuite(code))
             pointer += 2
+
             # single compression method
-            self.compression = struct.unpack('!B', self.data[pointer:pointer + 1])[0]
+            self.compression_method = struct.unpack('!B', self.data[pointer:pointer + 1])[0]
             pointer += 1
+
             # Parse extensions if present
             if len(self.data[pointer:]) >= 6:
                 self.extensions = parse_extensions(self.data[pointer:])
+
         except struct.error:
             # probably data too short
             raise dpkt.NeedData
+
+        # XXX - legacy, to be deprecated
+        # for whatever reason these attributes were named differently than their sister attributes in TLSClientHello
+        self.cipher_suite = self.ciphersuite
+        self.compression = self.compression_method
 
 
 class TLSCertificate(dpkt.Packet):
@@ -405,6 +413,9 @@ class TLSHandshake(dpkt.Packet):
         ('type', 'B', 0),
         ('length_bytes', '3s', 0),
     )
+    __pprint_funcs__ = {
+        'length_bytes': lambda x: struct.unpack('!I', b'\x00' + x)[0]
+    }
 
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
@@ -881,7 +892,6 @@ def test_clienthello_invalidcipher():
     # NOTE: this test relies on ciphersuite 0x001c not being in ssl_ciphersuites.py CIPHERSUITES.
     # IANA has reserved this value to avoid conflict with SSLv3, but if it gets reassigned,
     # a new value should be chosen to fix this test.
-    import pytest
     from binascii import unhexlify
 
     buf = unhexlify(
@@ -891,9 +901,10 @@ def test_clienthello_invalidcipher():
         '02'    # session_id
         '0002'  # ciphersuites len
         '001c'  # ciphersuite (reserved; not implemented
+        '00'
     )
-    with pytest.raises(SSL3Exception, match='Unknown or invalid cipher suite type 1c'):
-        TLSClientHello(buf)
+    th = TLSClientHello(buf)
+    assert isinstance(th.ciphersuites[0], ssl_ciphersuites.UnknownCipherSuite)
 
 
 def test_serverhello_invalidcipher():
@@ -909,9 +920,10 @@ def test_serverhello_invalidcipher():
         '01'    # session_id length
         '02'    # session_id
         '001c'  # ciphersuite (reserved; not implemented
+        '00'
     )
-    with pytest.raises(SSL3Exception, match='Unknown or invalid cipher suite type 1c'):
-        TLSServerHello(buf)
+    th = TLSServerHello(buf)
+    assert isinstance(th.cipher_suite, ssl_ciphersuites.UnknownCipherSuite)
 
     # remove the final byte from the ciphersuite so it will fail unpacking
     buf = buf[:-1]
@@ -957,3 +969,25 @@ def test_sslfactory():
     )
     ssl2 = SSLFactory(buf_ssl2)
     assert isinstance(ssl2, SSL2)
+
+
+def test_extensions():
+    from binascii import unhexlify
+    buf = unhexlify(
+        b"010000e0"  # handshake header
+        b"0303"  # version
+        b"60b92b07b6b0e1dffd0ac313788a6d54056d24f73c4d7425631e29b11be97b22"  # rand
+        b"20b3330000ab415e3356226b305993bfb76b2d50bfaeb5298549723b594c999479"  # session id
+        # cipher suites
+        b"0026c02cc02bc030c02fc024c023c028c027c00ac009c014c013009d009c003d003c0035002f000a"
+        b"0100"  # compresssion methods
+        # extensions
+        b"006d00000023002100001e73656c662e6576656e74732e646174612e6d6963726f736f66742e636f"
+        b"6d000500050100000000000a00080006001d00170018000b00020100000d001a0018080408050806"
+        b"0401050102010403050302030202060106030023000000170000ff01000100"
+        b"ffeeddcc"  # extra 4 bytes
+    )
+    handshake = TLSHandshake(buf)
+    hello = handshake.data
+    assert len(hello.extensions) == 8
+    assert hello.extensions[-1] == (65281, b'\x00')
