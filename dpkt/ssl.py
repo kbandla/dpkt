@@ -299,7 +299,7 @@ class TLSClientHello(dpkt.Packet):
         pointer += parsed
         num_ciphersuites = int(len(ciphersuites) / 2)
         self.ciphersuites = [
-            ssl_ciphersuites.BY_CODE.get(code, ssl_ciphersuites.UnknownCipherSuite(code))
+            ssl_ciphersuites.BY_CODE.get(code, ssl_ciphersuites.get_unknown_ciphersuite(code))
             for code in struct.unpack('!' + num_ciphersuites * 'H', ciphersuites)]
         # check len(ciphersuites) % 2 == 0 ?
 
@@ -327,7 +327,7 @@ class TLSServerHello(dpkt.Packet):
             # single cipher suite
             code = struct.unpack('!H', self.data[pointer:pointer + 2])[0]
             self.ciphersuite = \
-                ssl_ciphersuites.BY_CODE.get(code, ssl_ciphersuites.UnknownCipherSuite(code))
+                ssl_ciphersuites.BY_CODE.get(code, ssl_ciphersuites.get_unknown_ciphersuite(code))
             pointer += 2
 
             # single compression method
@@ -904,7 +904,7 @@ def test_clienthello_invalidcipher():
         '00'
     )
     th = TLSClientHello(buf)
-    assert isinstance(th.ciphersuites[0], ssl_ciphersuites.UnknownCipherSuite)
+    assert th.ciphersuites[0].name == 'Unknown'
 
 
 def test_serverhello_invalidcipher():
@@ -923,7 +923,7 @@ def test_serverhello_invalidcipher():
         '00'
     )
     th = TLSServerHello(buf)
-    assert isinstance(th.cipher_suite, ssl_ciphersuites.UnknownCipherSuite)
+    assert th.ciphersuite.name == 'Unknown'
 
     # remove the final byte from the ciphersuite so it will fail unpacking
     buf = buf[:-1]
