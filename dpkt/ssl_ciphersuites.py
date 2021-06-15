@@ -725,7 +725,9 @@ class TestCipherSuites(object):
 
     def test_repr(self):
         cs = CipherSuite(0x0009, 'RSA', '         ', 'DES     ', 'CBC ', 'SHA')
-        assert repr(cs) == "CipherSuite(TLS_RSA_WITH_DES_CBC_SHA)"
+        assert repr(cs) == "CipherSuite(0x0009, TLS_RSA_WITH_DES_CBC_SHA)"
 
         assert cs.mac_size == 20
         assert cs.block_size == 8
+
+        repr(BY_CODE[0x6a6a]) == "CipherSuite(0x6a6a, GREASE)"
