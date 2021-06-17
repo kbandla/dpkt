@@ -83,7 +83,7 @@ class CipherSuite(object):
             return self._name
 
     def __repr__(self):
-        return 'CipherSuite(%s)' % self.name
+        return 'CipherSuite(0x%04x, %s)' % (self.code, self.name)
 
     MAC_SIZES = {
         'MD5': 16,
@@ -130,6 +130,10 @@ class CipherSuite(object):
     @property
     def anonymous(self):
         return self.auth.startswith('anon')
+
+
+def get_unknown_ciphersuite(code):
+    return CipherSuite(code, '', '', '', '', '', name='Unknown')
 
 
 # master list of CipherSuite Objects
@@ -557,6 +561,24 @@ CIPHERSUITES = [
     CipherSuite(0xccad, 'DHE  ', 'PSK    ', 'CHACHA20', 'POLY1305', 'SHA256'),
     CipherSuite(0xccae, 'RSA  ', 'PSK    ', 'CHACHA20', 'POLY1305', 'SHA256'),
 
+    # RFC8701  // GREASE (Generate Random Extensions And Sustain Extensibility)
+    CipherSuite(0x0a0a, '', '', '', '', '', 'GREASE'),
+    CipherSuite(0x1a1a, '', '', '', '', '', 'GREASE'),
+    CipherSuite(0x2a2a, '', '', '', '', '', 'GREASE'),
+    CipherSuite(0x3a3a, '', '', '', '', '', 'GREASE'),
+    CipherSuite(0x4a4a, '', '', '', '', '', 'GREASE'),
+    CipherSuite(0x5a5a, '', '', '', '', '', 'GREASE'),
+    CipherSuite(0x6a6a, '', '', '', '', '', 'GREASE'),
+    CipherSuite(0x7a7a, '', '', '', '', '', 'GREASE'),
+    CipherSuite(0x8a8a, '', '', '', '', '', 'GREASE'),
+    CipherSuite(0x9a9a, '', '', '', '', '', 'GREASE'),
+    CipherSuite(0xaaaa, '', '', '', '', '', 'GREASE'),
+    CipherSuite(0xbaba, '', '', '', '', '', 'GREASE'),
+    CipherSuite(0xcaca, '', '', '', '', '', 'GREASE'),
+    CipherSuite(0xdada, '', '', '', '', '', 'GREASE'),
+    CipherSuite(0xeaea, '', '', '', '', '', 'GREASE'),
+    CipherSuite(0xfafa, '', '', '', '', '', 'GREASE'),
+
     # Unassigned: 0xccaf-0xfefd
     # Reserved: 0xfefe-0xffff
 
@@ -703,7 +725,9 @@ class TestCipherSuites(object):
 
     def test_repr(self):
         cs = CipherSuite(0x0009, 'RSA', '         ', 'DES     ', 'CBC ', 'SHA')
-        assert repr(cs) == "CipherSuite(TLS_RSA_WITH_DES_CBC_SHA)"
+        assert repr(cs) == "CipherSuite(0x0009, TLS_RSA_WITH_DES_CBC_SHA)"
 
         assert cs.mac_size == 20
         assert cs.block_size == 8
+
+        repr(BY_CODE[0x6a6a]) == "CipherSuite(0x6a6a, GREASE)"
