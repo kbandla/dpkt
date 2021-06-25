@@ -338,6 +338,9 @@ class MPLSlabel(dpkt.Packet):
             ('ttl', 8),   # time to live, 8 bits
         ]
     }
+    def __init__(self, *args, **kwargs):
+        super(MPLSlabel, self).__init__(*args, **kwargs)
+        self.data = b''
 
     def as_tuple(self):  # backward-compatible representation
         return (self.val, self.exp, self.ttl)
