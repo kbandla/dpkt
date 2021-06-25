@@ -344,7 +344,7 @@ def test_ip6_fragment_header():
     assert fh.m_flag == 1
 
     # test packing
-    fh.frag_off_resv_m = 0
+    fh._frag_off_resv_m = 0
     fh.frag_off = 8191
     fh.m_flag = 1
     assert bytes(fh) == s
