@@ -329,7 +329,6 @@ class MPLSlabel(dpkt.Packet):
         ('_val_exp_s_ttl', 'I', 0),
     )
     # field names are according to RFC3032
-
     __bit_fields__ = {
         '_val_exp_s_ttl': [
             ('val', 20),  # label value, 20 bits
@@ -338,8 +337,9 @@ class MPLSlabel(dpkt.Packet):
             ('ttl', 8),   # time to live, 8 bits
         ]
     }
-    def __init__(self, *args, **kwargs):
-        super(MPLSlabel, self).__init__(*args, **kwargs)
+
+    def unpack(self, buf):
+        dpkt.Packet.unpack(self, buf)
         self.data = b''
 
     def as_tuple(self):  # backward-compatible representation
@@ -360,6 +360,10 @@ class VLANtag8021Q(dpkt.Packet):
             ('id', 12),  # VLAN id, 12 bits
         ]
     }
+
+    def unpack(self, buf):
+        dpkt.Packet.unpack(self, buf)
+        self.data = b''
 
     def as_tuple(self):
         return (self.id, self.pri, self.cfi)
@@ -389,6 +393,10 @@ class VLANtagISL(dpkt.Packet):
             ('bpdu', 1)   # bridge protocol data unit indicator
         ]
     }
+
+    def unpack(self, buf):
+        dpkt.Packet.unpack(self, buf)
+        self.data = b''
 
 
 # Unit tests
