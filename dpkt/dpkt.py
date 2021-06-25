@@ -36,6 +36,8 @@ class _MetaPacket(type):
 
         # create getter and setter properties for the bit fields
         bit_fields = getattr(t, '__bit_fields__', {})
+        bf_defaults = {}  # map bit field names to callables to get default values
+
         for ph_name, field_defs in bit_fields.items():  # ph_name: name of the placeholder variable
             bits_total = sum(bf[1] for bf in field_defs)  # total size in bits
             bits_used = 0
@@ -52,8 +54,12 @@ class _MetaPacket(type):
                             return (ph_val & mask) >> shift
                         return getter_func
 
-                    def make_setter(ph_name=ph_name, mask_inv=mask_inv, shift=shift):
+                    def make_setter(ph_name=ph_name, mask_inv=mask_inv, shift=shift, bf_name=bf_name, max_val=2**bf_size):
                         def setter_func(self, bf_val):
+                            # ensure the given value fits into the number of bits available
+                            if bf_val >= max_val:
+                                raise ValueError('value %s is too large for field %s' % (bf_val, bf_name))
+
                             ph_val = getattr(self, ph_name)
                             val = (bf_val << shift) | (ph_val & mask_inv)
                             setattr(self, ph_name, val)
@@ -69,6 +75,13 @@ class _MetaPacket(type):
 
                     clsdict[bf_name] = property(make_getter(), make_setter(), make_delete())
 
+                    def make_default_getter(ph_name=ph_name, mask=mask, shift=shift):
+                        def get_default_func():
+                            return (t.__hdr_defaults__[ph_name] & mask) >> shift
+                        return get_default_func
+
+                    bf_defaults[bf_name] = make_default_getter()
+
                 bits_used += bf_size
                 assert bits_total - bits_used >= 0
             assert bits_used == bits_total
@@ -78,6 +91,9 @@ class _MetaPacket(type):
                 if hdr[0] == ph_name:
                     assert bits_total == struct.calcsize(hdr[1]) * 8
                     break
+
+            if bf_defaults:
+                clsdict['__bit_fields_defaults__'] = bf_defaults
 
         st = getattr(t, '__hdr__', None)
         if st is not None:
@@ -166,7 +182,6 @@ class Packet(_MetaPacket("Temp", (object,), {})):
         def add_property(prop_name):
             if isinstance(getattr(self.__class__, prop_name, None), property):
                 l_.append(prop_name)
-                # calc the default value for the property and add to __hdr_defaults__
 
         # maintain order of fields as defined in __hdr__
         for field_name, _, _ in getattr(self, '__hdr__', []):
@@ -229,9 +244,18 @@ class Packet(_MetaPacket("Temp", (object,), {})):
         # 2. properties derived from _private fields defined in __hdr__ and __bit_fields__
         for field_name in self.__public_fields__:
             field_value = getattr(self, field_name)
-            if ((field_name not in self.__hdr_defaults__) or
-               (field_value != self.__hdr_defaults__[field_name])):
-                l_.append('%s=%r' % (field_name, field_value))
+
+            if (hasattr(self, '__hdr_defaults__') and
+               field_name in self.__hdr_defaults__ and
+               field_value == self.__hdr_defaults__[field_name]):
+                continue
+
+            if (hasattr(self, '__bit_fields_defaults__') and
+               field_name in self.__bit_fields_defaults__ and
+               field_value == self.__bit_fields_defaults__[field_name]()):
+                continue
+
+            l_.append('%s=%r' % (field_name, field_value))
 
         # 3. dynamically added fields from self.__dict__, unless they are _private
         l_.extend(
