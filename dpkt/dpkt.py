@@ -34,67 +34,6 @@ class _MetaPacket(type):
     def __new__(cls, clsname, clsbases, clsdict):
         t = type.__new__(cls, clsname, clsbases, clsdict)
 
-        # create getter and setter properties for the bit fields
-        bit_fields = getattr(t, '__bit_fields__', {})
-        bf_defaults = {}  # map bit field names to callables to get default values
-
-        for ph_name, field_defs in bit_fields.items():  # ph_name: name of the placeholder variable
-            bits_total = sum(bf[1] for bf in field_defs)  # total size in bits
-            bits_used = 0
-
-            for (bf_name, bf_size) in field_defs:
-                if not bf_name.startswith('_'):  # do not create properties for _private fields
-                    shift = bits_total - bits_used - bf_size
-                    mask = (2**bf_size - 1) << shift  # all zeroes except the field bits
-                    mask_inv = (2**bits_total - 1) - mask  # inverse mask
-
-                    def make_getter(ph_name=ph_name, mask=mask, shift=shift):
-                        def getter_func(self):
-                            ph_val = getattr(self, ph_name)
-                            return (ph_val & mask) >> shift
-                        return getter_func
-
-                    def make_setter(ph_name=ph_name, mask_inv=mask_inv, shift=shift, bf_name=bf_name, max_val=2**bf_size):
-                        def setter_func(self, bf_val):
-                            # ensure the given value fits into the number of bits available
-                            if bf_val >= max_val:
-                                raise ValueError('value %s is too large for field %s' % (bf_val, bf_name))
-
-                            ph_val = getattr(self, ph_name)
-                            val = (bf_val << shift) | (ph_val & mask_inv)
-                            setattr(self, ph_name, val)
-                        return setter_func
-
-                    # delete property to set the bit field back to its default value
-                    def make_delete(ph_name=ph_name, mask=mask, mask_inv=mask_inv):
-                        def delete_func(self):
-                            ph_val = getattr(self, ph_name)
-                            ph_val_new = (self.__hdr_defaults__[ph_name] & mask) | (ph_val & mask_inv)
-                            setattr(self, ph_name, ph_val_new)
-                        return delete_func
-
-                    clsdict[bf_name] = property(make_getter(), make_setter(), make_delete())
-
-                    def make_default_getter(ph_name=ph_name, mask=mask, shift=shift):
-                        def get_default_func():
-                            return (t.__hdr_defaults__[ph_name] & mask) >> shift
-                        return get_default_func
-
-                    bf_defaults[bf_name] = make_default_getter()
-
-                bits_used += bf_size
-                assert bits_total - bits_used >= 0
-            assert bits_used == bits_total
-
-            # make sure the sizes match
-            for hdr in getattr(t, '__hdr__', []):
-                if hdr[0] == ph_name:
-                    assert bits_total == struct.calcsize(hdr[1]) * 8
-                    break
-
-            if bf_defaults:
-                clsdict['__bit_fields_defaults__'] = bf_defaults
-
         st = getattr(t, '__hdr__', None)
         if st is not None:
             # XXX - __slots__ only created in __new__()
@@ -105,6 +44,71 @@ class _MetaPacket(type):
             t.__hdr_len__ = struct.calcsize(t.__hdr_fmt__)
             t.__hdr_defaults__ = dict(compat_izip(
                 t.__hdr_fields__, [x[2] for x in st]))
+
+        # process __bit_fields__
+        bit_fields = getattr(t, '__bit_fields__', None)
+        if bit_fields:
+            bf_defaults = {}
+
+            for ph in t.__hdr__:  # ph: placeholder variable for the bit field
+                ph_name, ph_struct, ph_default = ph
+                if ph_name in bit_fields:
+                    field_defs = bit_fields[ph_name]
+
+                    bits_total = sum(bf[1] for bf in field_defs)  # total size in bits
+
+                    # make sure the sum of bits matches the overall size of the placeholder field
+                    assert bits_total == struct.calcsize(ph_struct) * 8
+
+                    bits_used = 0
+
+                    for (bf_name, bf_size) in field_defs:
+                        if bf_name.startswith('_'):  # do not create properties for _private fields
+                            bits_used += bf_size
+                            continue
+
+                        shift = bits_total - bits_used - bf_size
+                        mask = (2**bf_size - 1) << shift  # all zeroes except the field bits
+                        mask_inv = (2**bits_total - 1) - mask  # inverse mask
+
+                        # calculate the default value for the bit field
+                        bf_default = (t.__hdr_defaults__[ph_name] & mask) >> shift
+                        bf_defaults[bf_name] = bf_default
+
+                        # create getter and setter properties for the bit fields
+
+                        def make_getter(ph_name=ph_name, mask=mask, shift=shift):
+                            def getter_func(self):
+                                ph_val = getattr(self, ph_name)
+                                return (ph_val & mask) >> shift
+                            return getter_func
+
+                        def make_setter(ph_name=ph_name, mask_inv=mask_inv, shift=shift, bf_name=bf_name, max_val=2**bf_size):
+                            def setter_func(self, bf_val):
+                                # ensure the given value fits into the number of bits available
+                                if bf_val >= max_val:
+                                    raise ValueError('value %s is too large for field %s' % (bf_val, bf_name))
+
+                                ph_val = getattr(self, ph_name)
+                                ph_val_new = (bf_val << shift) | (ph_val & mask_inv)
+                                setattr(self, ph_name, ph_val_new)
+                            return setter_func
+
+                        # delete property to set the bit field back to its default value
+                        def make_delete(bf_name=bf_name, bf_default=bf_default):
+                            def delete_func(self):
+                                setattr(self, bf_name, bf_default)
+                            return delete_func
+
+                        setattr(t, bf_name, property(make_getter(), make_setter(), make_delete()))
+                        t.__slots__.append(bf_name)
+
+                        bits_used += bf_size
+                        assert bits_total - bits_used >= 0
+                    assert bits_used == bits_total
+
+            if bf_defaults:
+                t.__bit_fields_defaults__ = bf_defaults
 
         # optional map of functions for pretty printing
         # {field_name: callable(field_value) -> str, ..}
@@ -252,7 +256,7 @@ class Packet(_MetaPacket("Temp", (object,), {})):
 
             if (hasattr(self, '__bit_fields_defaults__') and
                field_name in self.__bit_fields_defaults__ and
-               field_value == self.__bit_fields_defaults__[field_name]()):
+               field_value == self.__bit_fields_defaults__[field_name]):
                 continue
 
             l_.append('%s=%r' % (field_name, field_value))
