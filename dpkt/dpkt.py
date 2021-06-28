@@ -48,19 +48,17 @@ class _MetaPacket(type):
         # process __bit_fields__
         bit_fields = getattr(t, '__bit_fields__', None)
         if bit_fields:
-            bf_defaults = {}
+            t.__bit_fields_defaults__ = {}  # bit fields equivalent of __hdr_defaults__
 
-            for ph in t.__hdr__:  # ph: placeholder variable for the bit field
-                ph_name, ph_struct, ph_default = ph
+            for (ph_name, ph_struct, ph_default) in t.__hdr__:  # ph: placeholder variable for the bit field
                 if ph_name in bit_fields:
                     field_defs = bit_fields[ph_name]
 
                     bits_total = sum(bf[1] for bf in field_defs)  # total size in bits
+                    bits_used = 0
 
                     # make sure the sum of bits matches the overall size of the placeholder field
                     assert bits_total == struct.calcsize(ph_struct) * 8
-
-                    bits_used = 0
 
                     for (bf_name, bf_size) in field_defs:
                         if bf_name.startswith('_'):  # do not create properties for _private fields
@@ -70,12 +68,13 @@ class _MetaPacket(type):
                         shift = bits_total - bits_used - bf_size
                         mask = (2**bf_size - 1) << shift  # all zeroes except the field bits
                         mask_inv = (2**bits_total - 1) - mask  # inverse mask
+                        bits_used += bf_size
 
                         # calculate the default value for the bit field
                         bf_default = (t.__hdr_defaults__[ph_name] & mask) >> shift
-                        bf_defaults[bf_name] = bf_default
+                        t.__bit_fields_defaults__[bf_name] = bf_default
 
-                        # create getter and setter properties for the bit fields
+                        # create getter, setter and delete properties for the bit fields
 
                         def make_getter(ph_name=ph_name, mask=mask, shift=shift):
                             def getter_func(self):
@@ -101,14 +100,8 @@ class _MetaPacket(type):
                             return delete_func
 
                         setattr(t, bf_name, property(make_getter(), make_setter(), make_delete()))
-                        t.__slots__.append(bf_name)
 
-                        bits_used += bf_size
-                        assert bits_total - bits_used >= 0
                     assert bits_used == bits_total
-
-            if bf_defaults:
-                t.__bit_fields_defaults__ = bf_defaults
 
         # optional map of functions for pretty printing
         # {field_name: callable(field_value) -> str, ..}
@@ -178,16 +171,9 @@ class Packet(_MetaPacket("Temp", (object,), {})):
             self._pack_hdr = partial(struct.pack, self.__hdr_fmt__)
 
         # construct __public_fields__ to be used inside __repr__ and pprint
-        # the list can be customized in child classes to include or remove
-        # fields to display
-
+        # once auto-formed here in __init__, the list can be customized in
+        # child classes to include or remove fields to display, as needed
         l_ = []
-
-        def add_property(prop_name):
-            if isinstance(getattr(self.__class__, prop_name, None), property):
-                l_.append(prop_name)
-
-        # maintain order of fields as defined in __hdr__
         for field_name, _, _ in getattr(self, '__hdr__', []):
             # public fields defined in __hdr__; "public" means not starting with an underscore
             if field_name[0] != '_':
@@ -202,17 +188,17 @@ class Packet(_MetaPacket("Temp", (object,), {})):
             elif '_' in field_name[1:]:
                 # (1) search for these properties in __bit_fields__ where they are explicitly defined
                 if field_name in getattr(self, '__bit_fields__', {}):
-                    for bf in self.__bit_fields__[field_name]:
-                        add_property(bf[0])
+                    for (prop_name, _) in self.__bit_fields__[field_name]:
+                        if isinstance(getattr(self.__class__, prop_name, None), property):
+                            l_.append(prop_name)
 
                 # (2) split by underscore into 1- and 2-component names and look for properties with such names;
-                #   Examples:
-                #    _foo -> ignore
-                #    _foo_bar -> look for properties named "foo", "bar" and "foo_bar"
+                # Example: _foo_bar -> look for properties named "foo", "bar" and "foo_bar"
                 else:
                     fns = field_name[1:].split('_')
                     for prop_name in chain(fns, ('_'.join(x) for x in zip(fns, fns[1:]))):
-                        add_property(prop_name)
+                        if isinstance(getattr(self.__class__, prop_name, None), property):
+                            l_.append(prop_name)
 
         # check for duplicates, there shouldn't be any
         assert len(l_) == len(set(l_))
@@ -242,10 +228,14 @@ class Packet(_MetaPacket("Temp", (object,), {})):
             return False
 
     def __repr__(self):
-        l_ = []
-
+        # Collect and display protocol fields in order:
         # 1. public fields defined in __hdr__, unless their value is default
         # 2. properties derived from _private fields defined in __hdr__ and __bit_fields__
+        # 3. dynamically added fields from self.__dict__, unless they are _private
+        # 4. self.data when it's present
+        l_ = []
+
+        # (1) and (2) are done via __public_fields__; just filter out defaults here
         for field_name in self.__public_fields__:
             field_value = getattr(self, field_name)
 
@@ -261,14 +251,13 @@ class Packet(_MetaPacket("Temp", (object,), {})):
 
             l_.append('%s=%r' % (field_name, field_value))
 
-        # 3. dynamically added fields from self.__dict__, unless they are _private
+        # (3)
         l_.extend(
             ['%s=%r' % (attr_name, attr_value)
              for attr_name, attr_value in iteritems(self.__dict__)
              if attr_name[0] != '_' and                   # exclude _private attributes
                 attr_name != self.data.__class__.__name__.lower()])  # exclude fields like ip.udp
-
-        # 4. self.data when it's present
+        # (4)
         if self.data:
             l_.append('data=%r' % self.data)
         return '%s(%s)' % (self.__class__.__name__, ', '.join(l_))

@@ -30,7 +30,7 @@ class IP(dpkt.Packet):
         ('tos', 'B', 0),
         ('len', 'H', 20),
         ('id', 'H', 0),
-        ('_off', 'H', 0),  # XXX - ip.off is deprecated and renamed to ip._off
+        ('_flags_offset', 'H', 0),  # XXX - previously ip.off
         ('ttl', 'B', 64),
         ('p', 'B', 0),
         ('sum', 'H', 0),
@@ -42,7 +42,7 @@ class IP(dpkt.Packet):
             ('v', 4),   # version, 4 bits
             ('hl', 4),  # header len, 4 bits
         ],
-        '_off': [
+        '_flags_offset': [
             ('rf', 1),  # reserved bit
             ('df', 1),  # don't fragment
             ('mf', 1),  # more fragments
@@ -60,8 +60,6 @@ class IP(dpkt.Packet):
 
     def __init__(self, *args, **kwargs):
         super(IP, self).__init__(*args, **kwargs)
-
-        self.off = self._off  # XXX - compatibility; to be deprecated
 
         # If IP packet is not initialized by string and the len field has
         # been rewritten.
@@ -118,6 +116,15 @@ class IP(dpkt.Packet):
     @classmethod
     def get_proto(cls, p):
         return cls._protosw[p]
+
+    # XXX - compatibility; to be deprecated
+    @property
+    def off(self):
+        return self._flags_offset
+
+    @off.setter
+    def off(self, val):
+        self.offset = val
 
 
 # IP Headers
