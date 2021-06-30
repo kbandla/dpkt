@@ -104,6 +104,15 @@ Here is the breakdown:
    Similarly to the naming rules of ``__hdr__``, a bit field name starting with an
    underscore is made invisible in the output.
 
+   When dpkt processes ``__bit_fields__`` it auto-creates class properties that
+   enable interfacing with the bit fields directly, specifically: get the value
+   (``ip.v``), modify the value (``ip.v = 6``), and reset the value back to its
+   default (``del ip.v``).
+
+   In certain cases, auto-properties can't be applied; they still can be created
+   explicitly. Look at ``class SMB`` inside ``dpkt/smb.py`` in how it decodes the
+   ``pid`` protocol field.
+
 4. Next, ``__pprint_funcs__`` is an optional dict that does not control protocol
    decoding, but helps with pretty printing of the decoded packet using the ``pprint()``
    method. Each key in this map is a name of the protocol field, and each value is a
