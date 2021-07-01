@@ -43,7 +43,7 @@ Let's look at the IPv4 parser, defined in ``dpkt/ip.py``, as an example.
             'p': get_ip_proto_name
         }
 
-A lot is going on in the header, before we even get to ``__init__``!
+A lot is going on in the header, before we even got to ``__init__``!
 Here is the breakdown:
 
 1. Note the main ``class IP`` inherits from ``dpkt.Packet``
@@ -52,8 +52,8 @@ Here is the breakdown:
    *(field name, python struct format, default value)*. The fields are arranged
    in the order they appear on the wire.
 
-   Field names generally follow the definition of the protocol (e.g. the RFC), but
-   there are some rules to naming the fields that affect how ``dpkt`` handles them:
+   Field names generally follow the protocol definitions (e.g. RFC), but there are 
+   some rules to naming the fields that affect ``dpkt`` processing:
 
    - a name that doesn't start with an underscore represents a regular public
      protocol field.
@@ -118,15 +118,15 @@ Here is the breakdown:
    method. Each key in this map is a name of the protocol field, and each value is a
    callable that will be run with a single argument of the protocol field value.
 
-   For example, it's nice to see the readable IP addresses for ``src`` and ``dst``
+   For example, it's nice to see human readable IP addresses for ``src`` and ``dst``
    fields by passing the raw bytes to ``inet_to_str`` function.
 
 
 Standard methods
 ****************
 
-Let's look at the standard methods of the Packet class and how they contribute to
-parsing (aka unpacking, aka deserializing) and constructing (aka packing, aka serializing) the packet.
+Let's look at the standard methods of the ``Packet`` class and how they contribute to
+parsing (aka unpacking or deserializing) and constructing (aka packing or serializing) the packet.
 
 ::
 
@@ -177,13 +177,14 @@ __len__
 *******
 
 ``__len__()`` returns the size of the serialized packet and is typically invoked when calling ``len(obj)``.
-Note how in the IP class, the method calls other methods to calculate size, then sums the values together, and it **does not** perform serialization. It may be tempting to implement ``__len__`` by serializing the packet into bytes and returning the size of the buffer (``return len(bytes(self))``).
-While working and acceptable in some cases, in general dpkt views this as an anti-pattern that should be avoided.
+Note how in the IP class, this method calls other functions to calculate size, then sums the lengths together, and it **does not** perform serialization. 
+It may be tempting to implement ``__len__`` by serializing the packet into bytes and returning the size of the resulting buffer (``return len(bytes(self))``).
+While this works and is acceptable in some cases, dpkt views this as an anti-pattern that should be avoided.
 
 __repr__ and pprint()
 *********************
 
-These methods are provided by ``dpkt.Packet`` and is typically not overridden in the child class. However they are important to understand when developing protocol parsers. Both ``repr()`` and ``pprint()`` are responsible for the output, and both produce valid interpretable Python, but there are some differences:
+These methods are provided by ``dpkt.Packet`` and are typically not overridden in the child class. However they are important to understand when developing protocol parsers. Both ``repr()`` and ``pprint()`` are responsible for the output, and both produce valid interpretable Python, but there are some differences:
 
 1. ``__repr__`` returns a short one-liner printable string, while ``pprint()`` actually prints and returns nothing
 2. ``__repr__`` does not include protocol fields if their value is default, i.e. it will only display a field when it differs from the default.
