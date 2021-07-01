@@ -444,6 +444,26 @@ def test_pack_hdr_overflow():
         bytes(foo)
 
 
+def test_bit_fields_overflow():
+    """Try to fit too much data into too few bits"""
+    import pytest
+
+    class Foo(Packet):
+        __hdr__ = (
+            ('_a_b', 'B', 0),
+        )
+        __bit_fields__ = {
+            '_a_b': [
+                ('a', 2),
+                ('b', 6)
+            ]
+        }
+
+    foo = Foo()
+    with pytest.raises(ValueError):
+        foo.a = 5
+
+
 def test_pack_hdr_tuple():
     """Test the unpacking of a tuple for a single format string"""
     class Foo(Packet):

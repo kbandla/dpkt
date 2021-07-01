@@ -445,6 +445,10 @@ def test_property_setters():
     del ip.hl
     assert ip.hl == 5
 
+    # coverage
+    ip.off = 10
+    assert ip.off == 10
+
 
 def test_default_udp_checksum():
     from dpkt.udp import UDP
