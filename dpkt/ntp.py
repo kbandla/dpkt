@@ -48,11 +48,11 @@ class NTP(dpkt.Packet):
         ('transmit_time', '8s', 0)
     )
     __bit_fields__ = {
-        'flags': [
-            ('li', 2),   # leap indicator, 2 hi bits
-            ('v', 3),    # version, 3 bits
-            ('mode', 3)  # mode, 3 lo bits
-        ]
+        'flags': (
+            ('li', 2),    # leap indicator, 2 hi bits
+            ('v', 3),     # version, 3 bits
+            ('mode', 3),  # mode, 3 lo bits
+        )
     }
 
 

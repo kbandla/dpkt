@@ -33,7 +33,6 @@ class PackError(Error):
 class _MetaPacket(type):
     def __new__(cls, clsname, clsbases, clsdict):
         t = type.__new__(cls, clsname, clsbases, clsdict)
-
         st = getattr(t, '__hdr__', None)
         if st is not None:
             # XXX - __slots__ only created in __new__()
@@ -453,10 +452,10 @@ def test_bit_fields_overflow():
             ('_a_b', 'B', 0),
         )
         __bit_fields__ = {
-            '_a_b': [
+            '_a_b': (
                 ('a', 2),
-                ('b', 6)
-            ]
+                ('b', 6),
+            )
         }
 
     foo = Foo()
@@ -497,10 +496,10 @@ def test_repr():
         __hdr__ = (('_a_b', 'B', 0),)
 
         __bit_fields__ = {
-            '_a_b': [
+            '_a_b': (
                 ('a', 4),
                 ('b', 4),
-            ],
+            ),
         }
 
     # default values so no output

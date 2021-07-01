@@ -330,12 +330,12 @@ class MPLSlabel(dpkt.Packet):
     )
     # field names are according to RFC3032
     __bit_fields__ = {
-        '_val_exp_s_ttl': [
+        '_val_exp_s_ttl': (
             ('val', 20),  # label value, 20 bits
             ('exp', 3),   # experimental use, 3 bits
             ('s', 1),     # bottom of stack flag, 1 bit
             ('ttl', 8),   # time to live, 8 bits
-        ]
+        )
     }
 
     def unpack(self, buf):
@@ -354,11 +354,11 @@ class VLANtag8021Q(dpkt.Packet):
         ('type', 'H', ETH_TYPE_IP)
     )
     __bit_fields__ = {
-        '_pri_cfi_id': [
+        '_pri_cfi_id': (
             ('pri', 3),  # priority, 3 bits
             ('cfi', 1),  # canonical format indicator, 1 bit
             ('id', 12),  # VLAN id, 12 bits
-        ]
+        )
     }
 
     def unpack(self, buf):
@@ -384,14 +384,14 @@ class VLANtagISL(dpkt.Packet):
         ('res', 'H', 0)
     )
     __bit_fields__ = {
-        '_type_pri': [
+        '_type_pri': (
             ('type', 4),  # encapsulation type, 4 bits; 0 means Ethernet
-            ('pri', 4)    # user defined bits, 2 lo bits are used; means priority
-        ],
-        '_id_bpdu': [
+            ('pri', 4),   # user defined bits, 2 lo bits are used; means priority
+        ),
+        '_id_bpdu': (
             ('id', 15),   # vlan id, 15 bits
-            ('bpdu', 1)   # bridge protocol data unit indicator
-        ]
+            ('bpdu', 1),  # bridge protocol data unit indicator
+        )
     }
 
     def unpack(self, buf):

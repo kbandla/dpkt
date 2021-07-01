@@ -27,10 +27,10 @@ class VRRP(dpkt.Packet):
         ('sum', 'H', 0),
     )
     __bit_fields__ = {
-        '_v_type': [
+        '_v_type': (
             ('v', 4),
-            ('type', 4)
-        ]
+            ('type', 4),
+        )
     }
 
     addrs = ()

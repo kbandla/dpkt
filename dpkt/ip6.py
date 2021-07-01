@@ -36,11 +36,11 @@ class IP6(dpkt.Packet):
         ('dst', '16s', b'')
     )
     __bit_fields__ = {
-        '_v_fc_flow': [
+        '_v_fc_flow': (
             ('v', 4),      # version, 4 hi bits
             ('fc', 8),     # traffic class, 8 bits
             ('flow', 20),  # flow label, 20 lo bits
-        ]
+        )
     }
     __pprint_funcs__ = {
         'src': inet_to_str,
@@ -209,10 +209,10 @@ class IP6RoutingHeader(IP6ExtensionHeader):
         ('_rsvd_sl_bits', 'I', 0)
     )
     __bit_fields__ = {
-        '_rsvd_sl_bits': [
-            ('_rsvd', 8),    # reserved (1 byte)
-            ('sl_bits', 24)  # strict/loose bitmap for addresses
-        ]
+        '_rsvd_sl_bits': (
+            ('_rsvd', 8),     # reserved (1 byte)
+            ('sl_bits', 24),  # strict/loose bitmap for addresses
+        )
     }
 
     def unpack(self, buf):
@@ -241,11 +241,11 @@ class IP6FragmentHeader(IP6ExtensionHeader):
         ('id', 'I', 0)  # fragments id
     )
     __bit_fields__ = {
-        '_frag_off_resv_m': [
+        '_frag_off_resv_m': (
             ('frag_off', 13),  # frag offset, 13 bits
             ('_resv', 2),      # reserved zero (2 bits)
             ('m_flag', 1),     # more frags flag
-        ]
+        )
     }
 
     def unpack(self, buf):

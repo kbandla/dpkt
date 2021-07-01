@@ -74,11 +74,11 @@ class TCP(dpkt.Packet):
         ('urp', 'H', 0)
     )
     __bit_fields__ = {
-        '_off_flags': [
+        '_off_flags': (
             ('off', 4),    # 4 hi bits
             ('_rsv', 3),   # 3 bits reserved
             ('flags', 9),  # 9 lo bits
-        ]
+        )
     }
     __pprint_funcs__ = {
         'flags': tcp_flags_to_str,

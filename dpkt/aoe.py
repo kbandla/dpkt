@@ -28,10 +28,10 @@ class AOE(dpkt.Packet):
         ('tag', 'I', 0),
     )
     __bit_fields__ = {
-        '_ver_fl': [
+        '_ver_fl': (
             ('ver', 4),
-            ('fl', 4)
-        ]
+            ('fl', 4),
+        )
     }
     _cmdsw = {}
 

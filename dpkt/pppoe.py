@@ -35,10 +35,10 @@ class PPPoE(dpkt.Packet):
         ('len', 'H', 0)  # payload length
     )
     __bit_fields__ = {
-        '_v_type': [
+        '_v_type': (
             ('v', 4),
-            ('type', 4)
-        ]
+            ('type', 4),
+        )
     }
 
     def unpack(self, buf):

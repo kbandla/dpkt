@@ -26,16 +26,16 @@ Let's look at the IPv4 parser, defined in ``dpkt/ip.py``, as an example.
             ('dst', '4s', b'\x00' * 4)
         )
         __bit_fields__ = {
-            '_v_hl': [
+            '_v_hl': (
                 ('v', 4),   # version, 4 bits
                 ('hl', 4),  # header len, 4 bits
-            ],
-            '_flags_offset': [
+            ),
+            '_flags_offset': (
                 ('rf', 1),  # reserved bit
                 ('df', 1),  # don't fragment
                 ('mf', 1),  # more fragments
-                ('offset', 13)  # fragment offset, 13 bits
-            ]
+                ('offset', 13),  # fragment offset, 13 bits
+            )
         }
         __pprint_funcs__ = {
             'dst': inet_to_str,
