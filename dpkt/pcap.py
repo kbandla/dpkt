@@ -625,24 +625,23 @@ def test_writepkts():
 
 
 def test_universal_reader():
+    import pytest
+    from .compat import BytesIO
+    from . import pcapng
+
     # libpcap
     data = TestData().pcap
-
-    from .compat import BytesIO
     fobj = BytesIO(data)
     reader = UniversalReader(fobj)
     assert isinstance(reader, Reader)
 
     # pcapng
-    from . import pcapng
-
-    buf = pcapng.define_testdata().valid_pcapng
-    fobj = BytesIO(buf)
+    data = pcapng.define_testdata().valid_pcapng
+    fobj = BytesIO(data)
     reader = UniversalReader(fobj)
     assert isinstance(reader, pcapng.Reader)
 
     # unknown
     fobj = BytesIO(b'\x42' * 1000)
-    import pytest
     with pytest.raises(ValueError):
         reader = UniversalReader(fobj)
