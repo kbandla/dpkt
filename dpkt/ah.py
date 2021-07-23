@@ -30,8 +30,9 @@ class AH(dpkt.Packet):
 
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
-        self.auth = self.data[:self.len]
-        buf = self.data[self.len:]
+        auth_len = max(4*self.len - 4, 0)  # see RFC 4302, section 2.2
+        self.auth = self.data[:auth_len]
+        buf = self.data[auth_len:]
 
         try:
             self.data = ip.IP.get_proto(self.nxt)(buf)
