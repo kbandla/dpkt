@@ -74,7 +74,8 @@ Here is the breakdown:
 
      *Examples:*
        - ``_foo_bar_m_flag`` will map to fields named ``foo``, ``bar``, ``m_flag``,
-         when the class contains properties with these names.
+         when the class contains properties with these names (note ``foo_bar_m`` will
+         be ignored since it contains two underscores).
 
        - In the IP class the ``_v_hl`` field itself is hidden in the output of
          ``__repr__`` and ``pprint()``, and is decoded into ``v`` and ``hl`` fields
@@ -85,7 +86,7 @@ Here is the breakdown:
    field will decode to an unsigned byte, ``'H'`` - to an unsigned word, etc.
    The default byte order is big endian (network order). The endianness can be
    changed to little endian by specifying ``__byte_order__ = '<'`` in the class
-   definition, or for each individual field (e.g. ``'<H'``).
+   definition.
 
 3. Next, ``__bit_fields__`` is an optional dict that helps decode compound protocol
    fields, such as ``_v_hl`` or ``_flags_offset`` in the IP class.

@@ -9,7 +9,7 @@ import binascii
 
 from . import dpkt
 from . import ssl_ciphersuites
-from .compat import compat_ord
+from .compat import compat_ord, deprecation_warning
 
 #
 # Note from April 2011: cde...@gmail.com added code that parses SSL3/TLS messages more in depth.
@@ -342,10 +342,17 @@ class TLSServerHello(dpkt.Packet):
             # probably data too short
             raise dpkt.NeedData
 
-        # XXX - legacy, to be deprecated
-        # for whatever reason these attributes were named differently than their sister attributes in TLSClientHello
-        self.cipher_suite = self.ciphersuite
-        self.compression = self.compression_method
+    # XXX - legacy, deprecated
+    # for whatever reason these attributes were named differently than their sister attributes in TLSClientHello
+    @property
+    def cipher_suite(self):
+        deprecation_warning("TLSServerHello.cipher_suite is deprecated and renamed to .ciphersuite")
+        return self.ciphersuite
+
+    @property
+    def compression(self):
+        deprecation_warning("TLSServerHello.compression is deprecated and renamed to .compression_method")
+        return self.compression_method
 
 
 class TLSCertificate(dpkt.Packet):

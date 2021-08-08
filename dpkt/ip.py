@@ -5,7 +5,7 @@ from __future__ import print_function
 from __future__ import absolute_import
 
 from . import dpkt
-from .compat import iteritems
+from .compat import iteritems, deprecation_warning
 from .utils import inet_to_str
 
 _ip_proto_names = {}  # {1: 'ICMP', 6: 'TCP', 17: 'UDP', etc.}
@@ -120,10 +120,12 @@ class IP(dpkt.Packet):
     # XXX - compatibility; to be deprecated
     @property
     def off(self):
+        deprecation_warning("IP.off is deprecated")
         return self._flags_offset
 
     @off.setter
     def off(self, val):
+        deprecation_warning("IP.off is deprecated")
         self.offset = val
 
 

@@ -57,7 +57,9 @@ class _MetaPacket(type):
                     bits_used = 0
 
                     # make sure the sum of bits matches the overall size of the placeholder field
-                    assert bits_total == struct.calcsize(ph_struct) * 8
+                    assert bits_total == struct.calcsize(ph_struct) * 8, \
+                        "the overall count of bits in [%s] as declared in __bit_fields__ " \
+                        "does not match its struct size in __hdr__" % ph_name
 
                     for (bf_name, bf_size) in field_defs:
                         if bf_name.startswith('_'):  # do not create properties for _private fields
@@ -192,7 +194,8 @@ class Packet(_MetaPacket("Temp", (object,), {})):
                             l_.append(prop_name)
 
                 # (2) split by underscore into 1- and 2-component names and look for properties with such names;
-                # Example: _foo_bar -> look for properties named "foo", "bar" and "foo_bar"
+                # Example: _foo_bar_baz -> look for properties named "foo", "bar", "baz", "foo_bar" and "bar_baz"
+                # (but not "foo_bar_baz" since it contains more than one underscore)
                 else:
                     fns = field_name[1:].split('_')
                     for prop_name in chain(fns, ('_'.join(x) for x in zip(fns, fns[1:]))):
