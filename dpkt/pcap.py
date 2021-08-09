@@ -150,7 +150,7 @@ class PktHdr(dpkt.Packet):
     Attributes:
         __hdr__: Header fields of pcap header.
         TODO.
-   """
+    """
     __hdr__ = (
         ('tv_sec', 'I', 0),
         ('tv_usec', 'I', 0),
@@ -171,8 +171,7 @@ class FileHdr(dpkt.Packet):
     Attributes:
         __hdr__: Header fields of pcap file header.
         TODO.
-   """
-
+    """
     __hdr__ = (
         ('magic', 'I', TCPDUMP_MAGIC),
         ('v_major', 'H', PCAP_VERSION_MAJOR),
@@ -196,8 +195,7 @@ class Writer(object):
     Attributes:
         __hdr__: Header fields of simple pcap dumpfile writer.
         TODO.
-   """
-
+    """
     __le = sys.byteorder == 'little'
 
     def __init__(self, fileobj, snaplen=1500, linktype=DLT_EN10MB, nano=False):
@@ -222,7 +220,7 @@ class Writer(object):
         Args:
             pkt: `bytes` will be called on this and written to file.
             ts (float): Timestamp in seconds. Defaults to current time.
-       """
+        """
         if ts is None:
             ts = time.time()
 
@@ -234,7 +232,7 @@ class Writer(object):
         Args:
             pkt (bytes): Some `bytes` to write to the file
             ts (float): Timestamp in seconds
-       """
+        """
         n = len(pkt)
         sec = int(ts)
         usec = intround(ts % 1 * self._precision_multiplier)
@@ -249,7 +247,7 @@ class Writer(object):
 
         Args:
             pkts: iterable containing (ts, pkt)
-       """
+        """
         fd = self.__f
         pack_hdr = self._pack_hdr
         precision_multiplier = self._precision_multiplier
@@ -273,8 +271,7 @@ class Reader(object):
     Attributes:
         __hdr__: Header fields of simple pypcap-compatible pcap file reader.
         TODO.
-   """
-
+    """
     def __init__(self, fileobj):
         self.name = getattr(fileobj, 'name', '<%s>' % fileobj.__class__.__name__)
         self.__f = fileobj
@@ -326,7 +323,7 @@ class Reader(object):
                     or 0 to process all packets until EOF
         callback -- function with (timestamp, pkt, *args) prototype
         *args    -- optional arguments passed to callback on execution
-       """
+        """
         processed = 0
         if cnt > 0:
             for _ in range(cnt):
@@ -355,9 +352,27 @@ class Reader(object):
             yield (hdr.tv_sec + (hdr.tv_usec / self._divisor), buf)
 
 
+class UniversalReader(object):
+    """
+    Universal pcap reader for the libpcap and pcapng file formats
+    """
+    def __new__(cls, fileobj):
+        try:
+            pcap = Reader(fileobj)
+        except ValueError as e1:
+            fileobj.seek(0)
+            try:
+                from . import pcapng
+                pcap = pcapng.Reader(fileobj)
+            except ValueError as e2:
+                raise ValueError('unknown pcap format; libpcap error: %s, pcapng error: %s' % (e1, e2))
+        return pcap
+
+
 ################################################################################
 #                                    TESTS                                     #
 ################################################################################
+
 class TryExceptException:
     def __init__(self, exception_type, msg=''):
         self.exception_type = exception_type
@@ -477,20 +492,20 @@ def test_reader_dloff():
     )
 
     from .compat import BytesIO
-    fobj = BytesIO(buf_filehdr + buf_pkthdr + b'\x11'*4)
+    fobj = BytesIO(buf_filehdr + buf_pkthdr + b'\x11' * 4)
     reader = Reader(fobj)
 
     # confirm that if the linktype is unknown, it defaults to 0
     assert reader.dloff == 0
 
-    assert next(reader) == (3.000005, b'\x11'*4)
+    assert next(reader) == (3.000005, b'\x11' * 4)
 
 
 @TryExceptException(ValueError, msg="invalid tcpdump header")
 def test_reader_badheader():
     from .compat import BytesIO
     fobj = BytesIO(b'\x00' * 24)
-    _ = Reader(fobj)
+    _ = Reader(fobj)  # noqa
 
 
 def test_reader_fd():
@@ -607,3 +622,26 @@ def test_writepkts():
 
     writer.writepkts(pkts)  # noqa
     return pkts
+
+
+def test_universal_reader():
+    import pytest
+    from .compat import BytesIO
+    from . import pcapng
+
+    # libpcap
+    data = TestData().pcap
+    fobj = BytesIO(data)
+    reader = UniversalReader(fobj)
+    assert isinstance(reader, Reader)
+
+    # pcapng
+    data = pcapng.define_testdata().valid_pcapng
+    fobj = BytesIO(data)
+    reader = UniversalReader(fobj)
+    assert isinstance(reader, pcapng.Reader)
+
+    # unknown
+    fobj = BytesIO(b'\x42' * 1000)
+    with pytest.raises(ValueError):
+        reader = UniversalReader(fobj)
