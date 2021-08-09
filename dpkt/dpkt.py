@@ -102,8 +102,6 @@ class _MetaPacket(type):
 
                         setattr(t, bf_name, property(make_getter(), make_setter(), make_delete()))
 
-                    assert bits_used == bits_total
-
         # optional map of functions for pretty printing
         # {field_name: callable(field_value) -> str, ..}
         # define as needed in the child protocol classes
