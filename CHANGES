@@ -1,3 +1,22 @@
+dpkt-1.9.7:
+	- Added a new mechanism for creating bit-sized field definitions in the protocol parsers (Packet.__bit_fields__)
+	- Correctly support bit field names containing underscore (eg. m_flags, max_age)
+	- Support the delete property to reset the protocol bit field back to its default value
+	- Added pretty printing capability aka Packet.pprint(), Packet.__pprint_funcs__
+	- Added documentation on developing protocol parsers in dpkt (creating_parsers.rst)
+	- Added a universal pcap+pcapng reader (dpkt.pcap.UniversalReader)
+	- Improved TLS ClientHello and ServerHello parsing: return an "Unknown" ciphersuite instead of raising an exception, add codes for rfc8701, GREASE ciphersutes
+	- Added function to get IP protocol name
+	- Modified Packet.__getitem__() and added Packet.__contains__() to address the nested protocol layers
+	- Fixed payload length interpretation in AH decoder
+	- Improved handling of invalid chunks in HTTP and SCTP
+	- Fixed decoding of IPv6 fragments after the 1st fragment
+	- Support rfc3540 nonce sum flag in TCP
+
+dpkt-1.9.6:
+	- Added in the TLS 1.3 Cipher Suite from the RFC 8446 dated August 2018
+	- Added support for Linux cooked capture v2, SLL2.
+
 dpkt-1.9.5:
 	- New example showing how to process truncated DNS packets (examples/print_dns_truncated.py).
 	- Corrected typo in BGP.notification attribute.
