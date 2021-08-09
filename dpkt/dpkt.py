@@ -6,6 +6,7 @@ from __future__ import absolute_import, print_function
 import copy
 import struct
 from functools import partial
+from itertools import chain
 
 from .compat import compat_ord, compat_izip, iteritems, ntole
 
@@ -26,6 +27,9 @@ class PackError(Error):
     pass
 
 
+# See the "creating parsers" documentation for how all of this works
+
+
 class _MetaPacket(type):
     def __new__(cls, clsname, clsbases, clsdict):
         t = type.__new__(cls, clsname, clsbases, clsdict)
@@ -39,6 +43,64 @@ class _MetaPacket(type):
             t.__hdr_len__ = struct.calcsize(t.__hdr_fmt__)
             t.__hdr_defaults__ = dict(compat_izip(
                 t.__hdr_fields__, [x[2] for x in st]))
+
+        # process __bit_fields__
+        bit_fields = getattr(t, '__bit_fields__', None)
+        if bit_fields:
+            t.__bit_fields_defaults__ = {}  # bit fields equivalent of __hdr_defaults__
+
+            for (ph_name, ph_struct, ph_default) in t.__hdr__:  # ph: placeholder variable for the bit field
+                if ph_name in bit_fields:
+                    field_defs = bit_fields[ph_name]
+
+                    bits_total = sum(bf[1] for bf in field_defs)  # total size in bits
+                    bits_used = 0
+
+                    # make sure the sum of bits matches the overall size of the placeholder field
+                    assert bits_total == struct.calcsize(ph_struct) * 8, \
+                        "the overall count of bits in [%s] as declared in __bit_fields__ " \
+                        "does not match its struct size in __hdr__" % ph_name
+
+                    for (bf_name, bf_size) in field_defs:
+                        if bf_name.startswith('_'):  # do not create properties for _private fields
+                            bits_used += bf_size
+                            continue
+
+                        shift = bits_total - bits_used - bf_size
+                        mask = (2**bf_size - 1) << shift  # all zeroes except the field bits
+                        mask_inv = (2**bits_total - 1) - mask  # inverse mask
+                        bits_used += bf_size
+
+                        # calculate the default value for the bit field
+                        bf_default = (t.__hdr_defaults__[ph_name] & mask) >> shift
+                        t.__bit_fields_defaults__[bf_name] = bf_default
+
+                        # create getter, setter and delete properties for the bit fields
+
+                        def make_getter(ph_name=ph_name, mask=mask, shift=shift):
+                            def getter_func(self):
+                                ph_val = getattr(self, ph_name)
+                                return (ph_val & mask) >> shift
+                            return getter_func
+
+                        def make_setter(ph_name=ph_name, mask_inv=mask_inv, shift=shift, bf_name=bf_name, max_val=2**bf_size):
+                            def setter_func(self, bf_val):
+                                # ensure the given value fits into the number of bits available
+                                if bf_val >= max_val:
+                                    raise ValueError('value %s is too large for field %s' % (bf_val, bf_name))
+
+                                ph_val = getattr(self, ph_name)
+                                ph_val_new = (bf_val << shift) | (ph_val & mask_inv)
+                                setattr(self, ph_name, ph_val_new)
+                            return setter_func
+
+                        # delete property to set the bit field back to its default value
+                        def make_delete(bf_name=bf_name, bf_default=bf_default):
+                            def delete_func(self):
+                                setattr(self, bf_name, bf_default)
+                            return delete_func
+
+                        setattr(t, bf_name, property(make_getter(), make_setter(), make_delete()))
 
         # optional map of functions for pretty printing
         # {field_name: callable(field_value) -> str, ..}
@@ -107,6 +169,41 @@ class Packet(_MetaPacket("Temp", (object,), {})):
         if hasattr(self, '__hdr_fmt__'):
             self._pack_hdr = partial(struct.pack, self.__hdr_fmt__)
 
+        # construct __public_fields__ to be used inside __repr__ and pprint
+        # once auto-formed here in __init__, the list can be customized in
+        # child classes to include or remove fields to display, as needed
+        l_ = []
+        for field_name, _, _ in getattr(self, '__hdr__', []):
+            # public fields defined in __hdr__; "public" means not starting with an underscore
+            if field_name[0] != '_':
+                l_.append(field_name)  # (1)
+
+            # if a field name starts with an underscore, and does NOT contain more underscores,
+            # it is considered hidden and is ignored (good for fields reserved for future use)
+
+            # if a field name starts with an underscore, and DOES contain more underscores,
+            # it is viewed as a complex field where underscores separate the named properties
+            # of the class;
+            elif '_' in field_name[1:]:
+                # (1) search for these properties in __bit_fields__ where they are explicitly defined
+                if field_name in getattr(self, '__bit_fields__', {}):
+                    for (prop_name, _) in self.__bit_fields__[field_name]:
+                        if isinstance(getattr(self.__class__, prop_name, None), property):
+                            l_.append(prop_name)
+
+                # (2) split by underscore into 1- and 2-component names and look for properties with such names;
+                # Example: _foo_bar_baz -> look for properties named "foo", "bar", "baz", "foo_bar" and "bar_baz"
+                # (but not "foo_bar_baz" since it contains more than one underscore)
+                else:
+                    fns = field_name[1:].split('_')
+                    for prop_name in chain(fns, ('_'.join(x) for x in zip(fns, fns[1:]))):
+                        if isinstance(getattr(self.__class__, prop_name, None), property):
+                            l_.append(prop_name)
+
+        # check for duplicates, there shouldn't be any
+        assert len(l_) == len(set(l_))
+        self.__public_fields__ = l_
+
     def __len__(self):
         return self.__hdr_len__ + len(self.data)
 
@@ -133,22 +230,27 @@ class Packet(_MetaPacket("Temp", (object,), {})):
     def __repr__(self):
         # Collect and display protocol fields in order:
         # 1. public fields defined in __hdr__, unless their value is default
-        # 2. properties derived from _private fields defined in __hdr__
+        # 2. properties derived from _private fields defined in __hdr__ and __bit_fields__
         # 3. dynamically added fields from self.__dict__, unless they are _private
         # 4. self.data when it's present
-
         l_ = []
-        # maintain order of fields as defined in __hdr__
-        for field_name, _, _ in getattr(self, '__hdr__', []):
+
+        # (1) and (2) are done via __public_fields__; just filter out defaults here
+        for field_name in self.__public_fields__:
             field_value = getattr(self, field_name)
-            if field_value != self.__hdr_defaults__[field_name]:
-                if field_name[0] != '_':
-                    l_.append('%s=%r' % (field_name, field_value))  # (1)
-                else:
-                    # interpret _private fields as name of properties joined by underscores
-                    for prop_name in field_name.split('_'):        # (2)
-                        if isinstance(getattr(self.__class__, prop_name, None), property):
-                            l_.append('%s=%r' % (prop_name, getattr(self, prop_name)))
+
+            if (hasattr(self, '__hdr_defaults__') and
+               field_name in self.__hdr_defaults__ and
+               field_value == self.__hdr_defaults__[field_name]):
+                continue
+
+            if (hasattr(self, '__bit_fields_defaults__') and
+               field_name in self.__bit_fields_defaults__ and
+               field_value == self.__bit_fields_defaults__[field_name]):
+                continue
+
+            l_.append('%s=%r' % (field_name, field_value))
+
         # (3)
         l_.extend(
             ['%s=%r' % (attr_name, attr_value)
@@ -171,17 +273,9 @@ class Packet(_MetaPacket("Temp", (object,), {})):
             except (AttributeError, KeyError):
                 l_.append('%s=%r,' % (fn, fv))
 
-        for field_name, _, _ in getattr(self, '__hdr__', []):
-            field_value = getattr(self, field_name)
-            if field_name[0] != '_':
-                add_field(field_name, field_value)
-            else:
-                # interpret _private fields as name of properties joined by underscores
-                for prop_name in field_name.split('_'):           # (2)
-                    if isinstance(getattr(self.__class__, prop_name, None), property):
-                        prop_value = getattr(self, prop_name)
-                        add_field(prop_name, prop_value)
-        # (3)
+        for field_name in self.__public_fields__:
+            add_field(field_name, getattr(self, field_name))
+
         for attr_name, attr_value in iteritems(self.__dict__):
             if (attr_name[0] != '_' and                   # exclude _private attributes
                attr_name != self.data.__class__.__name__.lower()):  # exclude fields like ip.udp
@@ -197,7 +291,6 @@ class Packet(_MetaPacket("Temp", (object,), {})):
         for ii in l_:
             print(' ' * indent, '%s' % ii)
 
-        # (4)
         if self.data:
             if isinstance(self.data, Packet):  # recursively descend to lower layers
                 print(' ' * indent, 'data=', end='')
@@ -351,6 +444,26 @@ def test_pack_hdr_overflow():
         bytes(foo)
 
 
+def test_bit_fields_overflow():
+    """Try to fit too much data into too few bits"""
+    import pytest
+
+    class Foo(Packet):
+        __hdr__ = (
+            ('_a_b', 'B', 0),
+        )
+        __bit_fields__ = {
+            '_a_b': (
+                ('a', 2),
+                ('b', 6),
+            )
+        }
+
+    foo = Foo()
+    with pytest.raises(ValueError):
+        foo.a = 5
+
+
 def test_pack_hdr_tuple():
     """Test the unpacking of a tuple for a single format string"""
     class Foo(Packet):
@@ -383,13 +496,12 @@ def test_repr():
     class TestPacket(Packet):
         __hdr__ = (('_a_b', 'B', 0),)
 
-        @property
-        def a(self):
-            return self._a_b >> 4
-
-        @property
-        def b(self):
-            return self._a_b & 0xf
+        __bit_fields__ = {
+            '_a_b': (
+                ('a', 4),
+                ('b', 4),
+            ),
+        }
 
     # default values so no output
     test_packet = TestPacket()

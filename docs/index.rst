@@ -28,6 +28,7 @@ About dpkt
     changelog
     plans
     contributing
+    creating_parsers
     license
 
 Administration

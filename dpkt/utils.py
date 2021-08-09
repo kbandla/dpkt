@@ -1,11 +1,12 @@
 """Various Utility Functions"""
 import socket
+import warnings
 from .compat import compat_ord
 from .dns import DNS
 
 
 def mac_to_str(address):
-    """Convert a MAC address to a readable/printable string
+    r"""Convert a MAC address to a readable/printable string
 
        Args:
            address (str): a MAC address in hex form (e.g. '\x01\x02\x03\x04\x05\x06')
@@ -31,8 +32,7 @@ def inet_to_str(inet):
 
 
 def make_dict(obj):
-    """This method creates a dictionary out of a non-builtin object"""
-
+    """Create a dictionary out of a non-builtin object"""
     # Recursion base case
     if is_builtin(obj):
         return obj
@@ -48,12 +48,16 @@ def make_dict(obj):
             else:
                 output_dict[key] = make_dict(attr)
 
-    # All done
     return output_dict
 
 
 def is_builtin(obj):
     return obj.__class__.__module__ in ['__builtin__', 'builtins']
+
+
+def deprecation_warning(*args):
+    """print a deprecation warning"""
+    warnings.warn(*args, stacklevel=2)
 
 
 def test_utils():
