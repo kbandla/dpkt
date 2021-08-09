@@ -5,8 +5,8 @@ from __future__ import print_function
 from __future__ import absolute_import
 
 from . import dpkt
-from .compat import iteritems, deprecation_warning
-from .utils import inet_to_str
+from .compat import iteritems
+from .utils import inet_to_str, deprecation_warning
 
 _ip_proto_names = {}  # {1: 'ICMP', 6: 'TCP', 17: 'UDP', etc.}
 

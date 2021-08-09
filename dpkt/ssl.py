@@ -9,7 +9,8 @@ import binascii
 
 from . import dpkt
 from . import ssl_ciphersuites
-from .compat import compat_ord, deprecation_warning
+from .compat import compat_ord
+from .utils import deprecation_warning
 
 #
 # Note from April 2011: cde...@gmail.com added code that parses SSL3/TLS messages more in depth.
@@ -658,7 +659,7 @@ class TestClientHello(object):
     def test_client_random_correct(self):
         assert (self.p.data.random == _hexdecode(b'5008220ce5e0e78b6891afe204498c9363feffbe03235a2d9e05b7d990eb708d'))
 
-    def test_cipher_suite(self):
+    def test_ciphersuites(self):
         assert (tuple([c.code for c in self.p.data.ciphersuites]) == struct.unpack('!{0}H'.format(
             len(self.p.data.ciphersuites)), _hexdecode(
             b'00ffc00ac0140088008700390038c00fc00500840035c007c009c011c0130045004400330032c00c'
@@ -694,8 +695,13 @@ class TestServerHello(object):
     def test_random_correct(self):
         assert (self.p.data.random == _hexdecode(b'5008220c8ec43c5462315a7c99f5d5b6bff009ad285b51dc18485f352e9fdecd'))
 
-    def test_cipher_suite(self):
-        assert (self.p.data.cipher_suite.name == 'TLS_RSA_WITH_NULL_SHA')
+    def test_ciphersuite(self):
+        assert (self.p.data.ciphersuite.name == 'TLS_RSA_WITH_NULL_SHA')
+        assert (self.p.data.cipher_suite.name == 'TLS_RSA_WITH_NULL_SHA')  # deprecated; still test for coverage
+
+    def test_compression_method(self):
+        assert (self.p.data.compression_method == 0)
+        assert (self.p.data.compression == 0)  # deprecated; still test for coverage
 
     def test_total_length(self):
         assert (len(self.p) == 81)

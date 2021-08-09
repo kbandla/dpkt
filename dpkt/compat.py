@@ -51,14 +51,3 @@ def isstr(s):
     """True if 's' is an instance of basestring in py2, or of str in py3"""
     bs = getattr(__builtins__, 'basestring', str)
     return isinstance(s, bs)
-
-
-# DeprecationWarning is ignored in Python 2 starting with 2.7
-import warnings
-if (2, 7) <= sys.version_info < (3, ):
-    def deprecation_warning(*args):
-        warnings.warn(*args)
-
-else:  # py3
-    def deprecation_warning(*args):
-        warnings.warn(*args, category=DeprecationWarning)
