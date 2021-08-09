@@ -90,8 +90,8 @@ Here is the breakdown:
 
 3. Next, ``__bit_fields__`` is an optional dict that helps decode compound protocol
    fields, such as ``_v_hl`` or ``_flags_offset`` in the IP class.
-   Each field name (as it appears in ``__hdr__``) maps to a list of tuples, defining
-   the bit fields in the network order (from high to low).
+   Each field name (as it appears in ``__hdr__``) maps to a list (technically a tuple)
+   of tuples, defining the bit fields in the network order (from high to low).
    Each tuple is *(bit field name, size in bits)*.
 
    The total sum of bit sizes must match the overall size of the placeholder field.
