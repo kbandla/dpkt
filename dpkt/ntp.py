@@ -47,30 +47,13 @@ class NTP(dpkt.Packet):
         ('receive_time', '8s', 0),
         ('transmit_time', '8s', 0)
     )
-
-    @property
-    def v(self):
-        return (self.flags >> 3) & 0x7
-
-    @v.setter
-    def v(self, v):
-        self.flags = (self.flags & ~0x38) | ((v & 0x7) << 3)
-
-    @property
-    def li(self):
-        return (self.flags >> 6) & 0x3
-
-    @li.setter
-    def li(self, li):
-        self.flags = (self.flags & ~0xc0) | ((li & 0x3) << 6)
-
-    @property
-    def mode(self):
-        return self.flags & 0x7
-
-    @mode.setter
-    def mode(self, mode):
-        self.flags = (self.flags & ~0x7) | (mode & 0x7)
+    __bit_fields__ = {
+        'flags': (
+            ('li', 2),    # leap indicator, 2 hi bits
+            ('v', 3),     # version, 3 bits
+            ('mode', 3),  # mode, 3 lo bits
+        )
+    }
 
 
 __s = (b'\x24\x02\x04\xef\x00\x00\x00\x84\x00\x00\x33\x27\xc1\x02\x04\x02\xc8\x90\xec\x11\x22\xae'

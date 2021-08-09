@@ -59,8 +59,8 @@ Jirka Vejrazka
 Tim Yardley <yardley@gmail.com>
 	DHCP definitions
 
-obormot <oscar.ibatullin@gmail.com>
-	pcapng module, Ethernet, core improvements
+Oscar Ibatullin <oscar.ibatullin@gmail.com>
+	pcapng module, core improvements, bit fields, pretty print, creating parsers doc
 
 Kyle Keppler <kyle.keppler@gmail.com>
 	Python 3 port
