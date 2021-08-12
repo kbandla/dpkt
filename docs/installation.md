@@ -1,21 +1,11 @@
-============
-Installation
-============
+# Installation
 
 DKPT is now available directly from pypi :)
 
-Install the Code
-----------------
-
-::
+## Install the Code
 
     pip install dpkt
 
-Checkout the Code
------------------
-
-::
+## Checkout the Code
 
     git clone https://github.com/kbandla/dpkt.git
-
-
