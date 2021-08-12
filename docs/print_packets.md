@@ -37,7 +37,7 @@ eth.pprint()
 
 **Example Output**
 
-``` json
+```
 Timestamp:  2004-05-13 10:17:07.311224
 Ethernet Frame:  00:00:01:00:00:00 fe:ff:20:00:01:00 2048
 IP: 145.254.160.237 -> 65.208.228.223   (len=48 ttl=128 DF=1 MF=0 offset=0)
@@ -46,10 +46,6 @@ Timestamp:  2004-05-13 10:17:08.222534
 Ethernet Frame:  fe:ff:20:00:01:00 00:00:01:00:00:00 2048
 IP: 65.208.228.223 -> 145.254.160.237   (len=48 ttl=47 DF=1 MF=0 offset=0)
 
-...
-```
-
-``` python
 ** Pretty print demo **
 
 Ethernet(
@@ -85,10 +81,5 @@ Ethernet(
 )  # Ethernet
 ```
 
-**dpkt/examples/print\_packets.py**
+**See full code at: <https://github.com/kbandla/dpkt/blob/master/examples/print_packets.py>**
 
-<div class="automodule">
-
-examples.print\_packets
-
-</div>
