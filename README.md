@@ -12,13 +12,8 @@ The dpkt project is a python module for fast, simple packet parsing, with defini
 pip install dpkt
 ```
 
-### Examples
-- [Print Packets](docs/print_packets.md)
-- [Print ICMP](docs/print_icmp.md)
-- [Print HTTP](docs/print_http_requests.md)
-
-### Documentation
-- [Main Docs for DPKT](docs/index.md)
+### Examples and Documentation
+- [Main Docs for DPKT](https://kbandla.github.io/dpkt)
 
 
 
