@@ -39,7 +39,7 @@ for timestamp, buf in pcap:
 
 **Example Output**
 
-``` json
+```
 Timestamp:  2013-05-30 22:45:17.283187
 Ethernet Frame:  60:33:4b:13:c5:58 02:1a:11:f0:c8:3b 2048
 IP: 192.168.43.9 -> 8.8.8.8   (len=84 ttl=64 DF=0 MF=0 offset=0)
@@ -53,10 +53,5 @@ ICMP: type:0 code:0 checksum:50099 data: Echo(id=55099, data='Q\xa7\xd6}\x00\x04
 ...
 ```
 
-**dpkt/examples/print\_icmp.py**
+**Set full code at: <https://github.com/kbandla/dpkt/blob/master/examples/print_icmp.py>**
 
-<div class="automodule">
-
-examples.print\_icmp
-
-</div>

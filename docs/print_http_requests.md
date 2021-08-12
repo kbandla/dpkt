@@ -54,7 +54,7 @@ for timestamp, buf in pcap:
 
 **Example Output**
 
-``` json
+```
 Timestamp:  2004-05-13 10:17:08.222534
 Ethernet Frame:  00:00:01:00:00:00 fe:ff:20:00:01:00 2048
 IP: 145.254.160.237 -> 65.208.228.223   (len=519 ttl=128 DF=1 MF=0 offset=0)
@@ -68,10 +68,5 @@ HTTP request: Request(body='', uri='/pagead/ads?client=ca-pub-2309191948673629&r
 ...
 ```
 
-**dpkt/examples/print\_http\_requests.py**
+**See full code at: <https://github.com/kbandla/dpkt/blob/master/examples/print_http_requests.py>**
 
-<div class="automodule">
-
-examples.print\_http\_requests
-
-</div>
