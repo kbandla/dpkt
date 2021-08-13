@@ -7,11 +7,11 @@ except ImportError:
 
 package_name = 'dpkt'
 description = 'fast, simple packet creation / parsing, with definitions for the basic TCP/IP protocols'
-readme = open('README.rst').read()
+readme = open('README.md').read()
 requirements = []
 
 # PyPI Readme
-long_description = open('README.rst').read()
+long_description = open('README.md').read()
 
 # Pull in the package
 package = __import__(package_name)
