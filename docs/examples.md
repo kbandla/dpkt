@@ -26,4 +26,5 @@ still apply:
 
 [Jeff Silverman](https://github.com/jeffsilverm) has some
 [code](https://github.com/jeffsilverm/dpkt_doc) and
-[documentation](http://www.commercialventvac.com/dpkt.html).
+documentation (the original link is now a 404, but it is available in the Web archive
+[here](https://web.archive.org/web/20200203070219/http://www.commercialventvac.com/dpkt.html))
