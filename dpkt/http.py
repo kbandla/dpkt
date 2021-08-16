@@ -333,6 +333,7 @@ def test_response_with_body():
     r.body = b'foo'
     assert str(r) == 'HTTP/1.0 200 OK\r\n\r\nfoo'
     assert bytes(r) == b'HTTP/1.0 200 OK\r\n\r\nfoo'
+    repr(r)
 
 
 def test_body_forbidden_response():

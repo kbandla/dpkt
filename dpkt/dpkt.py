@@ -236,7 +236,7 @@ class Packet(_MetaPacket("Temp", (object,), {})):
         l_ = []
 
         # (1) and (2) are done via __public_fields__; just filter out defaults here
-        for field_name in self.__public_fields__:
+        for field_name in getattr(self, '__public_fields__', []):
             field_value = getattr(self, field_name)
 
             if (hasattr(self, '__hdr_defaults__') and
@@ -273,7 +273,7 @@ class Packet(_MetaPacket("Temp", (object,), {})):
             except (AttributeError, KeyError):
                 l_.append('%s=%r,' % (fn, fv))
 
-        for field_name in self.__public_fields__:
+        for field_name in getattr(self, '__public_fields__', []):
             add_field(field_name, getattr(self, field_name))
 
         for attr_name, attr_value in iteritems(self.__dict__):
