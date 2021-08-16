@@ -1,9 +1,8 @@
 dpkt-1.9.7:
+	- Moved the project documentation from Read the Docs(RST) to github.io(MarkDown)
 	- Added a new mechanism for creating bit-sized field definitions in the protocol parsers (Packet.__bit_fields__)
-	- Correctly support bit field names containing underscore (eg. m_flags, max_age)
-	- Support the delete property to reset the protocol bit field back to its default value
 	- Added pretty printing capability aka Packet.pprint(), Packet.__pprint_funcs__
-	- Added documentation on developing protocol parsers in dpkt (creating_parsers.rst)
+	- Added documentation on developing protocol parsers in dpkt (creating_parsers.md)
 	- Added a universal pcap+pcapng reader (dpkt.pcap.UniversalReader)
 	- Improved TLS ClientHello and ServerHello parsing: return an "Unknown" ciphersuite instead of raising an exception, add codes for rfc8701, GREASE ciphersutes
 	- Added function to get IP protocol name
