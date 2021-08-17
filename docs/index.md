@@ -22,7 +22,7 @@ pip install dpkt
 - [Admin Notes](admin_notes.md)
 
 ## About
-This code is based on [dpkt code](https://code.google.com/p/dpkt/) lead by Dug Song and is now being maintained and improved by an extended set of [developers] (https://github.com/kbandla/dpkt/graphs/contributors).
+This code is based on [dpkt code](https://code.google.com/p/dpkt/) lead by Dug Song and is now being maintained and improved by an extended set of [developers](https://github.com/kbandla/dpkt/graphs/contributors).
 
 ## LICENSE
 
