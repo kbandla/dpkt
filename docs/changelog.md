@@ -1,5 +1,25 @@
 # Changelog
 
+## 1.9.7
+**[2021-08-16]**
+- Moved the project documentation from Read the Docs(RST) to github.io(MarkDown)
+- Added a new mechanism for creating bit-sized field definitions in the protocol parsers (Packet.\_\_bit_fields\_\_)
+- Added pretty printing capability aka Packet.pprint(), Packet.\_\_pprint_funcs\_\_
+- Added documentation on developing protocol parsers in dpkt (creating_parsers.md)
+- Added a universal pcap+pcapng reader (dpkt.pcap.UniversalReader)
+- Improved TLS ClientHello and ServerHello parsing: return an "Unknown" ciphersuite instead of raising an exception, add codes for rfc8701, GREASE ciphersutes
+- Added function to get IP protocol name
+- Modified Packet.\_\_getitem\_\_() and added Packet.\_\_contains\_\_() to address the nested protocol layers
+- Fixed payload length interpretation in AH decoder
+- Improved handling of invalid chunks in HTTP and SCTP
+- Fixed decoding of IPv6 fragments after the 1st fragment
+- Support rfc3540 nonce sum flag in TCP
+
+## 1.9.6
+**[2021-05-21]**
+- Added in the TLS 1.3 Cipher Suite from the RFC 8446 dated August 2018
+- Added support for Linux cooked capture v2, SLL2.
+
 ## 1.9.5
 **[2021-02-07]** 
 
