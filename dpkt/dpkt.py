@@ -107,6 +107,9 @@ class _MetaPacket(type):
         # define as needed in the child protocol classes
         #t.__pprint_funcs__ = {}  - disabled here to keep the base class lightweight
 
+        # placeholder for __public_fields__, a class attribute used in __repr__ and pprint()
+        t.__public_fields__ = None
+
         return t
 
 
@@ -138,7 +141,6 @@ class Packet(_MetaPacket("Temp", (object,), {})):
     >>> Foo('hello, world!')
     Foo(baz=' wor', foo=1751477356L, bar=28460, data='ld!')
     """
-
     def __init__(self, *args, **kwargs):
         """Packet constructor with ([buf], [field=val,...]) prototype.
 
@@ -169,9 +171,31 @@ class Packet(_MetaPacket("Temp", (object,), {})):
         if hasattr(self, '__hdr_fmt__'):
             self._pack_hdr = partial(struct.pack, self.__hdr_fmt__)
 
-        # construct __public_fields__ to be used inside __repr__ and pprint
-        # once auto-formed here in __init__, the list can be customized in
-        # child classes to include or remove fields to display, as needed
+    def __len__(self):
+        return self.__hdr_len__ + len(self.data)
+
+    # legacy
+    def __iter__(self):
+        return iter((fld, getattr(self, fld)) for fld in self.__class__.__hdr_fields__)
+
+    def __getitem__(self, kls):
+        """Return the 1st occurence of the underlying <kls> data layer, raise KeyError otherwise."""
+        dd = self.data
+        while isinstance(dd, Packet):
+            if dd.__class__ == kls:
+                return dd
+            dd = dd.data
+        raise KeyError(kls)
+
+    def __contains__(self, kls):
+        """Return True is the given <kls> data layer is present in the stack."""
+        try:
+            return bool(self.__getitem__(kls))
+        except KeyError:
+            return False
+
+    def _create_public_fields(self):
+        """Construct __public_fields__ to be used inside __repr__ and pprint"""
         l_ = []
         for field_name, _, _ in getattr(self, '__hdr__', []):
             # public fields defined in __hdr__; "public" means not starting with an underscore
@@ -202,32 +226,12 @@ class Packet(_MetaPacket("Temp", (object,), {})):
 
         # check for duplicates, there shouldn't be any
         assert len(l_) == len(set(l_))
-        self.__public_fields__ = l_
-
-    def __len__(self):
-        return self.__hdr_len__ + len(self.data)
-
-    # legacy
-    def __iter__(self):
-        return iter((fld, getattr(self, fld)) for fld in self.__class__.__hdr_fields__)
-
-    def __getitem__(self, kls):
-        """Return the 1st occurence of the underlying <kls> data layer, raise KeyError otherwise."""
-        dd = self.data
-        while isinstance(dd, Packet):
-            if dd.__class__ == kls:
-                return dd
-            dd = dd.data
-        raise KeyError(kls)
-
-    def __contains__(self, kls):
-        """Return True is the given <kls> data layer is present in the stack."""
-        try:
-            return bool(self.__getitem__(kls))
-        except KeyError:
-            return False
+        self.__class__.__public_fields__ = l_  # store it in the class attribute
 
     def __repr__(self):
+        if self.__public_fields__ is None:
+            self._create_public_fields()
+
         # Collect and display protocol fields in order:
         # 1. public fields defined in __hdr__, unless their value is default
         # 2. properties derived from _private fields defined in __hdr__ and __bit_fields__
@@ -236,7 +240,7 @@ class Packet(_MetaPacket("Temp", (object,), {})):
         l_ = []
 
         # (1) and (2) are done via __public_fields__; just filter out defaults here
-        for field_name in getattr(self, '__public_fields__', []):
+        for field_name in self.__public_fields__:
             field_value = getattr(self, field_name)
 
             if (hasattr(self, '__hdr_defaults__') and
@@ -264,6 +268,9 @@ class Packet(_MetaPacket("Temp", (object,), {})):
 
     def pprint(self, indent=1):
         """Human friendly pretty-print."""
+        if self.__public_fields__ is None:
+            self._create_public_fields()
+
         l_ = []
 
         def add_field(fn, fv):
@@ -273,7 +280,7 @@ class Packet(_MetaPacket("Temp", (object,), {})):
             except (AttributeError, KeyError):
                 l_.append('%s=%r,' % (fn, fv))
 
-        for field_name in getattr(self, '__public_fields__', []):
+        for field_name in self.__public_fields__:
             add_field(field_name, getattr(self, field_name))
 
         for attr_name, attr_value in iteritems(self.__dict__):
