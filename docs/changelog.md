@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.9.7.2
+**[2021-08-16]**
+- Fixed performance regression (https://github.com/kbandla/dpkt/issues/611)
+
 ## 1.9.7
 **[2021-08-16]**
 - Moved the project documentation from Read the Docs(RST) to github.io(MarkDown)
