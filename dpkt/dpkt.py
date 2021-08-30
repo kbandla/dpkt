@@ -500,8 +500,15 @@ def test_unpacking_failure():
 
 
 def test_repr():
+    """complex test for __repr__, __public_fields__"""
+
     class TestPacket(Packet):
-        __hdr__ = (('_a_b', 'B', 0),)
+        __hdr__ = (
+            ('_a_b', 'B', 1),     # 'a' and 'b' bit fields
+            ('_rsv', 'B', 0),     # hidden reserved field
+            ('_c_flag', 'B', 1),  # 'c_flag' property
+            ('d', 'B', 0)         # regular field
+        )
 
         __bit_fields__ = {
             '_a_b': (
@@ -510,10 +517,22 @@ def test_repr():
             ),
         }
 
-    # default values so no output
-    test_packet = TestPacket()
-    assert repr(test_packet) == "TestPacket()"
+        @property
+        def c_flag(self):
+            return (self.a | self.b)
 
-    # non-default values
-    test_packet = TestPacket(b'\x12')
-    assert repr(test_packet) == "TestPacket(a=1, b=2)"
+    # init with default values
+    test_packet = TestPacket()
+
+    # test repr with all default values so expect no output
+    # (except for the explicitly defined property, where dpkt doesn't process defaults yet)
+    assert repr(test_packet) == "TestPacket(c_flag=1)"
+
+    # init with non-default values
+    test_packet = TestPacket(b'\x12\x11\x00\x04')
+
+    # ensure the display fields were cached and propagated via class attribute
+    assert test_packet.__public_fields__ == ['a', 'b', 'c_flag', 'd']
+
+    # verify repr
+    assert repr(test_packet) == "TestPacket(a=1, b=2, c_flag=3, d=4)"
