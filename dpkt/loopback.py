@@ -1,6 +1,9 @@
 # $Id: loopback.py 38 2007-03-17 03:33:16Z dugsong $
 # -*- coding: utf-8 -*-
 """Platform-dependent loopback header."""
+
+# https://wiki.wireshark.org/NullLoopback
+
 from __future__ import absolute_import
 
 from . import dpkt
@@ -24,17 +27,23 @@ class Loopback(dpkt.Packet):
 
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
-        if self.family == 2:
-            self.data = ip.IP(self.data)
-
-        elif self.family == 0x02000000:
+        if self.family in (0x02, 0x02000000):
             self.family = 2
             self.data = ip.IP(self.data)
 
-        elif self.family in (24, 28, 30):
+        elif self.family in (0x18, 0x18000000):
+            self.family = 24
             self.data = ip6.IP6(self.data)
 
-        elif self.family > 1500:
+        elif self.family in (0x1c, 0x1c000000):
+            self.family = 28
+            self.data = ip6.IP6(self.data)
+
+        elif self.family in (0x1e, 0x1e000000):
+            self.family = 30
+            self.data = ip6.IP6(self.data)
+
+        else:
             self.data = ethernet.Ethernet(self.data)
 
 
@@ -43,7 +52,7 @@ def test_ethernet_unpack():
     hdr = b'\x00\x02\x00\x02'
 
     lo = Loopback(hdr + buf)
-    assert lo.family == 33554944
+    assert lo.family in (0x02000200, 0x00020002)  # little endian, big endian
     assert isinstance(lo.data, ethernet.Ethernet)
     assert lo.data.src == b'\x07\x08\t\n\x0b\x0c'
     assert lo.data.dst == b'\x01\x02\x03\x04\x05\x06'
