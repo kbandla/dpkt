@@ -888,6 +888,10 @@ def define_testdata():
         def shb_idb_epb_be(self):
             return self.valid_shb_be, self.valid_idb_be, self.valid_epb_be
 
+        @property
+        def shb_idb_epb(self):
+            return self.shb_idb_epb_le if sys.byteorder == 'little' else self.shb_idb_epb_be
+
     return TestData()
 
 
@@ -1138,15 +1142,14 @@ def test_custom_read_write():
     fobj.close()
 
     # test pcapng customized writing
-    if sys.byteorder == 'little':
-        shb, idb, epb = define_testdata().shb_idb_epb_le
-    else:
-        shb, idb, epb = define_testdata().shb_idb_epb_be
+    shb, idb, epb = define_testdata().shb_idb_epb
 
     fobj = BytesIO()
     writer = Writer(fobj, shb=shb, idb=idb)
     writer.writepkt(epb, ts=1442984653.210838)
-    assert fobj.getvalue() == buf
+    # .valid_pcapng buf was collected on a little endian system
+    if sys.byteorder == 'little':
+        assert fobj.getvalue() == buf
     fobj.close()
 
     # same with timestamps defined inside EPB
@@ -1156,14 +1159,15 @@ def test_custom_read_write():
     fobj = BytesIO()
     writer = Writer(fobj, shb=shb, idb=idb)
     writer.writepkt(epb)
-    assert fobj.getvalue() == buf
+    if sys.byteorder == 'little':
+        assert fobj.getvalue() == buf
     fobj.close()
 
 
 def test_multi_idb_writer():
     """Test writing multiple interface description blocks into pcapng and read it"""
     fobj = BytesIO()
-    shb, idb, epb = define_testdata().shb_idb_epb_le
+    shb, idb, epb = define_testdata().shb_idb_epb
 
     writer = Writer(fobj, shb=shb, idb=[idb, idb])
     writer.writepkt(epb)
@@ -1190,7 +1194,7 @@ def test_writer_validate_instance():
 def test_writepkt_epb_ts():
     """writepkt should assign ts_high/low for epb if they are 0"""
     global time
-    shb, idb, epb = define_testdata().shb_idb_epb_le
+    shb, idb, epb = define_testdata().shb_idb_epb
     writer = Writer(fobj, shb=shb, idb=idb)  # noqa
     epb.ts_high = epb.ts_low = 0
     ts = 1454725786.526401
@@ -1296,7 +1300,7 @@ def test_pcapng_block_unpack():
 
 def test_epb_unpack():
     """EnhancedPacketBlock can only unpack data >64 bytes, the length of their header"""
-    shb, idb, epb = define_testdata().shb_idb_epb_be
+    shb, idb, epb = define_testdata().shb_idb_epb
     buf = b'quite-long-but-not-long-enough-at-least-32'
     try:
         epb.unpack(buf)
@@ -1306,7 +1310,7 @@ def test_epb_unpack():
 
 def test_epb_unpack_length_mismatch():
     """Force calculated len to be 0 when unpacking epb, this should fail when unpacking"""
-    shb, idb, epb = define_testdata().shb_idb_epb_be
+    shb, idb, epb = define_testdata().shb_idb_epb
 
     unpackme = bytes(epb)
     unpackme = unpackme[:-4] + b'\x00' * 4
