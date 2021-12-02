@@ -118,6 +118,9 @@ class Ethernet(dpkt.Packet):
             if compat_ord(buf[0]) == 0x45:  # IP version 4 + header len 20 bytes
                 self._next_type = ETH_TYPE_IP
 
+            elif ( compat_ord(buf[0]) & 0xf0 ) >> 4 == 6:  # IP version 6 
+                self._next_type = ETH_TYPE_IP6
+
             # pseudowire Ethernet
             elif len(buf) >= self.__hdr_len__:
                 if buf[:2] == b'\x00\x00':  # looks like the control word (ECW)
@@ -599,6 +602,24 @@ def test_eth_mpls_stacked():  # Eth - MPLS - MPLS - IP - ICMP
     del eth.labels, eth.mpls_labels
     assert str(eth) == str(s[:12] + b'\x08\x00' + s[22:])
 
+def test_eth_mpls_ipv6():  # Eth - MPLS - IP6 - TCP
+    from . import ip6
+    from . import tcp
+
+    s = ( b'\x00\x30\x96\xe6\xfc\x39\x00\x30\x96\x05\x28\x38\x88\x47\x00\x01'
+          b'\x01\xff\x62\x8c\xed\x7b\x00\x28\x06\xfd\x22\x22\x22\x22\x03\x3f'
+          b'\x53\xd3\x48\xfb\x8b\x5a\x41\x7f\xe6\x17\x11\x11\x11\x11\x40\x0b'
+          b'\x08\x09\x00\x00\x00\x00\x00\x00\x20\x0e\xa1\x8e\x01\xbb\xd6\xde'
+          b'\x73\x17\x00\x00\x00\x00\xa0\x02\xff\xff\x58\x7f\x00\x00\x02\x04'
+          b'\x05\x8c\x04\x02\x08\x0a\x69\x23\xe8\x63\x00\x00\x00\x00\x01\x03'
+          b'\x03\x0a\xaf\x9c\xb6\x93')
+
+    eth = dpkt.ethernet.Ethernet(s)
+    assert len(eth.mpls_labels) == 1
+    assert eth.mpls_labels[0].val == 16
+    assert eth.labels == [(16, 0, 255)]
+    assert isinstance(eth.data, ip6.IP6)
+    assert isinstance(eth.data.data, tcp.TCP)
 
 def test_isl_eth_llc_stp():  # ISL - 802.3 Ethernet(w/FCS) - LLC - STP
     from . import stp
