@@ -614,7 +614,7 @@ def test_eth_mpls_ipv6():  # Eth - MPLS - IP6 - TCP
           b'\x05\x8c\x04\x02\x08\x0a\x69\x23\xe8\x63\x00\x00\x00\x00\x01\x03'
           b'\x03\x0a\xaf\x9c\xb6\x93')
 
-    eth = dpkt.ethernet.Ethernet(s)
+    eth = Ethernet(s)
     assert len(eth.mpls_labels) == 1
     assert eth.mpls_labels[0].val == 16
     assert eth.labels == [(16, 0, 255)]
