@@ -118,7 +118,7 @@ class Ethernet(dpkt.Packet):
             if compat_ord(buf[0]) == 0x45:  # IP version 4 + header len 20 bytes
                 self._next_type = ETH_TYPE_IP
 
-            elif ( compat_ord(buf[0]) & 0xf0 ) >> 4 == 6:  # IP version 6 
+            elif compat_ord(buf[0]) & 0xf0 == 0x60:  # IP version 6 
                 self._next_type = ETH_TYPE_IP6
 
             # pseudowire Ethernet
