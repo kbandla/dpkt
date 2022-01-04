@@ -72,7 +72,7 @@ def test_utils():
     ipv6_inet = b' \x01\r\xb8\x85\xa3\x00\x00\x00\x00\x8a.\x03ps4'
     assert inet_to_str(ipv6_inet) == '2001:db8:85a3::8a2e:370:7334'
 
-    # Test the make_dict method with a DNS reponse packet
+    # Test the make_dict method with a DNS response packet
     a_resp = unhexlify("059c8180000100010000000106676f6f676c6503636f6d0000010001c00c00010"
                        "0010000012b0004d83ace2e0000290200000000000000")
     my_dns = DNS(a_resp)

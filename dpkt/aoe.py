@@ -91,7 +91,7 @@ def test_creation():
 
 def test_properties():
     aoe = AOE()
-    # propery getters
+    # property getters
     assert aoe.ver == 1
     assert aoe.fl == 0
 
@@ -113,7 +113,7 @@ def test_unpack():
         '00000000'    # tag
     )
     aoe = AOE(buf)
-    # AOE_CMD_ATA speficied, but no data supplied
+    # AOE_CMD_ATA specified, but no data supplied
     assert aoe.data == b''
 
     buf = unhexlify(

@@ -1,6 +1,6 @@
 """
-Use DPKT to read in a pcap file and print out the contents of trucated
-DNS packets. This example show how to read/handle trucated packets
+Use DPKT to read in a pcap file and print out the contents of truncated
+DNS packets. This example show how to read/handle truncated packets
 """
 import sys
 import dpkt
@@ -48,7 +48,7 @@ def print_packet(buf):
         print('UDP: sport={:d} dport={:d} sum={:d} ulen={:d}'.format(udp.sport, udp.dport,
                                                                      udp.sum, udp.ulen))
 
-        # Now see if we can parse the contents of the trucated DNS request
+        # Now see if we can parse the contents of the truncated DNS request
         try:
             dns = dpkt.dns.DNS()
             dns.unpack(udp.data)
