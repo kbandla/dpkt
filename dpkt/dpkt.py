@@ -179,7 +179,7 @@ class Packet(_MetaPacket("Temp", (object,), {})):
         return iter((fld, getattr(self, fld)) for fld in self.__class__.__hdr_fields__)
 
     def __getitem__(self, kls):
-        """Return the 1st occurence of the underlying <kls> data layer, raise KeyError otherwise."""
+        """Return the 1st occurrence of the underlying <kls> data layer, raise KeyError otherwise."""
         dd = self.data
         while isinstance(dd, Packet):
             if dd.__class__ == kls:

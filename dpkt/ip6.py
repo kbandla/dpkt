@@ -150,7 +150,7 @@ class IP6ExtensionHeader(dpkt.Packet):
 class IP6OptsHeader(IP6ExtensionHeader):
     __hdr__ = (
         ('nxt', 'B', 0),  # next extension header protocol
-        ('len', 'B', 0)  # option data length in 8 octect units (ignoring first 8 octets) so, len 0 == 64bit header
+        ('len', 'B', 0)  # option data length in 8 octet units (ignoring first 8 octets) so, len 0 == 64bit header
     )
 
     def unpack(self, buf):
@@ -203,7 +203,7 @@ class IP6DstOptsHeader(IP6OptsHeader):
 class IP6RoutingHeader(IP6ExtensionHeader):
     __hdr__ = (
         ('nxt', 'B', 0),  # next extension header protocol
-        ('len', 'B', 0),  # extension data length in 8 octect units (ignoring first 8 octets) (<= 46 for type 0)
+        ('len', 'B', 0),  # extension data length in 8 octet units (ignoring first 8 octets) (<= 46 for type 0)
         ('type', 'B', 0),  # routing type (currently, only 0 is used)
         ('segs_left', 'B', 0),  # remaining segments in route, until destination (<= 23)
         ('_rsvd_sl_bits', 'I', 0)

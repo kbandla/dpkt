@@ -29,7 +29,7 @@ def encode_name(name):
 
     Each 4-bit, half-octet of the NetBIOS name is treated as an 8-bit,
     right-adjusted, zero-filled binary number.  This number is added to
-    value of the ASCII character 'A' (hexidecimal 41).  The resulting 8-
+    value of the ASCII character 'A' (hexadecimal 41).  The resulting 8-
     bit number is stored in the appropriate byte.  The following diagram
     demonstrates this procedure:
 
@@ -61,7 +61,7 @@ def encode_name(name):
     The NetBIOS scope identifier is a valid domain name (without a
     leading dot).
 
-    An ASCII dot (2E hexidecimal) and the scope identifier are appended
+    An ASCII dot (2E hexadecimal) and the scope identifier are appended
     to the encoded form of the NetBIOS name, the result forming a valid
     domain name.
     """

@@ -22,9 +22,9 @@ ICMP6_MEMBERSHIP_REPORT = 131  # group membership report
 ICMP6_MEMBERSHIP_REDUCTION = 132  # group membership termination
 
 ND_ROUTER_SOLICIT = 133  # router solicitation
-ND_ROUTER_ADVERT = 134  # router advertisment
+ND_ROUTER_ADVERT = 134  # router advertisement
 ND_NEIGHBOR_SOLICIT = 135  # neighbor solicitation
-ND_NEIGHBOR_ADVERT = 136  # neighbor advertisment
+ND_NEIGHBOR_ADVERT = 136  # neighbor advertisement
 ND_REDIRECT = 137  # redirect
 
 ICMP6_ROUTER_RENUMBERING = 138  # router renumbering

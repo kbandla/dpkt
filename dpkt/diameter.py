@@ -14,7 +14,7 @@ from .compat import compat_ord
 
 # Request/Answer Command Codes
 ABORT_SESSION = 274
-ACCOUTING = 271
+ACCOUNTING = 271
 CAPABILITIES_EXCHANGE = 257
 DEVICE_WATCHDOG = 280
 DISCONNECT_PEER = 282

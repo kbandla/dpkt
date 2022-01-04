@@ -911,7 +911,7 @@ class WriterTestWrap:
     """
     Decorate a writer test function with an instance of this class.
 
-    The test will be provided with a writer object, which it shoud write some pkts to.
+    The test will be provided with a writer object, which it should write some pkts to.
 
     After the test has run, the BytesIO object will be passed to a Reader,
     which will compare each pkt to the return value of the test.

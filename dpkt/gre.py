@@ -101,7 +101,7 @@ class GRE(dpkt.Packet):
             self.data = ethernet.Ethernet._typesw[self.p](self.data)
             setattr(self, self.data.__class__.__name__.lower(), self.data)
         except (KeyError, dpkt.UnpackError):
-            # data alrady set
+            # data already set
             pass
 
     def __len__(self):
