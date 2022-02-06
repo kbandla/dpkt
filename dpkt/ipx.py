@@ -11,11 +11,17 @@ IPX_HDR_LEN = 30
 class IPX(dpkt.Packet):
     """Internetwork Packet Exchange.
 
-    TODO: Longer class information....
+    Internetwork Packet Exchange (IPX) is the network layer protocol in the IPX/SPX protocol suite.
+    IPX is derived from Xerox Network Systems' IDP. It also has the ability to act as a transport layer protocol.
 
     Attributes:
         __hdr__: Header fields of IPX.
-        TODO.
+            sum: (int): Checksum (2 bytes).
+            len: (int): Packet Length (including the IPX header / 2 bytes).
+            tc: (int): Transport Control (hop count / 1 byte).
+            pt: (int): Packet Type (1 byte).
+            dst: (bytes): Destination address (12 bytes).
+            src: (bytes): Source address (12 bytes).
     """
 
     __hdr__ = (

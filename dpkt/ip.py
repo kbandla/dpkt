@@ -18,11 +18,22 @@ def get_ip_proto_name(p):
 class IP(dpkt.Packet):
     """Internet Protocol.
 
-    TODO: Longer class information....
+    The Internet Protocol (IP) is the network layer communications protocol in the Internet protocol suite
+    for relaying datagrams across network boundaries. Its routing function enables internetworking, and
+    essentially establishes the Internet.
 
     Attributes:
         __hdr__: Header fields of IP.
-        TODO.
+        _v_hl: (int): Version (4 bit) For IPv4, this is always equal to 4 and Internet Header Length (IHL) (4 bit)
+        tos: (int): Type of service. (1 byte)
+        len: (int): Total Length. Defines the entire packet size in bytes, including header and data.(2 bytes)
+        id: (int): Identification. Uniquely identifying the group of fragments of a single IP datagram. (2 bytes)
+        _flags_offset: (int): Flags (3 bit) and Fragment offset (13 bit)
+        ttl: (int): Time to live (1 byte)
+        p: (int): Protocol. This field defines the protocol used in the data portion of the IP datagram. (1 byte)
+        sum: (int): Header checksum. (2 bytes)
+        src: (int): Source address. This field is the IPv4 address of the sender of the packet. (4 bytes)
+        dst: (int): Destination address. This field is the IPv4 address of the receiver of the packet. (4 bytes)
     """
 
     __hdr__ = (

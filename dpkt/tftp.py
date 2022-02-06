@@ -29,11 +29,13 @@ ENOUSER = 7  # no such user
 class TFTP(dpkt.Packet):
     """Trivial File Transfer Protocol.
 
-    TODO: Longer class information....
+    Trivial File Transfer Protocol (TFTP) is a simple lockstep File Transfer Protocol which allows a client to get
+    a file from or put a file onto a remote host. One of its primary uses is in the early stages of nodes booting
+    from a local area network. TFTP has been used for this application because it is very simple to implement.
 
     Attributes:
         __hdr__: Header fields of TFTP.
-        TODO.
+            opcode: Operation Code (2 bytes)
     """
 
     __hdr__ = (('opcode', 'H', 1), )

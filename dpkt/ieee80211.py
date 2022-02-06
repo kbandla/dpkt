@@ -120,11 +120,14 @@ BLOCK_ACK_CODE_DELBA = 2
 class IEEE80211(dpkt.Packet):
     """IEEE 802.11.
 
-    TODO: Longer class information....
+    IEEE 802.11 is part of the IEEE 802 set of local area network (LAN) technical standards,
+    and specifies the set of media access control (MAC) and physical layer (PHY) protocols
+    for implementing wireless local area network (WLAN) computer communication.
 
     Attributes:
         __hdr__: Header fields of IEEE802.11.
-        TODO.
+            framectl: (int): Frame control (2 bytes)
+            duration: (int): Duration ID (2 bytes)
     """
 
     __hdr__ = (

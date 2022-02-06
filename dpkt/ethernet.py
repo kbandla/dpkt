@@ -61,7 +61,9 @@ class Ethernet(dpkt.Packet):
 
     Attributes:
         __hdr__: Header fields of Ethernet.
-        TODO.
+            dst: (bytes): Destination MAC address
+            src: (bytes): Source MAC address
+            type: (int): Ethernet frame type (Ethernet II, Novell raw IEEE 802.3, IEEE 802.2 LLC, IEEE 802.2 SNAP)
     """
 
     __hdr__ = (

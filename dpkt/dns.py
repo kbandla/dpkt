@@ -125,11 +125,18 @@ def unpack_name(buf, off):
 class DNS(dpkt.Packet):
     """Domain Name System.
 
-    TODO: Longer class information....
+    The Domain Name System (DNS) is the hierarchical and decentralized naming system used to identify computers,
+    services, and other resources reachable through the Internet or other Internet Protocol (IP) networks.
+    The resource records contained in the DNS associate domain names with other forms of information.
 
     Attributes:
-        __hdr__: Header fields of DNS.
-        TODO.
+        __hdr__ (tuple(header_name, c_type, offset)): Header fields of DNS.
+            id: (int): Identification. Used to match request/reply packets.
+            op: (int): Operation
+            qd: (int): Query Definition
+            an: (int): Answer
+            ns: (int): Name Server
+            ar: (int): Additional Record
     """
 
     __hdr__ = (
@@ -144,6 +151,7 @@ class DNS(dpkt.Packet):
 
     @property
     def qr(self):
+        """int: DNS Query/Response. 1 bit"""
         return int((self.op & DNS_QR) == DNS_QR)
 
     @qr.setter
@@ -155,6 +163,7 @@ class DNS(dpkt.Packet):
 
     @property
     def opcode(self):
+        """Operation code. 4 bits."""
         return (self.op >> 11) & 0xf
 
     @opcode.setter
@@ -163,6 +172,8 @@ class DNS(dpkt.Packet):
 
     @property
     def aa(self):
+        """int: Authoritative Answer. 1 bit.
+        Specifies that the responding name server is an authority for the domain name in question section."""
         return int((self.op & DNS_AA) == DNS_AA)
 
     @aa.setter
@@ -174,6 +185,7 @@ class DNS(dpkt.Packet):
 
     @property
     def tc(self):
+        """int: Truncated. 1 bit. Indicates that only the first 512 bytes of the reply was returned."""
         return int((self.op & DNS_TC) == DNS_TC)
 
     @tc.setter
@@ -185,6 +197,8 @@ class DNS(dpkt.Packet):
 
     @property
     def rd(self):
+        """Recursion Desired. 1 bit. May be set in a query and is copied into the response.
+        If set, the name server is directed to pursue the query recursively. Recursive query support is optional."""
         return int((self.op & DNS_RD) == DNS_RD)
 
     @rd.setter
@@ -196,6 +210,7 @@ class DNS(dpkt.Packet):
 
     @property
     def ra(self):
+        """Recursion Available. 1 bit. Indicates if recursive query support is available in the name server."""
         return int((self.op & DNS_RA) == DNS_RA)
 
     @ra.setter
@@ -207,6 +222,7 @@ class DNS(dpkt.Packet):
 
     @property
     def zero(self):
+        """Zero 1 bit"""
         return int((self.op & DNS_Z) == DNS_Z)
 
     @zero.setter
@@ -218,6 +234,7 @@ class DNS(dpkt.Packet):
 
     @property
     def rcode(self):
+        """Return code. 4 bits."""
         return self.op & 0xf
 
     @rcode.setter
