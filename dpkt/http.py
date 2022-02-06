@@ -83,11 +83,16 @@ def parse_body(f, headers):
 class Message(dpkt.Packet):
     """Hypertext Transfer Protocol headers + body.
 
-    TODO: Longer class information....
+    HTTP messages are how data is exchanged between a server and a client. There are two types of messages: requests
+    sent by the client to trigger an action on the server, and responses, the answer from the server. HTTP messages are
+     composed of textual information encoded in ASCII, and span over multiple lines. In HTTP/1.1, and earlier versions
+     of the protocol, these messages were openly sent across the connection. In HTTP/2, the once human-readable message
+     is now divided up into HTTP frames, providing optimization and performance improvements.
 
     Attributes:
         __hdr__: Header fields of HTTP.
-        TODO.
+            The start-line and HTTP headers of the HTTP message are collectively known as the head of the requests,
+            whereas its payload is known as the body.
     """
 
     __metaclass__ = type
@@ -136,11 +141,20 @@ class Message(dpkt.Packet):
 class Request(Message):
     """Hypertext Transfer Protocol Request.
 
-    TODO: Longer class information....
+    HTTP requests are messages sent by the client to initiate an action on the server. Their start-line contain three
+    elements. An HTTP method, a verb (like GET, PUT or POST) or a noun (like HEAD or OPTIONS), The request target,
+    usually a URL, or the absolute path of the protocol, port, and domain are usually characterized by the request
+    context and The HTTP version, which defines the structure of the remaining message, acting as an indicator of the
+    expected version to use for the response.
 
     Attributes:
         __hdr__: Header fields of HTTP request.
-        TODO.
+            Many headers can appear in requests. They can be divided in several groups:
+                General headers, like Via, apply to the message as a whole.
+                Request headers, like User-Agent or Accept, modify the request by specifying it further (like Accept-
+                    Language), by giving context (like Referer), or by conditionally restricting it (like If-None).
+                Representation headers like Content-Type that describe the original format of the message data and
+                    any encoding applied (only present if the message has a body).
     """
 
     __hdr_defaults__ = {
@@ -195,11 +209,19 @@ class Request(Message):
 class Response(Message):
     """Hypertext Transfer Protocol Response.
 
-    TODO: Longer class information....
+    The start line of an HTTP response, called the status line, contains the following information. The protocol
+    version, usually HTTP/1.1, a status code, indicating success or failure of the request. Common status codes are 200,
+     404, or 302, a status text. A brief, purely informational, textual description of the status code to help a human
+     understand the HTTP message. A typical status line looks like: HTTP/1.1 404 Not Found.
 
     Attributes:
         __hdr__: Header fields of HTTP Response.
-        TODO.
+            Many headers can appear in responses. These can be divided into several groups:
+                General headers, like Via, apply to the whole message.
+                Response headers, like Vary and Accept-Ranges, give additional information about the server which
+                    doesn't fit in the status line.
+                Representation headers like Content-Type that describe the original format of the message data and any
+                    encoding applied (only present if the message has a body).
     """
 
     __hdr_defaults__ = {

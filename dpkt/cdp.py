@@ -27,12 +27,19 @@ CDP_LOCATION = 23  # string
 class CDP(dpkt.Packet):
     """Cisco Discovery Protocol.
 
+    Cisco Discovery Protocol (CDP) is a proprietary Data Link Layer protocol developed by Cisco Systems in 1994
+    by Keith McCloghrie and Dino Farinacci. It is used to share information about other directly connected
+    Cisco equipment, such as the operating system version and IP address.
+
     See more on
     https://en.wikipedia.org/wiki/Cisco_Discovery_Protocol
 
     Attributes:
         __hdr__: Header fields of CDP.
-        #TODO
+            version: (int): CDP protocol version. (1 byte)
+            ttl: (int): TIme to live. The amount of time in seconds that a receiver should retain the information
+                contained in this packet. (1 byte)
+            sum: (int): Checksum. (2 bytes)
     """
 
     __hdr__ = (
@@ -42,8 +49,15 @@ class CDP(dpkt.Packet):
     )
 
     class TLV(dpkt.Packet):
-        """When constructing the packet, len is not mandatory:
+        """Type–length–value
+
+        When constructing the packet, len is not mandatory:
         if not provided, then self.data must be this exact TLV payload
+
+        Attributes:
+            __hdr__: Header fields of TLV.
+                type: (int): Type (2 bytes)
+                len: (int): The total length in bytes of the Type, Length and Data fields. (2 bytes)
         """
 
         __hdr__ = (

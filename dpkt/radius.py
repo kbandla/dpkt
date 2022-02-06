@@ -13,11 +13,17 @@ from .compat import compat_ord
 class RADIUS(dpkt.Packet):
     """Remote Authentication Dial-In User Service.
 
-    TODO: Longer class information....
+    Remote Authentication Dial-In User Service (RADIUS) is a networking protocol that provides centralized
+    authentication, authorization, and accounting (AAA) management for users who connect and use a network service.
+    RADIUS was developed by Livingston Enterprises in 1991 as an access server authentication and accounting protocol.
+    It was later brought into IEEE 802 and IETF standards.
 
     Attributes:
         __hdr__: Header fields of RADIUS.
-        TODO.
+            code: (int): Code. (1 byte)
+            id: (int): ID (1 byte)
+            len: (int): Length (2 bytes)
+            auth: (int): Authentication (16 bytes)
     """
 
     __hdr__ = (

@@ -42,11 +42,15 @@ ICMP6_MAXTYPE = 201
 class ICMP6(dpkt.Packet):
     """Internet Control Message Protocol for IPv6.
 
-    TODO: Longer class information....
+    Internet Control Message Protocol version 6 (ICMPv6) is the implementation of the Internet Control Message Protocol
+    (ICMP) for Internet Protocol version 6 (IPv6). ICMPv6 is an integral part of IPv6 and performs error reporting
+    and diagnostic functions.
 
     Attributes:
         __hdr__: Header fields of ICMPv6.
-        TODO.
+            type: (int): Type. Control messages are identified by the value in the type field.  (1 byte)
+            code: (int): Code. The code field gives additional context information for the message. (1 byte)
+            sum: (int): Checksum. ICMPv6 provides a minimal level of message integrity verification. (2 bytes)
     """
 
     __hdr__ = (

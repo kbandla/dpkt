@@ -98,11 +98,14 @@ ESCAPE_FOR_EXTENSION = 127
 class H225(dpkt.Packet):
     """ITU-T H.225.0 Call Signaling.
 
-    TODO: Longer class information....
+    H.225.0 is a key protocol in the H.323 VoIP architecture defined by ITU-T. H.225.0 describes how audio, video,
+    data and control information on a packet based network can be managed to provide conversational services in H.323
+    equipment. H.225.0 has two major parts: Call signaling and RAS (Registration, Admission and Status).
 
     Attributes:
         __hdr__: Header fields of H225.
-        TODO.
+            proto: (int): Protocol Discriminator. The Protocol Discriminator identifies the Layer 3 protocol. (1 byte)
+            ref_len: (int): Call Reference Value. Contains the length of the Call Reference Value (CRV) field. (1 byte)
     """
 
     __hdr__ = (

@@ -13,11 +13,17 @@ PMAP_VERS = 2
 class Pmap(dpkt.Packet):
     """Portmap / rpcbind.
 
-    TODO: Longer class information....
+    The port mapper (rpc.portmap or just portmap, or rpcbind) is an Open Network Computing Remote Procedure
+    Call (ONC RPC) service that runs on network nodes that provide other ONC RPC services. The port mapper service
+    always uses TCP or UDP port 111; a fixed port is required for it, as a client would not be able to get the
+    port number for the port mapper service from the port mapper itself.
 
     Attributes:
         __hdr__: Header fields of Pmap.
-        TODO.
+            prog: (int) Program. (4 bytes)
+            vers: (int) Version. (4 bytes)
+            prot: (int) Protocol. (4 bytes)
+            port: (int) Port. (4 bytes)
     """
 
     __hdr__ = (

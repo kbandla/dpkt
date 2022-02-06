@@ -26,11 +26,16 @@ GRE_opt_fields = (
 class GRE(dpkt.Packet):
     """Generic Routing Encapsulation.
 
-    TODO: Longer class information....
+    Generic Routing Encapsulation, or GRE, is a protocol for encapsulating data packets that use one routing protocol
+    inside the packets of another protocol. "Encapsulating" means wrapping one data packet within another data packet,
+    like putting a box inside another box. GRE is one way to set up a direct point-to-point connection across a network,
+    for the purpose of simplifying connections between separate networks. It works with a variety of network layer
+    protocols.
 
     Attributes:
         __hdr__: Header fields of GRE.
-        TODO.
+            flags: (int): Flag bits. (2 bytes)
+            p: (int): Protocol Type (2 bytes)
     """
 
     __hdr__ = (
@@ -49,6 +54,7 @@ class GRE(dpkt.Packet):
 
     @property
     def recur(self):
+        """Recursion control bits. (3 bits)"""
         return (self.flags >> 5) & 0x7
 
     @recur.setter

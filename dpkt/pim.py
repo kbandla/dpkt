@@ -9,11 +9,16 @@ from . import dpkt
 class PIM(dpkt.Packet):
     """Protocol Independent Multicast.
 
-    TODO: Longer class information....
+    Protocol Independent Multicast (PIM) is a collection of multicast routing protocols, each optimized for a different
+    environment. There are two main PIM protocols, PIM Sparse Mode and PIM Dense Mode. A third PIM protocol,
+    Bi-directional PIM, is less widely used.
 
     Attributes:
         __hdr__: Header fields of PIM.
-        TODO.
+            _v_type: (int): Version (4 bits) and type (4 bits). PIM version number and Message type. (1 byte)
+            _rsvd: (int): Reserved. Always cleared to zero. (1 byte)
+            sum: (int): Checksum. The 16-bit one's complement of the one's complement sum of the entire PIM message,
+                excluding the data portion in the Register message.(2 bytes)
     """
 
     __hdr__ = (

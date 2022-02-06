@@ -25,11 +25,23 @@ SESSION_TERMINATION = 275
 class Diameter(dpkt.Packet):
     """Diameter.
 
-    TODO: Longer class information....
+    Diameter is an authentication, authorization, and accounting protocol for computer networks. It evolved from the
+    earlier RADIUS protocol. It belongs to the application layer protocols in the internet protocol suite.
 
     Attributes:
         __hdr__: Header fields of Diameter.
-        TODO.
+            v: (int) Version. The version of the Diameter Base Protocol.
+                As of 2014, the only value supported is 1. (1 byte)
+            len: (bytes): Message Length. The Message Length field indicates the length of the Diameter message in
+                bytes, including the header fields and the padded AVPs. (3 bytes)
+            flags: (int): Command flags. (Request, Proxiable, Error, Potentially re-transmitted message) (1 byte)
+            cmd: (bytes): Commands. Determine the action that is to be taken for a particular message. (3 bytes)
+            app_id: (int): Application-ID. Application-ID is used to identify for which Diameter application the
+                message is applicable. (4 bytes)
+            hop_id: (int): Hop-by-Hop Identifier. Used to match the requests with their answers as the same value in
+                the request is used in the response. (4 bytes)
+            end_id: (int): End-to-End Identifier. used to detect duplicate messages along with the combination of the
+                Origin-Host AVP. (4 bytes)
     """
 
     __hdr__ = (

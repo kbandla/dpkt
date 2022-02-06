@@ -103,11 +103,33 @@ DHCPINFORM = 8
 class DHCP(dpkt.Packet):
     """Dynamic Host Configuration Protocol.
 
-    TODO: Longer class information....
+    The Dynamic Host Configuration Protocol (DHCP) is a network management protocol used on Internet Protocol (IP)
+    networks for automatically assigning IP addresses and other communication parameters to devices connected
+    to the network using a client–server architecture.
 
     Attributes:
         __hdr__: Header fields of DHCP.
-        TODO.
+            op: (int): Operation. This is called operation field and it identify the message type
+                either Request(1) or Reply(2). (1 byte)
+            hrd: (int): Hardware type. This field specifies the type of hardware address and its value is 1 for Ethernet
+                and is assigned based on the value used in ARP header. (1 byte)
+            hln: (int): Hardware Length. This tells the number of bytes used to hold the MAC address
+                and is usually 6. (1 byte)
+            hops: (int): Hops. This field stores the number of Hops /relays this message has passed.
+                The sender of message set this is 0 (1 byte)
+            xid: (int): Transaction ID. Random value set by the client so the DHCP server can use this same value when
+                 sending a response to the client to identify the messages between them from other messages. (4 bytes)
+            secs: (int): Seconds. This is second elapsed since client started the address acquisition or
+                renewal process and this is set by client (2 bytes)
+            flags: (int): DHCP Flags. (2 bytes)
+            ciaddr: (int): Client IP address. (4 bytes)
+            yiaddr: (int): User IP address. (4 bytes)
+            siaddr: (int): Server IP address. (4 bytes)
+            giaddr: (int): Gateway IP address. (4 bytes)
+            chaddr: (int): Client hardware address. (16 bytes)
+            sname: (int): Server Hostname. (64 bytes)
+            file: (int): Boot File Name. (128 bytes)
+            magic: (int): Magic cookie. (4 bytes)
     """
 
     __hdr__ = (

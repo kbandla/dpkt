@@ -18,14 +18,19 @@ PFC_BIT = 0x01
 
 
 class PPP(dpkt.Packet):
-    # Note: This class is subclassed in PPPoE
     """Point-to-Point Protocol.
 
-    TODO: Longer class information....
+    Point-to-Point Protocol (PPP) is a data link layer (layer 2) communication protocol between two routers directly
+    without any host or any other networking in between. It can provide connection authentication, transmission
+    encryption and data compression.
+
+    Note: This class is subclassed in PPPoE
 
     Attributes:
         __hdr__: Header fields of PPP.
-        TODO.
+            addr: (int): Address. 0xFF, standard broadcast address. (1 byte)
+            cntrl: (int): Control. 0x03, unnumbered data. (1 byte)
+            p: (int): Protocol. PPP ID of embedded data. (1 byte)
     """
 
     __hdr__ = (

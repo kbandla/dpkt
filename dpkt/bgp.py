@@ -135,7 +135,9 @@ class BGP(dpkt.Packet):
 
     Attributes:
         __hdr__: Header fields of BGP.
-        #TODO
+            marker: (bytes): Marker. Included for compatibility, must be set to all ones. (16 bytes)
+            len: (int): Length: Total length of the message in octets, including the header. (2 bytes)
+            type: (int): Type: Type of BGP message. (1 byte)
     """
 
     __hdr__ = (
