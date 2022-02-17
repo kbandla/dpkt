@@ -73,6 +73,8 @@ class TLS(dpkt.Packet):
             end = pointer + 5 + struct.unpack("!H", buf[pointer + 3:pointer + 5])[0]
             self.records.append(TLSRecord(buf[pointer:end]))
             pointer = end
+        self.data = self.data[pointer:]
+
 
 
 # SSLv3/TLS versions
