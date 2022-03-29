@@ -169,6 +169,17 @@ def test_icmp():
     assert p.sum == 0x5387
 
 
-if __name__ == '__main__':
-    test_icmp()
-    print('Tests Successful...')
+def test_invalid_data():
+    from binascii import unhexlify
+
+    buf = unhexlify(
+        '01'    # type (invalid entry)
+        '00'    # code
+        '0000'  # sum
+
+        'abcd'  # data
+    )
+    icmp = ICMP(buf)
+
+    # no additional attributes have been added due to the type being invalid
+    assert dir(icmp) == dir(ICMP())

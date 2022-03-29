@@ -59,11 +59,17 @@ Jirka Vejrazka
 Tim Yardley <yardley@gmail.com>
 	DHCP definitions
 
-obormot <oscar.ibatullin@gmail.com>
-	pcapng module, Packet repr improvements
-	
+Oscar Ibatullin <oscar.ibatullin@gmail.com>
+	pcapng module, core improvements, bit fields, pretty print, creating parsers doc
+
 Kyle Keppler <kyle.keppler@gmail.com>
 	Python 3 port
 
 Hao Sun <sunhao2013@gmail.com>
 	Python 3 port
+
+Brian Wylie <briford.wylie@gmail.com>
+    Examples, Docs, Tests, CI, Python 3 port
+
+crocogorical <crocogorical@gmail.com>
+	Extend test coverage

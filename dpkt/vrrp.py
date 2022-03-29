@@ -5,7 +5,6 @@ from __future__ import print_function
 from __future__ import absolute_import
 
 from . import dpkt
-from .decorators import deprecated
 
 
 class VRRP(dpkt.Packet):
@@ -27,32 +26,23 @@ class VRRP(dpkt.Packet):
         ('advtime', 'B', 0),
         ('sum', 'H', 0),
     )
+    __bit_fields__ = {
+        '_v_type': (
+            ('v', 4),
+            ('type', 4),
+        )
+    }
+
     addrs = ()
     auth = ''
 
-    @property
-    def v(self):  # high 4 bits of _v_type
-        return self._v_type >> 4
-
-    @v.setter
-    def v(self, v):
-        self._v_type = (self._v_type & 0x0f) | (v << 4)
-
-    @property
-    def type(self):  # low 4 bits of _v_type
-        return self._v_type & 0x0f
-
-    @type.setter
-    def type(self, v):
-        self._v_type = (self._v_type & 0xf0) | (v & 0x0f)
-
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
-        l = []
+        l_ = []
         off = 0
         for off in range(0, 4 * self.count, 4):
-            l.append(self.data[off:off + 4])
-        self.addrs = l
+            l_.append(self.data[off:off + 4])
+        self.addrs = l_
         self.auth = self.data[off + 4:]
         self.data = ''
 
@@ -64,6 +54,7 @@ class VRRP(dpkt.Packet):
         if not self.sum:
             self.sum = dpkt.in_cksum(self.pack_hdr() + data)
         return self.pack_hdr() + data
+
 
 def test_vrrp():
     # no addresses
@@ -94,9 +85,3 @@ def test_vrrp():
     v.v = 3
     v.type = 2
     assert bytes(v)[0] == b'\x32'[0]
-
-
-if __name__ == '__main__':
-    test_vrrp()
-
-    print('Tests Successful...')

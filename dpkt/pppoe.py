@@ -8,7 +8,6 @@ import codecs
 
 from . import dpkt
 from . import ppp
-from .decorators import deprecated
 
 # RFC 2516 codes
 PPPoE_PADI = 0x09
@@ -35,22 +34,12 @@ class PPPoE(dpkt.Packet):
         ('session', 'H', 0),
         ('len', 'H', 0)  # payload length
     )
-
-    @property
-    def v(self):
-        return self._v_type >> 4
-
-    @v.setter
-    def v(self, v):
-        self._v_type = (v << 4) | (self._v_type & 0xf)
-
-    @property
-    def type(self):
-        return self._v_type & 0xf
-
-    @type.setter
-    def type(self, t):
-        self._v_type = (self._v_type & 0xf0) | t
+    __bit_fields__ = {
+        '_v_type': (
+            ('v', 4),
+            ('type', 4),
+        )
+    }
 
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
@@ -153,6 +142,48 @@ def test_ppp_packing():
 def test_ppp_short():
     import pytest
     pytest.raises(dpkt.NeedData, PPP, b"\x00")
+
+
+def test_pppoe_properties():
+    pppoe = PPPoE()
+    assert pppoe.v == 1
+    pppoe.v = 7
+    assert pppoe.v == 7
+
+    assert pppoe.type == 1
+    pppoe.type = 5
+    assert pppoe.type == 5
+
+
+def test_pppoe_unpack_error():
+    from binascii import unhexlify
+    buf = unhexlify(
+        "11"    # v/type
+        "00"    # code
+        "0011"  # session
+        "0066"  # len
+
+        "00"    # data
+    )
+    # this initialization swallows the UnpackError raised
+    pppoe = PPPoE(buf)
+    # unparsed data is still available
+    assert pppoe.data == b'\x00'
+
+
+def test_ppp_pack_hdr():
+    import pytest
+    from binascii import unhexlify
+
+    buf = unhexlify(
+        '01'  # protocol, with compression bit set
+
+        'ff'  # incomplete data
+    )
+    ppp = PPP(buf)
+    ppp.p = 1234567
+    with pytest.raises(dpkt.PackError):
+        ppp.pack_hdr()
 
 
 # XXX - TODO TLVs, etc.

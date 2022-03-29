@@ -23,7 +23,7 @@ class TNS(dpkt.Packet):
         ('type', 'B', 0),
         ('rsvd', 'B', 0),
         ('hdrsum', 'H', 0),
-        ('msg', '0s', ''),
+        ('msg', '0s', b''),
     )
 
     def unpack(self, buf):
@@ -47,9 +47,3 @@ def test_tns():
         t = TNS(s[:-10])
     except dpkt.NeedData:
         pass
-
-
-if __name__ == '__main__':
-    test_tns()
-
-    print('Tests Successful...')

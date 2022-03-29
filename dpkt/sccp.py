@@ -37,15 +37,15 @@ class ActivateCallPlane(dpkt.Packet):
 class CallInfo(dpkt.Packet):
     __byte_order__ = '<'
     __hdr__ = (
-        ('calling_party_name', '40s', ''),
-        ('calling_party', '24s', ''),
-        ('called_party_name', '40s', ''),
-        ('called_party', '24s', ''),
+        ('calling_party_name', '40s', b''),
+        ('calling_party', '24s', b''),
+        ('called_party_name', '40s', b''),
+        ('called_party', '24s', b''),
         ('line_instance', 'I', 0),
         ('call_id', 'I', 0),
         ('call_type', 'I', 0),
-        ('orig_called_party_name', '40s', ''),
-        ('orig_called_party', '24s', '')
+        ('orig_called_party_name', '40s', b''),
+        ('orig_called_party', '24s', b'')
     )
 
 
@@ -78,7 +78,7 @@ class DisplayPromptStatus(dpkt.Packet):
     __byte_order__ = '<'
     __hdr__ = (
         ('msg_timeout', 'I', 0),
-        ('display_msg', '32s', ''),
+        ('display_msg', '32s', b''),
         ('line_instance', 'I', 1),
         ('call_id', 'I', 0)
     )
@@ -87,7 +87,7 @@ class DisplayPromptStatus(dpkt.Packet):
 class DisplayText(dpkt.Packet):
     __byte_order__ = '<'
     __hdr__ = (
-        ('display_msg', '36s', ''),
+        ('display_msg', '36s', b''),
     )
 
 
@@ -114,7 +114,7 @@ class OpenReceiveChannelAck(dpkt.Packet):
     __byte_order__ = '<'
     __hdr__ = (
         ('channel_status', 'I', 0),
-        ('ip', '4s', ''),
+        ('ip', '4s', b''),
         ('port', 'I', 0),
         ('passthruparty_id', 'I', 0),
     )
@@ -151,7 +151,8 @@ class StartMediaTransmission(dpkt.Packet):
     __hdr__ = (
         ('conference_id', 'I', 0),
         ('passthruparty_id', 'I', 0),
-        ('remote_ip', '4s', ''),
+        ('ipv4_or_ipv6', 'I', 0),
+        ('remote_ip', '16s', b''),
         ('remote_port', 'I', 0),
         ('ms_packet', 'I', 0),
         ('payload_capability', 'I', 4),  # 4: G.711 u-law 64k
@@ -159,6 +160,7 @@ class StartMediaTransmission(dpkt.Packet):
         ('silence_suppression', 'I', 0),
         ('max_frames_per_pkt', 'I', 1),
         ('g723_bitrate', 'I', 0),
+        ('call_reference', 'I', 0)
     )
 
 
@@ -186,13 +188,13 @@ class SCCP(dpkt.Packet):
         __hdr__: Header fields of SCCP.
         TODO.
     """
-    
+
     __byte_order__ = '<'
     __hdr__ = (
         ('len', 'I', 0),
         ('rsvd', 'I', 0),
         ('msgid', 'I', 0),
-        ('msg', '0s', ''),
+        ('msg', '0s', b''),
     )
     _msgsw = {
         KEYPAD_BUTTON: KeypadButton,
@@ -222,3 +224,43 @@ class SCCP(dpkt.Packet):
             setattr(self, p.__class__.__name__.lower(), p)
         except (KeyError, dpkt.UnpackError):
             pass
+
+
+def test_sccp():
+    import pytest
+    from binascii import unhexlify
+    buf = unhexlify(
+        '08000000'  # len
+        '00000000'  # rsvd
+        '03000000'  # msgid (KEYPAD_BUTTON)
+
+        'abcdef01'  # msg
+        '23456789'  # daat
+    )
+    sccp = SCCP(buf)
+    assert sccp.msg == b'\xab\xcd\xef\x01'
+    assert sccp.data == b'\x23\x45\x67\x89'
+    assert isinstance(sccp.keypadbutton, KeypadButton)
+
+    # len is too long for data, raises NeedData
+    buf = unhexlify(
+        '88880000'  # len
+        '00000000'  # rsvd
+        '00000003'  # msgid (KEYPAD_BUTTON)
+
+        'abcdef01'  # msg
+    )
+    with pytest.raises(dpkt.NeedData):
+        SCCP(buf)
+
+    # msgid is invalid, raises KeyError on _msgsw (silently caught)
+    buf = unhexlify(
+        '08000000'  # len
+        '00000000'  # rsvd
+        '00000003'  # msgid (invalid)
+
+        'abcdef01'  # msg
+    )
+    sccp = SCCP(buf)
+    assert sccp.msg == b'\xab\xcd\xef\x01'
+    assert sccp.data == b''

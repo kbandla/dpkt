@@ -7,7 +7,6 @@ from __future__ import absolute_import
 import struct
 
 from . import dpkt
-from .decorators import deprecated
 from .compat import compat_ord
 
 # Diameter Base Protocol - RFC 3588
@@ -15,7 +14,7 @@ from .compat import compat_ord
 
 # Request/Answer Command Codes
 ABORT_SESSION = 274
-ACCOUTING = 271
+ACCOUNTING = 271
 CAPABILITIES_EXCHANGE = 257
 DEVICE_WATCHDOG = 280
 DISCONNECT_PEER = 282
@@ -78,19 +77,19 @@ class Diameter(dpkt.Packet):
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
         self.cmd = (compat_ord(self.cmd[0]) << 16) | \
-                    (compat_ord(self.cmd[1]) << 8) | \
-                    (compat_ord(self.cmd[2]))
+                   (compat_ord(self.cmd[1]) << 8) | \
+                   (compat_ord(self.cmd[2]))
         self.len = (compat_ord(self.len[0]) << 16) | \
-                    (compat_ord(self.len[1]) << 8) | \
-                    (compat_ord(self.len[2]))
+                   (compat_ord(self.len[1]) << 8) | \
+                   (compat_ord(self.len[2]))
         self.data = self.data[:self.len - self.__hdr_len__]
 
-        l = []
+        l_ = []
         while self.data:
             avp = AVP(self.data)
-            l.append(avp)
+            l_.append(avp)
             self.data = self.data[len(avp):]
-        self.data = self.avps = l
+        self.data = self.avps = l_
 
     def pack_hdr(self):
         self.len = struct.pack("BBB", (self.len >> 16) & 0xff, (self.len >> 8) & 0xff, self.len & 0xff)
@@ -102,6 +101,7 @@ class Diameter(dpkt.Packet):
 
     def __bytes__(self):
         return self.pack_hdr() + b''.join(map(bytes, self.data))
+
 
 class AVP(dpkt.Packet):
     __hdr__ = (
@@ -137,8 +137,8 @@ class AVP(dpkt.Packet):
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
         self.len = (compat_ord(self.len[0]) << 16) | \
-                    (compat_ord(self.len[1]) << 8) | \
-                    (compat_ord(self.len[2]))
+                   (compat_ord(self.len[1]) << 8) | \
+                   (compat_ord(self.len[2]))
 
         if self.vendor_flag:
             self.vendor = struct.unpack('>I', self.data[:4])[0]
@@ -160,15 +160,19 @@ class AVP(dpkt.Packet):
         return length
 
 
-__s = b'\x01\x00\x00\x28\x80\x00\x01\x18\x00\x00\x00\x00\x00\x00\x41\xc8\x00\x00\x00\x0c\x00\x00\x01\x08\x40\x00\x00\x0c\x68\x30\x30\x32\x00\x00\x01\x28\x40\x00\x00\x08'
-__t = b'\x01\x00\x00\x2c\x80\x00\x01\x18\x00\x00\x00\x00\x00\x00\x41\xc8\x00\x00\x00\x0c\x00\x00\x01\x08\xc0\x00\x00\x10\xde\xad\xbe\xef\x68\x30\x30\x32\x00\x00\x01\x28\x40\x00\x00\x08'
+__s = (b'\x01\x00\x00\x28\x80\x00\x01\x18\x00\x00\x00\x00\x00\x00\x41\xc8\x00\x00\x00\x0c\x00\x00'
+       b'\x01\x08\x40\x00\x00\x0c\x68\x30\x30\x32\x00\x00\x01\x28\x40\x00\x00\x08')
+__t = (b'\x01\x00\x00\x2c\x80\x00\x01\x18\x00\x00\x00\x00\x00\x00\x41\xc8\x00\x00\x00\x0c\x00\x00'
+       b'\x01\x08\xc0\x00\x00\x10\xde\xad\xbe\xef\x68\x30\x30\x32\x00\x00\x01\x28\x40\x00\x00\x08')
 
 
 def test_pack():
     d = Diameter(__s)
     assert (__s == bytes(d))
+    assert len(d) == len(__s)
     d = Diameter(__t)
     assert (__t == bytes(d))
+    assert len(d) == len(__t)
 
 
 def test_unpack():
@@ -198,7 +202,19 @@ def test_unpack():
     assert (avp.data == b'\x68\x30\x30\x32')
 
 
-if __name__ == '__main__':
-    test_pack()
-    test_unpack()
-    print('Tests Successful...')
+def test_diameter_properties():
+    diameter = Diameter()
+    for prop in ['request_flag', 'proxiable_flag', 'error_flag', 'retransmit_flag']:
+        assert hasattr(diameter, prop)
+        assert getattr(diameter, prop) == 0
+        setattr(diameter, prop, 1)
+        assert getattr(diameter, prop) == 1
+
+
+def test_avp_properties():
+    avp = AVP()
+    for prop in ['vendor_flag', 'mandatory_flag', 'protected_flag']:
+        assert hasattr(avp, prop)
+        assert getattr(avp, prop) == 0
+        setattr(avp, prop, 1)
+        assert getattr(avp, prop) == 1

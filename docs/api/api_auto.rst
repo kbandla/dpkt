@@ -79,14 +79,6 @@ dpkt.crc32c module
     :undoc-members:
     :show-inheritance:
 
-dpkt.decorators module
-----------------------
-
-.. automodule:: dpkt.decorators
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 dpkt.dhcp module
 ----------------
 

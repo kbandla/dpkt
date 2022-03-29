@@ -8,7 +8,6 @@ import codecs
 
 from . import dpkt
 from . import ethernet
-from .decorators import deprecated
 from .compat import compat_izip
 
 GRE_CP = 0x8000  # Checksum Present
@@ -90,23 +89,23 @@ class GRE(dpkt.Packet):
             self.data = self.data[fmtlen:]
             self.__dict__.update(dict(compat_izip(fields, vals)))
         if self.flags & GRE_RP:
-            l = []
+            l_ = []
             while True:
                 sre = self.SRE(self.data)
                 self.data = self.data[len(sre):]
-                l.append(sre)
+                l_.append(sre)
                 if not sre.len:
                     break
-            self.sre = l
+            self.sre = l_
         try:
             self.data = ethernet.Ethernet._typesw[self.p](self.data)
             setattr(self, self.data.__class__.__name__.lower(), self.data)
         except (KeyError, dpkt.UnpackError):
-            # data alrady set
+            # data already set
             pass
 
     def __len__(self):
-        opt_fmtlen = struct.calcsize(b''.join(self.opt_fields_fmts()[1]))
+        opt_fmtlen = struct.calcsize(''.join(self.opt_fields_fmts()[1]))
         return self.__hdr_len__ + opt_fmtlen + sum(map(len, self.sre)) + len(self.data)
 
     def __bytes__(self):
@@ -115,7 +114,7 @@ class GRE(dpkt.Packet):
             vals = []
             for f in fields:
                 vals.append(getattr(self, f))
-            opt_s = struct.pack(b''.join(fmts), *vals)
+            opt_s = struct.pack('!' + ''.join(fmts), *vals)
         else:
             opt_s = b''
         return self.pack_hdr() + opt_s + b''.join(map(bytes, self.sre)) + bytes(self.data)
@@ -133,6 +132,7 @@ def test_gre_v1():
     assert g.callid == 6016
     assert g.len == 103
     assert g.data == b"A" * 103
+    assert len(g) == len(s)
 
     s = codecs.decode("3001880a00b2001100083ab8", 'hex') + b"A" * 178
     g = GRE(s)
@@ -143,7 +143,99 @@ def test_gre_v1():
     assert g.callid == 17
     assert g.len == 178
     assert g.data == b"A" * 178
+    assert len(g) == len(s)
 
 
-if __name__ == '__main__':
-    test_gre_v1()
+def test_gre_len():
+    from binascii import unhexlify
+
+    gre = GRE()
+    assert len(gre) == 4
+
+    buf = unhexlify("3081880a0067178000068fb100083a76") + b"\x41" * 103
+    gre = GRE(buf)
+    assert bytes(gre) == buf
+    assert len(gre) == len(buf)
+
+
+def test_gre_accessors():
+    gre = GRE()
+    for attr in ['v', 'recur']:
+        print(attr)
+        assert hasattr(gre, attr)
+        assert getattr(gre, attr) == 0
+        setattr(gre, attr, 1)
+        assert getattr(gre, attr) == 1
+
+
+def test_sre_creation():
+    from binascii import unhexlify
+    buf = unhexlify(
+        '0000'  # family
+        '00'    # off
+        '02'    # len
+
+        'ffff'
+    )
+    sre = GRE.SRE(buf)
+    assert sre.data == b'\xff\xff'
+    assert len(sre) == 6
+    assert bytes(sre) == buf
+
+
+def test_gre_nested_sre():
+    from binascii import unhexlify
+    buf = unhexlify(
+        '4000'  # flags (GRE_RP)
+        '0800'  # p (ETH_TYPE_IP)
+
+        '0001'  # sum
+        '0002'  # off
+
+        # SRE entry
+        '0003'  # family
+        '04'    # off
+        '02'    # len
+
+        'ffff'
+
+        # SRE entry (no len => last element)
+        '0006'  # family
+        '00'    # off
+        '00'    # len
+    )
+
+    gre = GRE(buf)
+    assert hasattr(gre, 'sre')
+    assert isinstance(gre.sre, list)
+    assert len(gre.sre) == 2
+    assert len(gre) == len(buf)
+    assert bytes(gre) == buf
+    assert gre.data == b''
+
+
+def test_gre_next_layer():
+    from binascii import unhexlify
+
+    from . import ipx
+
+    buf = unhexlify(
+        '0000'  # flags (NONE)
+        '8137'  # p (ETH_TYPE_IPX)
+
+        # IPX packet
+        '0000'          # sum
+        '0001'          # len
+        '02'            # tc
+        '03'            # pt
+        '0102030405060708090a0b0c'  # dst
+        'c0b0a0908070605040302010'  # src
+    )
+    gre = GRE(buf)
+    assert hasattr(gre, 'ipx')
+    assert isinstance(gre.data, ipx.IPX)
+    assert gre.data.tc == 2
+    assert gre.data.src == unhexlify('c0b0a0908070605040302010')
+    assert gre.data.dst == unhexlify('0102030405060708090a0b0c')
+    assert len(gre) == len(buf)
+    assert bytes(gre) == buf

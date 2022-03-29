@@ -41,23 +41,23 @@ class CipherSuite(object):
 
     @property
     def kx(self):
-        if self._kx == '': # for PSK
+        if self._kx == '':  # for PSK
             return self._auth
         else:
             return self._kx
 
     @property
     def auth(self):
-        if self._auth == '': # for RSA
+        if self._auth == '':  # for RSA
             return self._kx
         else:
             return self._auth
 
     @property
     def kx_auth(self):
-        if self._auth == '': # for RSA
+        if self._auth == '':  # for RSA
             return self._kx
-        elif self._kx == '': # for PSK
+        elif self._kx == '':  # for PSK
             return self._auth
         else:
             return self._kx + '_' + self._auth
@@ -75,7 +75,7 @@ class CipherSuite(object):
     @property
     def name(self):
         if self._name is None:
-            if self.mac == '': # for CCM and CCM_8 modes
+            if self.mac == '':  # for CCM and CCM_8 modes
                 return 'TLS_' + self.kx_auth + '_WITH_' + self.encoding
             else:
                 return 'TLS_' + self.kx_auth + '_WITH_' + self.encoding + '_' + self.mac
@@ -83,7 +83,7 @@ class CipherSuite(object):
             return self._name
 
     def __repr__(self):
-        return 'CipherSuite(%s)' % self.name
+        return 'CipherSuite(0x%04x, %s)' % (self.code, self.name)
 
     MAC_SIZES = {
         'MD5': 16,
@@ -92,11 +92,21 @@ class CipherSuite(object):
         'SHA384': 48,
     }
 
-    # TODO: add RC4_40, RC4_128, RC2_40, IDEA, DES40, DES, 3DES_EDE,
-    #   CAMELLIA_128, CAMELLIA_256, SEED, ARIA_128, ARIA_256, CHACHA20
     BLOCK_SIZES = {
+        '3DES_EDE': 8,
         'AES_128': 16,
         'AES_256': 16,
+        'ARIA': 16,
+        'CAMELLIA_128': 16,
+        'CAMELLIA_256': 16,
+        'CHACHA20': 64,
+        'DES': 8,
+        'DES40': 8,
+        'IDEA': 8,
+        'RC2_40': 8,
+        'RC4_40': None,
+        'RC4_128': None,
+        'SEED': 16,
     }
 
     @property
@@ -109,18 +119,32 @@ class CipherSuite(object):
         """In bytes. Default to 1."""
         return self.BLOCK_SIZES.get(self.cipher, 1)
 
+    @property
+    def pfs(self):
+        return self.kx in ('DHE', 'ECDHE')
+
+    @property
+    def aead(self):
+        return self.mode in ('CCM', 'CCM_8', 'GCM')
+
+    @property
+    def anonymous(self):
+        return self.auth.startswith('anon')
+
+
+def get_unknown_ciphersuite(code):
+    return CipherSuite(code, '', '', '', '', '', name='Unknown')
+
+
 # master list of CipherSuite Objects
 # Full list from IANA:
 #   https://www.iana.org/assignments/tls-parameters/tls-parameters.xhtml
 CIPHERSUITES = [
     # not a real cipher suite, can be ignored, see RFC5746
-    CipherSuite(0x00ff, 'NULL', '        ', 'NULL    ', '    ', 'NULL',
-        'TLS_EMPTY_RENEGOTIATION_INFO'),
+    CipherSuite(0x00ff, 'NULL', '        ', 'NULL    ', '    ', 'NULL', 'TLS_EMPTY_RENEGOTIATION_INFO'),
     # RFC7507
-    CipherSuite(0x5600, '', '            ', '', '', '',
-        'TLS_FALLBACK'),
-    CipherSuite(0xffff, '', '            ', '', '', '',
-        'UNKNOWN_CIPHER'),
+    CipherSuite(0x5600, '', '            ', '', '', '', 'TLS_FALLBACK'),
+    CipherSuite(0xffff, '', '            ', '', '', '', 'UNKNOWN_CIPHER'),
 
     # RFC2246 : TLS 1.0
     CipherSuite(0x0000, 'NULL', '        ', 'NULL    ', '    ', 'NULL'),
@@ -130,8 +154,7 @@ CIPHERSUITES = [
     CipherSuite(0x0003, 'RSA_EXPORT', '  ', 'RC4_40  ', '    ', 'MD5'),
     CipherSuite(0x0004, 'RSA', '         ', 'RC4_128 ', '    ', 'MD5'),
     CipherSuite(0x0005, 'RSA', '         ', 'RC4_128 ', '    ', 'SHA'),
-    CipherSuite(0x0006, 'RSA_EXPORT', '  ', 'RC2_40  ', 'CBC ', 'MD5',
-        encoding='RC2_CBC_40'),
+    CipherSuite(0x0006, 'RSA_EXPORT', '  ', 'RC2_40  ', 'CBC ', 'MD5', encoding='RC2_CBC_40'),
     CipherSuite(0x0007, 'RSA', '         ', 'IDEA    ', 'CBC ', 'SHA'),
     CipherSuite(0x0008, 'RSA_EXPORT', '  ', 'DES40   ', 'CBC ', 'SHA'),
     CipherSuite(0x0009, 'RSA', '         ', 'DES     ', 'CBC ', 'SHA'),
@@ -169,15 +192,11 @@ CIPHERSUITES = [
     CipherSuite(0x0024, 'KRB5', '        ', 'RC4_128 ', '    ', 'MD5'),
     CipherSuite(0x0025, 'KRB5', '        ', 'IDEA    ', 'CBC ', 'MD5'),
 
-    CipherSuite(0x0026, 'KRB5_EXPORT', ' ', 'DES40   ', 'CBC ', 'SHA',
-            encoding='DES_CBC_40'),
-    CipherSuite(0x0027, 'KRB5_EXPORT', ' ', 'RC2_40  ', 'CBC ', 'SHA',
-            encoding='RC2_CBC_40'),
+    CipherSuite(0x0026, 'KRB5_EXPORT', ' ', 'DES40   ', 'CBC ', 'SHA', encoding='DES_CBC_40'),
+    CipherSuite(0x0027, 'KRB5_EXPORT', ' ', 'RC2_40  ', 'CBC ', 'SHA', encoding='RC2_CBC_40'),
     CipherSuite(0x0028, 'KRB5_EXPORT', ' ', 'RC4_40  ', '    ', 'SHA'),
-    CipherSuite(0x0029, 'KRB5_EXPORT', ' ', 'DES40   ', 'CBC ', 'MD5',
-            encoding='DES_CBC_40'),
-    CipherSuite(0x002a, 'KRB5_EXPORT', ' ', 'RC2_40  ', 'CBC ', 'MD5',
-            encoding='RC2_CBC_40'),
+    CipherSuite(0x0029, 'KRB5_EXPORT', ' ', 'DES40   ', 'CBC ', 'MD5', encoding='DES_CBC_40'),
+    CipherSuite(0x002a, 'KRB5_EXPORT', ' ', 'RC2_40  ', 'CBC ', 'MD5', encoding='RC2_CBC_40'),
     CipherSuite(0x002b, 'KRB5_EXPORT', ' ', 'RC4_40  ', '    ', 'MD5'),
 
     # RFC4785
@@ -312,6 +331,13 @@ CIPHERSUITES = [
     CipherSuite(0x00c3, 'DHE ', 'DSS     ', 'CAMELLIA_256', 'CBC', 'SHA256'),
     CipherSuite(0x00c4, 'DHE ', 'RSA     ', 'CAMELLIA_256', 'CBC', 'SHA256'),
     CipherSuite(0x00c5, 'DH  ', 'anon    ', 'CAMELLIA_256', 'CBC', 'SHA256'),
+
+    # RFC8446 TLS 1.3
+    CipherSuite(0x1301, '    ', '        ', 'AES_128 ', 'GCM     ', 'SHA256', name='TLS_AES_128_GCM_SHA256'),
+    CipherSuite(0x1302, '    ', '        ', 'AES_256 ', 'GCM     ', 'SHA384', name='TLS_AES_256_GCM_SHA384'),
+    CipherSuite(0x1303, '    ', '        ', 'CHACHA20', 'POLY1305', 'SHA256', name='TLS_CHACHA20_POLY1305_SHA256'),
+    CipherSuite(0x1304, '    ', '        ', 'AES_128 ', 'CCM     ', 'SHA256', name='TLS_AES_128_CCM_SHA256'),
+    CipherSuite(0x1305, '    ', '        ', 'AES_128 ', 'CCM_8   ', 'SHA256', name='TLS_AES_128_CCM_8_SHA256'),
 
     # RFC4492
     CipherSuite(0xc001, 'ECDH ', 'ECDSA  ', 'NULL    ', '    ', 'SHA'),
@@ -518,6 +544,12 @@ CIPHERSUITES = [
     CipherSuite(0xc0af, 'ECDHE', 'ECDSA  ', 'AES_256 ', 'CCM_8', ''),
 
     # Unassigned: 0xc0b0-0xcca7
+    CipherSuite(0xcc13, 'ECDHE', 'RSA    ', 'CHACHA20', 'POLY1305', 'SHA256',
+                'OLD_TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256'),
+    CipherSuite(0xcc14, 'ECDHE', 'ECDSA  ', 'CHACHA20', 'POLY1305', 'SHA256',
+                'OLD_TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256'),
+    CipherSuite(0xcc15, 'DHE  ', 'RSA    ', 'CHACHA20', 'POLY1305', 'SHA256',
+                'OLD_TLS_DHE_RSA_WITH_CHACHA20_POLY1305_SHA256'),
 
     # RFC7905
     CipherSuite(0xcca8, 'ECDHE', 'RSA    ', 'CHACHA20', 'POLY1305', 'SHA256'),
@@ -529,6 +561,24 @@ CIPHERSUITES = [
     CipherSuite(0xccad, 'DHE  ', 'PSK    ', 'CHACHA20', 'POLY1305', 'SHA256'),
     CipherSuite(0xccae, 'RSA  ', 'PSK    ', 'CHACHA20', 'POLY1305', 'SHA256'),
 
+    # RFC8701  // GREASE (Generate Random Extensions And Sustain Extensibility)
+    CipherSuite(0x0a0a, '', '', '', '', '', 'GREASE'),
+    CipherSuite(0x1a1a, '', '', '', '', '', 'GREASE'),
+    CipherSuite(0x2a2a, '', '', '', '', '', 'GREASE'),
+    CipherSuite(0x3a3a, '', '', '', '', '', 'GREASE'),
+    CipherSuite(0x4a4a, '', '', '', '', '', 'GREASE'),
+    CipherSuite(0x5a5a, '', '', '', '', '', 'GREASE'),
+    CipherSuite(0x6a6a, '', '', '', '', '', 'GREASE'),
+    CipherSuite(0x7a7a, '', '', '', '', '', 'GREASE'),
+    CipherSuite(0x8a8a, '', '', '', '', '', 'GREASE'),
+    CipherSuite(0x9a9a, '', '', '', '', '', 'GREASE'),
+    CipherSuite(0xaaaa, '', '', '', '', '', 'GREASE'),
+    CipherSuite(0xbaba, '', '', '', '', '', 'GREASE'),
+    CipherSuite(0xcaca, '', '', '', '', '', 'GREASE'),
+    CipherSuite(0xdada, '', '', '', '', '', 'GREASE'),
+    CipherSuite(0xeaea, '', '', '', '', '', 'GREASE'),
+    CipherSuite(0xfafa, '', '', '', '', '', 'GREASE'),
+
     # Unassigned: 0xccaf-0xfefd
     # Reserved: 0xfefe-0xffff
 
@@ -539,11 +589,15 @@ BY_CODE = dict(
 
 # This is a function to avoid artificially increased coverage
 BY_NAME_DICT = None
+
+
 def BY_NAME(name):
     # We initialize the dictionary only on the first call
+    global BY_NAME_DICT
     if BY_NAME_DICT is None:
         BY_NAME_DICT = dict((suite.name, suite) for suite in CIPHERSUITES)
     return BY_NAME_DICT[name]
+
 
 NULL_SUITE = BY_CODE[0x0000]
 
@@ -578,6 +632,7 @@ class TestCipherSuites(object):
         assert (BY_CODE[0xc09d].kx == 'RSA')
         assert (BY_CODE[0xc0a2].kx == 'DHE')
         assert (BY_CODE[0xc0ad].kx == 'ECDHE')
+        assert (BY_CODE[0xcc13].kx == 'ECDHE')
         assert (BY_CODE[0xcca8].kx == 'ECDHE')
         assert (BY_CODE[0xccae].kx == 'RSA')
 
@@ -609,43 +664,70 @@ class TestCipherSuites(object):
         assert (BY_CODE[0xc09d].auth == 'RSA')
         assert (BY_CODE[0xc0a2].auth == 'RSA')
         assert (BY_CODE[0xc0ad].auth == 'ECDSA')
+        assert (BY_CODE[0xcc14].auth == 'ECDSA')
         assert (BY_CODE[0xcca8].auth == 'RSA')
         assert (BY_CODE[0xccae].auth == 'PSK')
 
-    def test_name(self):
+    def test_pfs(self):
+        assert (BY_NAME('TLS_RSA_WITH_RC4_128_SHA').pfs is False)
+        assert (BY_NAME('TLS_DHE_DSS_WITH_AES_256_CBC_SHA256').pfs is True)
+        assert (BY_NAME('TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA').pfs is True)
+
+    def test_aead(self):
+        assert (BY_NAME('TLS_RSA_WITH_AES_128_CBC_SHA256').aead is False)
+        assert (BY_NAME('TLS_RSA_WITH_AES_256_CCM').aead is True)
+        assert (BY_NAME('TLS_DHE_RSA_WITH_AES_128_CCM_8').aead is True)
+        assert (BY_NAME('TLS_DHE_PSK_WITH_AES_256_GCM_SHA384').aead is True)
+
+    def test_anonymous(self):
+        assert (BY_NAME('TLS_RSA_WITH_RC4_128_SHA').anonymous is False)
+        assert (BY_NAME('TLS_DH_anon_WITH_AES_128_CBC_SHA').anonymous is True)
+        assert (BY_NAME('TLS_DH_anon_EXPORT_WITH_DES40_CBC_SHA').anonymous is True)
+
+    def test_by_name_and_code(self):
         # Special cases:
         # - explicit name
-        assert (BY_CODE[0x00ff].name == 'TLS_EMPTY_RENEGOTIATION_INFO')
+        assert (BY_CODE[0x00ff] == BY_NAME('TLS_EMPTY_RENEGOTIATION_INFO'))
         # - explicit encoding (DES_40 + CBC = DES_CBC_40)
-        assert (BY_CODE[0x0026].name == 'TLS_KRB5_EXPORT_WITH_DES_CBC_40_SHA')
+        assert (BY_CODE[0x0026] == BY_NAME('TLS_KRB5_EXPORT_WITH_DES_CBC_40_SHA'))
 
         # A test from each RFC
-        assert (BY_CODE[0x0005].name == 'TLS_RSA_WITH_RC4_128_SHA')
-        assert (BY_CODE[0x0021].name == 'TLS_KRB5_WITH_IDEA_CBC_SHA')
-        assert (BY_CODE[0x002d].name == 'TLS_DHE_PSK_WITH_NULL_SHA')
-        assert (BY_CODE[0x0034].name == 'TLS_DH_anon_WITH_AES_128_CBC_SHA')
-        assert (BY_CODE[0x003c].name == 'TLS_RSA_WITH_AES_128_CBC_SHA256')
-        assert (BY_CODE[0x0042].name == 'TLS_DH_DSS_WITH_CAMELLIA_128_CBC_SHA')
-        assert (BY_CODE[0x006a].name == 'TLS_DHE_DSS_WITH_AES_256_CBC_SHA256')
-        assert (BY_CODE[0x0084].name == 'TLS_RSA_WITH_CAMELLIA_256_CBC_SHA')
-        assert (BY_CODE[0x0091].name == 'TLS_DHE_PSK_WITH_AES_256_CBC_SHA')
-        assert (BY_CODE[0x0098].name == 'TLS_DH_RSA_WITH_SEED_CBC_SHA')
-        assert (BY_CODE[0x00ab].name == 'TLS_DHE_PSK_WITH_AES_256_GCM_SHA384')
-        assert (BY_CODE[0x00b0].name == 'TLS_PSK_WITH_NULL_SHA256')
-        assert (BY_CODE[0x00bb].name == 'TLS_DH_DSS_WITH_CAMELLIA_128_CBC_SHA256')
-        assert (BY_CODE[0xc008].name == 'TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA')
-        assert (BY_CODE[0xc016].name == 'TLS_ECDH_anon_WITH_RC4_128_SHA')
-        assert (BY_CODE[0xc01d].name == 'TLS_SRP_SHA_WITH_AES_128_CBC_SHA')
-        assert (BY_CODE[0xc027].name == 'TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256')
-        assert (BY_CODE[0xc036].name == 'TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA')
-        assert (BY_CODE[0xc045].name == 'TLS_DHE_RSA_WITH_ARIA_256_CBC_SHA384')
-        assert (BY_CODE[0xc052].name == 'TLS_DHE_RSA_WITH_ARIA_128_GCM_SHA256')
-        assert (BY_CODE[0xc068].name == 'TLS_RSA_PSK_WITH_ARIA_128_CBC_SHA256')
-        assert (BY_CODE[0xc074].name == 'TLS_ECDH_ECDSA_WITH_CAMELLIA_128_CBC_SHA256')
-        assert (BY_CODE[0xc08d].name == 'TLS_ECDH_RSA_WITH_CAMELLIA_256_GCM_SHA384')
-        assert (BY_CODE[0xc09d].name == 'TLS_RSA_WITH_AES_256_CCM')
-        assert (BY_CODE[0xc0a2].name == 'TLS_DHE_RSA_WITH_AES_128_CCM_8')
-        assert (BY_CODE[0xc0ad].name == 'TLS_ECDHE_ECDSA_WITH_AES_256_CCM')
-        assert (BY_CODE[0xcca8].name == 'TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256')
-        assert (BY_CODE[0xccae].name == 'TLS_RSA_PSK_WITH_CHACHA20_POLY1305_SHA256')
+        assert (BY_CODE[0x0005] == BY_NAME('TLS_RSA_WITH_RC4_128_SHA'))
+        assert (BY_CODE[0x0021] == BY_NAME('TLS_KRB5_WITH_IDEA_CBC_SHA'))
+        assert (BY_CODE[0x002d] == BY_NAME('TLS_DHE_PSK_WITH_NULL_SHA'))
+        assert (BY_CODE[0x0034] == BY_NAME('TLS_DH_anon_WITH_AES_128_CBC_SHA'))
+        assert (BY_CODE[0x003c] == BY_NAME('TLS_RSA_WITH_AES_128_CBC_SHA256'))
+        assert (BY_CODE[0x0042] == BY_NAME('TLS_DH_DSS_WITH_CAMELLIA_128_CBC_SHA'))
+        assert (BY_CODE[0x006a] == BY_NAME('TLS_DHE_DSS_WITH_AES_256_CBC_SHA256'))
+        assert (BY_CODE[0x0084] == BY_NAME('TLS_RSA_WITH_CAMELLIA_256_CBC_SHA'))
+        assert (BY_CODE[0x0091] == BY_NAME('TLS_DHE_PSK_WITH_AES_256_CBC_SHA'))
+        assert (BY_CODE[0x0098] == BY_NAME('TLS_DH_RSA_WITH_SEED_CBC_SHA'))
+        assert (BY_CODE[0x00ab] == BY_NAME('TLS_DHE_PSK_WITH_AES_256_GCM_SHA384'))
+        assert (BY_CODE[0x00b0] == BY_NAME('TLS_PSK_WITH_NULL_SHA256'))
+        assert (BY_CODE[0x00bb] == BY_NAME('TLS_DH_DSS_WITH_CAMELLIA_128_CBC_SHA256'))
+        assert (BY_CODE[0x1303] == BY_NAME('TLS_CHACHA20_POLY1305_SHA256'))
+        assert (BY_CODE[0xc008] == BY_NAME('TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA'))
+        assert (BY_CODE[0xc016] == BY_NAME('TLS_ECDH_anon_WITH_RC4_128_SHA'))
+        assert (BY_CODE[0xc01d] == BY_NAME('TLS_SRP_SHA_WITH_AES_128_CBC_SHA'))
+        assert (BY_CODE[0xc027] == BY_NAME('TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256'))
+        assert (BY_CODE[0xc036] == BY_NAME('TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA'))
+        assert (BY_CODE[0xc045] == BY_NAME('TLS_DHE_RSA_WITH_ARIA_256_CBC_SHA384'))
+        assert (BY_CODE[0xc052] == BY_NAME('TLS_DHE_RSA_WITH_ARIA_128_GCM_SHA256'))
+        assert (BY_CODE[0xc068] == BY_NAME('TLS_RSA_PSK_WITH_ARIA_128_CBC_SHA256'))
+        assert (BY_CODE[0xc074] == BY_NAME('TLS_ECDH_ECDSA_WITH_CAMELLIA_128_CBC_SHA256'))
+        assert (BY_CODE[0xc08d] == BY_NAME('TLS_ECDH_RSA_WITH_CAMELLIA_256_GCM_SHA384'))
+        assert (BY_CODE[0xc09d] == BY_NAME('TLS_RSA_WITH_AES_256_CCM'))
+        assert (BY_CODE[0xc0a2] == BY_NAME('TLS_DHE_RSA_WITH_AES_128_CCM_8'))
+        assert (BY_CODE[0xc0ad] == BY_NAME('TLS_ECDHE_ECDSA_WITH_AES_256_CCM'))
+        assert (BY_CODE[0xcca8] == BY_NAME('TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256'))
+        assert (BY_CODE[0xccae] == BY_NAME('TLS_RSA_PSK_WITH_CHACHA20_POLY1305_SHA256'))
+        assert (BY_CODE[0xcc15] == BY_NAME('OLD_TLS_DHE_RSA_WITH_CHACHA20_POLY1305_SHA256'))
 
+    def test_repr(self):
+        cs = CipherSuite(0x0009, 'RSA', '         ', 'DES     ', 'CBC ', 'SHA')
+        assert repr(cs) == "CipherSuite(0x0009, TLS_RSA_WITH_DES_CBC_SHA)"
+
+        assert cs.mac_size == 20
+        assert cs.block_size == 8
+
+        repr(BY_CODE[0x6a6a]) == "CipherSuite(0x6a6a, GREASE)"

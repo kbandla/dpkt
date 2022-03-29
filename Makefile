@@ -13,6 +13,9 @@ clean-build:
 	rm -fr *.egg-info
 	rm -fr *.tar.gz
 	rm -fr .tox
+	rm -fr .coverage
+	rm -fr .cache
+	rm -fr .pytest_cache
 	find . -name '__pycache__' -exec rm -fr {} +
 
 clean-pyc:

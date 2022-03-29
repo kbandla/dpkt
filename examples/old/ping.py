@@ -1,6 +1,11 @@
 #!/usr/bin/env python
 
-import math, optparse, random, socket, sys, time
+import math
+import optparse
+import random
+import socket
+import sys
+import time
 import dpkt
 
 
@@ -13,19 +18,23 @@ class Ping(object):
         self.op.add_option('-i', dest='wait', type='float', default=1,
                            help='Specify packet interval timeout in seconds')
 
-    def gen_ping(self, opts): pass
+    def gen_ping(self, opts):
+        pass
 
-    def open_sock(self, opts): pass
+    def open_sock(self, opts):
+        pass
 
-    def print_header(self, opts): pass
+    def print_header(self, opts):
+        pass
 
-    def print_reply(self, opts, buf, rtt): pass
-    
+    def print_reply(self, opts, buf, rtt):
+        pass
+
     def main(self, argv=None):
         if not argv:
             argv = sys.argv[1:]
         opts, args = self.op.parse_args(argv)
-    
+
         if not args:
             self.op.error('missing host')
         elif len(args) > 1:
@@ -34,7 +43,7 @@ class Ping(object):
         host = args[0]
         opts.ip = socket.gethostbyname(host)
         sock = self.open_sock(opts)
-        
+
         sent = rcvd = rtt_max = rtt_sum = rtt_sumsq = 0
         rtt_min = 0xffff
         try:
@@ -45,9 +54,11 @@ class Ping(object):
                     sock.send(ping)
                     buf = sock.recv(0xffff)
                     rtt = time.time() - start
-                    
-                    if rtt < rtt_min: rtt_min = rtt
-                    if rtt > rtt_max: rtt_max = rtt
+
+                    if rtt < rtt_min:
+                        rtt_min = rtt
+                    if rtt > rtt_max:
+                        rtt_max = rtt
                     rtt_sum += rtt
                     rtt_sumsq += rtt * rtt
 
@@ -61,10 +72,11 @@ class Ping(object):
             pass
 
         print('\n--- %s ping statistics ---' % opts.ip)
-        print('%d packets transmitted, %d packets received, %.1f%% packet loss' % \
+        print('%d packets transmitted, %d packets received, %.1f%% packet loss' %
               (sent, rcvd, (float(sent - rcvd) / sent) * 100))
         rtt_avg = rtt_sum / sent
-        if rtt_min == 0xffff: rtt_min = 0
+        if rtt_min == 0xffff:
+            rtt_min = 0
         print('round-trip min/avg/max/std-dev = %.3f/%.3f/%.3f/%.3f ms' %
               (rtt_min * 1000, rtt_avg * 1000, rtt_max * 1000,
                math.sqrt((rtt_sumsq / sent) - (rtt_avg * rtt_avg)) * 1000))
@@ -82,7 +94,7 @@ class ICMPPing(Ping):
         sock.connect((opts.ip, 1))
         sock.settimeout(opts.wait)
         return sock
-    
+
     def gen_ping(self, opts):
         for i in range(opts.count):
             icmp = dpkt.icmp.ICMP(
@@ -92,7 +104,7 @@ class ICMPPing(Ping):
 
     def print_header(self, opts):
         print('PING %s: %d data bytes' % (opts.ip, len(opts.payload)))
-        
+
     def print_reply(self, opts, buf, rtt):
         ip = dpkt.ip.IP(buf)
         if sys.platform == 'darwin':
@@ -102,6 +114,7 @@ class ICMPPing(Ping):
         print('%d bytes from %s: icmp_seq=%d ip_id=%d ttl=%d time=%.3f ms' %
               (len(ip.icmp), opts.ip, ip.icmp.echo.seq, ip.id, ip.ttl,
                rtt * 1000))
+
 
 if __name__ == '__main__':
     p = ICMPPing()

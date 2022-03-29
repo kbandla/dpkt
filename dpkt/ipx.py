@@ -17,12 +17,12 @@ class IPX(dpkt.Packet):
         __hdr__: Header fields of IPX.
         TODO.
     """
-    
+
     __hdr__ = (
         ('sum', 'H', 0xffff),
         ('len', 'H', IPX_HDR_LEN),
         ('tc', 'B', 0),
         ('pt', 'B', 0),
-        ('dst', '12s', ''),
-        ('src', '12s', '')
+        ('dst', '12s', b''),
+        ('src', '12s', b'')
     )

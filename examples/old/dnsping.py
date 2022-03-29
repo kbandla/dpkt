@@ -2,7 +2,8 @@
 from __future__ import print_function
 
 
-import random, socket
+import random
+import socket
 import dpkt
 import ping
 
@@ -47,7 +48,7 @@ class DNSPing(ping.Ping):
 
     def print_reply(self, opts, buf, rtt):
         dns = dpkt.dns.DNS(buf)
-        print('%d bytes from %s: id=%d time=%.3f ms' % \
+        print('%d bytes from %s: id=%d time=%.3f ms' %
               (len(buf), opts.ip, dns.id, rtt * 1000))
 
 
