@@ -16,7 +16,7 @@ class NetflowBase(dpkt.Packet):
     NetFlow is a feature that was introduced on Cisco routers around 1996 that provides the ability to collect IP
     network traffic as it enters or exits an interface. By analyzing the data provided by NetFlow, a network
     administrator can determine things such as the source and destination of traffic, class of service, and the causes
-    of congestion. A typical flow monitoring setup (using NetFlow) consists of three main components.
+    of congestion.
 
     https://www.ciscopress.com/articles/article.asp?p=2812391&seqNum=3
 

@@ -85,9 +85,7 @@ class Message(dpkt.Packet):
 
     HTTP messages are how data is exchanged between a server and a client. There are two types of messages: requests
     sent by the client to trigger an action on the server, and responses, the answer from the server. HTTP messages are
-     composed of textual information encoded in ASCII, and span over multiple lines. In HTTP/1.1, and earlier versions
-     of the protocol, these messages were openly sent across the connection. In HTTP/2, the once human-readable message
-     is now divided up into HTTP frames, providing optimization and performance improvements.
+     composed of textual information encoded in ASCII, and span over multiple lines.
 
     Attributes:
         __hdr__: Header fields of HTTP.

@@ -125,23 +125,23 @@ class Packet(_MetaPacket("Temp", (object,), {})):
         __byte_order__: Byte order, can be set to override the default ('>')
 
     Example:
-    class Foo(Packet):
-      __hdr__ = (('foo', 'I', 1), ('bar', 'H', 2), ('baz', '4s', 'quux'))
-
-    foo = Foo(bar=3)
-    foo
-    # Foo(bar=3)
-    str(foo)
-    # '\x00\x00\x00\x01\x00\x03quux'
-    foo.bar
-    # 3
-    foo.baz
-    # 'quux'
-    foo.foo = 7
-    foo.baz = 'whee'
-    foo
-    # Foo(baz='whee', foo=7, bar=3)
-    Foo('hello, world!')
+    >>> class Foo(Packet):
+    ...   __hdr__ = (('foo', 'I', 1), ('bar', 'H', 2), ('baz', '4s', 'quux'))
+    ...
+    >>> foo = Foo(bar=3)
+    >>> foo
+    Foo(bar=3)
+    >>> str(foo)
+    '\x00\x00\x00\x01\x00\x03quux'
+    >>> foo.bar
+    3
+    >>> foo.baz
+    'quux'
+    >>> foo.foo = 7
+    >>> foo.baz = 'whee'
+    >>> foo
+    Foo(baz='whee', foo=7, bar=3)
+    >>> Foo('hello, world!')
     Foo(baz=' wor', foo=1751477356L, bar=28460, data='ld!')
     """
     def __init__(self, *args, **kwargs):

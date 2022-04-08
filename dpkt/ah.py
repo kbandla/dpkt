@@ -12,7 +12,6 @@ class AH(dpkt.Packet):
     """Authentication Header.
 
     The Authentication Header (AH) protocol provides data origin authentication, data integrity, and replay protection.
-    However, AH does not provide data confidentiality, which means that all of your data is sent in the clear.
 
     Attributes:
         __hdr__: Header fields of AH.

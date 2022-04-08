@@ -62,11 +62,6 @@ _FCS_MASK = 0x10
 class Radiotap(dpkt.Packet):
     """Radiotap.
 
-    In this section we'll have a look how the IEEE 802.11 protocol is implemented in libtins. libtins has great support
-    for the IEEE 802.11 protocol. Tools such as those included in the aircrack-ng suite should be very simple to
-    implement using this library. The whole protocol is implemented using a base class, Dot11, which contains fields
-    shared by every frame in it. Every frame type is represented by a certain class that inherits from it.
-
     Attributes:
         __hdr__: Header fields of Radiotap.
             version: (int): Version (1 byte)

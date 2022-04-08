@@ -19,10 +19,10 @@ class UDP(dpkt.Packet):
 
     Attributes:
         __hdr__: Header fields of UDP.
-            sport: (int): (2 bytes)
-            dport: (int): (2 bytes)
-            ulen: (int): (2 bytes)
-            sum: (int): (2 bytes)
+            sport: (int): Source port. (2 bytes)
+            dport: (int): Destination port. (2 bytes)
+            ulen: (int): Length. (2 bytes)
+            sum: (int): Checksum. (2 bytes)
     """
 
     __hdr__ = (

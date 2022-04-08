@@ -37,7 +37,7 @@ class CDP(dpkt.Packet):
     Attributes:
         __hdr__: Header fields of CDP.
             version: (int): CDP protocol version. (1 byte)
-            ttl: (int): TIme to live. The amount of time in seconds that a receiver should retain the information
+            ttl: (int): Time to live. The amount of time in seconds that a receiver should retain the information
                 contained in this packet. (1 byte)
             sum: (int): Checksum. (2 bytes)
     """

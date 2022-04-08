@@ -151,7 +151,7 @@ class DNS(dpkt.Packet):
 
     @property
     def qr(self):
-        """int: DNS Query/Response. 1 bit"""
+        """DNS Query/Response. 1 bit"""
         return int((self.op & DNS_QR) == DNS_QR)
 
     @qr.setter
@@ -172,7 +172,7 @@ class DNS(dpkt.Packet):
 
     @property
     def aa(self):
-        """int: Authoritative Answer. 1 bit.
+        """Authoritative Answer. 1 bit.
         Specifies that the responding name server is an authority for the domain name in question section."""
         return int((self.op & DNS_AA) == DNS_AA)
 
@@ -185,7 +185,7 @@ class DNS(dpkt.Packet):
 
     @property
     def tc(self):
-        """int: Truncated. 1 bit. Indicates that only the first 512 bytes of the reply was returned."""
+        """Truncated. 1 bit. Indicates that only the first 512 bytes of the reply was returned."""
         return int((self.op & DNS_TC) == DNS_TC)
 
     @tc.setter
