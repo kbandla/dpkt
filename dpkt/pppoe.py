@@ -27,7 +27,9 @@ class PPPoE(dpkt.Packet):
 
     Attributes:
         __hdr__: Header fields of PPPoE.
-        _v_type: (int): Version and type. (1 byte)
+        _v_type:
+            v: (int): Version (4 bits)
+            type: (int): Type (4 bits)
         code: (int): Code. (1 byte)
         session: (int): Session ID. (2 bytes)
         len: (int): Payload length. (2 bytes)
