@@ -28,16 +28,15 @@ class IP6(dpkt.Packet):
 
     Attributes:
         __hdr__: Header fields of IPv6.
+            _v_fc_flow:
+                v: (int): Version (4 bits),
+                fc (int): Traffic Class (6+2 bits)
+                flow (int): Flow Label (20 bits).
             plen: (int): Payload Length (2 bytes). The size of the payload in octets, including any extension headers.
             nxt: (bytes): Next Header (1 byte). Specifies the type of the next header.
             hlim: (bytes): Hop Limit (1 byte). Replaces the time to live field in IPv4.
             src: (int): Source Address (16 bytes). The unicast IPv6 address of the sending node.
             dst: (int): Destination Address (16 bytes). Unicast or multicast address of the destination node(s).
-
-            _v_fc_flow:
-                v: (int): Version (4 bits),
-                fc (int): Traffic Class (6+2 bits)
-                flow (int): Flow Label (20 bits).
     """
 
     __hdr__ = (

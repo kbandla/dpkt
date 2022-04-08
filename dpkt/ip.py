@@ -24,6 +24,14 @@ class IP(dpkt.Packet):
 
     Attributes:
         __hdr__: Header fields of IP.
+             _v_hl:
+                v: (int): Version (4 bits) For IPv4, this is always equal to 4
+                hl: (int): Internet Header Length (IHL) (4 bits)
+            _flags_offset:
+                rf: (int): Reserved bit (1 bit)
+                df: (int): Don't fragment (1 bit)
+                mf: (int): More fragments (1 bit)
+                offset: (int): Fragment offset (13 bits)
             tos: (int): Type of service. (1 byte)
             len: (int): Total Length. Defines the entire packet size in bytes, including header and data.(2 bytes)
             id: (int): Identification. Uniquely identifying the group of fragments of a single IP datagram. (2 bytes)
@@ -32,16 +40,6 @@ class IP(dpkt.Packet):
             sum: (int): Header checksum. (2 bytes)
             src: (int): Source address. This field is the IPv4 address of the sender of the packet. (4 bytes)
             dst: (int): Destination address. This field is the IPv4 address of the receiver of the packet. (4 bytes)
-
-            _v_hl:
-                v: (int): Version (4 bits) For IPv4, this is always equal to 4
-                hl: (int): Internet Header Length (IHL) (4 bits)
-
-            _flags_offset:
-                rf: (int): Reserved bit (1 bit)
-                df: (int): Don't fragment (1 bit)
-                mf: (int): More fragments (1 bit)
-                offset: (int): Fragment offset (13 bits)
     """
 
     __hdr__ = (
