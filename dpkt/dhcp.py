@@ -103,11 +103,41 @@ DHCPINFORM = 8
 class DHCP(dpkt.Packet):
     """Dynamic Host Configuration Protocol.
 
-    TODO: Longer class information....
+    The Dynamic Host Configuration Protocol (DHCP) is a network management protocol used on Internet Protocol (IP)
+    networks for automatically assigning IP addresses and other communication parameters to devices connected
+    to the network using a client–server architecture.
 
     Attributes:
         __hdr__: Header fields of DHCP.
-        TODO.
+            op: (int): Operation. Message op code / message type. 1 = BOOTREQUEST, 2 = BOOTREPLY. (1 byte)
+            hrd: (int): Hardware type. Hardware address type, see ARP section in "Assigned
+                    Numbers" RFC; e.g., '1' = 10mb ethernet. (1 byte)
+            hln: (int): Hardware Length. Hardware address length (e.g.  '6' for 10mb
+                    ethernet). (1 byte)
+            hops: (int): Hops. Client sets to zero, optionally used by relay agents
+                    when booting via a relay agent. (1 byte)
+            xid: (int): Transaction ID. A random number chosen by the
+                    client, used by the client and server to associate
+                    messages and responses between a client and a
+                    server. (4 bytes)
+            secs: (int): Seconds. Filled in by client, seconds elapsed since client
+                    began address acquisition or renewal process. (2 bytes)
+            flags: (int): DHCP Flags. (2 bytes)
+            ciaddr: (int): Client IP address. Only filled in if client is in
+                    BOUND, RENEW or REBINDING state and can respond
+                    to ARP requests. (4 bytes)
+            yiaddr: (int): User IP address. (4 bytes)
+            siaddr: (int): Server IP address. IP address of next server to use in bootstrap;
+                    returned in DHCPOFFER, DHCPACK by server. (4 bytes)
+            giaddr: (int): Gateway IP address. Relay agent IP address, used in booting via a
+                    relay agent. (4 bytes)
+            chaddr: (int): Client hardware address. (16 bytes)
+            sname: (int): Server Hostname. Optional, null terminated string. (64 bytes)
+            file: (int): Boot file name. Null terminated string; "generic"
+                    name or null in DHCPDISCOVER, fully qualified
+                    directory-path name in DHCPOFFER. (128 bytes)
+            magic: (int): Magic cookie. Optional parameters field.  See the options
+                    documents for a list of defined options. (4 bytes)
     """
 
     __hdr__ = (

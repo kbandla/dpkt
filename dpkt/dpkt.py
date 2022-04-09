@@ -1,6 +1,9 @@
 # $Id: dpkt.py 43 2007-08-02 22:42:59Z jon.oberheide $
 # -*- coding: utf-8 -*-
-"""Simple packet creation and parsing."""
+"""Simple packet creation and parsing.
+
+The dpkt project is a python module for fast, simple packet parsing, with definitions for the basic TCP/IP protocols.
+"""
 from __future__ import absolute_import, print_function
 
 import copy

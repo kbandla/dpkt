@@ -11,7 +11,7 @@ from . import ip
 class AH(dpkt.Packet):
     """Authentication Header.
 
-    TODO: Longer class information....
+    The Authentication Header (AH) protocol provides data origin authentication, data integrity, and replay protection.
 
     Attributes:
         __hdr__: Header fields of AH.

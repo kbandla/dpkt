@@ -27,7 +27,9 @@ PRIVATE = 7
 class NTP(dpkt.Packet):
     """Network Time Protocol.
 
-    TODO: Longer class information....
+    The Network Time Protocol (NTP) is a networking protocol for clock synchronization between computer systems over
+    packet-switched, variable-latency data networks. In operation since before 1985, NTP is one of the oldest Internet
+    protocols in current use. NTP was designed by David L. Mills of the University of Delaware.
 
     Attributes:
         __hdr__: Header fields of NTP.

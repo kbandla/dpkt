@@ -22,11 +22,24 @@ ACTIVE = 0x10
 class HSRP(dpkt.Packet):
     """Cisco Hot Standby Router Protocol.
 
-    TODO: Longer class information....
+    It  is a Cisco proprietary redundancy protocol for establishing a fault-tolerant default gateway. Version 1 of the
+    protocol was described in RFC 2281 in 1998. Version 2 of the protocol includes improvements and supports IPv6 but
+    there is no corresponding RFC published for this version.
 
     Attributes:
         __hdr__: Header fields of HSRP.
-        TODO.
+            version: (int): Version. HSRP version number. (1 byte)
+            opcode: (int): Operation code. (Hello - 0, Coup - 1, Resign - 2) (1 byte)
+            state: (int): State. This field describes the current state of the router sending the message. (1 byte)
+            hello: (int): Hellotime. This field is only meaningful in Hello messages. It contains the approximate period
+                between the Hello messages that the router sends. The time is given in seconds.(1 byte)
+            hold: (int): Holdtime. This field is only meaningful in Hello messages. It contains the amount of time that
+                the current Hello message should be considered valid. The time is given in seconds. (1 byte)
+            priority: (int): Priority. This field is used to elect the active and standby routers. (1 byte)
+            group: (int): Group. This field identifies the standby group. (1 byte)
+            rsvd: (int): Reserved. (1 byte)
+            auth: (bytes): Authentication Data. This field contains a clear text 8 character reused password. (8 bytes)
+            vip: (bytes): Virtual IP Address. The virtual IP address used by this group. (4 bytes)
     """
 
     __hdr__ = (

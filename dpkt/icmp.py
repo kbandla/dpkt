@@ -76,11 +76,16 @@ ICMP_TYPE_MAX = 40
 class ICMP(dpkt.Packet):
     """Internet Control Message Protocol.
 
-    TODO: Longer class information....
+    The Internet Control Message Protocol (ICMP) is a supporting protocol in the Internet protocol suite.
+    It is used by network devices, including routers, to send error messages and operational information
+    indicating success or failure when communicating with another IP address.
 
     Attributes:
         __hdr__: Header fields of ICMP.
-        TODO.
+            type: (int): ICMP type (1 byte)
+            code: (int): ICMP subtype (1 byte)
+            sum: (int): Internet checksum (RFC 1071) for error checking,
+                calculated from the ICMP header and data with value 0 substituted for this field. (2 bytes)
     """
 
     __hdr__ = (

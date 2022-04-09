@@ -13,11 +13,15 @@ from .compat import compat_izip
 class NetflowBase(dpkt.Packet):
     """Base class for Cisco Netflow packets.
 
-    TODO: Longer class information....
+    NetFlow is a feature that was introduced on Cisco routers around 1996 that provides the ability to collect IP
+    network traffic as it enters or exits an interface. By analyzing the data provided by NetFlow, a network
+    administrator can determine things such as the source and destination of traffic, class of service, and the causes
+    of congestion.
+
+    https://www.ciscopress.com/articles/article.asp?p=2812391&seqNum=3
 
     Attributes:
         __hdr__: Header fields of NetflowBase.
-        TODO.
     """
 
     __hdr__ = (
@@ -120,11 +124,10 @@ class Netflow1(NetflowBase):
 class Netflow5(NetflowBase):
     """Netflow Version 5.
 
-    TODO: Longer class information....
+    Popular NetFlow version on many routers from different vendors. Limited to IPv4 flows.
 
     Attributes:
         __hdr__: Header fields of Netflow Version 5.
-        TODO.
     """
 
     __hdr__ = NetflowBase.__hdr__ + (
@@ -137,11 +140,8 @@ class Netflow5(NetflowBase):
     class NetflowRecord(NetflowBase.NetflowRecordBase):
         """Netflow v5 flow record.
 
-        TODO: Longer class information....
-
         Attributes:
             __hdr__: Header fields of Netflow Version 5 flow record.
-            TODO.
         """
 
         __hdr__ = (
@@ -171,12 +171,10 @@ class Netflow5(NetflowBase):
 class Netflow6(NetflowBase):
     """Netflow Version 6.
 
-    XXX - unsupported by Cisco, but may be found in the field.
-    TODO: Longer class information....
+    (Obsolete.) No longer supported by Cisco, but may be found in the field.
 
     Attributes:
         __hdr__: Header fields of Netflow Version 6.
-        TODO.
     """
 
     __hdr__ = Netflow5.__hdr__
@@ -184,11 +182,8 @@ class Netflow6(NetflowBase):
     class NetflowRecord(NetflowBase.NetflowRecordBase):
         """Netflow v6 flow record.
 
-        TODO: Longer class information....
-
         Attributes:
             __hdr__: Header fields of Netflow Version 6 flow record.
-            TODO.
         """
 
         __hdr__ = (
@@ -220,11 +215,10 @@ class Netflow6(NetflowBase):
 class Netflow7(NetflowBase):
     """Netflow Version 7.
 
-    TODO: Longer class information....
+    (Obsolete.) Like version 5, with a source router field.
 
     Attributes:
         __hdr__: Header fields of Netflow Version 7.
-        TODO.
     """
 
     __hdr__ = NetflowBase.__hdr__ + (

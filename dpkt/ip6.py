@@ -20,11 +20,23 @@ EXT_HDRS = [ip.IP_PROTO_HOPOPTS, ip.IP_PROTO_ROUTING, ip.IP_PROTO_FRAGMENT, ip.I
 class IP6(dpkt.Packet):
     """Internet Protocol, version 6.
 
-    TODO: Longer class information....
+    Internet Protocol version 6 (IPv6) is the most recent version of the Internet Protocol (IP),
+    the communications protocol that provides an identification and location system for computers
+    on networks and routes traffic across the Internet. IPv6 was developed by the Internet Engineering
+    Task Force (IETF) to deal with the long-anticipated problem of IPv4 address exhaustion,
+    and is intended to replace IPv4.
 
     Attributes:
         __hdr__: Header fields of IPv6.
-        TODO.
+            _v_fc_flow:
+                v: (int): Version (4 bits),
+                fc (int): Traffic Class (6+2 bits)
+                flow (int): Flow Label (20 bits).
+            plen: (int): Payload Length (2 bytes). The size of the payload in octets, including any extension headers.
+            nxt: (bytes): Next Header (1 byte). Specifies the type of the next header.
+            hlim: (bytes): Hop Limit (1 byte). Replaces the time to live field in IPv4.
+            src: (int): Source Address (16 bytes). The unicast IPv6 address of the sending node.
+            dst: (int): Destination Address (16 bytes). Unicast or multicast address of the destination node(s).
     """
 
     __hdr__ = (

@@ -13,11 +13,14 @@ MAC_ADDR = 0x04
 class DTP(dpkt.Packet):
     """Dynamic Trunking Protocol.
 
-    TODO: Longer class information....
+    The Dynamic Trunking Protocol (DTP) is a proprietary networking protocol developed by Cisco Systems for the purpose
+    of negotiating trunking on a link between two VLAN-aware switches, and for negotiating the type of trunking
+    encapsulation to be used. It works on Layer 2 of the OSI model. VLAN trunks formed using DTP may utilize either
+    IEEE 802.1Q or Cisco ISL trunking protocols.
 
     Attributes:
         __hdr__: Header fields of DTP.
-        TODO.
+            v: (int) Version. (1 byte)
     """
 
     __hdr__ = (

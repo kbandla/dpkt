@@ -48,7 +48,8 @@ def tcp_flags_to_str(val):
 class TCP(dpkt.Packet):
     """Transmission Control Protocol.
 
-    TODO: Longer class information....
+    The Transmission Control Protocol (TCP) is one of the main protocols of the Internet protocol suite.
+    It originated in the initial network implementation in which it complemented the Internet Protocol (IP).
 
     Attributes:
         sport - source port

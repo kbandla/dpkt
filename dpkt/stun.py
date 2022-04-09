@@ -43,7 +43,9 @@ class STUN(dpkt.Packet):
 
     Attributes:
         __hdr__: Header fields of STUN.
-        TODO.
+            type: (int): STUN Message Type (2 bytes)
+            len: (int): Message Length (2 bytes)
+            xid: (bytes): Magic Cookie and Transaction ID (16 bytes)
     """
 
     __hdr__ = (

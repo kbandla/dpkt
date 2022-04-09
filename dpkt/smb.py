@@ -36,23 +36,25 @@ SMB_STATUS_SUCCESS = 0x00000000
 class SMB(dpkt.Packet):
     r"""Server Message Block.
 
-    TODO: Longer class information....
+    Server Message Block (SMB) is a communication protocol[1] that Microsoft created for providing
+    shared access to files and printers across nodes on a network. It also provides an authenticated
+    inter-process communication (IPC) mechanism.
 
     Attributes:
-        __hdr__ = [
-            ('proto', '4s', b'\xffSMB'),
-            ('cmd', 'B', 0),
-            ('status', 'I', SMB_STATUS_SUCCESS),
-            ('flags', 'B', 0),
-            ('flags2', 'H', 0),
-            ('_pidhi', 'H', 0),
-            ('security', '8s', b''),
-            ('rsvd', 'H', 0),
-            ('tid', 'H', 0),
-            ('_pidlo', 'H', 0),
-            ('uid', 'H', 0),
-            ('mid', 'H', 0)
-        ]
+        __hdr__: SMB Headers
+            proto: (bytes): Protocol. This field MUST contain the 4-byte literal string '\xFF', 'S', 'M', 'B' (4 bytes)
+            cmd: (int): Command. Defines SMB command. (1 byte)
+            status: (int): Status. Communicates error messages from the server to the client. (4 bytes)
+            flags: (int): Flags. Describes various features in effect for the message.(1 byte)
+            flags2: (int): Flags2. Represent various features in effect for the message.
+                Unspecified bits are reserved and MUST be zero. (2 bytes)
+            _pidhi: (int): PIDHigh. Represents the high-order bytes of a process identifier (PID) (2 bytes)
+            security: (bytes): SecurityFeatures. Has three possible interpretations. (8 bytes)
+            rsvd: (int): Reserved. This field is reserved and SHOULD be set to 0x0000. (2 bytes)
+            tid: (int): TID. A tree identifier (TID). (2 bytes)
+            _pidlo: (int): PIDLow. The lower 16-bits of the PID. (2 bytes)
+            uid: (int): UID. A user identifier (UID). (2 bytes)
+            mid: (int): MID. A multiplex identifier (MID).(2 bytes)
     """
 
     __byte_order__ = '<'
