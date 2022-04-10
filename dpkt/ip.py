@@ -87,8 +87,8 @@ class IP(dpkt.Packet):
         return self.__hdr_len__ + len(self.opts) + len(self.data)
 
     def __bytes__(self):
-        self.len = self.__len__()
         if self.sum == 0:
+            self.len = self.__len__()
             self.sum = dpkt.in_cksum(self.pack_hdr() + bytes(self.opts))
             if (self.p == 6 or self.p == 17) and (self._flags_offset & (IP_MF | IP_OFFMASK)) == 0 and \
                     isinstance(self.data, dpkt.Packet) and self.data.sum == 0:
@@ -402,6 +402,20 @@ def test_opt():
     ip = IP(s)
     ip.sum = 0
     assert (bytes(ip) == s)
+
+
+def test_iplen():
+    # ensure the ip.len is not affected by serialization
+    # https://github.com/kbandla/dpkt/issues/279 , https://github.com/kbandla/dpkt/issues/625
+    s = (b'\x45\x00\x00\xa3\xb6\x7a\x00\x00\x80\x11\x5e\x6f\xc0\xa8\x03\x02\x97\x47\xca\x6e\xc7\x38'
+         b'\x64\xdf\x00\x8f\x4a\xfa\x26\xd8\x15\xbe\xd9\x42\xae\x66\xe1\xce\x14\x5f\x06\x79\x4b\x13'
+         b'\x02\xad\xa4\x8b\x69\x1c\x7a\xf6\xd5\x3d\x45\xaa\xba\xcd\x24\x77\xc2\xe7\x5f\x6a\xcc\xb5'
+         b'\x1f\x21\xfa\x62\xf0\xf3\x32\xe1\xe4\xf0\x20\x1f\x47\x61\xec\xbc\xb1\x0e\x6c\xf0\xb8\x6d'
+         b'\x7f\x96\x9b\x35\x03\xa1\x79\x05\xc5\xfd\x2a\xf7\xfa\x35\xe3\x0e\x04\xd0\xc7\x4e\x94\x72'
+         b'\x3d\x07\x5a\xa8\x53\x2a\x5d\x03\xf7\x04\xc4\xa8\xb8\xa1')
+
+    ip_len1 = IP(s).len  # original len
+    assert (IP(bytes(IP(s))).len == ip_len1)
 
 
 def test_zerolen():
