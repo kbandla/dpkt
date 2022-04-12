@@ -29,11 +29,13 @@ ENOUSER = 7  # no such user
 class TFTP(dpkt.Packet):
     """Trivial File Transfer Protocol.
 
-    TODO: Longer class information....
+    Trivial File Transfer Protocol (TFTP) is a simple lockstep File Transfer Protocol which allows a client to get
+    a file from or put a file onto a remote host. One of its primary uses is in the early stages of nodes booting
+    from a local area network. TFTP has been used for this application because it is very simple to implement.
 
     Attributes:
         __hdr__: Header fields of TFTP.
-        TODO.
+            opcode: Operation Code (2 bytes)
     """
 
     __hdr__ = (('opcode', 'H', 1), )
@@ -41,15 +43,15 @@ class TFTP(dpkt.Packet):
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
         if self.opcode in (OP_RRQ, OP_WRQ):
-            l = self.data.split(b'\x00')
-            self.filename = l[0]
-            self.mode = l[1]
+            l_ = self.data.split(b'\x00')
+            self.filename = l_[0]
+            self.mode = l_[1]
             self.data = b''
         elif self.opcode in (OP_DATA, OP_ACK):
             self.block = struct.unpack('>H', self.data[:2])[0]
             self.data = self.data[2:]
         elif self.opcode == OP_ERR:
-            self.errcode = struct.unpack('>H', self.data[:2])
+            self.errcode = struct.unpack('>H', self.data[:2])[0]
             self.errmsg = self.data[2:].split(b'\x00')[0]
             self.data = b''
 
@@ -69,28 +71,56 @@ class TFTP(dpkt.Packet):
 
 
 def test_op_rrq():
-    s = b'\x00\x01\x72\x66\x63\x31\x33\x35\x30\x2e\x74\x78\x74\x00\x6f\x63\x74\x65\x74\x00'
-    t = TFTP(s)
-    assert t.filename == b'rfc1350.txt'
-    assert t.mode == b'octet'
-    assert bytes(t) == s
+    from binascii import unhexlify
+    buf = unhexlify(
+        '0001'    # opcode (OP_RRQ)
+        '726663313335302e747874'  # filename (rfc1350.txt)
+        '00'                      # null terminator
+        '6f63746574'              # mode (octet)
+        '00'                      # null terminator
+    )
+    tftp = TFTP(buf)
+    assert tftp.filename == b'rfc1350.txt'
+    assert tftp.mode == b'octet'
+    assert bytes(tftp) == buf
+    assert len(tftp) == len(buf)
 
 
 def test_op_data():
-    s = b'\x00\x03\x00\x01\x0a\x0a\x4e\x65\x74\x77\x6f\x72\x6b\x20\x57\x6f\x72\x6b\x69\x6e\x67\x20\x47\x72\x6f\x75\x70'
-    t = TFTP(s)
-    assert t.block == 1
-    assert t.data == b'\x0a\x0aNetwork Working Group'
-    assert bytes(t) == s
+    from binascii import unhexlify
+    buf = unhexlify(
+        '0003'    # opcode (OP_DATA)
+        '0001'    # block
+        '0a0a4e6574776f726b20576f726b696e672047726f7570'
+    )
+    tftp = TFTP(buf)
+    assert tftp.block == 1
+    assert tftp.data == b'\x0a\x0aNetwork Working Group'
+    assert bytes(tftp) == buf
+    assert len(tftp) == len(buf)
 
 
 def test_op_err():
-    pass  # XXX - TODO
+    from binascii import unhexlify
+    buf = unhexlify(
+        '0005'   # opcode (OP_ERR)
+        '0007'   # errcode (ENOUSER)
+        '0a0a4e6574776f726b20576f726b696e672047726f757000'
+    )
+    tftp = TFTP(buf)
+    assert tftp.errcode == ENOUSER
+    assert tftp.errmsg == b'\x0a\x0aNetwork Working Group'
+    assert tftp.data == b''
+    assert bytes(tftp) == buf
 
 
-if __name__ == '__main__':
-    test_op_rrq()
-    test_op_data()
-    test_op_err()
-
-    print('Tests Successful...')
+def test_op_other():
+    from binascii import unhexlify
+    buf = unhexlify(
+        '0006'     # opcode (doesn't exist)
+        'abcdef'   # trailing data
+    )
+    tftp = TFTP(buf)
+    assert tftp.opcode == 6
+    assert bytes(tftp) == buf
+    assert tftp.data == unhexlify('abcdef')

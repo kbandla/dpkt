@@ -5,17 +5,41 @@ from __future__ import print_function
 from __future__ import absolute_import
 
 from . import dpkt
-from .decorators import deprecated
 from .compat import iteritems
+from .utils import inet_to_str, deprecation_warning
+
+_ip_proto_names = {}  # {1: 'ICMP', 6: 'TCP', 17: 'UDP', etc.}
+
+
+def get_ip_proto_name(p):
+    return _ip_proto_names.get(p, None)
+
 
 class IP(dpkt.Packet):
     """Internet Protocol.
 
-    TODO: Longer class information....
+    The Internet Protocol (IP) is the network layer communications protocol in the Internet protocol suite
+    for relaying datagrams across network boundaries. Its routing function enables internetworking, and
+    essentially establishes the Internet.
 
     Attributes:
         __hdr__: Header fields of IP.
-        TODO.
+             _v_hl:
+                v: (int): Version (4 bits) For IPv4, this is always equal to 4
+                hl: (int): Internet Header Length (IHL) (4 bits)
+            _flags_offset:
+                rf: (int): Reserved bit (1 bit)
+                df: (int): Don't fragment (1 bit)
+                mf: (int): More fragments (1 bit)
+                offset: (int): Fragment offset (13 bits)
+            tos: (int): Type of service. (1 byte)
+            len: (int): Total Length. Defines the entire packet size in bytes, including header and data.(2 bytes)
+            id: (int): Identification. Uniquely identifying the group of fragments of a single IP datagram. (2 bytes)
+            ttl: (int): Time to live (1 byte)
+            p: (int): Protocol. This field defines the protocol used in the data portion of the IP datagram. (1 byte)
+            sum: (int): Header checksum. (2 bytes)
+            src: (int): Source address. This field is the IPv4 address of the sender of the packet. (4 bytes)
+            dst: (int): Destination address. This field is the IPv4 address of the receiver of the packet. (4 bytes)
     """
 
     __hdr__ = (
@@ -23,13 +47,31 @@ class IP(dpkt.Packet):
         ('tos', 'B', 0),
         ('len', 'H', 20),
         ('id', 'H', 0),
-        ('off', 'H', 0),
+        ('_flags_offset', 'H', 0),  # XXX - previously ip.off
         ('ttl', 'B', 64),
         ('p', 'B', 0),
         ('sum', 'H', 0),
         ('src', '4s', b'\x00' * 4),
         ('dst', '4s', b'\x00' * 4)
     )
+    __bit_fields__ = {
+        '_v_hl': (
+            ('v', 4),   # version, 4 bits
+            ('hl', 4),  # header len, 4 bits
+        ),
+        '_flags_offset': (
+            ('rf', 1),  # reserved bit
+            ('df', 1),  # don't fragment
+            ('mf', 1),  # more fragments
+            ('offset', 13),  # fragment offset, 13 bits
+        )
+    }
+    __pprint_funcs__ = {
+        'dst': inet_to_str,
+        'src': inet_to_str,
+        'sum': hex,  # display checksum in hex
+        'p': get_ip_proto_name
+    }
     _protosw = {}
     opts = b''
 
@@ -41,72 +83,30 @@ class IP(dpkt.Packet):
         if not args and 'len' not in kwargs:
             self.len = self.__len__()
 
-    @property
-    def v(self):
-        return self._v_hl >> 4
-
-    @v.setter
-    def v(self, v):
-        self._v_hl = (v << 4) | (self._v_hl & 0xf)
-
-    @property
-    def hl(self):
-        return self._v_hl & 0xf
-
-    @hl.setter
-    def hl(self, hl):
-        self._v_hl = (self._v_hl & 0xf0) | hl
-
-    @property
-    def rf(self):
-        return (self.off >> 15) & 0x1
-
-    @rf.setter
-    def rf(self, rf):
-        self.off = (self.off & ~IP_RF) | (rf << 15)
-
-    @property
-    def df(self):
-        return (self.off >> 14) & 0x1
-
-    @df.setter
-    def df(self, df):
-        self.off = (self.off & ~IP_DF) | (df << 14)
-
-    @property
-    def mf(self):
-        return (self.off >> 13) & 0x1
-
-    @mf.setter
-    def mf(self, mf):
-        self.off = (self.off & ~IP_MF) | (mf << 13)
-
-    @property
-    def offset(self):
-        return (self.off & IP_OFFMASK) << 3
-
-    @offset.setter
-    def offset(self, offset):
-        self.off = (self.off & ~IP_OFFMASK) | (offset >> 3)
-
     def __len__(self):
         return self.__hdr_len__ + len(self.opts) + len(self.data)
 
     def __bytes__(self):
-        self.len = self.__len__()
         if self.sum == 0:
+            self.len = self.__len__()
             self.sum = dpkt.in_cksum(self.pack_hdr() + bytes(self.opts))
-            if (self.p == 6 or self.p == 17) and (self.off & (IP_MF | IP_OFFMASK)) == 0 and \
+            if (self.p == 6 or self.p == 17) and (self._flags_offset & (IP_MF | IP_OFFMASK)) == 0 and \
                     isinstance(self.data, dpkt.Packet) and self.data.sum == 0:
                 # Set zeroed TCP and UDP checksums for non-fragments.
                 p = bytes(self.data)
-                s = dpkt.struct.pack('>4s4sxBH', self.src, self.dst,
-                                     self.p, len(p))
+                s = dpkt.struct.pack('>4s4sxBH', self.src, self.dst, self.p, len(p))
                 s = dpkt.in_cksum_add(0, s)
                 s = dpkt.in_cksum_add(s, p)
                 self.data.sum = dpkt.in_cksum_done(s)
+
+                # RFC 768 (Fields):
+                # If the computed checksum is zero, it is transmitted as all
+                # ones (the equivalent in one's complement arithmetic). An all
+                # zero transmitted checksum value means that the transmitter
+                # generated no checksum (for debugging or for higher level
+                # protocols that don't care).
                 if self.p == 17 and self.data.sum == 0:
-                    self.data.sum = 0xffff  # RFC 768
+                    self.data.sum = 0xffff
                     # XXX - skip transports which don't need the pseudoheader
         return self.pack_hdr() + bytes(self.opts) + bytes(self.data)
 
@@ -133,6 +133,18 @@ class IP(dpkt.Packet):
     @classmethod
     def get_proto(cls, p):
         return cls._protosw[p]
+
+    # XXX - compatibility; to be deprecated
+    @property
+    def off(self):
+        deprecation_warning("IP.off is deprecated")
+        return self._flags_offset
+
+    @off.setter
+    def off(self, val):
+        deprecation_warning("IP.off is deprecated")
+        self.offset = val
+
 
 # IP Headers
 IP_ADDR_LEN = 0x04
@@ -329,10 +341,11 @@ def __load_protos():
     g = globals()
     for k, v in iteritems(g):
         if k.startswith('IP_PROTO_'):
-            name = k[9:].lower()
+            name = k[9:]
+            _ip_proto_names[v] = name
             try:
-                mod = __import__(name, g, level=1)
-                IP.set_proto(v, getattr(mod, name.upper()))
+                mod = __import__(name.lower(), g, level=1)
+                IP.set_proto(v, getattr(mod, name))
             except (ImportError, AttributeError):
                 continue
 
@@ -363,8 +376,19 @@ def test_ip():
     assert (ip.udp.data == b'foobar')
 
 
-def test_hl():  # Todo chack this test method
-    s = b'BB\x03\x00\x00\x00\x00\x00\x00\x00\xd0\x00\xec\xbc\xa5\x00\x00\x00\x03\x80\x00\x00\xd0\x01\xf2\xac\xa5"0\x01\x00\x14\x00\x02\x00\x0f\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+def test_dict():
+    ip = IP(id=0, src=b'\x01\x02\x03\x04', dst=b'\x01\x02\x03\x04', p=17)
+    d = dict(ip)
+
+    assert (d['src'] == b'\x01\x02\x03\x04')
+    assert (d['dst'] == b'\x01\x02\x03\x04')
+    assert (d['id'] == 0)
+    assert (d['p'] == 17)
+
+
+def test_hl():  # Todo check this test method
+    s = (b'BB\x03\x00\x00\x00\x00\x00\x00\x00\xd0\x00\xec\xbc\xa5\x00\x00\x00\x03\x80\x00\x00\xd0'
+         b'\x01\xf2\xac\xa5"0\x01\x00\x14\x00\x02\x00\x0f\x00\x00\x00\x00\x00\x00\x00\x00\x00')
     try:
         IP(s)
     except dpkt.UnpackError:
@@ -372,24 +396,41 @@ def test_hl():  # Todo chack this test method
 
 
 def test_opt():
-    s = b'\x4f\x00\x00\x3c\xae\x08\x00\x00\x40\x06\x18\x10\xc0\xa8\x0a\x26\xc0\xa8\x0a\x01\x07\x27\x08\x01\x02\x03\x04\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+    s = (b'\x4f\x00\x00\x3c\xae\x08\x00\x00\x40\x06\x18\x10\xc0\xa8\x0a\x26\xc0\xa8\x0a\x01\x07\x27'
+         b'\x08\x01\x02\x03\x04\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+         b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00')
     ip = IP(s)
     ip.sum = 0
     assert (bytes(ip) == s)
 
 
+def test_iplen():
+    # ensure the ip.len is not affected by serialization
+    # https://github.com/kbandla/dpkt/issues/279 , https://github.com/kbandla/dpkt/issues/625
+    s = (b'\x45\x00\x00\xa3\xb6\x7a\x00\x00\x80\x11\x5e\x6f\xc0\xa8\x03\x02\x97\x47\xca\x6e\xc7\x38'
+         b'\x64\xdf\x00\x8f\x4a\xfa\x26\xd8\x15\xbe\xd9\x42\xae\x66\xe1\xce\x14\x5f\x06\x79\x4b\x13'
+         b'\x02\xad\xa4\x8b\x69\x1c\x7a\xf6\xd5\x3d\x45\xaa\xba\xcd\x24\x77\xc2\xe7\x5f\x6a\xcc\xb5'
+         b'\x1f\x21\xfa\x62\xf0\xf3\x32\xe1\xe4\xf0\x20\x1f\x47\x61\xec\xbc\xb1\x0e\x6c\xf0\xb8\x6d'
+         b'\x7f\x96\x9b\x35\x03\xa1\x79\x05\xc5\xfd\x2a\xf7\xfa\x35\xe3\x0e\x04\xd0\xc7\x4e\x94\x72'
+         b'\x3d\x07\x5a\xa8\x53\x2a\x5d\x03\xf7\x04\xc4\xa8\xb8\xa1')
+
+    ip_len1 = IP(s).len  # original len
+    assert (IP(bytes(IP(s))).len == ip_len1)
+
+
 def test_zerolen():
     from . import tcp
     d = b'X' * 2048
-    s = b'E\x00\x00\x004\xce@\x00\x80\x06\x00\x00\x7f\x00\x00\x01\x7f\x00\x00\x01\xccN\x0c8`\xff\xc6N_\x8a\x12\x98P\x18@):\xa3\x00\x00' + d
+    s = (b'\x45\x00\x00\x00\x34\xce\x40\x00\x80\x06\x00\x00\x7f\x00\x00\x01\x7f\x00\x00\x01\xcc\x4e'
+         b'\x0c\x38\x60\xff\xc6\x4e\x5f\x8a\x12\x98\x50\x18\x40\x29\x3a\xa3\x00\x00') + d
     ip = IP(s)
     assert (isinstance(ip.data, tcp.TCP))
     assert (ip.tcp.data == d)
 
 
 def test_constuctor():
-    ip1 = IP(data = b"Hello world!")
-    ip2 = IP(data = b"Hello world!", len = 0)
+    ip1 = IP(data=b"Hello world!")
+    ip2 = IP(data=b"Hello world!", len=0)
     ip3 = IP(bytes(ip1))
     ip4 = IP(bytes(ip2))
     assert (bytes(ip1) == bytes(ip3))
@@ -397,9 +438,14 @@ def test_constuctor():
     assert (bytes(ip2) == bytes(ip4))
     assert (bytes(ip2) == b'E\x00\x00 \x00\x00\x00\x00@\x00z\xdf\x00\x00\x00\x00\x00\x00\x00\x00Hello world!')
 
+
 def test_frag():
     from . import ethernet
-    s = b"\x00\x23\x20\xd4\x2a\x8c\x00\x23\x20\xd4\x2a\x8c\x08\x00\x45\x00\x00\x54\x00\x00\x40\x00\x40\x01\x25\x8d\x0a\x00\x00\x8f\x0a\x00\x00\x8e\x08\x00\x2e\xa0\x01\xff\x23\x73\x20\x48\x4a\x4d\x00\x00\x00\x00\x78\x85\x02\x00\x00\x00\x00\x00\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f\x20\x21\x22\x23\x24\x25\x26\x27\x28\x29\x2a\x2b\x2c\x2d\x2e\x2f\x30\x31\x32\x33\x34\x35\x36\x37"
+    s = (b'\x00\x23\x20\xd4\x2a\x8c\x00\x23\x20\xd4\x2a\x8c\x08\x00\x45\x00\x00\x54\x00\x00\x40\x00'
+         b'\x40\x01\x25\x8d\x0a\x00\x00\x8f\x0a\x00\x00\x8e\x08\x00\x2e\xa0\x01\xff\x23\x73\x20\x48'
+         b'\x4a\x4d\x00\x00\x00\x00\x78\x85\x02\x00\x00\x00\x00\x00\x10\x11\x12\x13\x14\x15\x16\x17'
+         b'\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f\x20\x21\x22\x23\x24\x25\x26\x27\x28\x29\x2a\x2b\x2c\x2d'
+         b'\x2e\x2f\x30\x31\x32\x33\x34\x35\x36\x37')
     ip = ethernet.Ethernet(s).ip
     assert (ip.rf == 0)
     assert (ip.df == 1)
@@ -417,11 +463,42 @@ def test_frag():
     assert (ip.offset == 1480)
 
 
-if __name__ == '__main__':
-    test_ip()
-    test_hl()
-    test_opt()
-    test_zerolen()
-    test_constuctor()
-    test_frag()
-    print('Tests Successful...')
+def test_property_setters():
+    ip = IP()
+    assert ip.v == 4
+    ip.v = 6
+    assert ip.v == 6
+    # test property delete
+    del ip.v
+    assert ip.v == 4  # back to default
+
+    assert ip.hl == 5
+    ip.hl = 7
+    assert ip.hl == 7
+    del ip.hl
+    assert ip.hl == 5
+
+    # coverage
+    ip.off = 10
+    assert ip.off == 10
+
+
+def test_default_udp_checksum():
+    from dpkt.udp import UDP
+
+    udp = UDP(sport=1, dport=0xffdb)
+    ip = IP(src=b'\x00\x00\x00\x01', dst=b'\x00\x00\x00\x01', p=17, data=udp)
+    assert ip.p == 17
+    assert ip.data.sum == 0
+
+    # this forces recalculation of the data layer checksum
+    bytes(ip)
+
+    # during calculation the checksum was evaluated to 0x0000
+    # this was then conditionally set to 0xffff per RFC768
+    assert ip.data.sum == 0xffff
+
+
+def test_get_proto_name():
+    assert get_ip_proto_name(6) == 'TCP'
+    assert get_ip_proto_name(999) is None

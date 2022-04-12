@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 This example expands on the print_packets example. It checks for HTTP request headers and displays their contents.
 NOTE: We are not reconstructing 'flows' so the request (and response if you tried to parse it) will only
@@ -8,34 +7,8 @@ NOTE: We are not reconstructing 'flows' so the request (and response if you trie
 """
 import dpkt
 import datetime
-import socket
-from dpkt.compat import compat_ord
+from dpkt.utils import mac_to_str, inet_to_str
 
-
-def mac_addr(address):
-    """Convert a MAC address to a readable/printable string
-
-       Args:
-           address (str): a MAC address in hex form (e.g. '\x01\x02\x03\x04\x05\x06')
-       Returns:
-           str: Printable/readable MAC address
-    """
-    return ':'.join('%02x' % compat_ord(b) for b in address)
-
-
-def inet_to_str(inet):
-    """Convert inet object to a string
-
-        Args:
-            inet (inet struct): inet network address
-        Returns:
-            str: Printable/readable IP address
-    """
-    # First try ipv4 and then ipv6
-    try:
-        return socket.inet_ntop(socket.AF_INET, inet)
-    except ValueError:
-        return socket.inet_ntop(socket.AF_INET6, inet)
 
 def print_http_requests(pcap):
     """Print out information about each packet in a pcap
@@ -76,7 +49,7 @@ def print_http_requests(pcap):
 
             # Print out the info
             print('Timestamp: ', str(datetime.datetime.utcfromtimestamp(timestamp)))
-            print('Ethernet Frame: ', mac_addr(eth.src), mac_addr(eth.dst), eth.type)
+            print('Ethernet Frame: ', mac_to_str(eth.src), mac_to_str(eth.dst), eth.type)
             print('IP: %s -> %s   (len=%d ttl=%d DF=%d MF=%d offset=%d)' %
                   (inet_to_str(ip.src), inet_to_str(ip.dst), ip.len, ip.ttl, do_not_fragment, more_fragments, fragment_offset))
             print('HTTP request: %s\n' % repr(request))

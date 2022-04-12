@@ -22,9 +22,9 @@ ICMP6_MEMBERSHIP_REPORT = 131  # group membership report
 ICMP6_MEMBERSHIP_REDUCTION = 132  # group membership termination
 
 ND_ROUTER_SOLICIT = 133  # router solicitation
-ND_ROUTER_ADVERT = 134  # router advertisment
+ND_ROUTER_ADVERT = 134  # router advertisement
 ND_NEIGHBOR_SOLICIT = 135  # neighbor solicitation
-ND_NEIGHBOR_ADVERT = 136  # neighbor advertisment
+ND_NEIGHBOR_ADVERT = 136  # neighbor advertisement
 ND_REDIRECT = 137  # redirect
 
 ICMP6_ROUTER_RENUMBERING = 138  # router renumbering
@@ -42,13 +42,17 @@ ICMP6_MAXTYPE = 201
 class ICMP6(dpkt.Packet):
     """Internet Control Message Protocol for IPv6.
 
-    TODO: Longer class information....
+    Internet Control Message Protocol version 6 (ICMPv6) is the implementation of the Internet Control Message Protocol
+    (ICMP) for Internet Protocol version 6 (IPv6). ICMPv6 is an integral part of IPv6 and performs error reporting
+    and diagnostic functions.
 
     Attributes:
         __hdr__: Header fields of ICMPv6.
-        TODO.
+            type: (int): Type. Control messages are identified by the value in the type field.  (1 byte)
+            code: (int): Code. The code field gives additional context information for the message. (1 byte)
+            sum: (int): Checksum. ICMPv6 provides a minimal level of message integrity verification. (2 bytes)
     """
-    
+
     __hdr__ = (
         ('type', 'B', 0),
         ('code', 'B', 0),
@@ -63,12 +67,14 @@ class ICMP6(dpkt.Packet):
             from . import ip6
             self.data = self.ip6 = ip6.IP6(self.data)
 
-    class Unreach(Error): pass
+    class Unreach(Error):
+        pass
 
     class TooBig(Error):
         __hdr__ = (('mtu', 'I', 1232), )
 
-    class TimeExceed(Error): pass
+    class TimeExceed(Error):
+        pass
 
     class ParamProb(Error):
         __hdr__ = (('ptr', 'I', 0), )

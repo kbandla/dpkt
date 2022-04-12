@@ -97,8 +97,3 @@ def test_crc32c():
 
     assert cksum(b'') == 0
     assert cksum(b'123456789') == bswap32(0xe3069283)
-
-
-if __name__ == '__main__':
-    test_crc32c()
-    print('Tests Successful...')

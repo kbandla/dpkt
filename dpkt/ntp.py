@@ -4,7 +4,6 @@
 from __future__ import print_function
 
 from . import dpkt
-from .decorators import deprecated
 
 # NTP v4
 
@@ -28,7 +27,9 @@ PRIVATE = 7
 class NTP(dpkt.Packet):
     """Network Time Protocol.
 
-    TODO: Longer class information....
+    The Network Time Protocol (NTP) is a networking protocol for clock synchronization between computer systems over
+    packet-switched, variable-latency data networks. In operation since before 1985, NTP is one of the oldest Internet
+    protocols in current use. NTP was designed by David L. Mills of the University of Delaware.
 
     Attributes:
         __hdr__: Header fields of NTP.
@@ -48,33 +49,17 @@ class NTP(dpkt.Packet):
         ('receive_time', '8s', 0),
         ('transmit_time', '8s', 0)
     )
-
-    @property
-    def v(self):
-        return (self.flags >> 3) & 0x7
-
-    @v.setter
-    def v(self, v):
-        self.flags = (self.flags & ~0x38) | ((v & 0x7) << 3)
-
-    @property
-    def li(self):
-        return (self.flags >> 6) & 0x3
-
-    @li.setter
-    def li(self, li):
-        self.flags = (self.flags & ~0xc0) | ((li & 0x3) << 6)
-
-    @property
-    def mode(self):
-        return self.flags & 0x7
-
-    @mode.setter
-    def mode(self, mode):
-        self.flags = (self.flags & ~0x7) | (mode & 0x7)
+    __bit_fields__ = {
+        'flags': (
+            ('li', 2),    # leap indicator, 2 hi bits
+            ('v', 3),     # version, 3 bits
+            ('mode', 3),  # mode, 3 lo bits
+        )
+    }
 
 
-__s = b'\x24\x02\x04\xef\x00\x00\x00\x84\x00\x00\x33\x27\xc1\x02\x04\x02\xc8\x90\xec\x11\x22\xae\x07\xe5\xc8\x90\xf9\xd9\xc0\x7e\x8c\xcd\xc8\x90\xf9\xd9\xda\xc5\xb0\x78\xc8\x90\xf9\xd9\xda\xc6\x8a\x93'
+__s = (b'\x24\x02\x04\xef\x00\x00\x00\x84\x00\x00\x33\x27\xc1\x02\x04\x02\xc8\x90\xec\x11\x22\xae'
+       b'\x07\xe5\xc8\x90\xf9\xd9\xc0\x7e\x8c\xcd\xc8\x90\xf9\xd9\xda\xc5\xb0\x78\xc8\x90\xf9\xd9\xda\xc6\x8a\x93')
 
 
 def test_ntp_pack():
@@ -96,8 +81,3 @@ def test_ntp_unpack():
     assert (n.li == ALARM_CONDITION)
     assert (n.v == 3)
     assert (n.mode == CLIENT)
-
-if __name__ == '__main__':
-    test_ntp_pack()
-    test_ntp_unpack()
-    print('Tests Successful...')

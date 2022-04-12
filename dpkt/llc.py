@@ -93,6 +93,65 @@ def test_llc():
     assert str(llc_pkt) == str(b'\x06\x06\x03' + s[8:])
 
 
-if __name__ == '__main__':
-    test_llc()
-    print('Tests Successful...')
+def test_unpack_sap_ip():
+    from binascii import unhexlify
+
+    from . import ip
+
+    buf_llc = unhexlify(
+        '06'  # dsap (SAP_IP)
+        'aa'  # ssap
+        '03'  # ctl
+    )
+    buf_ip = unhexlify(
+        '45'    # _v_hl
+        '00'    # tos
+        '0014'  # len
+        '0000'  # id
+        '0000'  # off
+        '80'    # ttl
+        '06'    # p
+        'd47e'  # sum
+        '11111111'  # src
+        '22222222'  # dst
+    )
+
+    buf = buf_llc + buf_ip
+    llc = LLC(buf)
+    assert isinstance(llc.data, ip.IP)
+
+
+def test_unpack_exception_handling():
+    from binascii import unhexlify
+
+    buf_llc = unhexlify(
+        'aa'  # dsap (SAP_IP)
+        'aa'  # ssap
+        '03'  # ctl
+
+        '111111'  # oui
+        '2222'    # type (not valid ethertype)
+    )
+
+    llc = LLC(buf_llc)
+    assert not isinstance(llc.data, dpkt.Packet)
+
+
+def test_pack_hdr_invalid_class():
+    from binascii import unhexlify
+
+    class InvalidClass(dpkt.Packet):
+        __hdr__ = (('test', 'B', 0x22),)
+
+    llc = LLC(dsap=0xaa, ssap=0xaa, ctl=3, oui=0x111111, data=InvalidClass())
+    correct = unhexlify(
+        'aa'       # dsap
+        'aa'       # ssap
+        '03'       # ctl
+
+        '111111'   # oui
+        '0000'     # type
+
+        '22'       # data in test class header
+    )
+    assert bytes(llc) == correct

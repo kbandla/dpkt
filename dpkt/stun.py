@@ -43,9 +43,11 @@ class STUN(dpkt.Packet):
 
     Attributes:
         __hdr__: Header fields of STUN.
-        TODO.
+            type: (int): STUN Message Type (2 bytes)
+            len: (int): Message Length (2 bytes)
+            xid: (bytes): Magic Cookie and Transaction ID (16 bytes)
     """
-    
+
     __hdr__ = (
         ('type', 'H', 0),
         ('len', 'H', 0),
@@ -55,11 +57,11 @@ class STUN(dpkt.Packet):
 
 def tlv(buf):
     n = 4
-    t, l = struct.unpack('>HH', buf[:n])
-    v = buf[n:n + l]
-    pad = (n - l % n) % n
-    buf = buf[n + l + pad:]
-    return t, l, v, buf
+    t, l_ = struct.unpack('>HH', buf[:n])
+    v = buf[n:n + l_]
+    pad = (n - l_ % n) % n
+    buf = buf[n + l_ + pad:]
+    return t, l_, v, buf
 
 
 def parse_attrs(buf):
@@ -72,7 +74,8 @@ def parse_attrs(buf):
 
 
 def test_stun_response():
-    s = b'\x01\x01\x00\x0c\x21\x12\xa4\x42\x53\x4f\x70\x43\x69\x69\x35\x4a\x66\x63\x31\x7a\x00\x01\x00\x08\x00\x01\x11\x22\x33\x44\x55\x66'
+    s = (b'\x01\x01\x00\x0c\x21\x12\xa4\x42\x53\x4f\x70\x43\x69\x69\x35\x4a\x66\x63\x31\x7a\x00\x01'
+         b'\x00\x08\x00\x01\x11\x22\x33\x44\x55\x66')
     m = STUN(s)
     assert m.type == BINDING_RESPONSE
     assert m.len == 12
@@ -95,10 +98,3 @@ def test_stun_padded():
     assert len(attrs) == 6
     assert attrs[0] == (USERNAME, b'pLyZHR:GwL3AHBovubLvCqn')
     assert attrs[4][0] == MESSAGE_INTEGRITY
-
-
-if __name__ == '__main__':
-    test_stun_response()
-    test_stun_padded()
-
-    print('Tests Successful...')

@@ -103,11 +103,41 @@ DHCPINFORM = 8
 class DHCP(dpkt.Packet):
     """Dynamic Host Configuration Protocol.
 
-    TODO: Longer class information....
+    The Dynamic Host Configuration Protocol (DHCP) is a network management protocol used on Internet Protocol (IP)
+    networks for automatically assigning IP addresses and other communication parameters to devices connected
+    to the network using a client–server architecture.
 
     Attributes:
         __hdr__: Header fields of DHCP.
-        TODO.
+            op: (int): Operation. Message op code / message type. 1 = BOOTREQUEST, 2 = BOOTREPLY. (1 byte)
+            hrd: (int): Hardware type. Hardware address type, see ARP section in "Assigned
+                    Numbers" RFC; e.g., '1' = 10mb ethernet. (1 byte)
+            hln: (int): Hardware Length. Hardware address length (e.g.  '6' for 10mb
+                    ethernet). (1 byte)
+            hops: (int): Hops. Client sets to zero, optionally used by relay agents
+                    when booting via a relay agent. (1 byte)
+            xid: (int): Transaction ID. A random number chosen by the
+                    client, used by the client and server to associate
+                    messages and responses between a client and a
+                    server. (4 bytes)
+            secs: (int): Seconds. Filled in by client, seconds elapsed since client
+                    began address acquisition or renewal process. (2 bytes)
+            flags: (int): DHCP Flags. (2 bytes)
+            ciaddr: (int): Client IP address. Only filled in if client is in
+                    BOUND, RENEW or REBINDING state and can respond
+                    to ARP requests. (4 bytes)
+            yiaddr: (int): User IP address. (4 bytes)
+            siaddr: (int): Server IP address. IP address of next server to use in bootstrap;
+                    returned in DHCPOFFER, DHCPACK by server. (4 bytes)
+            giaddr: (int): Gateway IP address. Relay agent IP address, used in booting via a
+                    relay agent. (4 bytes)
+            chaddr: (int): Client hardware address. (16 bytes)
+            sname: (int): Server Hostname. Optional, null terminated string. (64 bytes)
+            file: (int): Boot file name. Null terminated string; "generic"
+                    name or null in DHCPDISCOVER, fully qualified
+                    directory-path name in DHCPOFFER. (128 bytes)
+            magic: (int): Magic cookie. Optional parameters field.  See the options
+                    documents for a list of defined options. (4 bytes)
     """
 
     __hdr__ = (
@@ -137,7 +167,7 @@ class DHCP(dpkt.Packet):
 
     def __len__(self):
         return self.__hdr_len__ + \
-               sum([2 + len(o[1]) for o in self.opts]) + 1 + len(self.data)
+            sum([2 + len(o[1]) for o in self.opts]) + 1 + len(self.data)
 
     def __bytes__(self):
         return self.pack_hdr() + self.pack_opts() + bytes(self.data)
@@ -146,17 +176,17 @@ class DHCP(dpkt.Packet):
         """Return packed options string."""
         if not self.opts:
             return b''
-        l = []
+        l_ = []
         for t, data in self.opts:
-            l.append(struct.pack("BB%is"%len(data), t, len(data), data))
-        l.append(b'\xff')
-        return b''.join(l)
+            l_.append(struct.pack("BB%is" % len(data), t, len(data), data))
+        l_.append(b'\xff')
+        return b''.join(l_)
 
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
         self.chaddr = self.chaddr[:self.hln]
         buf = self.data
-        l = []
+        l_ = []
         while buf:
             t = compat_ord(buf[0])
             if t == 0xff:
@@ -166,16 +196,31 @@ class DHCP(dpkt.Packet):
                 buf = buf[1:]
             else:
                 n = compat_ord(buf[1])
-                l.append((t, buf[2:2 + n]))
+                l_.append((t, buf[2:2 + n]))
                 buf = buf[2 + n:]
-        self.opts = l
+        self.opts = l_
         self.data = buf
 
 
 def test_dhcp():
-    s = b'\x01\x01\x06\x00\xadS\xc8c\xb8\x87\x80\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02U\x82\xf3\xa6\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00c\x82Sc5\x01\x01\xfb\x01\x01=\x07\x01\x00\x02U\x82\xf3\xa62\x04\n\x00\x01e\x0c\tGuinevere<\x08MSFT 5.07\n\x01\x0f\x03\x06,./\x1f!+\xff\x00\x00\x00\x00\x00'
+    s = (
+        b'\x01\x01\x06\x00\xad\x53\xc8\x63\xb8\x87\x80\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+        b'\x00\x00\x00\x00\x02\x55\x82\xf3\xa6\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+        b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+        b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+        b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+        b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+        b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+        b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+        b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+        b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x63\x82\x53\x63\x35\x01\x01\xfb\x01\x01\x3d\x07\x01\x00'
+        b'\x02\x55\x82\xf3\xa6\x32\x04\x0a\x00\x01\x65\x0c\x09\x47\x75\x69\x6e\x65\x76\x65\x72\x65\x3c\x08\x4d'
+        b'\x53\x46\x54\x20\x35\x2e\x30\x37\x0a\x01\x0f\x03\x06\x2c\x2e\x2f\x1f\x21\x2b\xff\x00\x00\x00\x00\x00'
+    )
+
     dhcp = DHCP(s)
     assert (s == bytes(dhcp))
+    assert len(dhcp) == 300
     assert isinstance(dhcp.chaddr, bytes)
     assert isinstance(dhcp.sname, bytes)
     assert isinstance(dhcp.file, bytes)
@@ -186,6 +231,34 @@ def test_dhcp():
     assert isinstance(dhcp.sname, bytes)
     assert isinstance(dhcp.file, bytes)
 
-if __name__ == '__main__':
-    test_dhcp()
-    print('Tests Successful...')
+
+def test_no_opts():
+    from binascii import unhexlify
+    buf_small_hdr = unhexlify(
+        '00'        # op
+        '00'        # hrd
+        '06'        # hln
+        '12'        # hops
+        'deadbeef'  # xid
+        '1234'      # secs
+        '9866'      # flags
+        '00000000'  # ciaddr
+        '00000000'  # yiaddr
+        '00000000'  # siaddr
+        '00000000'  # giaddr
+    )
+
+    buf = b''.join([
+        buf_small_hdr,
+        b'\x00' * 16,   # chaddr
+        b'\x11' * 64,   # sname
+        b'\x22' * 128,  # file
+        b'\x44' * 4,    # magic
+
+        b'\x00'         # data
+    ])
+
+    dhcp = DHCP(buf)
+    assert dhcp.opts == []
+    assert dhcp.data == b''
+    assert dhcp.pack_opts() == b''

@@ -178,9 +178,9 @@ command_str = {
     0x00A8: "QQ_CMD_AUTHORIZE",
     0xFFFF: "QQ_CMD_UNKNOWN",
     0x0021: "_CMD_REQUEST_AGENT",
-    0x0022: "_CMD_REQUEST_FACE",
+    # 0x0022: "_CMD_REQUEST_FACE",   # FIXME - dup dict key
     0x0023: "_CMD_TRANSFER",
-    0x0026: "_CMD_REQUEST_BEGIN",
+    # 0x0026: "_CMD_REQUEST_BEGIN",  # FIXME - dup dict key
 }
 
 

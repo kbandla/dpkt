@@ -6,7 +6,6 @@ from __future__ import absolute_import
 
 import struct
 import zlib
-import binascii
 
 from . import dpkt
 
@@ -53,7 +52,7 @@ GZIP_FENCRYPT_LEN = 12
 class GzipExtra(dpkt.Packet):
     __byte_order__ = '<'
     __hdr__ = (
-        ('id', '2s', ''),
+        ('id', '2s', b''),
         ('len', 'H', 0)
     )
 
@@ -67,11 +66,13 @@ class Gzip(dpkt.Packet):
         ('mtime', 'I', 0),
         ('xflags', 'B', 0),
         ('os', 'B', GZIP_OS_UNIX),
-
-        ('extra', '0s', ''),  # XXX - GZIP_FEXTRA
-        ('filename', '0s', ''),  # XXX - GZIP_FNAME
-        ('comment', '0s', '')  # XXX - GZIP_FCOMMENT
     )
+
+    def __init__(self, *args, **kwargs):
+        self.extra = None
+        self.filename = None
+        self.comment = None
+        super(Gzip, self).__init__(*args, **kwargs)
 
     def unpack(self, buf):
         super(Gzip, self).unpack(buf)
@@ -105,28 +106,36 @@ class Gzip(dpkt.Packet):
             self.data = self.data[2:]  # XXX - skip
 
     def pack_hdr(self):
-        l = []
+        l_ = []
         if self.extra:
             self.flags |= GZIP_FEXTRA
             s = bytes(self.extra)
-            l.append(struct.pack('<H', len(s)))
-            l.append(s)
+            l_.append(struct.pack('<H', len(s)))
+            l_.append(s)
         if self.filename:
             self.flags |= GZIP_FNAME
-            l.append(self.filename)
-            l.append(b'\x00')
+            l_.append(self.filename.encode('utf-8'))
+            l_.append(b'\x00')
         if self.comment:
             self.flags |= GZIP_FCOMMENT
-            l.append(self.comment)
-            l.append(b'\x00')
-        l.insert(0, super(Gzip, self).pack_hdr())
-        return b''.join(l)
+            l_.append(self.comment)
+            l_.append(b'\x00')
+        l_.insert(0, super(Gzip, self).pack_hdr())
+        return b''.join(l_)
 
     def compress(self):
         """Compress self.data."""
-        c = zlib.compressobj(9, zlib.DEFLATED, -zlib.MAX_WBITS,
-                             zlib.DEF_MEM_LEVEL, 0)
-        self.data = c.compress(self.data)
+        c = zlib.compressobj(
+            zlib.Z_BEST_COMPRESSION,
+            zlib.DEFLATED,
+            -zlib.MAX_WBITS,
+            zlib.DEF_MEM_LEVEL,
+            zlib.Z_DEFAULT_STRATEGY,
+        )
+        c.compress(self.data)
+
+        # .compress will return nothing if len(self.data) < the window size.
+        self.data = c.flush()
 
     def decompress(self):
         """Return decompressed payload."""
@@ -134,19 +143,19 @@ class Gzip(dpkt.Packet):
         return d.decompress(self.data)
 
 
-_hexdecode = binascii.a2b_hex
-
 class TestGzip(object):
-
     """This data is created with the gzip command line tool"""
 
     @classmethod
     def setup_class(cls):
-        cls.data = _hexdecode(b'1F8B' # magic
-                              b'080880C185560003' # header
-                              b'68656C6C6F2E74787400' # filename
-                              b'F348CDC9C95728CF2FCA4951E40200' # data
-                              b'41E4A9B20D000000') # checksum
+        from binascii import unhexlify
+        cls.data = unhexlify(
+            b'1F8B'  # magic
+            b'080880C185560003'  # header
+            b'68656C6C6F2E74787400'  # filename
+            b'F348CDC9C95728CF2FCA4951E40200'  # data
+            b'41E4A9B20D000000'  # checksum
+        )
         cls.p = Gzip(cls.data)
 
     def test_method(self):
@@ -166,14 +175,162 @@ class TestGzip(object):
         assert (self.p.os == GZIP_OS_UNIX)
 
     def test_filename(self):
-        assert (self.p.filename == "hello.txt") # always str (utf-8)
+        assert (self.p.filename == "hello.txt")  # always str (utf-8)
 
     def test_decompress(self):
-        assert (self.p.decompress() == b"Hello world!\n") # always bytes
+        assert (self.p.decompress() == b"Hello world!\n")  # always bytes
 
 
-if __name__ == '__main__':
-    import sys
+def test_flags_extra():
+    import pytest
+    from binascii import unhexlify
 
-    gz = Gzip(open(sys.argv[1]).read())
-    print(repr(gz), repr(gz.decompress()))
+    buf = unhexlify(
+        '1F8B'      # magic
+        '08'        # method
+        '04'        # flags (GZIP_FEXTRA)
+        '80C18556'  # mtime
+        '00'        # xflags
+        '03'        # os
+    )
+
+    # not enough data to extract
+    with pytest.raises(dpkt.NeedData, match='Gzip extra'):
+        Gzip(buf)
+
+    buf += unhexlify('0400')  # append the length of the fextra
+    # not enough data to extract in extra section
+    with pytest.raises(dpkt.NeedData, match='Gzip extra'):
+        Gzip(buf)
+
+    buf += unhexlify('494401000102')
+
+    gzip = Gzip(buf)
+    assert gzip.extra.id == b'ID'
+    assert gzip.extra.len == 1
+    assert gzip.data == unhexlify('0102')
+    assert bytes(gzip) == buf
+
+
+def test_flags_filename():
+    import pytest
+    from binascii import unhexlify
+
+    buf = unhexlify(
+        '1F8B'      # magic
+        '08'        # method
+        '08'        # flags (GZIP_FNAME)
+        '80C18556'  # mtime
+        '00'        # xflags
+        '03'        # os
+
+        '68656C6C6F2E747874'  # filename
+    )
+    # no trailing null character so unpacking fails
+    with pytest.raises(dpkt.NeedData, match='Gzip end of file name not found'):
+        Gzip(buf)
+
+    buf += unhexlify('00')
+    gzip = Gzip(buf)
+    assert gzip.filename == 'hello.txt'
+    assert gzip.data == b''
+    assert bytes(gzip) == buf
+
+
+def test_flags_comment():
+    import pytest
+    from binascii import unhexlify
+
+    buf = unhexlify(
+        '1F8B'      # magic
+        '08'        # method
+        '10'        # flags (GZIP_FCOMMENT)
+        '80C18556'  # mtime
+        '00'        # xflags
+        '03'        # os
+
+        '68656C6C6F2E747874'  # comment
+    )
+    # no trailing null character so unpacking fails
+    with pytest.raises(dpkt.NeedData, match='Gzip end of comment not found'):
+        Gzip(buf)
+
+    buf += unhexlify('00')
+
+    gzip = Gzip(buf)
+    assert gzip.comment == b'hello.txt'
+    assert gzip.data == b''
+    assert bytes(gzip) == buf
+
+
+def test_flags_encrypt():
+    import pytest
+    from binascii import unhexlify
+
+    buf_header = unhexlify(
+        '1F8B'      # magic
+        '08'        # method
+        '20'        # flags (GZIP_FENCRYPT)
+        '80C18556'  # mtime
+        '00'        # xflags
+        '03'        # os
+    )
+    # not enough data
+    with pytest.raises(dpkt.NeedData, match='Gzip encrypt'):
+        Gzip(buf_header)
+
+    encrypted_buffer = unhexlify('0102030405060708090a0b0c')
+    data = unhexlify('0123456789abcdef')
+
+    gzip = Gzip(buf_header + encrypted_buffer + data)
+    assert gzip.data == data
+    assert bytes(gzip) == buf_header + data
+
+
+def test_flags_hcrc():
+    import pytest
+    from binascii import unhexlify
+
+    buf_header = unhexlify(
+        '1F8B'      # magic
+        '08'        # method
+        '02'        # flags (GZIP_FHCRC)
+        '80C18556'  # mtime
+        '00'        # xflags
+        '03'        # os
+    )
+    # not enough data
+    with pytest.raises(dpkt.NeedData, match='Gzip hcrc'):
+        Gzip(buf_header)
+
+    hcrc = unhexlify('0102')
+    data = unhexlify('0123456789abcdef')
+    gzip = Gzip(buf_header + hcrc + data)
+
+    assert gzip.data == data
+    assert bytes(gzip) == buf_header + data
+
+
+def test_compress():
+    from binascii import unhexlify
+
+    buf_header = unhexlify(
+        '1F8B'      # magic
+        '08'        # method
+        '00'        # flags (NONE)
+        '80C18556'  # mtime
+        '00'        # xflags
+        '03'        # os
+    )
+
+    plain_text = b'Hello world!\n'
+    compressed_text = unhexlify('F348CDC9C95728CF2FCA4951E40200')
+
+    gzip = Gzip(buf_header + plain_text)
+    assert gzip.data == plain_text
+
+    gzip.compress()
+    assert gzip.data == compressed_text
+    assert bytes(gzip) == buf_header + compressed_text
+
+    assert gzip.decompress() == plain_text

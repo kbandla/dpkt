@@ -37,7 +37,7 @@ class NBTPing(ping.Ping):
                 elif svc == 0x03 and unique:
                     if 'user' not in d or d['user'].startswith(d['host']):
                         d['user'] = name
-        print('%d bytes from %s: id=%d time=%.3f ms host=%s user=%s' % \
+        print('%d bytes from %s: id=%d time=%.3f ms host=%s user=%s' %
               (len(buf), opts.ip, ns.id, rtt * 1000,
                d.get('host', ''), d.get('user', '')))
 

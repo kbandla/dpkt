@@ -13,13 +13,19 @@ from .compat import compat_ord
 class RADIUS(dpkt.Packet):
     """Remote Authentication Dial-In User Service.
 
-    TODO: Longer class information....
+    Remote Authentication Dial-In User Service (RADIUS) is a networking protocol that provides centralized
+    authentication, authorization, and accounting (AAA) management for users who connect and use a network service.
+    RADIUS was developed by Livingston Enterprises in 1991 as an access server authentication and accounting protocol.
+    It was later brought into IEEE 802 and IETF standards.
 
     Attributes:
         __hdr__: Header fields of RADIUS.
-        TODO.
+            code: (int): Code. (1 byte)
+            id: (int): ID (1 byte)
+            len: (int): Length (2 bytes)
+            auth: (int): Authentication (16 bytes)
     """
-    
+
     __hdr__ = (
         ('code', 'B', 0),
         ('id', 'B', 0),
@@ -39,12 +45,13 @@ def parse_attrs(buf):
     attrs = []
     while buf:
         t = compat_ord(buf[0])
-        l = compat_ord(buf[1])
-        if l < 2:
+        l_ = compat_ord(buf[1])
+        if l_ < 2:
             break
-        d, buf = buf[2:l], buf[l:]
+        d, buf = buf[2:l_], buf[l_:]
         attrs.append((t, d))
     return attrs
+
 
 # Codes
 RADIUS_ACCESS_REQUEST = 1
@@ -100,3 +107,68 @@ RADIUS_CHAP_CHALLENGE = 60
 RADIUS_NAS_PORT_TYPE = 61
 RADIUS_PORT_LIMIT = 62
 RADIUS_LOGIN_LAT_PORT = 63
+
+
+def test_parse_attrs():
+    from binascii import unhexlify
+    buf = unhexlify(
+        '01'        # type (RADIUS_USER_NAME)
+        '06'        # end of attribute value
+        '75736572'  # value ('user')
+
+        '00'
+        '00'
+    )
+
+    attrs = parse_attrs(buf)
+    assert len(attrs) == 1
+
+    type0, value0 = attrs[0]
+    assert type0 == RADIUS_USER_NAME
+    assert value0 == b'user'
+
+
+def test_parse_multiple_attrs():
+    from binascii import unhexlify
+    buf = unhexlify(
+        '01'                # type (RADIUS_USER_NAME)
+        '06'                # end of attribute value
+        '75736572'          # value ('user')
+
+        '02'                # type (RADIUS_USER_PASSWORD)
+        '0a'                # end of attribute value
+        '70617373776f7264'  # value ('password')
+    )
+
+    attrs = parse_attrs(buf)
+    assert len(attrs) == 2
+
+    type0, value0 = attrs[0]
+    assert type0 == RADIUS_USER_NAME
+    assert value0 == b'user'
+
+    type1, value1 = attrs[1]
+    assert type1 == RADIUS_USER_PASSWORD
+    assert value1 == b'password'
+
+
+def test_radius_unpacking():
+    from binascii import unhexlify
+    buf_attrs = unhexlify(
+        '01'                # type (RADIUS_USER_NAME)
+        '06'                # end of attribute value
+        '75736572'          # value ('user')
+    )
+    buf_radius_header = unhexlify(
+        '01'                # code
+        '34'                # id
+        '1234'              # len
+        '0123456789abcdef'  # auth
+        '0123456789abcdef'  # auth
+    )
+    buf = buf_radius_header + buf_attrs
+    radius = RADIUS(buf)
+    assert len(radius.attrs) == 1
+    name0, value0 = radius.attrs[0]
+    assert name0 == 1
+    assert value0 == b'user'

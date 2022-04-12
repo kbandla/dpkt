@@ -18,14 +18,19 @@ PFC_BIT = 0x01
 
 
 class PPP(dpkt.Packet):
-    # Note: This class is subclassed in PPPoE
     """Point-to-Point Protocol.
 
-    TODO: Longer class information....
+    Point-to-Point Protocol (PPP) is a data link layer (layer 2) communication protocol between two routers directly
+    without any host or any other networking in between. It can provide connection authentication, transmission
+    encryption and data compression.
+
+    Note: This class is subclassed in PPPoE
 
     Attributes:
         __hdr__: Header fields of PPP.
-        TODO.
+            addr: (int): Address. 0xFF, standard broadcast address. (1 byte)
+            cntrl: (int): Control. 0x03, unnumbered data. (1 byte)
+            p: (int): Protocol. PPP ID of embedded data. (1 byte)
     """
 
     __hdr__ = (
@@ -111,6 +116,73 @@ def test_packing():
     assert p.pack_hdr() == b"\xff\x03\xc0\x21"
 
 
-if __name__ == '__main__':
-    # Runs all the test associated with this class/file
-    test_ppp()
+def test_ppp_classmethods():
+    import pytest
+
+    class TestProto(dpkt.Packet):
+        pass
+
+    proto_number = 123
+
+    # asserting that this proto is not currently added
+    with pytest.raises(KeyError):
+        PPP.get_p(proto_number)
+
+    PPP.set_p(proto_number, TestProto)
+
+    assert PPP.get_p(proto_number) == TestProto
+
+    # we need to reset the class, or impact other tests
+    del PPP._protosw[proto_number]
+
+
+def test_unpacking_exceptions():
+    from dpkt import ip
+
+    from binascii import unhexlify
+    buf_ppp = unhexlify(
+        'ff'  # addr
+        '03'  # cntrl
+        '21'  # p (PPP_IP)
+    )
+    buf_ip = unhexlify(
+        '45'    # _v_hl
+        '00'    # tos
+        '0014'  # len
+        '0000'  # id
+        '0000'  # off
+        '80'    # ttl
+        '06'    # p
+        'd47e'  # sum
+        '11111111'  # src
+        '22222222'  # dst
+    )
+
+    buf = buf_ppp + buf_ip
+    ppp = PPP(buf)
+    assert hasattr(ppp, 'ip')
+    assert isinstance(ppp.data, ip.IP)
+    assert bytes(ppp) == buf
+
+
+def test_ppp_packing_error():
+    import pytest
+
+    # addr is a 1-byte field, so this will overflow when packing
+    ppp = PPP(p=257, addr=1234)
+    with pytest.raises(dpkt.PackError):
+        ppp.pack_hdr()
+
+
+def test_proto_loading():
+    # test that failure to load protocol handlers isn't catastrophic
+    standard_protos = PPP._protosw
+    # delete existing protos
+    PPP._protosw = {}
+    assert not PPP._protosw
+
+    # inject a new global variable to be picked up
+    globals()['PPP_NON_EXISTENT_PROTO'] = "FAIL"
+    _mod_init()
+    # we should get the same answer as if NON_EXISTENT_PROTO didn't exist
+    assert PPP._protosw == standard_protos
