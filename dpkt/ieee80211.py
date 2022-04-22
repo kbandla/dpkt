@@ -66,6 +66,8 @@ _PWR_MGT_MASK = 0x0010
 _MORE_DATA_MASK = 0x0020
 _WEP_MASK = 0x0040
 _ORDER_MASK = 0x0080
+_FRAGMENT_NUMBER_MASK = 0x000F
+_SEQUENCE_NUMBER_MASK = 0XFFF0
 _VERSION_SHIFT = 8
 _TYPE_SHIFT = 10
 _SUBTYPE_SHIFT = 12
@@ -77,6 +79,7 @@ _PWR_MGT_SHIFT = 4
 _MORE_DATA_SHIFT = 5
 _WEP_SHIFT = 6
 _ORDER_SHIFT = 7
+_SEQUENCE_NUMBER_SHIFT = 4
 
 # IEs
 IE_SSID = 0
@@ -437,6 +440,15 @@ class IEEE80211(dpkt.Packet):
                 self.bmp = struct.unpack('128s', self.data[0:_BMP_LENGTH])[0]
             self.data = self.data[len(self.__hdr__) + len(self.bmp):]
 
+    class _FragmentNumSeqNumMixin(object):
+        @property
+        def fragment_number(self):
+            return ntole(self.frag_seq) & _FRAGMENT_NUMBER_MASK
+
+        @property
+        def sequence_number(self):
+            return (ntole(self.frag_seq) & _SEQUENCE_NUMBER_MASK) >> _SEQUENCE_NUMBER_SHIFT
+
     class RTS(dpkt.Packet):
         __hdr__ = (
             ('dst', '6s', '\x00' * 6),
@@ -459,7 +471,7 @@ class IEEE80211(dpkt.Packet):
             ('src', '6s', '\x00' * 6),
         )
 
-    class MGMT_Frame(dpkt.Packet):
+    class MGMT_Frame(dpkt.Packet, _FragmentNumSeqNumMixin):
         __hdr__ = (
             ('dst', '6s', '\x00' * 6),
             ('src', '6s', '\x00' * 6),
@@ -563,7 +575,7 @@ class IEEE80211(dpkt.Packet):
             # ('gcr_group_addr', '8s', '\x00' * 8), # Standard says it must be there, but it isn't?
         )
 
-    class Data(dpkt.Packet):
+    class Data(dpkt.Packet, _FragmentNumSeqNumMixin):
         __hdr__ = (
             ('dst', '6s', '\x00' * 6),
             ('src', '6s', '\x00' * 6),
@@ -571,7 +583,7 @@ class IEEE80211(dpkt.Packet):
             ('frag_seq', 'H', 0)
         )
 
-    class DataFromDS(dpkt.Packet):
+    class DataFromDS(dpkt.Packet, _FragmentNumSeqNumMixin):
         __hdr__ = (
             ('dst', '6s', '\x00' * 6),
             ('bssid', '6s', '\x00' * 6),
@@ -579,7 +591,7 @@ class IEEE80211(dpkt.Packet):
             ('frag_seq', 'H', 0)
         )
 
-    class DataToDS(dpkt.Packet):
+    class DataToDS(dpkt.Packet, _FragmentNumSeqNumMixin):
         __hdr__ = (
             ('bssid', '6s', '\x00' * 6),
             ('src', '6s', '\x00' * 6),
@@ -587,7 +599,7 @@ class IEEE80211(dpkt.Packet):
             ('frag_seq', 'H', 0)
         )
 
-    class DataInterDS(dpkt.Packet):
+    class DataInterDS(dpkt.Packet, _FragmentNumSeqNumMixin):
         __hdr__ = (
             ('dst', '6s', '\x00' * 6),
             ('src', '6s', '\x00' * 6),
@@ -727,6 +739,8 @@ def test_80211_data():
     assert ieee.data_frame.dst == b'\x00\x02\xb3\xd6\x26\x3c'
     assert ieee.data_frame.src == b'\x00\x16\x44\xb0\xae\xc6'
     assert ieee.data_frame.frag_seq == 0x807e
+    assert ieee.data_frame.fragment_number == 0
+    assert ieee.data_frame.sequence_number == 2024
     assert ieee.data == (b'\xaa\xaa\x03\x00\x00\x00\x08\x00\x45\x00\x00\x28\x07\x27\x40\x00\x80\x06'
                          b'\x1d\x39\x8d\xd4\x37\x3d\x3f\xf5\xd1\x69\xc0\x5f\x01\xbb\xb2\xd6\xef\x23'
                          b'\x38\x2b\x4f\x08\x50\x10\x42\x04')
@@ -741,7 +755,7 @@ def test_80211_data():
 def test_80211_data_qos():
     s = (
         b'\x88\x01\x3a\x01\x00\x26\xcb\x17\x44\xf0\x00\x23\xdf\xc9\xc0\x93\x00\x26\xcb\x17\x44\xf0'
-        b'\x20\x7b\x00\x00\xaa\xaa\x03\x00\x00\x00\x88\x8e\x01\x00\x00\x74\x02\x02\x00\x74\x19\x80'
+        b'\x21\x7b\x00\x00\xaa\xaa\x03\x00\x00\x00\x88\x8e\x01\x00\x00\x74\x02\x02\x00\x74\x19\x80'
         b'\x00\x00\x00\x6a\x16\x03\x01\x00\x65\x01\x00\x00\x61\x03\x01\x4b\x4c\xa7\x7e\x27\x61\x6f'
         b'\x02\x7b\x3c\x72\x39\xe3\x7b\xd7\x43\x59\x91\x7f\xaa\x22\x47\x51\xb6\x88\x9f\x85\x90\x87'
         b'\x5a\xd1\x13\x20\xe0\x07\x00\x00\x68\xbd\xa4\x13\xb0\xd5\x82\x7e\xc7\xfb\xe7\xcc\xab\x6e'
@@ -754,7 +768,9 @@ def test_80211_data_qos():
     assert ieee.subtype == D_QOS_DATA
     assert ieee.data_frame.dst == b'\x00\x26\xcb\x17\x44\xf0'
     assert ieee.data_frame.src == b'\x00\x23\xdf\xc9\xc0\x93'
-    assert ieee.data_frame.frag_seq == 0x207b
+    assert ieee.data_frame.frag_seq == 0x217b
+    assert ieee.data_frame.fragment_number == 1
+    assert ieee.data_frame.sequence_number == 1970
     assert ieee.data == (b'\xaa\xaa\x03\x00\x00\x00\x88\x8e\x01\x00\x00\x74\x02\x02\x00\x74\x19\x80'
                          b'\x00\x00\x00\x6a\x16\x03\x01\x00\x65\x01\x00\x00\x61\x03\x01\x4b\x4c\xa7'
                          b'\x7e\x27\x61\x6f\x02\x7b\x3c\x72\x39\xe3\x7b\xd7\x43\x59\x91\x7f\xaa\x22'
