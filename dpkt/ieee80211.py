@@ -468,6 +468,7 @@ class IEEE80211(dpkt.Packet):
         )
 
     class Beacon(dpkt.Packet):
+        __byte_order__ = "<"
         __hdr__ = (
             ('timestamp', 'Q', 0),
             ('interval', 'H', 0),
@@ -988,3 +989,11 @@ def test_action_unpack():
     )
     with pytest.raises(dpkt.UnpackError, match="KeyError: category=1 code=0"):
         IEEE80211.Action(buf)
+
+
+def test_beacon_unpack():
+    beacon_payload = b"\xb9\x71\xfa\x45\x52\x02\x00\x00\x64\x00\x11\x04"
+    beacon = IEEE80211.Beacon(beacon_payload)
+    assert beacon.timestamp == 0x0000025245fa71b9
+    assert beacon.interval == 100
+    assert beacon.capability == 0x0411
