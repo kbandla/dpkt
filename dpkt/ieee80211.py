@@ -480,12 +480,16 @@ class IEEE80211(dpkt.Packet):
         )
 
     class Beacon(dpkt.Packet):
-        __byte_order__ = "<"
         __hdr__ = (
             ('timestamp', 'Q', 0),
             ('interval', 'H', 0),
             ('capability', 'H', 0)
         )
+
+        def unpack(self, buf):
+            dpkt.Packet.unpack(self, buf)
+            self.timestamp = struct.unpack('<Q', struct.pack('!Q', self.timestamp))[0]
+            self.interval = ntole(self.interval)
 
     class Disassoc(dpkt.Packet):
         __hdr__ = (
@@ -1012,4 +1016,4 @@ def test_beacon_unpack():
     beacon = IEEE80211.Beacon(beacon_payload)
     assert beacon.timestamp == 0x0000025245fa71b9
     assert beacon.interval == 100
-    assert beacon.capability == 0x0411
+    assert beacon.capability == 0x1104
