@@ -7,7 +7,7 @@ from __future__ import absolute_import
 import struct
 
 from . import dpkt
-from .compat import ntole
+from .compat import ntole, ntole64
 
 # Frame Types
 MGMT_TYPE = 0
@@ -488,7 +488,7 @@ class IEEE80211(dpkt.Packet):
 
         def unpack(self, buf):
             dpkt.Packet.unpack(self, buf)
-            self.timestamp = struct.unpack('<Q', struct.pack('!Q', self.timestamp))[0]
+            self.timestamp = ntole64(self.timestamp)
             self.interval = ntole(self.interval)
 
     class Disassoc(dpkt.Packet):
@@ -759,7 +759,7 @@ def test_80211_data():
 def test_80211_data_qos():
     s = (
         b'\x88\x01\x3a\x01\x00\x26\xcb\x17\x44\xf0\x00\x23\xdf\xc9\xc0\x93\x00\x26\xcb\x17\x44\xf0'
-        b'\x21\x7b\x00\x00\xaa\xaa\x03\x00\x00\x00\x88\x8e\x01\x00\x00\x74\x02\x02\x00\x74\x19\x80'
+        b'\x20\x7b\x00\x00\xaa\xaa\x03\x00\x00\x00\x88\x8e\x01\x00\x00\x74\x02\x02\x00\x74\x19\x80'
         b'\x00\x00\x00\x6a\x16\x03\x01\x00\x65\x01\x00\x00\x61\x03\x01\x4b\x4c\xa7\x7e\x27\x61\x6f'
         b'\x02\x7b\x3c\x72\x39\xe3\x7b\xd7\x43\x59\x91\x7f\xaa\x22\x47\x51\xb6\x88\x9f\x85\x90\x87'
         b'\x5a\xd1\x13\x20\xe0\x07\x00\x00\x68\xbd\xa4\x13\xb0\xd5\x82\x7e\xc7\xfb\xe7\xcc\xab\x6e'
@@ -772,8 +772,8 @@ def test_80211_data_qos():
     assert ieee.subtype == D_QOS_DATA
     assert ieee.data_frame.dst == b'\x00\x26\xcb\x17\x44\xf0'
     assert ieee.data_frame.src == b'\x00\x23\xdf\xc9\xc0\x93'
-    assert ieee.data_frame.frag_seq == 0x217b
-    assert ieee.data_frame.fragment_number == 1
+    assert ieee.data_frame.frag_seq == 0x207b
+    assert ieee.data_frame.fragment_number == 0
     assert ieee.data_frame.sequence_number == 1970
     assert ieee.data == (b'\xaa\xaa\x03\x00\x00\x00\x88\x8e\x01\x00\x00\x74\x02\x02\x00\x74\x19\x80'
                          b'\x00\x00\x00\x6a\x16\x03\x01\x00\x65\x01\x00\x00\x61\x03\x01\x4b\x4c\xa7'
@@ -1017,3 +1017,22 @@ def test_beacon_unpack():
     assert beacon.timestamp == 0x0000025245fa71b9
     assert beacon.interval == 100
     assert beacon.capability == 0x1104
+
+
+def test_fragment_and_sequence_values():
+    from binascii import unhexlify
+    for raw_frag_seq, (expected_frag_num, expected_seq_num) in [
+        ("0000", (0, 0)),
+        ("0F00", (15, 0)),
+        ("0111", (1, 272)),
+        ("B3FF", (3, 4091))
+    ]:
+        buf = unhexlify(
+            '000000000000'  # dst
+            '000000000000'  # src
+            '000000000000'  # bssid
+            + raw_frag_seq
+        )
+        data = IEEE80211.Data(buf)
+        assert data.fragment_number == expected_frag_num
+        assert data.sequence_number == expected_seq_num
