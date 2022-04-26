@@ -47,6 +47,13 @@ def ntole(v):
     return unpack('<H', pack('!H', v))[0]
 
 
+def ntole64(v):
+    """
+    Convert an 8-byte word from network byte order (big endian) to little endian.
+    """
+    return unpack('<Q', pack('!Q', v))[0]
+
+
 def isstr(s):
     """True if 's' is an instance of basestring in py2, or of str in py3"""
     bs = getattr(__builtins__, 'basestring', str)

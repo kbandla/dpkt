@@ -7,7 +7,7 @@ from __future__ import absolute_import
 import struct
 
 from . import dpkt
-from .compat import ntole
+from .compat import ntole, ntole64
 
 # Frame Types
 MGMT_TYPE = 0
@@ -66,6 +66,8 @@ _PWR_MGT_MASK = 0x0010
 _MORE_DATA_MASK = 0x0020
 _WEP_MASK = 0x0040
 _ORDER_MASK = 0x0080
+_FRAGMENT_NUMBER_MASK = 0x000F
+_SEQUENCE_NUMBER_MASK = 0XFFF0
 _VERSION_SHIFT = 8
 _TYPE_SHIFT = 10
 _SUBTYPE_SHIFT = 12
@@ -77,6 +79,7 @@ _PWR_MGT_SHIFT = 4
 _MORE_DATA_SHIFT = 5
 _WEP_SHIFT = 6
 _ORDER_SHIFT = 7
+_SEQUENCE_NUMBER_SHIFT = 4
 
 # IEs
 IE_SSID = 0
@@ -437,6 +440,15 @@ class IEEE80211(dpkt.Packet):
                 self.bmp = struct.unpack('128s', self.data[0:_BMP_LENGTH])[0]
             self.data = self.data[len(self.__hdr__) + len(self.bmp):]
 
+    class _FragmentNumSeqNumMixin(object):
+        @property
+        def fragment_number(self):
+            return ntole(self.frag_seq) & _FRAGMENT_NUMBER_MASK
+
+        @property
+        def sequence_number(self):
+            return (ntole(self.frag_seq) & _SEQUENCE_NUMBER_MASK) >> _SEQUENCE_NUMBER_SHIFT
+
     class RTS(dpkt.Packet):
         __hdr__ = (
             ('dst', '6s', '\x00' * 6),
@@ -459,7 +471,7 @@ class IEEE80211(dpkt.Packet):
             ('src', '6s', '\x00' * 6),
         )
 
-    class MGMT_Frame(dpkt.Packet):
+    class MGMT_Frame(dpkt.Packet, _FragmentNumSeqNumMixin):
         __hdr__ = (
             ('dst', '6s', '\x00' * 6),
             ('src', '6s', '\x00' * 6),
@@ -473,6 +485,11 @@ class IEEE80211(dpkt.Packet):
             ('interval', 'H', 0),
             ('capability', 'H', 0)
         )
+
+        def unpack(self, buf):
+            dpkt.Packet.unpack(self, buf)
+            self.timestamp = ntole64(self.timestamp)
+            self.interval = ntole(self.interval)
 
     class Disassoc(dpkt.Packet):
         __hdr__ = (
@@ -562,7 +579,7 @@ class IEEE80211(dpkt.Packet):
             # ('gcr_group_addr', '8s', '\x00' * 8), # Standard says it must be there, but it isn't?
         )
 
-    class Data(dpkt.Packet):
+    class Data(dpkt.Packet, _FragmentNumSeqNumMixin):
         __hdr__ = (
             ('dst', '6s', '\x00' * 6),
             ('src', '6s', '\x00' * 6),
@@ -570,7 +587,7 @@ class IEEE80211(dpkt.Packet):
             ('frag_seq', 'H', 0)
         )
 
-    class DataFromDS(dpkt.Packet):
+    class DataFromDS(dpkt.Packet, _FragmentNumSeqNumMixin):
         __hdr__ = (
             ('dst', '6s', '\x00' * 6),
             ('bssid', '6s', '\x00' * 6),
@@ -578,7 +595,7 @@ class IEEE80211(dpkt.Packet):
             ('frag_seq', 'H', 0)
         )
 
-    class DataToDS(dpkt.Packet):
+    class DataToDS(dpkt.Packet, _FragmentNumSeqNumMixin):
         __hdr__ = (
             ('bssid', '6s', '\x00' * 6),
             ('src', '6s', '\x00' * 6),
@@ -586,7 +603,7 @@ class IEEE80211(dpkt.Packet):
             ('frag_seq', 'H', 0)
         )
 
-    class DataInterDS(dpkt.Packet):
+    class DataInterDS(dpkt.Packet, _FragmentNumSeqNumMixin):
         __hdr__ = (
             ('dst', '6s', '\x00' * 6),
             ('src', '6s', '\x00' * 6),
@@ -726,6 +743,8 @@ def test_80211_data():
     assert ieee.data_frame.dst == b'\x00\x02\xb3\xd6\x26\x3c'
     assert ieee.data_frame.src == b'\x00\x16\x44\xb0\xae\xc6'
     assert ieee.data_frame.frag_seq == 0x807e
+    assert ieee.data_frame.fragment_number == 0
+    assert ieee.data_frame.sequence_number == 2024
     assert ieee.data == (b'\xaa\xaa\x03\x00\x00\x00\x08\x00\x45\x00\x00\x28\x07\x27\x40\x00\x80\x06'
                          b'\x1d\x39\x8d\xd4\x37\x3d\x3f\xf5\xd1\x69\xc0\x5f\x01\xbb\xb2\xd6\xef\x23'
                          b'\x38\x2b\x4f\x08\x50\x10\x42\x04')
@@ -754,6 +773,8 @@ def test_80211_data_qos():
     assert ieee.data_frame.dst == b'\x00\x26\xcb\x17\x44\xf0'
     assert ieee.data_frame.src == b'\x00\x23\xdf\xc9\xc0\x93'
     assert ieee.data_frame.frag_seq == 0x207b
+    assert ieee.data_frame.fragment_number == 0
+    assert ieee.data_frame.sequence_number == 1970
     assert ieee.data == (b'\xaa\xaa\x03\x00\x00\x00\x88\x8e\x01\x00\x00\x74\x02\x02\x00\x74\x19\x80'
                          b'\x00\x00\x00\x6a\x16\x03\x01\x00\x65\x01\x00\x00\x61\x03\x01\x4b\x4c\xa7'
                          b'\x7e\x27\x61\x6f\x02\x7b\x3c\x72\x39\xe3\x7b\xd7\x43\x59\x91\x7f\xaa\x22'
@@ -988,3 +1009,30 @@ def test_action_unpack():
     )
     with pytest.raises(dpkt.UnpackError, match="KeyError: category=1 code=0"):
         IEEE80211.Action(buf)
+
+
+def test_beacon_unpack():
+    beacon_payload = b"\xb9\x71\xfa\x45\x52\x02\x00\x00\x64\x00\x11\x04"
+    beacon = IEEE80211.Beacon(beacon_payload)
+    assert beacon.timestamp == 0x0000025245fa71b9
+    assert beacon.interval == 100
+    assert beacon.capability == 0x1104
+
+
+def test_fragment_and_sequence_values():
+    from binascii import unhexlify
+    for raw_frag_seq, (expected_frag_num, expected_seq_num) in [
+        ("0000", (0, 0)),
+        ("0F00", (15, 0)),
+        ("0111", (1, 272)),
+        ("B3FF", (3, 4091))
+    ]:
+        buf = unhexlify(
+            '000000000000'  # dst
+            '000000000000'  # src
+            '000000000000'  # bssid
+            + raw_frag_seq
+        )
+        data = IEEE80211.Data(buf)
+        assert data.fragment_number == expected_frag_num
+        assert data.sequence_number == expected_seq_num
