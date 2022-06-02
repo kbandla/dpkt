@@ -785,6 +785,47 @@ def test_epb():
     assert len(epb) == len(buf)
 
 
+def test_pb():
+    """Test PB with a non-ascii comment option"""
+    buf = (
+        b'\x02\x00\x00\x00\x80\x00\x00\x00\x00\x00\x00\x00\x73\xe6\x04\x00\xbe\x37\xe2\x19\x4a\x00'
+        b'\x00\x00\x4a\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x08\x00\x45\x00'
+        b'\x00\x3c\x5d\xb3\x40\x00\x40\x06\xdf\x06\x7f\x00\x00\x01\x7f\x00\x00\x01\x98\x34\x11\x4e'
+        b'\x95\xcb\x2d\x3a\x00\x00\x00\x00\xa0\x02\xaa\xaa\xfe\x30\x00\x00\x02\x04\xff\xd7\x04\x02'
+        b'\x08\x0a\x05\x8f\x70\x89\x00\x00\x00\x00\x01\x03\x03\x07\x00\x00\x01\x00\x0a\x00\xd0\xbf'
+        b'\xd0\xb0\xd0\xba\xd0\xb5\xd1\x82\x00\x00\x00\x00\x00\x00\x80\x00\x00\x00')
+
+    # block unpacking
+    pb = PacketBlockLE(buf)
+    assert pb.type == PCAPNG_BT_PB
+    assert pb.caplen == len(pb.pkt_data)
+    assert pb.iface_id == 0
+    assert pb.drops_count == 0
+    assert pb.pkt_len == len(pb.pkt_data)
+    assert pb.caplen == 74
+    assert pb.ts_high == 321139
+    assert pb.ts_low == 434255806
+    assert pb.data == ''
+
+    # options unpacking
+    assert len(pb.opts) == 2
+    assert pb.opts[0].code == PCAPNG_OPT_COMMENT
+    assert pb.opts[0].text == u'\u043f\u0430\u043a\u0435\u0442'
+
+    assert pb.opts[1].code == PCAPNG_OPT_ENDOFOPT
+    assert pb.opts[1].len == 0
+
+    # option packing
+    assert bytes(pb.opts[0]) == b'\x01\x00\x0a\x00\xd0\xbf\xd0\xb0\xd0\xba\xd0\xb5\xd1\x82\x00\x00'
+    assert len(pb.opts[0]) == 16
+    assert bytes(pb.opts[1]) == b'\x00\x00\x00\x00'
+
+    # block packing
+    assert bytes(pb) == bytes(buf)
+    assert str(pb) == str(buf)
+    assert len(pb) == len(buf)
+
+
 def test_simple_write_read():
     """Test writing a basic pcapng and then reading it"""
     fobj = BytesIO()
