@@ -190,7 +190,13 @@ class PcapngOption(dpkt.Packet):
 
         # decode comment
         if self.code == PCAPNG_OPT_COMMENT:
-            self.text = self.data.decode('utf-8')
+            try:
+                self.text = self.data.decode('utf-8')
+            except UnicodeDecodeError as ude:
+                if b'\x00' in self.data:
+                    self.text = self.data[0:self.data.index(b'\x00')]
+                else:
+                    raise ude
 
     def __bytes__(self):
         # encode comment
