@@ -353,6 +353,28 @@ class EnhancedPacketBlockLE(EnhancedPacketBlock):
     __byte_order__ = '<'
 
 
+class PacketBlock(EnhancedPacketBlock):
+    """Packet block (deprecated)"""
+
+    __hdr__ = (
+        ('type', 'I', PCAPNG_BT_PB),
+        ('len', 'I', 64),
+        ('iface_id', 'H', 0),
+        ('drops_count', 'H', 0),  # local drop counter
+        ('ts_high', 'I', 0),  # timestamp high
+        ('ts_low', 'I', 0),  # timestamp low
+        ('caplen', 'I', 0),  # captured len, size of pkt_data
+        ('pkt_len', 'I', 0),  # actual packet len
+        # ( pkt_data, variable size )
+        # ( options, variable size )
+        ('_len', 'I', 64)
+    )
+
+
+class PacketBlockLE(PacketBlock):
+    __byte_order__ = '<'
+
+
 class Writer(object):
     """Simple pcapng dumpfile writer."""
 
@@ -640,6 +662,10 @@ class Reader(object):
                 epb = EnhancedPacketBlockLE(buf) if self.__le else EnhancedPacketBlock(buf)
                 ts = self._tsoffset + (((epb.ts_high << 32) | epb.ts_low) / self._divisor)
                 yield (ts, epb.pkt_data)
+            elif blk_type == PCAPNG_BT_PB:
+                pb = PacketBlockLE(buf) if self.__le else PacketBlock(buf)
+                ts = self._tsoffset + (((pb.ts_high << 32) | pb.ts_low) / self._divisor)
+                yield (ts, pb.pkt_data)
 
             # just ignore other blocks
 
