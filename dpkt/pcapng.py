@@ -194,7 +194,7 @@ class PcapngOption(dpkt.Packet):
                 self.text = self.data.decode('utf-8')
             except UnicodeDecodeError as ude:
                 if b'\x00' in self.data:
-                    self.text = self.data[0:self.data.index(b'\x00')]
+                    self.text = self.data[0:self.data.index(b'\x00')].decode('ascii')
                 else:
                     raise ude
 
