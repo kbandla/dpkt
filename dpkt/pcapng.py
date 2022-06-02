@@ -370,6 +370,33 @@ class PacketBlock(EnhancedPacketBlock):
         ('_len', 'I', 64)
     )
 
+    def __bytes__(self):
+        pkt_buf = self.pkt_data
+
+        pkt_len = len(pkt_buf)
+        self.caplen = pkt_len
+        self.pkt_len = pkt_len
+
+        opts_buf = self._do_pack_options()
+
+        n = self.__hdr_len__ + _align32b(self.caplen) + len(opts_buf)
+        self.len = n
+        self._len = n
+
+        hdr_buf = self._pack_hdr(
+            self.type,
+            n,
+            self.iface_id,
+            self.drops_count,
+            self.ts_high,
+            self.ts_low,
+            pkt_len,
+            pkt_len,
+            n
+        )
+
+        return b''.join([hdr_buf[:-4], _padded(pkt_buf), opts_buf, hdr_buf[-4:]])
+
 
 class PacketBlockLE(PacketBlock):
     __byte_order__ = '<'
