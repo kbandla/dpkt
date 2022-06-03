@@ -20,35 +20,35 @@ PCAPNG_VERSION_MAJOR = 1
 PCAPNG_VERSION_MINOR = 0
 
 # Block types
-PCAPNG_BT_IDB = 0x00000001  # Interface Description Block
-PCAPNG_BT_PB = 0x00000002  # Packet Block (deprecated)
-PCAPNG_BT_SPB = 0x00000003  # Simple Packet Block
-PCAPNG_BT_EPB = 0x00000006  # Enhanced Packet Block
-PCAPNG_BT_SHB = 0x0A0D0D0A  # Section Header Block
+PCAPNG_BT_IDB = 0x00000001     # Interface Description Block
+PCAPNG_BT_PB = 0x00000002      # Packet Block (deprecated)
+PCAPNG_BT_SPB = 0x00000003     # Simple Packet Block
+PCAPNG_BT_EPB = 0x00000006     # Enhanced Packet Block
+PCAPNG_BT_SHB = 0x0A0D0D0A     # Section Header Block
 
 # Options
-PCAPNG_OPT_ENDOFOPT = 0  # end of options
-PCAPNG_OPT_COMMENT = 1  # comment
+PCAPNG_OPT_ENDOFOPT = 0        # end of options
+PCAPNG_OPT_COMMENT = 1         # comment
 
 # SHB options
-PCAPNG_OPT_SHB_HARDWARE = 2  # description of the hardware
-PCAPNG_OPT_SHB_OS = 3  # name of the operating system
-PCAPNG_OPT_SHB_USERAPPL = 4  # name of the application
+PCAPNG_OPT_SHB_HARDWARE = 2    # description of the hardware
+PCAPNG_OPT_SHB_OS = 3          # name of the operating system
+PCAPNG_OPT_SHB_USERAPPL = 4    # name of the application
 
 # IDB options
-PCAPNG_OPT_IF_NAME = 2  # interface name
+PCAPNG_OPT_IF_NAME = 2         # interface name
 PCAPNG_OPT_IF_DESCRIPTION = 3  # interface description
-PCAPNG_OPT_IF_IPV4ADDR = 4  # IPv4 network address and netmask for the interface
-PCAPNG_OPT_IF_IPV6ADDR = 5  # IPv6 network address and prefix length for the interface
-PCAPNG_OPT_IF_MACADDR = 6  # interface hardware MAC address
-PCAPNG_OPT_IF_EUIADDR = 7  # interface hardware EUI address
-PCAPNG_OPT_IF_SPEED = 8  # interface speed in bits/s
-PCAPNG_OPT_IF_TSRESOL = 9  # timestamp resolution
-PCAPNG_OPT_IF_TZONE = 10  # time zone
-PCAPNG_OPT_IF_FILTER = 11  # capture filter
-PCAPNG_OPT_IF_OS = 12  # operating system
-PCAPNG_OPT_IF_FCSLEN = 13  # length of the Frame Check Sequence in bits
-PCAPNG_OPT_IF_TSOFFSET = 14  # offset (in seconds) that must be added to packet timestamp
+PCAPNG_OPT_IF_IPV4ADDR = 4     # IPv4 network address and netmask for the interface
+PCAPNG_OPT_IF_IPV6ADDR = 5     # IPv6 network address and prefix length for the interface
+PCAPNG_OPT_IF_MACADDR = 6      # interface hardware MAC address
+PCAPNG_OPT_IF_EUIADDR = 7      # interface hardware EUI address
+PCAPNG_OPT_IF_SPEED = 8        # interface speed in bits/s
+PCAPNG_OPT_IF_TSRESOL = 9      # timestamp resolution
+PCAPNG_OPT_IF_TZONE = 10       # time zone
+PCAPNG_OPT_IF_FILTER = 11      # capture filter
+PCAPNG_OPT_IF_OS = 12          # operating system
+PCAPNG_OPT_IF_FCSLEN = 13      # length of the Frame Check Sequence in bits
+PCAPNG_OPT_IF_TSOFFSET = 14    # offset (in seconds) that must be added to packet timestamp
 
 # <copied from pcap.py>
 DLT_NULL = 0
@@ -78,8 +78,6 @@ else:
 dltoff = {DLT_NULL: 4, DLT_EN10MB: 14, DLT_IEEE802: 22, DLT_ARCNET: 6,
           DLT_SLIP: 16, DLT_PPP: 4, DLT_FDDI: 21, DLT_PFLOG: 48, DLT_PFSYNC: 4,
           DLT_LOOP: 4, DLT_LINUX_SLL: 16}
-
-
 # </copied from pcap.py>
 
 
@@ -538,7 +536,7 @@ class Reader(object):
 
         # check if this version is supported
         if shb.v_major != PCAPNG_VERSION_MAJOR:
-            raise ValueError('unknown pcapng version {0}.{1}'.format(shb.v_major, shb.v_minor, ))
+            raise ValueError('unknown pcapng version {0}.{1}'.format(shb.v_major, shb.v_minor,))
 
         # look for a mandatory IDB
         idb = None
@@ -603,7 +601,6 @@ class Reader(object):
 
     def __next__(self):
         return next(self.__iter)
-
     next = __next__  # Python 2 compat
 
     def dispatch(self, cnt, callback, *args):
@@ -957,7 +954,6 @@ def pre_test(f):
         fobj.seek(0)
 
         return ret
-
     return wrapper
 
 
@@ -970,7 +966,6 @@ class WriterTestWrap:
     After the test has run, the BytesIO object will be passed to a Reader,
     which will compare each pkt to the return value of the test.
     """
-
     def __init__(self, *args, **kwargs):
         self.args = args
         self.kwargs = kwargs
@@ -998,7 +993,6 @@ class WriterTestWrap:
                 Writer._Writer__le = _sysle
                 del f.__globals__['writer']
                 del f.__globals__['fobj']
-
         return wrapper
 
 
@@ -1033,7 +1027,6 @@ class PostTest:
                 assert comp == ret
             else:
                 raise Exception("No test type specified")
-
         return wrapper
 
 
@@ -1066,7 +1059,7 @@ def test_shb_version():
 @pre_test
 def test_no_idb():
     shb = define_testdata().valid_shb_le
-    fobj.write(bytes(shb) + b'aaaa')  # noqa
+    fobj.write(bytes(shb)+b'aaaa')  # noqa
 
 
 @PostTest(test='compare_property', property='idb')
@@ -1078,8 +1071,8 @@ def test_idb_opt_offset():
     idb.opts.insert(0, PcapngOptionLE(
         code=PCAPNG_OPT_IF_TSOFFSET,
         data=struct_pack('<q', 123456666))
-                    )
-    fobj.write(bytes(shb) + bytes(idb))  # noqa
+    )
+    fobj.write(bytes(shb)+bytes(idb))  # noqa
     return idb
 
 
@@ -1090,7 +1083,7 @@ def test_idb_linktype():
     shb = define_testdata().valid_shb_le
     idb = define_testdata().valid_idb_le
     idb.linktype = 3456
-    fobj.write(bytes(shb) + bytes(idb))  # noqa
+    fobj.write(bytes(shb)+bytes(idb))  # noqa
     return 0
 
 
@@ -1259,7 +1252,6 @@ def test_writepkt_epb_ts():
 
     def time():
         return ts
-
     writer.writepkt(epb)
     time = _tmp
 
@@ -1310,7 +1302,6 @@ def test_writepkt_no_time():
 
     def time():
         return ts
-
     writer.writepkt(pkt)  # noqa
     time = _tmp
     return [(ts, pkt)]
@@ -1401,7 +1392,6 @@ def test_reader_file_descriptor():
 
 def test_posttest():
     """Check that PostTest wrapper doesn't fail silently"""
-
     @PostTest()
     @pre_test
     def fun():
