@@ -190,7 +190,13 @@ class PcapngOption(dpkt.Packet):
 
         # decode comment
         if self.code == PCAPNG_OPT_COMMENT:
-            self.text = self.data.decode('utf-8')
+            try:
+                self.text = self.data.decode('utf-8')
+            except UnicodeDecodeError as ude:
+                if b'\x00' in self.data:
+                    self.text = self.data[:self.data.index(b'\x00')].decode('ascii')
+                else:
+                    raise ude
 
     def __bytes__(self):
         # encode comment
@@ -876,6 +882,49 @@ def test_pb_read():
     # second packet is concatenated PB, pb_packet defined above
     ts, buf2 = next(iter(reader))
     assert ts == 1379281936.72595
+
+
+def test_epb_ascii_comment_option():
+    """Test EPB with an ascii comment option"""
+    buf = (
+        b'\x06\x00\x00\x00\x7c\x00\x00\x00\x01\x00\x00\x00\xff\xff\xff\xff\x79\xd2\xdf\xe1\x44\x00'
+        b'\x00\x00\x44\x00\x00\x00\x00\x00\x00\x01\x00\x06\x00\x0b\xdb\x43\xe7\x4b\xf6\x7f\x08\x00'
+        b'\x45\x00\x00\x34\x2b\x1f\x40\x00\x40\x06\x15\x63\x82\xd9\xfa\x81\x82\xd9\xfa\x0d\x17\x70'
+        b'\xec\x3e\x02\xba\x94\x38\x81\x52\x4a\x39\x80\x10\xbb\x5d\x53\x0d\x00\x00\x01\x01\x08\x0a'
+        b'\x03\xf9\xc7\xbf\x04\x02\x38\x28\x01\x00\x0f\x00\x50\x61\x63\x6b\x65\x74\x20\x23\x31\x00'
+        b'\x78\x4d\x39\x87\x0c\x00\x00\x00\x00\x00\x7c\x00\x00\x00')
+
+    # block unpacking
+    epb = EnhancedPacketBlockLE(buf)
+
+    # options unpacking
+    assert len(epb.opts) == 2
+    assert epb.opts[0].code == PCAPNG_OPT_COMMENT
+    assert epb.opts[0].text == 'Packet #1'
+
+    assert epb.opts[1].code == PCAPNG_OPT_ENDOFOPT
+    assert epb.opts[1].len == 0
+
+    # option packing
+    assert bytes(epb.opts[0]) == b'\x01\x00\x09\x00\x50\x61\x63\x6b\x65\x74\x20\x23\x31\x00\x00\x00'
+    assert len(epb.opts[0]) == 16
+    assert bytes(epb.opts[1]) == b'\x00\x00\x00\x00'
+
+
+def test_epb_invalid_utf8_comment_option():
+    """Test EPB with an invalid (non UTF-8, non-zero terminated ascii) comment option"""
+    buf = (
+        b'\x06\x00\x00\x00\x7c\x00\x00\x00\x01\x00\x00\x00\xff\xff\xff\xff\x79\xd2\xdf\xe1\x44\x00'
+        b'\x00\x00\x44\x00\x00\x00\x00\x00\x00\x01\x00\x06\x00\x0b\xdb\x43\xe7\x4b\xf6\x7f\x08\x00'
+        b'\x45\x00\x00\x34\x2b\x1f\x40\x00\x40\x06\x15\x63\x82\xd9\xfa\x81\x82\xd9\xfa\x0d\x17\x70'
+        b'\xec\x3e\x02\xba\x94\x38\x81\x52\x4a\x39\x80\x10\xbb\x5d\x53\x0d\x00\x00\x01\x01\x08\x0a'
+        b'\x03\xf9\xc7\xbf\x04\x02\x38\x28\x01\x00\x0f\x00\x50\x61\x63\x6b\x65\x74\x20\x23\x31\x20'
+        b'\x78\x4d\x39\x87\x0c\x00\x00\x00\x00\x00\x7c\x00\x00\x00')
+
+    try:
+        EnhancedPacketBlockLE(buf)
+    except Exception as e:
+        assert isinstance(e, UnicodeDecodeError)
 
 
 def test_simple_write_read():
