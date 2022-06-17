@@ -11,10 +11,15 @@ from decimal import Decimal
 from . import dpkt
 from .compat import intround
 
+# big endian magics
 TCPDUMP_MAGIC = 0xa1b2c3d4
 TCPDUMP_MAGIC_NANO = 0xa1b23c4d
+MODPCAP_MAGIC = 0xa1b2cd34
+
+# little endian magics
 PMUDPCT_MAGIC = 0xd4c3b2a1
 PMUDPCT_MAGIC_NANO = 0x4d3cb2a1
+PACPDOM_MAGIC = 0x34cdb2a1
 
 PCAP_VERSION_MAJOR = 2
 PCAP_VERSION_MINOR = 4
@@ -158,10 +163,52 @@ class PktHdr(dpkt.Packet):
         ('len', 'I', 0),
     )
 
+    def get_hdr(self):
+        return self
+
+
+class PktModHdr(dpkt.Packet):
+    """modified pcap packet header.
+    https://wiki.wireshark.org/Development/LibpcapFileFormat#modified-pcap
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of pcap header.
+        TODO.
+    """
+    __hdr__ = (
+        ('pkt_hdr_buf', f"{PktHdr.__hdr_len__}s", PktHdr.__hdr_len__ * b'\x00'),
+        ('ifindex', 'I', 0),
+        ('protocol', 'H', 0),
+        ('pkt_type', 'B', 0),
+        ('pad', 'B', 0),
+    )
+
+    def get_hdr(self):
+        return PktHdr(self.pkt_hdr_buf)
+
+
 
 class LEPktHdr(PktHdr):
     __byte_order__ = '<'
 
+class LEPktModHdr(PktModHdr):
+    __byte_order__ = '<'
+
+    def get_hdr(self):
+        return LEPktHdr(self.pkt_hdr_buf)
+
+
+
+MAGIC_TO_PKT_HDR = {
+    TCPDUMP_MAGIC: PktHdr,
+    TCPDUMP_MAGIC_NANO: PktHdr,
+    MODPCAP_MAGIC: PktModHdr,
+    PMUDPCT_MAGIC: LEPktHdr,
+    PMUDPCT_MAGIC_NANO: LEPktHdr,
+    PACPDOM_MAGIC: LEPktModHdr
+}
 
 class FileHdr(dpkt.Packet):
     """pcap file header.
@@ -185,6 +232,8 @@ class FileHdr(dpkt.Packet):
 
 class LEFileHdr(FileHdr):
     __byte_order__ = '<'
+
+
 
 
 class Writer(object):
@@ -277,17 +326,24 @@ class Reader(object):
         self.__f = fileobj
         buf = self.__f.read(FileHdr.__hdr_len__)
         self.__fh = FileHdr(buf)
-        self.__ph = PktHdr
-        if self.__fh.magic in (PMUDPCT_MAGIC, PMUDPCT_MAGIC_NANO):
+
+        # save magic
+        magic = self.__fh.magic
+
+        if magic in (PMUDPCT_MAGIC, PMUDPCT_MAGIC_NANO, PACPDOM_MAGIC):
             self.__fh = LEFileHdr(buf)
-            self.__ph = LEPktHdr
-        elif self.__fh.magic not in (TCPDUMP_MAGIC, TCPDUMP_MAGIC_NANO):
+
+        if magic not in MAGIC_TO_PKT_HDR:
             raise ValueError('invalid tcpdump header')
+
+        self.__ph = MAGIC_TO_PKT_HDR[magic]
+
+
         if self.__fh.linktype in dltoff:
             self.dloff = dltoff[self.__fh.linktype]
         else:
             self.dloff = 0
-        self._divisor = 1E6 if self.__fh.magic in (TCPDUMP_MAGIC, PMUDPCT_MAGIC) else Decimal('1E9')
+        self._divisor = 1E6 if magic in (TCPDUMP_MAGIC, PMUDPCT_MAGIC) else Decimal('1E9')
         self.snaplen = self.__fh.snaplen
         self.filter = ''
         self.__iter = iter(self)
@@ -344,12 +400,13 @@ class Reader(object):
 
     def __iter__(self):
         while 1:
-            buf = self.__f.read(PktHdr.__hdr_len__)
+            buf = self.__f.read(self.__ph.__hdr_len__)
             if not buf:
                 break
-            hdr = self.__ph(buf)
+            hdr = self.__ph(buf).get_hdr()
             buf = self.__f.read(hdr.caplen)
             yield (hdr.tv_sec + (hdr.tv_usec / self._divisor), buf)
+
 
 
 class UniversalReader(object):
@@ -417,6 +474,12 @@ class TestData():
         b'\xb2\x67\x4a\x42\xae\x91\x07\x00\x46\x00\x00\x00\x46\x00\x00\x00\x00\xc0\x9f\x32\x41\x8c\x00\xe0'
         b'\x18\xb1\x0c\xad\x08\x00\x45\x00\x00\x38\x00\x00\x40\x00\x40\x11\x65\x47\xc0\xa8\xaa\x08\xc0\xa8'
         b'\xaa\x14\x80\x1b\x00\x35\x00\x24\x85\xed'
+    )
+    modified_pcap = (
+        b'\x34\xcd\xb2\xa1\x02\x00\x04\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x04\x00\x01\x00\x00\x00'
+        b'\x3c\xfb\x80\x61\x6d\x32\x08\x00\x03\x00\x00\x00\x72\x05\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+        b'\xff\xff\xff'
+
     )
 
 
@@ -518,6 +581,21 @@ def test_reader_fd():
         reader = Reader(fd)
         assert reader.fd == fd.fileno()
         assert reader.fileno() == fd.fileno()
+
+def test_reader_modified_pcap_type():
+    data = TestData().modified_pcap
+
+    import tempfile
+    with tempfile.TemporaryFile() as fd:
+        fd.write(data)
+        fd.seek(0)
+        reader = Reader(fd)
+        assert reader.fd == fd.fileno()
+        assert reader.fileno() == fd.fileno()
+
+        timestamp, pkts = next(reader)
+        assert pkts == 3 * b'\xff'
+        assert timestamp == Decimal('1635842876.000537197')
 
 
 class WriterTestWrap:
