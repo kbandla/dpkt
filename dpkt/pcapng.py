@@ -804,7 +804,6 @@ def test_epb_invalid_utf8_comment_option():
 
     try:
         EnhancedPacketBlockLE(buf)
-        assert False
     except Exception as e:
         assert isinstance(e, UnicodeDecodeError)
 
