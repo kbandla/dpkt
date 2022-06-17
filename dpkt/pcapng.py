@@ -359,6 +359,55 @@ class EnhancedPacketBlockLE(EnhancedPacketBlock):
     __byte_order__ = '<'
 
 
+class PacketBlock(EnhancedPacketBlock):
+    """Packet block (deprecated)"""
+
+    __hdr__ = (
+        ('type', 'I', PCAPNG_BT_PB),
+        ('len', 'I', 64),
+        ('iface_id', 'H', 0),
+        ('drops_count', 'H', 0),  # local drop counter
+        ('ts_high', 'I', 0),  # timestamp high
+        ('ts_low', 'I', 0),  # timestamp low
+        ('caplen', 'I', 0),  # captured len, size of pkt_data
+        ('pkt_len', 'I', 0),  # actual packet len
+        # ( pkt_data, variable size )
+        # ( options, variable size )
+        ('_len', 'I', 64)
+    )
+
+    def __bytes__(self):
+        pkt_buf = self.pkt_data
+
+        pkt_len = len(pkt_buf)
+        self.caplen = pkt_len
+        self.pkt_len = pkt_len
+
+        opts_buf = self._do_pack_options()
+
+        n = self.__hdr_len__ + _align32b(self.caplen) + len(opts_buf)
+        self.len = n
+        self._len = n
+
+        hdr_buf = self._pack_hdr(
+            self.type,
+            n,
+            self.iface_id,
+            self.drops_count,
+            self.ts_high,
+            self.ts_low,
+            pkt_len,
+            pkt_len,
+            n
+        )
+
+        return b''.join([hdr_buf[:-4], _padded(pkt_buf), opts_buf, hdr_buf[-4:]])
+
+
+class PacketBlockLE(PacketBlock):
+    __byte_order__ = '<'
+
+
 class Writer(object):
     """Simple pcapng dumpfile writer."""
 
@@ -646,6 +695,10 @@ class Reader(object):
                 epb = EnhancedPacketBlockLE(buf) if self.__le else EnhancedPacketBlock(buf)
                 ts = self._tsoffset + (((epb.ts_high << 32) | epb.ts_low) / self._divisor)
                 yield (ts, epb.pkt_data)
+            elif blk_type == PCAPNG_BT_PB:
+                pb = PacketBlockLE(buf) if self.__le else PacketBlock(buf)
+                ts = self._tsoffset + (((pb.ts_high << 32) | pb.ts_low) / self._divisor)
+                yield (ts, pb.pkt_data)
 
             # just ignore other blocks
 
@@ -763,6 +816,72 @@ def test_epb():
     assert bytes(epb) == bytes(buf)
     assert str(epb) == str(buf)
     assert len(epb) == len(buf)
+
+
+def test_pb():
+    """Test PB with a non-ascii comment option"""
+    buf = (
+        b'\x02\x00\x00\x00\x80\x00\x00\x00\x00\x00\x00\x00\x73\xe6\x04\x00\xbe\x37\xe2\x19\x4a\x00'
+        b'\x00\x00\x4a\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x08\x00\x45\x00'
+        b'\x00\x3c\x5d\xb3\x40\x00\x40\x06\xdf\x06\x7f\x00\x00\x01\x7f\x00\x00\x01\x98\x34\x11\x4e'
+        b'\x95\xcb\x2d\x3a\x00\x00\x00\x00\xa0\x02\xaa\xaa\xfe\x30\x00\x00\x02\x04\xff\xd7\x04\x02'
+        b'\x08\x0a\x05\x8f\x70\x89\x00\x00\x00\x00\x01\x03\x03\x07\x00\x00\x01\x00\x0a\x00\xd0\xbf'
+        b'\xd0\xb0\xd0\xba\xd0\xb5\xd1\x82\x00\x00\x00\x00\x00\x00\x80\x00\x00\x00')
+
+    # block unpacking
+    pb = PacketBlockLE(buf)
+    assert pb.type == PCAPNG_BT_PB
+    assert pb.caplen == len(pb.pkt_data)
+    assert pb.iface_id == 0
+    assert pb.drops_count == 0
+    assert pb.pkt_len == len(pb.pkt_data)
+    assert pb.caplen == 74
+    assert pb.ts_high == 321139
+    assert pb.ts_low == 434255806
+    assert pb.data == ''
+
+    # options unpacking
+    assert len(pb.opts) == 2
+    assert pb.opts[0].code == PCAPNG_OPT_COMMENT
+    assert pb.opts[0].text == u'\u043f\u0430\u043a\u0435\u0442'
+
+    assert pb.opts[1].code == PCAPNG_OPT_ENDOFOPT
+    assert pb.opts[1].len == 0
+
+    # option packing
+    assert bytes(pb.opts[0]) == b'\x01\x00\x0a\x00\xd0\xbf\xd0\xb0\xd0\xba\xd0\xb5\xd1\x82\x00\x00'
+    assert len(pb.opts[0]) == 16
+    assert bytes(pb.opts[1]) == b'\x00\x00\x00\x00'
+
+    # block packing
+    assert bytes(pb) == bytes(buf)
+    assert str(pb) == str(buf)
+    assert len(pb) == len(buf)
+
+
+def test_pb_read():
+    """ Test PB parsing as part of file """
+    pb_packet = (
+        b'\x02\x00\x00\x00\x80\x00\x00\x00\x00\x00\x00\x00\x73\xe6\x04\x00\xbe\x37\xe2\x19\x4a\x00'
+        b'\x00\x00\x4a\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x08\x00\x45\x00'
+        b'\x00\x3c\x5d\xb3\x40\x00\x40\x06\xdf\x06\x7f\x00\x00\x01\x7f\x00\x00\x01\x98\x34\x11\x4e'
+        b'\x95\xcb\x2d\x3a\x00\x00\x00\x00\xa0\x02\xaa\xaa\xfe\x30\x00\x00\x02\x04\xff\xd7\x04\x02'
+        b'\x08\x0a\x05\x8f\x70\x89\x00\x00\x00\x00\x01\x03\x03\x07\x00\x00\x01\x00\x0a\x00\xd0\xbf'
+        b'\xd0\xb0\xd0\xba\xd0\xb5\xd1\x82\x00\x00\x00\x00\x00\x00\x80\x00\x00\x00')
+
+    buf = define_testdata().valid_pcapng + pb_packet
+    fobj = BytesIO(buf)
+
+    # test reading
+    reader = Reader(fobj)
+
+    # first packet is EPB and comes from define_testdata().valid_pcapng
+    ts, buf1 = next(iter(reader))
+    assert ts == 1442984653.210838
+
+    # second packet is concatenated PB, pb_packet defined above
+    ts, buf2 = next(iter(reader))
+    assert ts == 1379281936.72595
 
 
 def test_epb_ascii_comment_option():
