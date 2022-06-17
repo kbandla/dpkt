@@ -74,6 +74,6 @@ Dug Song \<<dugsong@monkey.org>\>
     Extend test coverage
 
   - Schwaggot \<<tom.ryan@posteo.de>\>  
-    Graceful handling of PCAPNG option comment UTF-8 decoding errors
+    pcapng module, support for Packet Block and handling of UTF-8 option comments
 
 If you want to contribute to dpkt, see `contributing`.
