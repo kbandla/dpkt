@@ -73,4 +73,7 @@ Dug Song \<<dugsong@monkey.org>\>
   - crocogorical \<<crocogorical@gmail.com>\>  
     Extend test coverage
 
+  - Schwaggot \<<tom.ryan@posteo.de>\>  
+    pcapng module, support for Packet Block and handling of UTF-8 option comments
+
 If you want to contribute to dpkt, see `contributing`.
