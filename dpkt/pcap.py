@@ -178,7 +178,7 @@ class PktModHdr(dpkt.Packet):
         TODO.
     """
     __hdr__ = (
-        ('pkt_hdr_buf', f"{PktHdr.__hdr_len__}s", PktHdr.__hdr_len__ * b'\x00'),
+        ('pkt_hdr_buf', str(PktHdr.__hdr_len__) + 's', PktHdr.__hdr_len__ * b'\x00'),
         ('ifindex', 'I', 0),
         ('protocol', 'H', 0),
         ('pkt_type', 'B', 0),
@@ -187,7 +187,6 @@ class PktModHdr(dpkt.Packet):
 
     def get_hdr(self):
         return PktHdr(self.pkt_hdr_buf)
-
 
 
 class LEPktHdr(PktHdr):
@@ -200,7 +199,6 @@ class LEPktModHdr(PktModHdr):
         return LEPktHdr(self.pkt_hdr_buf)
 
 
-
 MAGIC_TO_PKT_HDR = {
     TCPDUMP_MAGIC: PktHdr,
     TCPDUMP_MAGIC_NANO: PktHdr,
@@ -209,6 +207,7 @@ MAGIC_TO_PKT_HDR = {
     PMUDPCT_MAGIC_NANO: LEPktHdr,
     PACPDOM_MAGIC: LEPktModHdr
 }
+
 
 class FileHdr(dpkt.Packet):
     """pcap file header.
@@ -232,8 +231,6 @@ class FileHdr(dpkt.Packet):
 
 class LEFileHdr(FileHdr):
     __byte_order__ = '<'
-
-
 
 
 class Writer(object):
@@ -408,7 +405,6 @@ class Reader(object):
             yield (hdr.tv_sec + (hdr.tv_usec / self._divisor), buf)
 
 
-
 class UniversalReader(object):
     """
     Universal pcap reader for the libpcap and pcapng file formats
@@ -581,6 +577,7 @@ def test_reader_fd():
         reader = Reader(fd)
         assert reader.fd == fd.fileno()
         assert reader.fileno() == fd.fileno()
+
 
 def test_reader_modified_pcap_type():
     data = TestData().modified_pcap
