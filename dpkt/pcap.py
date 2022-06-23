@@ -163,9 +163,6 @@ class PktHdr(dpkt.Packet):
         ('len', 'I', 0),
     )
 
-    def get_hdr(self):
-        return self
-
 
 class PktModHdr(dpkt.Packet):
     """modified pcap packet header.
@@ -178,15 +175,15 @@ class PktModHdr(dpkt.Packet):
         TODO.
     """
     __hdr__ = (
-        ('pkt_hdr_buf', str(PktHdr.__hdr_len__) + 's', PktHdr.__hdr_len__ * b'\x00'),
+        ('tv_sec', 'I', 0),
+        ('tv_usec', 'I', 0),
+        ('caplen', 'I', 0),
+        ('len', 'I', 0),
         ('ifindex', 'I', 0),
         ('protocol', 'H', 0),
         ('pkt_type', 'B', 0),
         ('pad', 'B', 0),
     )
-
-    def get_hdr(self):
-        return PktHdr(self.pkt_hdr_buf)
 
 
 class LEPktHdr(PktHdr):
@@ -194,9 +191,6 @@ class LEPktHdr(PktHdr):
 
 class LEPktModHdr(PktModHdr):
     __byte_order__ = '<'
-
-    def get_hdr(self):
-        return LEPktHdr(self.pkt_hdr_buf)
 
 
 MAGIC_TO_PKT_HDR = {
@@ -340,7 +334,7 @@ class Reader(object):
             self.dloff = dltoff[self.__fh.linktype]
         else:
             self.dloff = 0
-        self._divisor = 1E6 if magic in (TCPDUMP_MAGIC, PMUDPCT_MAGIC) else Decimal('1E9')
+        self._divisor = Decimal('1E9') if magic in (TCPDUMP_MAGIC_NANO, PMUDPCT_MAGIC_NANO) else 1E6
         self.snaplen = self.__fh.snaplen
         self.filter = ''
         self.__iter = iter(self)
@@ -400,7 +394,7 @@ class Reader(object):
             buf = self.__f.read(self.__ph.__hdr_len__)
             if not buf:
                 break
-            hdr = self.__ph(buf).get_hdr()
+            hdr = self.__ph(buf)
             buf = self.__f.read(hdr.caplen)
             yield (hdr.tv_sec + (hdr.tv_usec / self._divisor), buf)
 
@@ -592,7 +586,7 @@ def test_reader_modified_pcap_type():
 
         timestamp, pkts = next(reader)
         assert pkts == 3 * b'\xff'
-        assert timestamp == Decimal('1635842876.000537197')
+        assert timestamp == 1635842876.537197000
 
 
 class WriterTestWrap:
