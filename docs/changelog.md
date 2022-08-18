@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.9.8
+**[2022-08-17]**
+- Fixed endianness issues in PCAPNG, Loopback
+- Improved MPLS unpacking to include IPv6
+- Fixed unpacking of multiple records in TLS messages
+- Updated docstrings for multiples modules
+- Fixed a long-standing issue where serializing IP would change its length
+- Fixed IEEE 802.11 Beacon byte ordering
+- Graceful handling of PCAPNG option comment UTF-8 decoding errors
+- Added support for PCAPNG Packet Block
+- Added modpcap reader support
+
 ## 1.9.7.2
 **[2021-08-16]**
 - Fixed performance regression (https://github.com/kbandla/dpkt/issues/611)
