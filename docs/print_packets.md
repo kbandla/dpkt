@@ -11,15 +11,15 @@ Frame and IP packet.
 for timestamp, buf in pcap:
 
     # Print out the timestamp in UTC
-    print 'Timestamp: ', str(datetime.datetime.utcfromtimestamp(timestamp))
+    print('Timestamp: ', str(datetime.datetime.utcfromtimestamp(timestamp)))
 
     # Unpack the Ethernet frame (mac src/dst, ethertype)
     eth = dpkt.ethernet.Ethernet(buf)
-    print 'Ethernet Frame: ', mac_addr(eth.src), mac_addr(eth.dst), eth.type
+    print('Ethernet Frame: ', mac_addr(eth.src), mac_addr(eth.dst), eth.type)
 
     # Make sure the Ethernet frame contains an IP packet
     if not isinstance(eth.data, dpkt.ip.IP):
-        print 'Non IP Packet type not supported %s\n' % eth.data.__class__.__name__
+        print('Non IP Packet type not supported %s\n' % eth.data.__class__.__name__)
         continue
 
     # Now access the data within the Ethernet frame (the IP packet)
