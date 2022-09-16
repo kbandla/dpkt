@@ -421,7 +421,7 @@ class Writer(object):
         idb can be an instance of InterfaceDescriptionBlock(LE) (or sequence of them)
         """
         self.__f = fileobj
-        self._precision_multiplier = 1_000_000
+        self._precision_multiplier = 1000000
 
         if shb:
             self._validate_block('shb', shb, SectionHeaderBlock)
