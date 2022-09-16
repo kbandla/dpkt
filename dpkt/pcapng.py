@@ -421,6 +421,7 @@ class Writer(object):
         idb can be an instance of InterfaceDescriptionBlock(LE) (or sequence of them)
         """
         self.__f = fileobj
+        self._precision_multiplier = 1_000_000
 
         if shb:
             self._validate_block('shb', shb, SectionHeaderBlock)
@@ -471,9 +472,9 @@ class Writer(object):
             self._validate_block('pkt', pkt, EnhancedPacketBlock)
 
             if ts is not None:  # ts as an argument gets precedence
-                ts = intround(ts * 1e6)
+                ts = intround(ts * self._precision_multiplier)
             elif pkt.ts_high == pkt.ts_low == 0:
-                ts = intround(time() * 1e6)
+                ts = intround(time() * self._precision_multiplier)
 
             if ts is not None:
                 pkt.ts_high = ts >> 32
@@ -495,7 +496,7 @@ class Writer(object):
             pkt: a buffer
             ts: Unix timestamp in seconds since Epoch (e.g. 1454725786.99)
         """
-        ts = intround(ts * 1e6)  # to int microseconds
+        ts = intround(ts * self._precision_multiplier)  # to int microseconds
 
         s = pkt
         n = len(s)
@@ -527,7 +528,7 @@ class Writer(object):
         precalc_n = hdr_len + opts_len
 
         for ts, pkt in pkts:
-            ts = intround(ts * 1e6)  # to int microseconds
+            ts = intround(ts * self._precision_multiplier)  # int microseconds
             pkt_len = len(pkt)
             pkt_len_align = _align32b(pkt_len)
 
