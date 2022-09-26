@@ -71,9 +71,6 @@ class TLS(dpkt.Packet):
                 self.records.append(tlsrec)
                 buf = buf[5 + tlsrec.length:]  # 5 = TLSRecord.__hdr_len__
 
-                if tlsrec.type in RECORD_TYPES:
-                    tlsrec.data = RECORD_TYPES[tlsrec.type](tlsrec.data)
-
         self.data = buf  # remaining data, if any
 
 
