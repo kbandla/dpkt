@@ -62,16 +62,15 @@ class TLS(dpkt.Packet):
         dpkt.Packet.__init__(self, *args, **kwargs)
 
     def unpack(self, buf):
+        # this either unpacks the entire buffer into 1 or multiple TLSRecord's 
+        # or throws NeedData if the buffer is incomplete (truncated).
+        # tls_multi_factory() will do the same, but gracefully; it will unpack 
+        # multiple TLS records and catch NeedData if the buffer was incomplete
         while buf:
-            try:
-                tlsrec = TLSRecord(buf)
-            except dpkt.NeedData:
-                break
-            else:
-                self.records.append(tlsrec)
-                buf = buf[5 + tlsrec.length:]  # 5 = TLSRecord.__hdr_len__
-
-        self.data = buf  # remaining data, if any
+            tlsrec = TLSRecord(buf)
+            self.records.append(tlsrec)
+            buf = buf[5 + tlsrec.length:]  # 5 = TLSRecord.__hdr_len__
+        self.data = b''
 
 
 # SSLv3/TLS versions
