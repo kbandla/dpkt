@@ -5,6 +5,7 @@
 # pylint: disable=attribute-defined-outside-init
 from __future__ import print_function
 from __future__ import absolute_import
+from __future__ import division  # so python 2 doesn't do integer division
 
 from struct import pack as struct_pack, unpack as struct_unpack
 from time import time
@@ -421,6 +422,7 @@ class Writer(object):
         idb can be an instance of InterfaceDescriptionBlock(LE) (or sequence of them)
         """
         self.__f = fileobj
+        self._precision_multiplier = 1000000
 
         if shb:
             self._validate_block('shb', shb, SectionHeaderBlock)
@@ -471,9 +473,9 @@ class Writer(object):
             self._validate_block('pkt', pkt, EnhancedPacketBlock)
 
             if ts is not None:  # ts as an argument gets precedence
-                ts = intround(ts * 1e6)
+                ts = intround(ts * self._precision_multiplier)
             elif pkt.ts_high == pkt.ts_low == 0:
-                ts = intround(time() * 1e6)
+                ts = intround(time() * self._precision_multiplier)
 
             if ts is not None:
                 pkt.ts_high = ts >> 32
@@ -495,7 +497,7 @@ class Writer(object):
             pkt: a buffer
             ts: Unix timestamp in seconds since Epoch (e.g. 1454725786.99)
         """
-        ts = intround(ts * 1e6)  # to int microseconds
+        ts = intround(ts * self._precision_multiplier)  # to int microseconds
 
         s = pkt
         n = len(s)
@@ -527,7 +529,7 @@ class Writer(object):
         precalc_n = hdr_len + opts_len
 
         for ts, pkt in pkts:
-            ts = intround(ts * 1e6)  # to int microseconds
+            ts = intround(ts * self._precision_multiplier)  # int microseconds
             pkt_len = len(pkt)
             pkt_len_align = _align32b(pkt_len)
 
@@ -607,7 +609,7 @@ class Reader(object):
             raise ValueError('IDB not found')
 
         # set timestamp resolution and offset
-        self._divisor = float(1e6)  # defaults
+        self._divisor = 1000000  # defaults
         self._tsoffset = 0
         for opt in idb.opts:
             if opt.code == PCAPNG_OPT_IF_TSRESOL:
@@ -615,7 +617,7 @@ class Reader(object):
                 # if MSB=1, the remaining bits is a neg power of 2 (e.g. 10 means 1/1024 of second)
                 opt_val = struct_unpack('b', opt.data)[0]
                 pow_num = 2 if opt_val & 0b10000000 else 10
-                self._divisor = float(pow_num ** (opt_val & 0b01111111))
+                self._divisor = pow_num ** (opt_val & 0b01111111)
 
             elif opt.code == PCAPNG_OPT_IF_TSOFFSET:
                 # 64-bit int that specifies an offset (in seconds) that must be added to the
