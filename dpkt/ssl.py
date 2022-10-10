@@ -56,25 +56,21 @@ class SSL2(dpkt.Packet):
 # SSL 3.0 is deprecated in RFC 7568
 # Use class TLS for >= SSL 3.0
 class TLS(dpkt.Packet):
-    __hdr__ = (
-        ('type', 'B', ''),
-        ('version', 'H', ''),
-        ('len', 'H', ''),
-    )
 
     def __init__(self, *args, **kwargs):
         self.records = []
         dpkt.Packet.__init__(self, *args, **kwargs)
 
     def unpack(self, buf):
-        dpkt.Packet.unpack(self, buf)
-        pointer = 0
-        while len(self.data[pointer:]) > 0:
-            end = pointer + 5 + struct.unpack("!H", buf[pointer + 3:pointer + 5])[0]
-            self.records.append(TLSRecord(buf[pointer:end]))
-            pointer = end
-        self.data = self.data[pointer:]
-
+        # this either unpacks the entire buffer into 1 or multiple TLSRecord's 
+        # or throws NeedData if the buffer is incomplete (truncated).
+        # tls_multi_factory() will do the same, but gracefully; it will unpack 
+        # multiple TLS records and catch NeedData if the buffer was incomplete
+        while buf:
+            tlsrec = TLSRecord(buf)
+            self.records.append(tlsrec)
+            buf = buf[5 + tlsrec.length:]  # 5 = TLSRecord.__hdr_len__
+        self.data = b''
 
 
 # SSLv3/TLS versions
@@ -252,7 +248,7 @@ class TLSRecord(dpkt.Packet):
         header_length = self.__hdr_len__
         self.data = buf[header_length:header_length + self.length]
         # make sure buffer was long enough
-        if len(self.data) != self.length:
+        if len(self.data) < self.length:
             raise dpkt.NeedData('TLSRecord data was too short.')
         # assume compressed and encrypted when it's been parsed from
         # raw data
