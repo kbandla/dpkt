@@ -474,6 +474,24 @@ def test_bit_fields_overflow():
         foo.a = 5
 
 
+def test_bit_field_size_is_calculated_using_standard_size():
+    class Foo(Packet):
+        __hdr__ = (
+            ("_a_b", "L", 0),
+        )
+
+        __bit_fields__ = {
+            "_a_b": (
+                ("a", 2*8),
+                ("b", 2*8),
+            ),
+        }
+
+        __byte_order__ = "<"
+
+    foo = Foo()
+
+
 def test_pack_hdr_tuple():
     """Test the unpacking of a tuple for a single format string"""
     class Foo(Packet):
