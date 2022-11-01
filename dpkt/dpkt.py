@@ -36,13 +36,14 @@ class PackError(Error):
 class _MetaPacket(type):
     def __new__(cls, clsname, clsbases, clsdict):
         t = type.__new__(cls, clsname, clsbases, clsdict)
+        byte_order = getattr(t, '__byte_order__', '>')
         st = getattr(t, '__hdr__', None)
         if st is not None:
             # XXX - __slots__ only created in __new__()
             clsdict['__slots__'] = [x[0] for x in st] + ['data']
             t = type.__new__(cls, clsname, clsbases, clsdict)
             t.__hdr_fields__ = [x[0] for x in st]
-            t.__hdr_fmt__ = getattr(t, '__byte_order__', '>') + ''.join([x[1] for x in st])
+            t.__hdr_fmt__ = byte_order + ''.join([x[1] for x in st])
             t.__hdr_len__ = struct.calcsize(t.__hdr_fmt__)
             t.__hdr_defaults__ = dict(compat_izip(
                 t.__hdr_fields__, [x[2] for x in st]))
@@ -60,7 +61,8 @@ class _MetaPacket(type):
                     bits_used = 0
 
                     # make sure the sum of bits matches the overall size of the placeholder field
-                    assert bits_total == struct.calcsize(ph_struct) * 8, \
+                    # prepending ph_struct with byte_order implies standard size for the byte orders `=`, `<`, `>` and `!`
+                    assert bits_total == struct.calcsize('%s%s' % (byte_order, ph_struct)) * 8, \
                         "the overall count of bits in [%s] as declared in __bit_fields__ " \
                         "does not match its struct size in __hdr__" % ph_name
 
