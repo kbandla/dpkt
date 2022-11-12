@@ -43,10 +43,10 @@ class _MetaPacket(type):
             clsdict['__slots__'] = [x[0] for x in st] + ['data']
             t = type.__new__(cls, clsname, clsbases, clsdict)
             t.__hdr_fields__ = [x[0] for x in st]
-            t.__hdr_fmt__ = byte_order + ''.join([x[1] for x in st])
+            t.__hdr_fmt__ = byte_order + ''.join(x[1] for x in st)
             t.__hdr_len__ = struct.calcsize(t.__hdr_fmt__)
             t.__hdr_defaults__ = dict(compat_izip(
-                t.__hdr_fields__, [x[2] for x in st]))
+                t.__hdr_fields__, (x[2] for x in st)))
 
         # process __bit_fields__
         bit_fields = getattr(t, '__bit_fields__', None)
