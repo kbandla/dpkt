@@ -55,6 +55,9 @@ class SRInfo(dpkt.Packet):
         ('pkts', 'I', 0),
         ('octs', 'I', 0)
     )
+    def unpack(self, buf):
+        dpkt.Packet.unpack(self, buf)
+        self.data = b''
 
 #         0                   1                   2                   3
 #         0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -88,13 +91,16 @@ class RRInfo(dpkt.Packet):
     __hdr__ = (
         ('ssrc', 'I', 0),
     )
+    def unpack(self, buf):
+        dpkt.Packet.unpack(self, buf)
+        self.data = b''
 
 class Report(dpkt.Packet):
     """RTCP Report Sender"""
 
     __hdr__ = (
         ('ssrc', 'I', 0),
-        ('_loss', 'I', 0),
+        ('_lossfrac_losscumm', 'I', 0),
         ('seq', 'I', 0),
         ('jitter', 'I', 0),
         ('lsr', 'I', 0),
@@ -102,20 +108,20 @@ class Report(dpkt.Packet):
     )
 
     @property
-    def frac_loss(self):
-        return  (self._loss & 0xFF000000) >> 24
+    def lossfrac(self):
+        return  (self._lossfrac_losscumm & 0xFF000000) >> 24
 
-    @frac_loss.setter
-    def frac_loss(self, fl):
-        self._loss = (fl << 24) | (self._loss & 0x00FFFFFF)
+    @lossfrac.setter
+    def lossfrac(self, fl):
+        self._lossfrac_losscumm = (fl << 24) | (self._lossfrac_losscumm & 0x00FFFFFF)
 
     @property
-    def cumm_loss(self):
-        return (self._loss & 0x00FFFFFF)
+    def losscumm(self):
+        return (self._lossfrac_losscumm & 0x00FFFFFF)
 
-    @cumm_loss.setter
-    def cumm_loss(self, cl):
-        self._loss = (cl) | (self._loss & 0xFF000000)
+    @losscumm.setter
+    def losscumm(self, cl):
+        self._lossfrac_losscumm = (cl) | (self._lossfrac_losscumm & 0xFF000000)
 
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
@@ -174,7 +180,7 @@ class Report(dpkt.Packet):
 #    :                         report blocks                         :
 #    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
-BT_LOSS = 1  # Loss RLE Report Block
+BT_lossfrac_losscumm = 1  # Loss RLE Report Block
 BT_DUPL = 2  # Duplicate RLE Report Block
 BT_RCVT = 3  # Packet Receipt Times Report Block
 BT_RCVR = 4  # Receiver Reference Time Report Block
@@ -279,7 +285,7 @@ class XReportBlock(dpkt.Packet):
     def setBlock(self, block):
         self.block = block
         if isinstance(block, XBlockLoss):
-            self.type = BT_LOSS
+            self.type = BT_lossfrac_losscumm
         elif isinstance(block, XBlockDupl):
             self.type = BT_DUPL
         elif isinstance(block, XBlockRcvt):
@@ -300,7 +306,7 @@ class XReportBlock(dpkt.Packet):
         super(XReportBlock, self).unpack(buf)
         self.block = None
         buf = self.data
-        if self.type == BT_LOSS:
+        if self.type == BT_lossfrac_losscumm:
             self.block = XBlockLoss(buf[0:self.len * 4])
         elif self.type == BT_DUPL:
             self.block = XBlockDupl(buf[0: self.len * 4])
@@ -334,11 +340,15 @@ class XReport(dpkt.Packet):
         super(XReport, self).unpack(buf)
         buf = self.data
         self.data = b''
-        ll = 0 
-        while ll < len(buf):
-            blck = XReportBlock(buf[ll:])
-            ll = ll + blck.__hdr_len__ + blck.len * 4
-            self.blocks.append(blck)
+        try:
+            ll = 0 
+            while ll < len(buf):
+                blck = XReportBlock(buf[ll:])
+                ll = ll + blck.__hdr_len__ + blck.len * 4
+                self.blocks.append(blck)
+        except ValueError:
+            if len(self.blocks)==0: # At least one block must be present...
+                raise ValueError("Invalid Block Type.")
 
     def __len__(self):
         ll = 0 
@@ -398,42 +408,42 @@ class RTCP(Packet):
     """
 
     __hdr__ = (
-        ('_type', 'H', 0x8000),
+        ('_version_p_cc_pt', 'H', 0x8000),
         ('len', 'H', 0)
     )
     # csrc = b''
 
     @property
     def version(self):
-        return (self._type & _VERSION_MASK) >> _VERSION_SHIFT
+        return (self._version_p_cc_pt & _VERSION_MASK) >> _VERSION_SHIFT
 
     @version.setter
     def version(self, ver):
-        self._type = (ver << _VERSION_SHIFT) | (self._type & ~_VERSION_MASK)
+        self._version_p_cc_pt = (ver << _VERSION_SHIFT) | (self._version_p_cc_pt & ~_VERSION_MASK)
 
     @property
     def p(self):
-        return (self._type & _P_MASK) >> _P_SHIFT
+        return (self._version_p_cc_pt & _P_MASK) >> _P_SHIFT
 
     @p.setter
     def p(self, p):
-        self._type = (p << _P_SHIFT) | (self._type & ~_P_MASK)
+        self._version_p_cc_pt = (p << _P_SHIFT) | (self._version_p_cc_pt & ~_P_MASK)
 
     @property
     def cc(self):
-        return (self._type & _CC_MASK) >> _CC_SHIFT
+        return (self._version_p_cc_pt & _CC_MASK) >> _CC_SHIFT
 
     @cc.setter
     def cc(self, cc):
-        self._type = (cc << _CC_SHIFT) | (self._type & ~_CC_MASK)
+        self._version_p_cc_pt = (cc << _CC_SHIFT) | (self._version_p_cc_pt & ~_CC_MASK)
 
     @property
     def pt(self):
-        return (self._type & _PT_MASK) >> _PT_SHIFT
+        return (self._version_p_cc_pt & _PT_MASK) >> _PT_SHIFT
 
     @pt.setter
     def pt(self, m):
-        self._type = (m << _PT_SHIFT) | (self._type & ~_PT_MASK)
+        self._version_p_cc_pt = (m << _PT_SHIFT) | (self._version_p_cc_pt & ~_PT_MASK)
 
     def addInfo(self, info):
         if not ( self.pt in (PT_SR, PT_RR, PT_XR) ):
@@ -558,8 +568,8 @@ def test_RTCP_SR():
     assert (RTCP_SR.info.octs == 210)
     assert (len(RTCP_SR.reports)==1)
     assert (RTCP_SR.reports[0].ssrc==0x58fef557)
-    assert (RTCP_SR.reports[0].frac_loss==0)
-    assert (RTCP_SR.reports[0].cumm_loss==0)
+    assert (RTCP_SR.reports[0].lossfrac==0)
+    assert (RTCP_SR.reports[0].losscumm==0)
     assert (RTCP_SR.reports[0].seq==15028)
     assert (RTCP_SR.reports[0].jitter==785)
     assert (RTCP_SR.reports[0].lsr==1604880137)
@@ -587,8 +597,8 @@ def test_build_RTCP_SR():
     RTCP_SR.addReport(
         Report(
             ssrc = 0x58fef557,
-            frac_loss=0,
-            cumm_loss=0,
+            lossfrac=0,
+            losscumm=0,
             seq=15028,
             jitter=785,
             lsr=1604880137,
@@ -618,8 +628,8 @@ def test_RTCP_RR():
     assert (RTCP_RR.info.ssrc == 0x28aa3478)
     assert (len(RTCP_RR.reports)==1)
     assert (RTCP_RR.reports[0].ssrc==0x58fef557)
-    assert (RTCP_RR.reports[0].frac_loss==0)
-    assert (RTCP_RR.reports[0].cumm_loss==0)
+    assert (RTCP_RR.reports[0].lossfrac==0)
+    assert (RTCP_RR.reports[0].losscumm==0)
     assert (RTCP_RR.reports[0].seq==15018)
     assert (RTCP_RR.reports[0].jitter==0)
     assert (RTCP_RR.reports[0].lsr==1604848551)
@@ -640,8 +650,8 @@ def test_build_RTCP_RR():
     RTCP_RR.addReport(
         Report(
             ssrc = 0x58fef557,
-            frac_loss=0,
-            cumm_loss=0,
+            lossfrac=0,
+            losscumm=0,
             seq=15018,
             jitter=0,
             lsr=1604848551,
