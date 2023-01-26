@@ -106,23 +106,12 @@ class Report(dpkt.Packet):
         ('lsr', 'I', 0),
         ('dlsr', 'I', 0)
     )
-
-    @property
-    def lossfrac(self):
-        return  (self._lossfrac_losscumm & 0xFF000000) >> 24
-
-    @lossfrac.setter
-    def lossfrac(self, fl):
-        self._lossfrac_losscumm = (fl << 24) | (self._lossfrac_losscumm & 0x00FFFFFF)
-
-    @property
-    def losscumm(self):
-        return (self._lossfrac_losscumm & 0x00FFFFFF)
-
-    @losscumm.setter
-    def losscumm(self, cl):
-        self._lossfrac_losscumm = (cl) | (self._lossfrac_losscumm & 0xFF000000)
-
+    __bit_fields__ = {
+        '_lossfrac_losscumm': (
+            ('lossfrac', 8),   # first byte
+            ('losscumm', 24),  # lower 3 bytes
+        ),
+    }
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
         self.data = b''
@@ -363,19 +352,6 @@ class XReport(dpkt.Packet):
                 bb = bb + self.blocks[_].pack_hdr() + self.blocks[_].block.pack_hdr() + self.blocks[_].block.data
         return  bb 
 
-# version 1100 0000 0000 0000 ! 0xC000  14
-# p       0010 0000 0000 0000 ! 0x2000  13
-# cc      0001 1111 0000 0000 ! 0x1F00   8
-# pt      0000 0000 1111 1111 ! 0x00FF   0
-
-_VERSION_MASK = 0xC000
-_P_MASK = 0x2000
-_CC_MASK = 0x1F00
-_PT_MASK = 0x00FF
-_VERSION_SHIFT = 14
-_P_SHIFT = 13
-_CC_SHIFT = 8
-_PT_SHIFT = 0
 
 VERSION = 2
 
@@ -411,39 +387,15 @@ class RTCP(Packet):
         ('_version_p_cc_pt', 'H', 0x8000),
         ('len', 'H', 0)
     )
-    # csrc = b''
 
-    @property
-    def version(self):
-        return (self._version_p_cc_pt & _VERSION_MASK) >> _VERSION_SHIFT
-
-    @version.setter
-    def version(self, ver):
-        self._version_p_cc_pt = (ver << _VERSION_SHIFT) | (self._version_p_cc_pt & ~_VERSION_MASK)
-
-    @property
-    def p(self):
-        return (self._version_p_cc_pt & _P_MASK) >> _P_SHIFT
-
-    @p.setter
-    def p(self, p):
-        self._version_p_cc_pt = (p << _P_SHIFT) | (self._version_p_cc_pt & ~_P_MASK)
-
-    @property
-    def cc(self):
-        return (self._version_p_cc_pt & _CC_MASK) >> _CC_SHIFT
-
-    @cc.setter
-    def cc(self, cc):
-        self._version_p_cc_pt = (cc << _CC_SHIFT) | (self._version_p_cc_pt & ~_CC_MASK)
-
-    @property
-    def pt(self):
-        return (self._version_p_cc_pt & _PT_MASK) >> _PT_SHIFT
-
-    @pt.setter
-    def pt(self, m):
-        self._version_p_cc_pt = (m << _PT_SHIFT) | (self._version_p_cc_pt & ~_PT_MASK)
+    __bit_fields__ = {
+        '_version_p_cc_pt': (
+            ('version', 2),   # version 1100 0000 0000 0000 ! 0xC000  14
+            ('p', 1),         # p       0010 0000 0000 0000 ! 0x2000  13
+            ('cc', 5),        # cc      0001 1111 0000 0000 ! 0x1F00   8
+            ('pt', 8),        # pt      0000 0000 1111 1111 ! 0x00FF   0
+        ),
+    }
 
     def addInfo(self, info):
         if not ( self.pt in (PT_SR, PT_RR, PT_XR) ):
