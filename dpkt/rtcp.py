@@ -169,7 +169,7 @@ class Report(dpkt.Packet):
 #    :                         report blocks                         :
 #    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
-BT_lossfrac_losscumm = 1  # Loss RLE Report Block
+BT_LOSS = 1  # Loss RLE Report Block
 BT_DUPL = 2  # Duplicate RLE Report Block
 BT_RCVT = 3  # Packet Receipt Times Report Block
 BT_RCVR = 4  # Receiver Reference Time Report Block
@@ -274,7 +274,7 @@ class XReportBlock(dpkt.Packet):
     def setBlock(self, block):
         self.block = block
         if isinstance(block, XBlockLoss):
-            self.type = BT_lossfrac_losscumm
+            self.type = BT_LOSS
         elif isinstance(block, XBlockDupl):
             self.type = BT_DUPL
         elif isinstance(block, XBlockRcvt):
@@ -295,7 +295,7 @@ class XReportBlock(dpkt.Packet):
         super(XReportBlock, self).unpack(buf)
         self.block = None
         buf = self.data
-        if self.type == BT_lossfrac_losscumm:
+        if self.type == BT_LOSS:
             self.block = XBlockLoss(buf[0:self.len * 4])
         elif self.type == BT_DUPL:
             self.block = XBlockDupl(buf[0: self.len * 4])
@@ -407,7 +407,7 @@ class RTCP(Packet):
             if ( self.pt in (PT_SR, PT_RR) ):
                 ll = ll + 24 * self.cc
             else:
-                ll = ll + self.reports[0].len
+                ll = ll + len(self.reports[0])
         self.len = math.ceil((ll-4)/4)
 
     def addReport(self, report):
@@ -593,7 +593,7 @@ def test_RTCP_RR():
     ))
 
 def test_build_RTCP_RR():
-    RTCP_RR = RTCP( pt = PT_RR)
+    RTCP_RR = RTCP( pt = PT_RR )
     RTCP_RR.addInfo( 
         RRInfo( 
             ssrc = 0x28aa3478
@@ -808,3 +808,262 @@ def test_build_RTCP_XR():
         b'\x28\xaa\x34\x78\x00\x00\x00\x00\x00\x00\x00\x00\x00\x48\x01\xaa'
         b'\x7f\x7f\x7f\x10\x7f\x7f\x7f\x7f\xb7\x00\x00\x78\x00\x78\x05\xdc'
     ))
+
+
+def test_build_RTCP_XR_Blocks():
+    blk = XReportBlock()
+    blk.setBlock(XBlockLoss())
+    assert(blk.type == BT_LOSS)
+    blk.setBlock(XBlockDupl())
+    assert(blk.type == BT_DUPL)
+    blk.setBlock(XBlockRcvt())
+    assert(blk.type == BT_RCVT)
+    try:
+        blk.setBlock(XReportBlock())
+        assert(False)
+    except ValueError:
+        pass
+
+    blk = XReportBlock(b'\x01\x00\x00\x03\x28\xaa\x34\x78\x00\x00\x00\x00\x00\x00\x00\x00')
+    assert(isinstance(blk.block, XBlockLoss))
+    blk = XReportBlock(b'\x02\x00\x00\x03\x28\xaa\x34\x78\x00\x00\x00\x00\x00\x00\x00\x00')
+    assert(isinstance(blk.block, XBlockDupl))
+    blk = XReportBlock(b'\x03\x00\x00\x03\x28\xaa\x34\x78\x00\x00\x00\x00\x00\x00\x00\x00')
+    assert(isinstance(blk.block, XBlockRcvt))
+    try:
+        XReportBlock(b'\x22\x00\x00\x03\x28\xaa\x34\x78\x00\x00\x00\x00\x00\x00\x00\x00')
+        assert(False)
+    except ValueError:
+        pass
+
+def test_build_RTCP_XR_Report():
+    buf = ( 
+            b'\x03\x00\x00\x03\x28\xaa\x34\x78\x00\x00\x00\x00\x00\x00\x00\x00'
+            b'\x22\x00\x00\x03\x28\xaa\x34\x78\x00\x00\x00\x00\x00\x00\x00\x00' 
+        )
+    xr = XReport(buf)        
+    assert(len(xr.blocks)==1)
+    assert(buf[len(xr):] == b'\x22\x00\x00\x03\x28\xaa\x34\x78\x00\x00\x00\x00\x00\x00\x00\x00')
+
+def test_build_RTCP_addInfo():
+    RTCP_SDES = RTCP( pt = PT_SDES )
+    try:
+        RTCP_SDES.addInfo( 
+            RRInfo( 
+                ssrc = 0x28aa3478
+            )
+        )
+        assert(False)
+    except ValueError:
+        pass
+
+    RTCP_BYE = RTCP( pt = PT_BYE )
+    try:
+        RTCP_BYE.addInfo( 
+            RRInfo( 
+                ssrc = 0x28aa3478
+            )
+        )
+        assert(False)
+    except ValueError:
+        pass
+
+    RTCP_APP = RTCP( pt = PT_APP )
+    try:
+        RTCP_APP.addInfo( 
+            RRInfo( 
+                ssrc = 0x28aa3478
+            )
+        )
+        assert(False)
+    except ValueError:
+        pass
+
+    RTCP_SR = RTCP(pt = PT_SR)
+    RTCP_SR.addReport(
+        Report(
+            ssrc = 0x58fef557,
+            lossfrac=0,
+            losscumm=0,
+            seq=15028,
+            jitter=785,
+            lsr=1604880137,
+            dlsr=27509
+        )
+    )
+    assert (len(RTCP_SR.reports)==1)
+    RTCP_SR.addInfo( 
+        SRInfo( 
+            ssrc = 0x28aa3478,
+            ntp_ts_msw = 3869401001,
+            ntp_ts_lsw = 688116527,
+            rtp_ts = 34560,
+            pkts = 9,
+            octs = 210
+        )
+    )
+    assert (bytes(RTCP_SR) == (
+        b'\x81\xc8\x00\x0c\x28\xaa\x34\x78\xe6\xa2\x5f\xa9\x29\x03\xd3\x2f'
+        b'\x00\x00\x87\x00\x00\x00\x00\x09\x00\x00\x00\xd2\x58\xfe\xf5\x57'
+        b'\x00\x00\x00\x00\x00\x00\x3a\xb4\x00\x00\x03\x11\x5f\xa8\x87\x09'
+        b'\x00\x00\x6b\x75'
+    ))
+    RTCP_XR = RTCP(pt = PT_XR)
+    xr = XReport()
+    blk = XReportBlock()
+    blk.setBlock(XBlockRcvr(ntp_ts_msw = 0xe6a25faa,ntp_ts_lsw = 0x714e01af))
+    xr.addBlock(blk) 
+    blk = XReportBlock()
+    blk.setBlock(XBlockDlrr(data = b'\x28\xaa\x34\x78\x5f\xa9\x29\x04\x00\x01\x69\x35'))
+    xr.addBlock(blk) 
+    blk = XReportBlock(spec=0xe0)
+    blk.setBlock(
+        XBlockStat( 
+            ssrc = 0x28aa3478,
+            beg_seq = 10771,
+            end_seq = 10778,
+            loss = 0,
+            dupl = 0,
+            min_jitter = 81,
+            max_jitter = 767,
+            avg_jitter = 447,
+            dev_jitter = 221,
+            min_ttl_or_hl = 0,
+            max_ttl_or_hl = 0,
+            mean_ttl_or_hl = 0,
+            dev_ttl_or_hl = 0
+        )
+    )
+    xr.addBlock(blk) 
+    blk = XReportBlock()
+    blk.setBlock(
+        XBlockVoip( 
+            ssrc = 0x28aa3478,
+            loss_rate = 0,
+            disc_rate = 0,
+            burst_density = 0,
+            gap_density = 0,
+            burst_duration = 0,
+            gap_duration = 0,
+            rtt = 72,
+            end_sys_delay = 426,
+            signal_level = 127,
+            noise_level = 127,
+            RERL = 127,
+            Gmin = 16,
+            RFactor = 127,
+            ext_RFactor = 127,
+            MOS_LQ = 127,
+            MOS_CQ = 127,
+            RX_config = 0xb7,
+            nominal_jitter = 120,
+            max_jitter = 120,
+            abs_max_jitter = 1500
+        )
+    )
+    xr.addBlock(blk) 
+    RTCP_XR.addReport(xr)
+    assert (len(RTCP_XR.reports)==1)
+    assert (len(RTCP_XR.reports[0].blocks)==4)
+    RTCP_XR.addInfo( 
+        RRInfo( 
+            ssrc = 0x58fef557
+        )
+    )
+    assert (bytes(RTCP_XR) == (
+        b'\x81\xcf\x00\x1b\x58\xfe\xf5\x57\x04\x00\x00\x02\xe6\xa2\x5f\xaa'
+        b'\x71\x4e\x01\xaf\x05\x00\x00\x03\x28\xaa\x34\x78\x5f\xa9\x29\x04'
+        b'\x00\x01\x69\x35\x06\xe0\x00\x09\x28\xaa\x34\x78\x2a\x13\x2a\x1a'
+        b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x51\x00\x00\x02\xff'
+        b'\x00\x00\x01\xbf\x00\x00\x00\xdd\x00\x00\x00\x00\x07\x00\x00\x08'
+        b'\x28\xaa\x34\x78\x00\x00\x00\x00\x00\x00\x00\x00\x00\x48\x01\xaa'
+        b'\x7f\x7f\x7f\x10\x7f\x7f\x7f\x7f\xb7\x00\x00\x78\x00\x78\x05\xdc'
+    ))
+
+def test_build_RTCP_addReport():
+    RTCP_SDES = RTCP( pt = PT_SDES )
+    try:
+        RTCP_SDES.addReport(Report())
+        assert(False)
+    except ValueError:
+        pass
+
+    RTCP_BYE = RTCP( pt = PT_BYE )
+    try:
+        RTCP_BYE.addReport(Report())
+        assert(False)
+    except ValueError:
+        pass
+
+    RTCP_APP = RTCP( pt = PT_APP )
+    try:
+        RTCP_APP.addReport(Report())
+        assert(False)
+    except ValueError:
+        pass
+
+
+def test_build_RTCP_addData():
+    RTCP_RR = RTCP( pt = PT_RR )
+    try:
+        RTCP_RR.addData(b'\x22\x00\x00\x03\x28\xaa\x34\x78\x00\x00\x00\x00\x00\x00\x00\x00')
+        assert(False)
+    except ValueError:
+        pass
+
+    RTCP_XR = RTCP( pt = PT_XR )
+    try:
+        RTCP_XR.addData(b'\x22\x00\x00\x03\x28\xaa\x34\x78\x00\x00\x00\x00\x00\x00\x00\x00')
+        assert(False)
+    except ValueError:
+        pass
+
+    RTCP_SR = RTCP(pt = PT_SR)
+    RTCP_SR.addReport(
+        Report(
+            ssrc = 0x58fef557,
+            lossfrac=0,
+            losscumm=0,
+            seq=15028,
+            jitter=785,
+            lsr=1604880137,
+            dlsr=27509
+        )
+    )
+    assert (len(RTCP_SR.reports)==1)
+    RTCP_SR.addInfo( 
+        SRInfo( 
+            ssrc = 0x28aa3478,
+            ntp_ts_msw = 3869401001,
+            ntp_ts_lsw = 688116527,
+            rtp_ts = 34560,
+            pkts = 9,
+            octs = 210
+        )
+    )
+    RTCP_SR.addData(b'\x22\x00\x00\x03\x28\xaa\x34\x78\x00\x00\x00\x00\x00\x00\x00\x00')
+    assert (bytes(RTCP_SR) == (
+        b'\x81\xc8\x00\x10\x28\xaa\x34\x78\xe6\xa2\x5f\xa9\x29\x03\xd3\x2f'
+        b'\x00\x00\x87\x00\x00\x00\x00\x09\x00\x00\x00\xd2\x58\xfe\xf5\x57'
+        b'\x00\x00\x00\x00\x00\x00\x3a\xb4\x00\x00\x03\x11\x5f\xa8\x87\x09'
+        b'\x00\x00\x6b\x75'
+        b'\x22\x00\x00\x03\x28\xaa\x34\x78\x00\x00\x00\x00\x00\x00\x00\x00'
+    ))
+
+def test_RTCP_version_padding():
+    try:
+        RTCP(
+            b'\x41\xca\x00\x06\x28\xaa\x34\x78\x01\x10\x35\x36\x38\x30\x65\x39'
+            b'\x30\x61\x36\x62\x37\x63\x38\x34\x36\x37\x00\x00'
+        )
+        assert(False)
+    except dpkt.UnpackError:
+        pass
+    try:
+        RTCP(
+            b'\xa1\xca\x00\x06\x28\xaa\x34\x78\x01\x10\x35\x36\x38\x30\x65\x39'
+            b'\x30\x61\x36\x62\x37\x63\x38\x34\x36\x37\x00\x00'
+        )
+        assert(False)
+    except dpkt.UnpackError:
+        pass
