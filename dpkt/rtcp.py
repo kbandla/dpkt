@@ -819,8 +819,7 @@ def test_build_RTCP_XR_Blocks():
     blk.setBlock(XBlockRcvt())
     assert(blk.type == BT_RCVT)
     try:
-        blk.setBlock(XReportBlock())
-        assert(False)
+        assert( blk.setBlock(XReportBlock()) and False )
     except ValueError:
         pass
 
@@ -831,12 +830,16 @@ def test_build_RTCP_XR_Blocks():
     blk = XReportBlock(b'\x03\x00\x00\x03\x28\xaa\x34\x78\x00\x00\x00\x00\x00\x00\x00\x00')
     assert(isinstance(blk.block, XBlockRcvt))
     try:
-        XReportBlock(b'\x22\x00\x00\x03\x28\xaa\x34\x78\x00\x00\x00\x00\x00\x00\x00\x00')
-        assert(False)
+        assert( XReportBlock(b'\x22\x00\x00\x03\x28\xaa\x34\x78\x00\x00\x00\x00\x00\x00\x00\x00') and False )
     except ValueError:
         pass
 
 def test_build_RTCP_XR_Report():
+    try:
+        assert(XReport(b'\x22\x00\x00\x03\x28\xaa\x34\x78\x00\x00\x00\x00\x00\x00\x00\x00') and False)
+    except ValueError:
+        pass
+
     buf = ( 
             b'\x03\x00\x00\x03\x28\xaa\x34\x78\x00\x00\x00\x00\x00\x00\x00\x00'
             b'\x22\x00\x00\x03\x28\xaa\x34\x78\x00\x00\x00\x00\x00\x00\x00\x00' 
@@ -848,34 +851,36 @@ def test_build_RTCP_XR_Report():
 def test_build_RTCP_addInfo():
     RTCP_SDES = RTCP( pt = PT_SDES )
     try:
-        RTCP_SDES.addInfo( 
-            RRInfo( 
-                ssrc = 0x28aa3478
-            )
-        )
-        assert(False)
+        assert(
+            RTCP_SDES.addInfo( 
+                RRInfo( 
+                    ssrc = 0x28aa3478
+                )
+            ) and False )
     except ValueError:
         pass
 
     RTCP_BYE = RTCP( pt = PT_BYE )
     try:
-        RTCP_BYE.addInfo( 
-            RRInfo( 
-                ssrc = 0x28aa3478
-            )
+        assert (
+            RTCP_BYE.addInfo( 
+                RRInfo( 
+                    ssrc = 0x28aa3478
+                )
+            ) and False
         )
-        assert(False)
     except ValueError:
         pass
 
     RTCP_APP = RTCP( pt = PT_APP )
     try:
-        RTCP_APP.addInfo( 
-            RRInfo( 
-                ssrc = 0x28aa3478
-            )
+        assert(
+            RTCP_APP.addInfo( 
+                RRInfo( 
+                    ssrc = 0x28aa3478
+                )
+            ) and False
         )
-        assert(False)
     except ValueError:
         pass
 
@@ -983,22 +988,19 @@ def test_build_RTCP_addInfo():
 def test_build_RTCP_addReport():
     RTCP_SDES = RTCP( pt = PT_SDES )
     try:
-        RTCP_SDES.addReport(Report())
-        assert(False)
+        assert(RTCP_SDES.addReport(Report()) and False)
     except ValueError:
         pass
 
     RTCP_BYE = RTCP( pt = PT_BYE )
     try:
-        RTCP_BYE.addReport(Report())
-        assert(False)
+        assert(RTCP_BYE.addReport(Report()) and False)
     except ValueError:
         pass
 
     RTCP_APP = RTCP( pt = PT_APP )
     try:
-        RTCP_APP.addReport(Report())
-        assert(False)
+        assert(RTCP_APP.addReport(Report()) and False)
     except ValueError:
         pass
 
@@ -1006,15 +1008,13 @@ def test_build_RTCP_addReport():
 def test_build_RTCP_addData():
     RTCP_RR = RTCP( pt = PT_RR )
     try:
-        RTCP_RR.addData(b'\x22\x00\x00\x03\x28\xaa\x34\x78\x00\x00\x00\x00\x00\x00\x00\x00')
-        assert(False)
+        assert(RTCP_RR.addData(b'\x22\x00\x00\x03\x28\xaa\x34\x78\x00\x00\x00\x00\x00\x00\x00\x00') and False)
     except ValueError:
         pass
 
     RTCP_XR = RTCP( pt = PT_XR )
     try:
-        RTCP_XR.addData(b'\x22\x00\x00\x03\x28\xaa\x34\x78\x00\x00\x00\x00\x00\x00\x00\x00')
-        assert(False)
+        assert(RTCP_XR.addData(b'\x22\x00\x00\x03\x28\xaa\x34\x78\x00\x00\x00\x00\x00\x00\x00\x00') and False)
     except ValueError:
         pass
 
@@ -1052,18 +1052,60 @@ def test_build_RTCP_addData():
 
 def test_RTCP_version_padding():
     try:
-        RTCP(
-            b'\x41\xca\x00\x06\x28\xaa\x34\x78\x01\x10\x35\x36\x38\x30\x65\x39'
-            b'\x30\x61\x36\x62\x37\x63\x38\x34\x36\x37\x00\x00'
+        assert(
+            RTCP(
+                b'\x41\xca\x00\x06\x28\xaa\x34\x78\x01\x10\x35\x36\x38\x30\x65\x39'
+                b'\x30\x61\x36\x62\x37\x63\x38\x34\x36\x37\x00\x00'
+            ) and False
         )
-        assert(False)
     except dpkt.UnpackError:
         pass
     try:
-        RTCP(
-            b'\xa1\xca\x00\x06\x28\xaa\x34\x78\x01\x10\x35\x36\x38\x30\x65\x39'
-            b'\x30\x61\x36\x62\x37\x63\x38\x34\x36\x37\x00\x00'
+        assert(
+            RTCP(
+                b'\xa1\xca\x00\x06\x28\xaa\x34\x78\x01\x10\x35\x36\x38\x30\x65\x39'
+                b'\x30\x61\x36\x62\x37\x63\x38\x34\x36\x37\x00\x00'
+            ) and False
         )
-        assert(False)
     except dpkt.UnpackError:
         pass
+
+
+def test_RTCP_BYE():
+    RTCP_BYE = RTCP(
+        b'\x81\xcb\x00\x01\x58\xfe\xf5\x57'
+    )
+    assert (RTCP_BYE.version == 2)
+    assert (RTCP_BYE.p == 0)
+    assert (RTCP_BYE.cc == 1)
+    assert (RTCP_BYE.pt == PT_BYE)
+    assert (RTCP_BYE.len == 1)
+    assert (len(RTCP_BYE) == 8)
+    assert (not RTCP_BYE.info)
+    assert (len(RTCP_BYE.reports)==0)
+    assert (RTCP_BYE.data==(
+        b'\x58\xfe\xf5\x57'
+    ))
+    assert (bytes(RTCP_BYE) == (
+        b'\x81\xcb\x00\x01\x58\xfe\xf5\x57'
+    ))
+
+
+def test_RTCP_APP():
+    RTCP_APP = RTCP(
+        b'\x81\xcc\x00\x01\x58\xfe\xf5\x57'
+    )
+    assert (RTCP_APP.version == 2)
+    assert (RTCP_APP.p == 0)
+    assert (RTCP_APP.cc == 1)
+    assert (RTCP_APP.pt == PT_APP)
+    assert (RTCP_APP.len == 1)
+    assert (len(RTCP_APP) == 8)
+    assert (not RTCP_APP.info)
+    assert (len(RTCP_APP.reports)==0)
+    assert (RTCP_APP.data==(
+        b'\x58\xfe\xf5\x57'
+    ))
+    assert (bytes(RTCP_APP) == (
+        b'\x81\xcc\x00\x01\x58\xfe\xf5\x57'
+    ))
