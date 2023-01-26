@@ -1109,3 +1109,9 @@ def test_RTCP_APP():
     assert (bytes(RTCP_APP) == (
         b'\x81\xcc\x00\x01\x58\xfe\xf5\x57'
     ))
+
+def test_RTCP_FF():
+    try:
+        assert( RTCP(b'\x81\xff\x00\x01\x58\xfe\xf5\x57') and False)
+    except dpkt.UnpackError:
+        pass
