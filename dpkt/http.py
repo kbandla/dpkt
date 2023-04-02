@@ -100,7 +100,7 @@ class Message(dpkt.Packet):
 
     def __init__(self, *args, **kwargs):
         if args:
-            self.unpack(args[0])
+            self.unpack(args[0], **kwargs)
         else:
             self.headers = OrderedDict()
             self.body = b''
@@ -175,7 +175,7 @@ class Request(Message):
     ))
     __proto = 'HTTP'
 
-    def unpack(self, buf):
+    def unpack(self, buf, **kwargs):
         f = BytesIO(buf)
         line = f.readline().decode("ascii", "ignore")
         l_ = line.strip().split()
@@ -229,7 +229,7 @@ class Response(Message):
     }
     __proto = 'HTTP'
 
-    def unpack(self, buf):
+    def unpack(self, buf, head_response=False, **kwargs):
         f = BytesIO(buf)
         line = f.readline()
         l_ = line.strip().decode("ascii", "ignore").split(None, 2)
@@ -249,6 +249,8 @@ class Response(Message):
         # MUST NOT include a message-body. All other responses do include a
         # message-body, although it MAY be of zero length.
         is_body_allowed = int(self.status) >= 200 and 204 != int(self.status) != 304
+        if head_response:
+            is_body_allowed = False
         Message.unpack(self, f.read(), is_body_allowed)
 
     def __str__(self):
