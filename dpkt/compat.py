@@ -3,11 +3,8 @@ from __future__ import absolute_import
 from struct import pack, unpack
 import sys
 
-if sys.version_info < (3,):
-    compat_ord = ord
-else:
-    def compat_ord(char):
-        return char
+def compat_ord(char):
+    return char
 
 try:
     from itertools import izip
