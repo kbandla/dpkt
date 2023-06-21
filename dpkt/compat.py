@@ -6,11 +6,7 @@ import sys
 def compat_ord(char):
     return char
 
-try:
-    from itertools import izip
-    compat_izip = izip
-except ImportError:
-    compat_izip = zip
+compat_izip = zip
 
 try:
     from cStringIO import StringIO
