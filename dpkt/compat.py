@@ -3,17 +3,10 @@ from __future__ import absolute_import
 from struct import pack, unpack
 import sys
 
-if sys.version_info < (3,):
-    compat_ord = ord
-else:
-    def compat_ord(char):
-        return char
+def compat_ord(char):
+    return char
 
-try:
-    from itertools import izip
-    compat_izip = izip
-except ImportError:
-    compat_izip = zip
+compat_izip = zip
 
 try:
     from cStringIO import StringIO
@@ -25,19 +18,11 @@ try:
 except ImportError:
     from io import BytesIO
 
-if sys.version_info < (3,):
-    def iteritems(d, **kw):
-        return d.iteritems(**kw)
+def iteritems(d, **kw):
+    return iter(d.items(**kw))
 
-    def intround(num):
-        return int(round(num))
-
-else:
-    def iteritems(d, **kw):
-        return iter(d.items(**kw))
-
-    # python3 will return an int if you round to 0 decimal places
-    intround = round
+# python3 will return an int if you round to 0 decimal places
+intround = round
 
 
 def ntole(v):
