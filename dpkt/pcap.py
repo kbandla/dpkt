@@ -254,29 +254,36 @@ class Writer(object):
         self._pack_hdr = self._PktHdr._pack_hdr
         self.__f.write(bytes(fh))
 
-    def writepkt(self, pkt, ts=None):
+    def writepkt(self, pkt, ts=None, pktlen=None):
         """Write single packet and optional timestamp to file.
 
         Args:
             pkt: `bytes` will be called on this and written to file.
-            ts (float): Timestamp in seconds. Defaults to current time.
+            ts (float, optional): Timestamp in seconds. Defaults to current time.
+            pktlen (int, optional): Packet length in original transmission (might
+                                    be more than the number of bytes available from
+                                    the capture). Defaults to length of pkt.
         """
         if ts is None:
             ts = time.time()
+        self.writepkt_time(bytes(pkt), ts, pktlen)
 
-        self.writepkt_time(bytes(pkt), ts)
-
-    def writepkt_time(self, pkt, ts):
+    def writepkt_time(self, pkt, ts, pktlen=None):
         """Write single packet and its timestamp to file.
 
         Args:
             pkt (bytes): Some `bytes` to write to the file
             ts (float): Timestamp in seconds
+            pktlen (int, optional): Packet length in original transmission (might
+                                    be more than the number of bytes available from
+                                    the capture). Defaults to length of pkt.
         """
         n = len(pkt)
+        if pktlen is None:
+            pktlen = n
         sec = int(ts)
         usec = intround(ts % 1 * self._precision_multiplier)
-        ph = self._pack_hdr(sec, usec, n, n)
+        ph = self._pack_hdr(sec, usec, n, pktlen)
         self.__f.write(ph + pkt)
 
     def writepkts(self, pkts):
@@ -286,17 +293,23 @@ class Writer(object):
         Packets must be of type `bytes` as they will not be cast.
 
         Args:
-            pkts: iterable containing (ts, pkt)
+            pkts: iterable containing (ts, pkt) or (ts, pktlen, pkt)
         """
         fd = self.__f
         pack_hdr = self._pack_hdr
         precision_multiplier = self._precision_multiplier
 
-        for ts, pkt in pkts:
+        for packet_data in pkts:
+            if len(packet_data) == 3:
+                ts, pktlen, pkt = packet_data
+            else:
+                ts, pkt = packet_data
+                pktlen = len(pkt)
+
             n = len(pkt)
             sec = int(ts)
             usec = intround(ts % 1 * precision_multiplier)
-            ph = pack_hdr(sec, usec, n, n)
+            ph = pack_hdr(sec, usec, n, pktlen)
             fd.write(ph + pkt)
 
     def close(self):
