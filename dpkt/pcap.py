@@ -254,29 +254,36 @@ class Writer(object):
         self._pack_hdr = self._PktHdr._pack_hdr
         self.__f.write(bytes(fh))
 
-    def writepkt(self, pkt, ts=None):
+    def writepkt(self, pkt, ts=None, pktlen=None):
         """Write single packet and optional timestamp to file.
 
         Args:
             pkt: `bytes` will be called on this and written to file.
-            ts (float): Timestamp in seconds. Defaults to current time.
+            ts (float, optional): Timestamp in seconds. Defaults to current time.
+            pktlen (int, optional): Packet length in original transmission (might
+                                    be more than the number of bytes available from
+                                    the capture). Defaults to length of pkt.
         """
         if ts is None:
             ts = time.time()
+        self.writepkt_time(bytes(pkt), ts, pktlen)
 
-        self.writepkt_time(bytes(pkt), ts)
-
-    def writepkt_time(self, pkt, ts):
+    def writepkt_time(self, pkt, ts, pktlen=None):
         """Write single packet and its timestamp to file.
 
         Args:
             pkt (bytes): Some `bytes` to write to the file
             ts (float): Timestamp in seconds
+            pktlen (int, optional): Packet length in original transmission (might
+                                    be more than the number of bytes available from
+                                    the capture). Defaults to length of pkt.
         """
         n = len(pkt)
+        if pktlen is None:
+            pktlen = n
         sec = int(ts)
         usec = intround(ts % 1 * self._precision_multiplier)
-        ph = self._pack_hdr(sec, usec, n, n)
+        ph = self._pack_hdr(sec, usec, n, pktlen)
         self.__f.write(ph + pkt)
 
     def writepkts(self, pkts):
@@ -286,17 +293,23 @@ class Writer(object):
         Packets must be of type `bytes` as they will not be cast.
 
         Args:
-            pkts: iterable containing (ts, pkt)
+            pkts: iterable containing (ts, pkt) or (ts, pktlen, pkt)
         """
         fd = self.__f
         pack_hdr = self._pack_hdr
         precision_multiplier = self._precision_multiplier
 
-        for ts, pkt in pkts:
+        for packet_data in pkts:
+            if len(packet_data) == 3:
+                ts, pktlen, pkt = packet_data
+            else:
+                ts, pkt = packet_data
+                pktlen = len(pkt)
+
             n = len(pkt)
             sec = int(ts)
             usec = intround(ts % 1 * precision_multiplier)
-            ph = pack_hdr(sec, usec, n, n)
+            ph = pack_hdr(sec, usec, n, pktlen)
             fd.write(ph + pkt)
 
     def close(self):
@@ -372,19 +385,21 @@ class Reader(object):
         *args    -- optional arguments passed to callback on execution
         """
         processed = 0
-        if cnt > 0:
-            for _ in range(cnt):
-                try:
-                    ts, pkt = next(iter(self))
-                except StopIteration:
-                    break
-                callback(ts, pkt, *args)
-                processed += 1
-        else:
-            for ts, pkt in self:
-                callback(ts, pkt, *args)
-                processed += 1
+        loop_indefinitely = cnt == 0
+
+        while loop_indefinitely or processed < cnt:
+            try:
+                pktiter = next(iter(self))
+            except StopIteration:
+                break
+            self._invoke_callback(pktiter, callback, *args)
+            processed += 1
+
         return processed
+
+    def _invoke_callback(self, pktiter, callback, *args):
+        ts, pkt = pktiter
+        callback(ts, pkt, *args)
 
     def loop(self, callback, *args):
         self.dispatch(0, callback, *args)
@@ -397,6 +412,44 @@ class Reader(object):
             hdr = self.__ph(buf)
             buf = self.__f.read(hdr.caplen)
             yield (hdr.tv_sec + (hdr.tv_usec / self._divisor), buf)
+
+
+class PktlenReader(Reader):
+    """
+    Extended pcap reader exposing the length in original transmission (might
+    be more than the number of bytes available from the capture).
+    Iterator returns (timestamp, pktlen, buf) tuple, dispatch accepts
+    callbacks with more arguments..
+    """
+
+    def dispatch(self, cnt, callback, *args):
+        """Collect and process packets with a user callback.
+
+        Return the number of packets processed, or 0 for a savefile.
+
+        Arguments:
+
+        cnt      -- number of packets to process;
+                    or 0 to process all packets until EOF
+        callback -- function with (timestamp, pktlen, pkt, *args) prototype
+        *args    -- optional arguments passed to callback on execution
+        """
+        return super().dispatch(cnt, callback, *args)
+
+    def _invoke_callback(self, pktiter, callback, *args):
+        ts, pktlen, pkt = pktiter
+        callback(ts, pktlen, pkt, *args)
+
+    def __iter__(self):
+        fd = self._Reader__f
+        ph = self._Reader__ph
+        while 1:
+            buf = fd.read(ph.__hdr_len__)
+            if not buf:
+                break
+            hdr = ph(buf)
+            buf = fd.read(hdr.caplen)
+            yield (hdr.tv_sec + (hdr.tv_usec / self._divisor), hdr.len, buf)
 
 
 class UniversalReader(object):
