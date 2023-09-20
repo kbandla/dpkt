@@ -385,19 +385,21 @@ class Reader(object):
         *args    -- optional arguments passed to callback on execution
         """
         processed = 0
-        if cnt > 0:
-            for _ in range(cnt):
-                try:
-                    ts, pkt = next(iter(self))
-                except StopIteration:
-                    break
-                callback(ts, pkt, *args)
-                processed += 1
-        else:
-            for ts, pkt in self:
-                callback(ts, pkt, *args)
-                processed += 1
+        loop_indefinitely = cnt == 0
+
+        while loop_indefinitely or processed < cnt:
+            try:
+                pktiter = next(iter(self))
+            except StopIteration:
+                break
+            self._invoke_callback(pktiter, callback, *args)
+            processed += 1
+
         return processed
+
+    def _invoke_callback(self, pktiter, callback, *args):
+        ts, pkt = pktiter
+        callback(ts, pkt, *args)
 
     def loop(self, callback, *args):
         self.dispatch(0, callback, *args)
@@ -410,6 +412,44 @@ class Reader(object):
             hdr = self.__ph(buf)
             buf = self.__f.read(hdr.caplen)
             yield (hdr.tv_sec + (hdr.tv_usec / self._divisor), buf)
+
+
+class PktlenReader(Reader):
+    """
+    Extended pcap reader exposing the length in original transmission (might
+    be more than the number of bytes available from the capture).
+    Iterator returns (timestamp, pktlen, buf) tuple, dispatch accepts
+    callbacks with more arguments..
+    """
+
+    def dispatch(self, cnt, callback, *args):
+        """Collect and process packets with a user callback.
+
+        Return the number of packets processed, or 0 for a savefile.
+
+        Arguments:
+
+        cnt      -- number of packets to process;
+                    or 0 to process all packets until EOF
+        callback -- function with (timestamp, pktlen, pkt, *args) prototype
+        *args    -- optional arguments passed to callback on execution
+        """
+        return super().dispatch(cnt, callback, *args)
+
+    def _invoke_callback(self, pktiter, callback, *args):
+        ts, pktlen, pkt = pktiter
+        callback(ts, pktlen, pkt, *args)
+
+    def __iter__(self):
+        fd = self._Reader__f
+        ph = self._Reader__ph
+        while 1:
+            buf = fd.read(ph.__hdr_len__)
+            if not buf:
+                break
+            hdr = ph(buf)
+            buf = fd.read(hdr.caplen)
+            yield (hdr.tv_sec + (hdr.tv_usec / self._divisor), hdr.len, buf)
 
 
 class UniversalReader(object):
