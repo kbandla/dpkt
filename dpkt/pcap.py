@@ -398,6 +398,102 @@ class Reader(object):
             buf = self.__f.read(hdr.caplen)
             yield (hdr.tv_sec + (hdr.tv_usec / self._divisor), buf)
 
+class ReaderMeta(object):
+    """Simple pypcap-compatible pcap file reader.
+    returns (timestamp, packet_buffer, captured_len, original_len)
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of simple pypcap-compatible pcap file reader.
+        TODO.
+    """
+    def __init__(self, fileobj):
+        self.name = getattr(fileobj, 'name', '<%s>' % fileobj.__class__.__name__)
+        self.__f = fileobj
+        buf = self.__f.read(FileHdr.__hdr_len__)
+        self.__fh = FileHdr(buf)
+
+        # save magic
+        magic = self.__fh.magic
+
+        if magic in (PMUDPCT_MAGIC, PMUDPCT_MAGIC_NANO, PACPDOM_MAGIC):
+            self.__fh = LEFileHdr(buf)
+
+        if magic not in MAGIC_TO_PKT_HDR:
+            raise ValueError('invalid tcpdump header')
+
+        self.__ph = MAGIC_TO_PKT_HDR[magic]
+
+
+        if self.__fh.linktype in dltoff:
+            self.dloff = dltoff[self.__fh.linktype]
+        else:
+            self.dloff = 0
+        self._divisor = Decimal('1E9') if magic in (TCPDUMP_MAGIC_NANO, PMUDPCT_MAGIC_NANO) else 1E6
+        self.snaplen = self.__fh.snaplen
+        self.filter = ''
+        self.__iter = iter(self)
+
+    @property
+    def fd(self):
+        return self.__f.fileno()
+
+    def fileno(self):
+        return self.fd
+
+    def datalink(self):
+        return self.__fh.linktype
+
+    def setfilter(self, value, optimize=1):
+        raise NotImplementedError
+
+    def readpkts(self):
+        return list(self)
+
+    def __next__(self):
+        return next(self.__iter)
+    next = __next__  # Python 2 compat
+
+    def dispatch(self, cnt, callback, *args):
+        """Collect and process packets with a user callback.
+
+        Return the number of packets processed, or 0 for a savefile.
+
+        Arguments:
+
+        cnt      -- number of packets to process;
+                    or 0 to process all packets until EOF
+        callback -- function with (timestamp, pkt, *args) prototype
+        *args    -- optional arguments passed to callback on execution
+        """
+        processed = 0
+        if cnt > 0:
+            for _ in range(cnt):
+                try:
+                    ts, pkt = next(iter(self))
+                except StopIteration:
+                    break
+                callback(ts, pkt, *args)
+                processed += 1
+        else:
+            for ts, pkt in self:
+                callback(ts, pkt, *args)
+                processed += 1
+        return processed
+
+    def loop(self, callback, *args):
+        self.dispatch(0, callback, *args)
+
+    def __iter__(self):
+        while 1:
+            buf = self.__f.read(self.__ph.__hdr_len__)
+            if not buf:
+                break
+            hdr = self.__ph(buf)
+            buf = self.__f.read(hdr.caplen)
+            yield (hdr.tv_sec + (hdr.tv_usec / self._divisor), buf, hdr.caplen, hdr.len)
+
 
 class UniversalReader(object):
     """
