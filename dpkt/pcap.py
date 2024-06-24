@@ -239,6 +239,8 @@ class Writer(object):
     __le = sys.byteorder == 'little'
 
     def __init__(self, fileobj, snaplen=1500, linktype=DLT_EN10MB, nano=False):
+        if 'b' not in fileobj.mode:
+            raise ValueError('PCAP file NOT in binary mode (wb)')
         self.__f = fileobj
         self._precision = 9 if nano else 6
         self._precision_multiplier = 10**self._precision
@@ -314,6 +316,8 @@ class Reader(object):
     """
     def __init__(self, fileobj):
         self.name = getattr(fileobj, 'name', '<%s>' % fileobj.__class__.__name__)
+        if 'b' not in fileobj.mode:
+            raise ValueError('PCAP file (%s) not opened in binary mode (rb)' % self.name)
         self.__f = fileobj
         buf = self.__f.read(FileHdr.__hdr_len__)
         self.__fh = FileHdr(buf)
