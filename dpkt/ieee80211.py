@@ -27,6 +27,7 @@ M_DISASSOC = 10
 M_AUTH = 11
 M_DEAUTH = 12
 M_ACTION = 13
+M_NACK = 14
 C_BLOCK_ACK_REQ = 8
 C_BLOCK_ACK = 9
 C_PS_POLL = 10
@@ -113,11 +114,15 @@ _BMP_LENGTH = 128
 
 # Action frame categories
 BLOCK_ACK = 3
+OUI = 4
 
 # Block ack category action codes
 BLOCK_ACK_CODE_REQUEST = 0
 BLOCK_ACK_CODE_RESPONSE = 1
 BLOCK_ACK_CODE_DELBA = 2
+
+# OUI categories
+VENDOR_SPECIFIC = 9
 
 
 class IEEE80211(dpkt.Packet):
@@ -302,7 +307,8 @@ class IEEE80211(dpkt.Packet):
             M_AUTH: ('auth', self.Auth),
             M_PROBE_RESP: ('probe_resp', self.Beacon),
             M_DEAUTH: ('deauth', self.Deauth),
-            M_ACTION: ('action', self.Action)
+            M_ACTION: ('action', self.Action),
+            M_NACK: ('nack', self.Nack),
         }
 
         c_decoder = {
@@ -534,7 +540,7 @@ class IEEE80211(dpkt.Packet):
             ('code', 'B', 0),
         )
 
-        def unpack(self, buf):
+        def unpack(self, buf: bytes):
             dpkt.Packet.unpack(self, buf)
 
             action_parser = {
@@ -543,17 +549,49 @@ class IEEE80211(dpkt.Packet):
                     BLOCK_ACK_CODE_RESPONSE: ('block_ack_response', IEEE80211.BlockAckActionResponse),
                     BLOCK_ACK_CODE_DELBA: ('block_ack_delba', IEEE80211.BlockAckActionDelba),
                 },
+                OUI: {
+                    VENDOR_SPECIFIC: ('oui_vendor', IEEE80211.OUINaNServiceDiscoveryFrame)
+                }
             }
 
             try:
                 decoder = action_parser[self.category][self.code][1]
                 field_name = action_parser[self.category][self.code][0]
+                self.decoded = True
+                self.error = None
             except KeyError:
-                raise dpkt.UnpackError("KeyError: category=%s code=%s" % (self.category, self.code))
+                self.decoded = False
+                self.error = dpkt.UnpackError("KeyError: category=%s code=%s" % (self.category, self.code))
+                return
 
             field = decoder(self.data)
             setattr(self, field_name, field)
             self.data = field.data
+
+
+    class OUINaNServiceDiscoveryFrame(dpkt.Packet):
+        __hdr__ = (
+            ('_oui1', 'B', 0x50),
+            ('_oui2', 'B', 0x6f),
+            ('_oui3', 'B', 0x9a),
+            ('type', 'B', 0),
+            ('attr_id', 'B', 0),
+            ('length', 'H', 0),
+            ('service_id', '6s', b'\x00\x00\x00\x00\x00\x00'),
+            ('instance_id', 'B', 0),
+            ('requestor_id', 'B', 0),
+            ('service_control', 'B', 0),
+            ('service_info_len', 'B', 0),  # length of the following part
+            ('counter', 'B', 0),
+        )
+
+        def unpack(self, buf: bytes):
+            super().unpack(buf)
+            if (self._oui1, self._oui2, self._oui3) != (0x50, 0x6f, 0x9a):
+                raise dpkt.UnpackError(f"Not a valid OUI {(self._oui1, self._oui2, self._oui3)} != {(0x50, 0x6f, 0x9a)}")
+
+    class Nack(dpkt.Packet):
+        __hdr__ = ()
 
     class BlockAckActionRequest(dpkt.Packet):
         __hdr__ = (
