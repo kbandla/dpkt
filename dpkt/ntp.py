@@ -39,8 +39,8 @@ class NTP(dpkt.Packet):
     __hdr__ = (
         ('flags', 'B', 0),
         ('stratum', 'B', 0),
-        ('interval', 'B', 0),
-        ('precision', 'B', 0),
+        ('interval', 'b', 0),
+        ('precision', 'b', 0),
         ('delay', 'I', 0),
         ('dispersion', 'I', 0),
         ('id', '4s', 0),
