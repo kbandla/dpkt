@@ -4,6 +4,8 @@ This example uses DPKT to read in a pcap file and print out the contents
 of the packets. This example is focused on the fields in the Ethernet
 Frame and IP packet.
 
+If you're using a Linux "cooked v2" PCAP file, replace `dpkt.ethernet.Ethernet` parser by `dpkt.sll.SLL2`.
+
 **Code Excerpt**
 
 ``` python
