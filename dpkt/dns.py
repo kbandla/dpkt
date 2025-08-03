@@ -56,6 +56,7 @@ DNS_TXT = 16
 DNS_AAAA = 28
 DNS_SRV = 33
 DNS_OPT = 41
+DNS_HTTPS = 65
 
 # RR classes
 DNS_IN = 1
@@ -300,6 +301,15 @@ class DNS(dpkt.Packet):
                     pack_name(self.srvname, off + 6, label_ptrs)
             elif self.type == DNS_OPT:
                 return b''  # self.rdata
+            elif self.type == DNS_HTTPS:
+                l_ = []
+                l_.append(struct.pack('>H', self.svcpriority))
+                l_.append(pack_name(self.targetname, 0, {}))
+                for p in self.svcparams:
+                    l_.append(struct.pack('>H', p[0]))  # key
+                    l_.append(struct.pack('>H', len(p[1])))  # value len
+                    l_.append(p[1])  # value
+                return b''.join(l_)
             else:
                 raise dpkt.PackError('RR type %s is not supported' % self.type)
 
@@ -336,6 +346,17 @@ class DNS(dpkt.Packet):
                 self.srvname, off = unpack_name(buf, off + 6)
             elif self.type == DNS_OPT:
                 pass  # RFC-6891: OPT is a pseudo-RR not carrying any DNS data
+            elif self.type == DNS_HTTPS:
+                self.svcpriority, = struct.unpack('>H', buf[off:off + 2])
+                off += 2
+                self.targetname, off = unpack_name(buf, off)
+                self.svcparams = []
+                while off < len(buf):
+                    key, valuelen = struct.unpack('>HH', buf[off:off + 4])
+                    off += 4
+                    value = buf[off:off + valuelen]
+                    self.svcparams.append((key, value))
+                    off += valuelen
             else:
                 raise dpkt.UnpackError('RR type %s is not supported' % self.type)
 
@@ -426,6 +447,11 @@ def define_testdata():
         cname_resp = unhexlify(
             "a154818000010001000000000377777705676d61696c03636f6d0000010001c00"
             "c000500010000545f000e046d61696c06676f6f676c65c016"
+        )
+        https_resp = unhexlify(
+            "9c3a8180000100010000000008796f7574756265690a676f6f676c65617069730"
+            "3636f6d0000410001c00c0041000100000723000d000100000100060268320268"
+            "33"
         )
         invalid_rr = unhexlify(
             "000001000000000100000000046e616d650000150001000000000000"
@@ -779,6 +805,28 @@ def test_rdata_OPT():
     # TODO: This is hardcoded to return b''. Is this intentional?
     packdata = rr.pack_rdata(0, {})
     correct = b''
+    assert packdata == correct
+
+
+def test_rdata_HTTPS():
+    buf = define_testdata().https_resp
+    my_dns = DNS(buf)
+    assert my_dns.an[0].svcpriority == 1
+    assert my_dns.an[0].targetname == ''
+    assert len(my_dns.an[0].svcparams) == 1
+    key, value = my_dns.an[0].svcparams[0]
+    assert key == 1
+    assert value == b'\x02h2\x02h3'
+
+    rr = DNS.RR(
+        type=DNS_HTTPS,
+        svcpriority=1,
+        targetname="svc2.example.net",
+        svcparams=[(1, b'\x02h2\x02h3')],
+    )
+
+    packdata = rr.pack_rdata(9, {})
+    correct = b'\x00\x01\x04svc2\x07example\x03net\x00\x00\x01\x00\x06\x02h2\x02h3'
     assert packdata == correct
 
 
