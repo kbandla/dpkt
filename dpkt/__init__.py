@@ -18,6 +18,7 @@ from . import arp
 from . import asn1
 from . import bgp
 from . import cdp
+from . import coap
 from . import dhcp
 from . import diameter
 from . import dns
@@ -39,6 +40,7 @@ from . import ip6
 from . import ipx
 from . import llc
 from . import loopback
+from . import lwm2m
 from . import mrt
 from . import netbios
 from . import netflow
