@@ -44,6 +44,11 @@ class TFTP(dpkt.Packet):
         dpkt.Packet.unpack(self, buf)
         if self.opcode in (OP_RRQ, OP_WRQ):
             l_ = self.data.split(b'\x00')
+            if len(l_) < 2:
+                # A read/write request must carry a null-terminated filename
+                # and mode; without both, indexing l_[1] would raise a raw
+                # IndexError instead of dpkt's own unpack error.
+                raise dpkt.NeedData('missing filename or mode in TFTP request')
             self.filename = l_[0]
             self.mode = l_[1]
             self.data = b''
@@ -124,3 +129,19 @@ def test_op_other():
     assert tftp.opcode == 6
     assert bytes(tftp) == buf
     assert tftp.data == unhexlify('abcdef')
+
+
+def test_op_rrq_truncated():
+    # A read request with no null-terminated filename/mode must raise dpkt's
+    # own unpack error, not a raw IndexError.
+    import pytest
+    from binascii import unhexlify
+    with pytest.raises(dpkt.UnpackError):
+        TFTP(unhexlify('0001' '616263'))  # opcode OP_RRQ, then "abc" (no null)
+
+
+def test_op_wrq_truncated():
+    import pytest
+    from binascii import unhexlify
+    with pytest.raises(dpkt.UnpackError):
+        TFTP(unhexlify('0002' '616263'))  # opcode OP_WRQ, then "abc" (no null)
