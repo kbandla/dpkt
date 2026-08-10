@@ -758,6 +758,8 @@ class RouteEVPN(dpkt.Packet):
             buf = buf[4:]
 
         if self.type == 0x2:
+            if not buf:
+                raise dpkt.NeedData('truncated EVPN route: missing MAC address length')
             self.mac_address_length = compat_ord(buf[0])
             if self.mac_address_length == 48:
                 self.mac_address = buf[1:7]
@@ -767,6 +769,8 @@ class RouteEVPN(dpkt.Packet):
                 buf = buf[1:]
 
         if self.type != 0x1:
+            if not buf:
+                raise dpkt.NeedData('truncated EVPN route: missing IP address length')
             self.ip_address_length = compat_ord(buf[0])
             if self.ip_address_length == 128:
                 self.ip_address = buf[1:17]
@@ -1583,3 +1587,13 @@ def test_reservedcommunities():
 
     assert len(communities) == 4
     assert bytes(communities) == buf
+
+
+def test_route_evpn_truncated():
+    # A truncated EVPN route must raise NeedData rather than IndexError when
+    # reading the MAC/IP address length byte from an exhausted buffer.
+    import pytest
+    # type != 1, buffer exhausted before the IP address length byte
+    pytest.raises(dpkt.NeedData, RouteEVPN, b'\xff\xff\xff\xff')
+    # type == 2, buffer exhausted before the MAC address length byte
+    pytest.raises(dpkt.NeedData, RouteEVPN, b'\x02\x12' + b'\x00' * 18)

@@ -46,6 +46,11 @@ class SSL2(dpkt.Packet):
             # protocol). In either case, the length code describes how much
             # data is in the record.
             n = self.len = self.len & 0x3FFF
+            if not self.data:
+                # 3-byte header form promises a padding-length byte after the
+                # 2-byte length; a truncated record has none. Signal NeedData
+                # instead of indexing an empty buffer (IndexError).
+                raise dpkt.NeedData('truncated SSL2 record: missing padding length')
             padlen = compat_ord(self.data[0])
 
             self.msg = self.data[1:1 + n]
@@ -951,6 +956,15 @@ def test_ssl2():
     assert ssl2.len == 1
     assert ssl2.msg == b'\x03'
     assert ssl2.data == b'\x06\x07'
+
+
+def test_ssl2_truncated_padding_length():
+    # 3-byte header form (MSB of len clear) promises a padding-length byte;
+    # a record that stops after the 2-byte length must raise NeedData, not
+    # IndexError.
+    import pytest
+    from binascii import unhexlify
+    pytest.raises(dpkt.NeedData, SSL2, unhexlify('0001'))
 
 
 def test_clienthello_invalidcipher():
