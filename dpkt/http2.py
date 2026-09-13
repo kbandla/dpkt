@@ -159,7 +159,7 @@ class PaddedFrame(Frame):
             self.pad_length = struct.unpack('B', self.data[0:1])[0]
             if self.length <= self.pad_length:
                 raise HTTP2Exception('Missing padding bytes in PADDED frame')
-            self.unpadded_data = self.data[1:-self.pad_length]
+            self.unpadded_data = self.data[1:self.length - self.pad_length]
         else:
             self.unpadded_data = self.data
 
@@ -237,7 +237,7 @@ class PushPromiseFrame(PaddedFrame):
         PaddedFrame.unpack(self, buf)
         if len(self.unpadded_data) < 4:
             raise HTTP2Exception('Missing promised stream ID in PUSH_PROMISE frame')
-        self.promised_id = struct.unpack('!I', self.data[:4])[0]
+        self.promised_id = struct.unpack('!I', self.unpadded_data[:4])[0]
         self.block_fragment = self.unpadded_data[4:]
 
 
@@ -421,6 +421,30 @@ class TestFrame(object):
                                     b'',  # missing padding bytes
                                     'hex'))
         assert (str(e.value) == 'Missing padding bytes in PADDED frame')
+
+    def test_zero_padding_data(self):
+        for payload in (b'', b'x', b'payload'):
+            data = b'\x00' + payload
+            wire = struct.pack('!I', len(data))[1:] + b'\x00\x08\x00\x00\x00\x01' + data
+            frame = FrameFactory(wire)
+            assert frame.pad_length == 0
+            assert frame.payload == payload
+
+    def test_zero_padding_headers(self):
+        frame = FrameFactory(codecs.decode(b'00000401080000000100abcdef', 'hex'))
+        assert frame.block_fragment == b'\xab\xcd\xef'
+        frame = FrameFactory(codecs.decode(b'00000901280000000100000000020aabcdef', 'hex'))
+        assert frame.priority.stream_dep == 2
+        assert frame.priority.weight == 11
+        assert frame.block_fragment == b'\xab\xcd\xef'
+
+    def test_padded_push_promise(self):
+        for pad_length in (0, 1, 5):
+            data = struct.pack('!BI', pad_length, 123) + b'block' + b'\x00' * pad_length
+            wire = struct.pack('!I', len(data))[1:] + b'\x05\x08\x00\x00\x00\x01' + data
+            frame = FrameFactory(wire)
+            assert frame.promised_id == 123
+            assert frame.block_fragment == b'block'
 
     def test_headers(self):
         frame_headers = FrameFactory(codecs.decode(b'000003'  # length
