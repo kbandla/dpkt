@@ -104,9 +104,12 @@ class Diameter(dpkt.Packet):
         self.data = self.avps = l_
 
     def pack_hdr(self):
-        self.len = struct.pack("BBB", (self.len >> 16) & 0xff, (self.len >> 8) & 0xff, self.len & 0xff)
-        self.cmd = struct.pack("BBB", (self.cmd >> 16) & 0xff, (self.cmd >> 8) & 0xff, self.cmd & 0xff)
-        return dpkt.Packet.pack_hdr(self)
+        length = struct.pack("BBB", (self.len >> 16) & 0xff, (self.len >> 8) & 0xff, self.len & 0xff)
+        command = struct.pack("BBB", (self.cmd >> 16) & 0xff, (self.cmd >> 8) & 0xff, self.cmd & 0xff)
+        try:
+            return self._pack_hdr(self.v, length, self.flags, command, self.app_id, self.hop_id, self.end_id)
+        except struct.error as e:
+            raise dpkt.PackError(str(e))
 
     def __len__(self):
         return self.__hdr_len__ + sum(map(len, self.data))
@@ -159,8 +162,11 @@ class AVP(dpkt.Packet):
             self.data = self.data[:self.len - self.__hdr_len__]
 
     def pack_hdr(self):
-        self.len = struct.pack("BBB", (self.len >> 16) & 0xff, (self.len >> 8) & 0xff, self.len & 0xff)
-        data = dpkt.Packet.pack_hdr(self)
+        length = struct.pack("BBB", (self.len >> 16) & 0xff, (self.len >> 8) & 0xff, self.len & 0xff)
+        try:
+            data = self._pack_hdr(self.code, self.flags, length)
+        except struct.error as e:
+            raise dpkt.PackError(str(e))
         if self.vendor_flag:
             data += struct.pack('>I', self.vendor)
         return data
@@ -230,3 +236,28 @@ def test_avp_properties():
         assert getattr(avp, prop) == 0
         setattr(avp, prop, 1)
         assert getattr(avp, prop) == 1
+
+
+def test_pack_preserves_fields():
+    for wire in (__s, __t):
+        packet = Diameter(wire)
+        fields = (packet.len, packet.cmd, [avp.len for avp in packet.avps])
+        assert packet.pack_hdr() == wire[:packet.__hdr_len__]
+        assert (packet.len, packet.cmd) == fields[:2]
+        for avp in packet.avps:
+            length = avp.len
+            avp.pack_hdr()
+            assert avp.len == length
+        assert bytes(packet) == wire
+        assert bytes(packet) == wire
+        assert (packet.len, packet.cmd, [avp.len for avp in packet.avps]) == fields
+
+
+def test_pack_error_preserves_fields():
+    import pytest
+    for packet in (Diameter(__s), Diameter(__s).avps[0]):
+        length = packet.len
+        packet.flags = 256
+        with pytest.raises(dpkt.PackError):
+            packet.pack_hdr()
+        assert packet.len == length
