@@ -158,11 +158,9 @@ class DHCP(dpkt.Packet):
         ('magic', 'I', DHCP_MAGIC),
     )
     opts = (
-        (DHCP_OPT_MSGTYPE, chr(DHCPDISCOVER)),
-        (DHCP_OPT_PARAM_REQ, ''.join(map(chr, (DHCP_OPT_REQ_IP,
-                                               DHCP_OPT_ROUTER,
-                                               DHCP_OPT_NETMASK,
-                                               DHCP_OPT_DNS_SVRS))))
+        (DHCP_OPT_MSGTYPE, struct.pack('B', DHCPDISCOVER)),
+        (DHCP_OPT_PARAM_REQ, struct.pack('4B', DHCP_OPT_REQ_IP, DHCP_OPT_ROUTER,
+                                    DHCP_OPT_NETMASK, DHCP_OPT_DNS_SVRS))
     )  # list of (type, data) tuples
 
     def __len__(self):
@@ -262,3 +260,13 @@ def test_no_opts():
     assert dhcp.opts == []
     assert dhcp.data == b''
     assert dhcp.pack_opts() == b''
+
+
+def test_default_options_roundtrip():
+    packet = DHCP(chaddr=b'\x01\x02\x03\x04\x05\x06')
+    assert packet.pack_opts() == b'\x35\x01\x01\x37\x04\x32\x03\x01\x06\xff'
+    wire = bytes(packet)
+    assert len(wire) == len(packet)
+    decoded = DHCP(wire)
+    assert decoded.opts == list(packet.opts)
+    assert bytes(decoded) == wire
