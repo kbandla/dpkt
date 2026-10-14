@@ -557,14 +557,34 @@ class Writer(object):
 
 
 class Reader(object):
-    """Simple pypcap-compatible pcapng file reader."""
+    """Simple pypcap-compatible pcapng file reader.
+
+    Packet timestamps use the resolution and offset of their capture interface.
+    All interfaces must have the same link type, as datalink() returns one type
+    for the file. idb, snaplen and dloff describe the first interface.
+    """
 
     def __init__(self, fileobj):
         self.name = getattr(fileobj, 'name', '<{0}>'.format(fileobj.__class__.__name__))
         self.__f = fileobj
 
+        self.idb = None
+        self._read_section_header()
+
+        # Keep the first interface as the pypcap-compatible file metadata.
+        while self.idb is None:
+            blk_type, buf = self._read_block()
+            if blk_type is None:
+                raise ValueError('IDB not found')
+            if blk_type == PCAPNG_BT_IDB:
+                self._add_interface(buf)
+
+        self.filter = ''
+        self.__iter = iter(self)
+
+    def _read_section_header(self, buf=b''):
         shb = SectionHeaderBlock()
-        buf = self.__f.read(shb.__hdr_len__)
+        buf += self.__f.read(shb.__hdr_len__ - len(buf))
         if len(buf) < shb.__hdr_len__:
             raise ValueError('invalid pcapng header')
 
@@ -589,50 +609,52 @@ class Reader(object):
         if shb.v_major != PCAPNG_VERSION_MAJOR:
             raise ValueError('unknown pcapng version {0}.{1}'.format(shb.v_major, shb.v_minor,))
 
-        # look for a mandatory IDB
-        idb = None
-        while 1:
-            buf = self.__f.read(8)
-            if len(buf) < 8:
-                break
+        self._interfaces = []
 
-            blk_type, blk_len = struct_unpack('<II' if self.__le else '>II', buf)
-            buf += self.__f.read(blk_len - 8)
+    def _read_block(self):
+        buf = self.__f.read(8)
+        if len(buf) < 8:
+            return None, None
+        # The SHB type is byte-order independent. Read its byte-order magic
+        # before interpreting the block length, which may use a new byte order.
+        if buf[:4] == b'\x0a\x0d\x0d\x0a':
+            self._read_section_header(buf)
+            return PCAPNG_BT_SHB, None
+        blk_type, blk_len = struct_unpack('<II' if self.__le else '>II', buf)
+        return blk_type, buf + self.__f.read(blk_len - 8)
 
-            if blk_type == PCAPNG_BT_IDB:
-                idb = (InterfaceDescriptionBlockLE(buf) if self.__le
-                       else InterfaceDescriptionBlock(buf))
-                break
-            # just skip other blocks
-
-        if idb is None:
-            raise ValueError('IDB not found')
-
+    def _add_interface(self, buf):
+        idb = InterfaceDescriptionBlockLE(buf) if self.__le else InterfaceDescriptionBlock(buf)
+        if self.idb is not None and idb.linktype != self.idb.linktype:
+            raise ValueError('pcapng Reader does not support multiple link types')
         # set timestamp resolution and offset
-        self._divisor = 1000000  # defaults
-        self._tsoffset = 0
+        divisor = 1000000  # defaults
+        tsoffset = 0
         for opt in idb.opts:
             if opt.code == PCAPNG_OPT_IF_TSRESOL:
                 # if MSB=0, the remaining bits is a neg power of 10 (e.g. 6 means microsecs)
                 # if MSB=1, the remaining bits is a neg power of 2 (e.g. 10 means 1/1024 of second)
                 opt_val = struct_unpack('b', opt.data)[0]
                 pow_num = 2 if opt_val & 0b10000000 else 10
-                self._divisor = pow_num ** (opt_val & 0b01111111)
+                divisor = pow_num ** (opt_val & 0b01111111)
 
             elif opt.code == PCAPNG_OPT_IF_TSOFFSET:
                 # 64-bit int that specifies an offset (in seconds) that must be added to the
                 # timestamp of each packet
-                self._tsoffset = struct_unpack('<q' if self.__le else '>q', opt.data)[0]
+                tsoffset = struct_unpack('<q' if self.__le else '>q', opt.data)[0]
 
-        if idb.linktype in dltoff:
-            self.dloff = dltoff[idb.linktype]
-        else:
-            self.dloff = 0
+        self._interfaces.append((divisor, tsoffset))
+        if self.idb is None:
+            self.idb = idb
+            self.snaplen = idb.snaplen
+            self.dloff = dltoff.get(idb.linktype, 0)
 
-        self.idb = idb
-        self.snaplen = idb.snaplen
-        self.filter = ''
-        self.__iter = iter(self)
+    def _timestamp(self, packet):
+        try:
+            divisor, tsoffset = self._interfaces[packet.iface_id]
+        except IndexError:
+            raise ValueError('unknown pcapng interface {0}'.format(packet.iface_id))
+        return tsoffset + (((packet.ts_high << 32) | packet.ts_low) / divisor)
 
     @property
     def fd(self):
@@ -686,21 +708,17 @@ class Reader(object):
 
     def __iter__(self):
         while 1:
-            buf = self.__f.read(8)
-            if len(buf) < 8:
+            blk_type, buf = self._read_block()
+            if blk_type is None:
                 break
-
-            blk_type, blk_len = struct_unpack('<II' if self.__le else '>II', buf)
-            buf += self.__f.read(blk_len - 8)
-
-            if blk_type == PCAPNG_BT_EPB:
+            if blk_type == PCAPNG_BT_IDB:
+                self._add_interface(buf)
+            elif blk_type == PCAPNG_BT_EPB:
                 epb = EnhancedPacketBlockLE(buf) if self.__le else EnhancedPacketBlock(buf)
-                ts = self._tsoffset + (((epb.ts_high << 32) | epb.ts_low) / self._divisor)
-                yield (ts, epb.pkt_data)
+                yield (self._timestamp(epb), epb.pkt_data)
             elif blk_type == PCAPNG_BT_PB:
                 pb = PacketBlockLE(buf) if self.__le else PacketBlock(buf)
-                ts = self._tsoffset + (((pb.ts_high << 32) | pb.ts_low) / self._divisor)
-                yield (ts, pb.pkt_data)
+                yield (self._timestamp(pb), pb.pkt_data)
 
             # just ignore other blocks
 
@@ -1521,3 +1539,84 @@ def test_posttest():
         fun()
     except Exception as e:
         assert str(e) == 'No test type specified'
+
+
+def test_reader_interface_timestamps():
+    for little_endian in (False, True):
+        shb_cls = SectionHeaderBlockLE if little_endian else SectionHeaderBlock
+        idb_cls = InterfaceDescriptionBlockLE if little_endian else InterfaceDescriptionBlock
+        opt_cls = PcapngOptionLE if little_endian else PcapngOption
+        epb_cls = EnhancedPacketBlockLE if little_endian else EnhancedPacketBlock
+        pb_cls = PacketBlockLE if little_endian else PacketBlock
+        endian = '<' if little_endian else '>'
+        blocks = [
+            shb_cls(),
+            idb_cls(),
+            epb_cls(iface_id=0, ts_low=1500000, pkt_data=b'first'),
+            idb_cls(opts=[
+                opt_cls(code=PCAPNG_OPT_IF_TSRESOL, data=b'\x09'),
+                opt_cls(code=PCAPNG_OPT_IF_TSOFFSET, data=struct_pack(endian + 'q', -2)),
+                opt_cls(),
+            ]),
+            epb_cls(iface_id=1, ts_high=1, ts_low=705032704, pkt_data=b'nanoseconds'),
+            pb_cls(iface_id=0, ts_low=2500000, pkt_data=b'first again'),
+            idb_cls(opts=[
+                opt_cls(code=PCAPNG_OPT_IF_TSRESOL, data=b'\x8a'),
+                opt_cls(code=PCAPNG_OPT_IF_TSOFFSET, data=struct_pack(endian + 'q', 10)),
+                opt_cls(),
+            ]),
+            pb_cls(iface_id=2, ts_low=1536, pkt_data=b'binary'),
+            epb_cls(iface_id=1, ts_low=2000000000, pkt_data=b'second again'),
+        ]
+        fileobj = BytesIO(b''.join(bytes(block) for block in blocks))
+        reader = Reader(fileobj)
+        assert reader.readpkts() == [(1.5, b'first'), (3.0, b'nanoseconds'),
+                                     (2.5, b'first again'), (11.5, b'binary'), (0.0, b'second again')]
+        assert reader.datalink() == DLT_EN10MB
+        assert not fileobj.closed
+
+
+def test_reader_section_interface_reset():
+    blocks = [
+        SectionHeaderBlockLE(),
+        InterfaceDescriptionBlockLE(opts=[PcapngOptionLE(code=PCAPNG_OPT_IF_TSRESOL, data=b'\x09'), PcapngOptionLE()]),
+        EnhancedPacketBlockLE(ts_low=1000000000, pkt_data=b'little'),
+        SectionHeaderBlock(),
+        InterfaceDescriptionBlock(),
+        PacketBlock(ts_low=2000000, pkt_data=b'big'),
+        SectionHeaderBlockLE(),
+        InterfaceDescriptionBlockLE(),
+        EnhancedPacketBlockLE(ts_low=3000000, pkt_data=b'little again'),
+    ]
+    reader = Reader(BytesIO(b''.join(bytes(block) for block in blocks)))
+    result = []
+    assert reader.dispatch(1, lambda ts, pkt: result.append((ts, pkt))) == 1
+    reader.loop(lambda ts, pkt: result.append((ts, pkt)))
+    assert result == [(1.0, b'little'), (2.0, b'big'), (3.0, b'little again')]
+
+
+def test_reader_unknown_interface():
+    import pytest
+
+    for packet_cls in (EnhancedPacketBlock, PacketBlock):
+        blocks = [SectionHeaderBlock(), InterfaceDescriptionBlock(),
+                  packet_cls(iface_id=1, ts_low=1, pkt_data=b'unknown')]
+        with pytest.raises(ValueError, match='unknown pcapng interface 1'):
+            list(Reader(BytesIO(b''.join(bytes(block) for block in blocks))))
+
+    # An interface from the previous section cannot be reused implicitly.
+    blocks = [SectionHeaderBlock(), InterfaceDescriptionBlock(), InterfaceDescriptionBlock(),
+              SectionHeaderBlock(), InterfaceDescriptionBlock(),
+              EnhancedPacketBlock(iface_id=1, pkt_data=b'stale')]
+    with pytest.raises(ValueError, match='unknown pcapng interface 1'):
+        list(Reader(BytesIO(b''.join(bytes(block) for block in blocks))))
+
+
+def test_reader_incompatible_interface_linktype():
+    import pytest
+
+    blocks = [SectionHeaderBlock(), InterfaceDescriptionBlock(),
+              InterfaceDescriptionBlock(linktype=DLT_LINUX_SLL),
+              EnhancedPacketBlock(iface_id=1, pkt_data=b'cooked')]
+    with pytest.raises(ValueError, match='multiple link types'):
+        list(Reader(BytesIO(b''.join(bytes(block) for block in blocks))))
