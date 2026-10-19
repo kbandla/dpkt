@@ -116,6 +116,9 @@ class Ethernet(dpkt.Packet):
                 if lbl.s:  # bottom of stack
                     break
 
+            if not buf:
+                raise dpkt.NeedData('MPLS label stack has no payload')
+
             # poor man's heuristics to guessing the next type
             if compat_ord(buf[0]) == 0x45:  # IP version 4 + header len 20 bytes
                 self._next_type = ETH_TYPE_IP
@@ -461,6 +464,15 @@ def test_mpls_label():
     assert m.ttl == 255
     assert str(m) == str(s)
     assert len(m) == len(s)
+
+
+def test_mpls_empty_payload():
+    import pytest
+
+    # bottom-of-stack MPLS label followed by no payload
+    s = b'\x00' * 12 + b'\x88\x47' + b'\x00\x01\x0b\xff'
+    with pytest.raises(dpkt.NeedData):
+        Ethernet(s)
 
 
 def test_802dot1q_tag():
