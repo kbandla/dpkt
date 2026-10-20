@@ -24,6 +24,7 @@ from . import dns
 from . import dtp
 from . import esp
 from . import ethernet
+from . import fpp
 from . import gre
 from . import gzip
 from . import h225
