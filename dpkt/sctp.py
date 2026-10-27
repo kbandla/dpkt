@@ -81,10 +81,10 @@ class Chunk(dpkt.Packet):
         dpkt.Packet.unpack(self, buf)
 
         self.data = self.data[:self.len - self.__hdr_len__]
-        self.padding = b''  # optional padding for DATA chunks
+        self.padding = b''
 
-        # SCTP DATA Chunked is padded, 4-bytes aligned
-        if self.type == DATA and self.len % 4:
+        # Every SCTP chunk is padded to a 4-byte boundary, not only DATA.
+        if self.len % 4:
             plen = 4 - self.len % 4  # padded length
             if plen:
                 pos = self.__hdr_len__ + len(self.data)  # end of data in buf
@@ -182,3 +182,37 @@ def test_malformed_sctp_data_chunk():
     
     # no remaining sctp data
     assert sctp.data == b''
+
+
+def test_sctp_cookie_echo_padding():
+    import struct
+
+    # COOKIE ECHO has a variable-length cookie. Its padding must be skipped
+    # before decoding a bundled DATA chunk, just as for DATA's own padding.
+    header = struct.pack('>HHII', 5000, 5001, 1, 1)
+    data = struct.pack('>BBHIHHI', DATA, 3, 17, 1, 0, 0, 0) + b'x' + b'\x00' * 3
+    for cookie in (b'a', b'ab', b'abc', b'abcd'):
+        length = 4 + len(cookie)
+        padding = b'\x00' * (-length % 4)
+        echo = struct.pack('>BBH', COOKIE_ECHO, 0, length) + cookie + padding
+        wire = header + echo + data
+
+        sctp = SCTP(wire)
+        assert len(sctp.chunks) == 2
+        first, second = sctp.chunks
+        assert first.type == COOKIE_ECHO
+        assert first.data == cookie
+        assert first.padding == padding
+        assert len(first) == len(echo)
+        assert bytes(first) == echo
+        assert second.type == DATA
+        assert second.data == data[4:17]
+        assert sctp.data == b''
+        assert len(sctp) == len(wire)
+        assert bytes(sctp) == wire
+
+        # A final control chunk must retain its padding for round trips too.
+        final = SCTP(header + echo)
+        assert len(final.chunks) == 1
+        assert final.chunks[0].data == cookie
+        assert bytes(final) == header + echo
