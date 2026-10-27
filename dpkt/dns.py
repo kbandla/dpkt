@@ -271,7 +271,9 @@ class DNS(dpkt.Packet):
 
         def pack_rdata(self, off, label_ptrs):
             # XXX - yeah, this sux
-            if self.rdata:
+            # Decoded names must be packed against the current message's
+            # compression table. Keep explicit raw RDATA and later overrides.
+            if self.rdata and (self.type, self.rdata) != getattr(self, '_decoded_rdata', None):
                 return self.rdata
             if self.type == DNS_A:
                 return self.ip
@@ -289,7 +291,10 @@ class DNS(dpkt.Packet):
                                       self.retry, self.expire, self.minimum))
                 return b''.join(l_)
             elif self.type == DNS_MX:
-                return struct.pack('>H', self.preference) + \
+                preference = self.preference
+                if isinstance(preference, tuple):
+                    preference = preference[0]
+                return struct.pack('>H', preference) + \
                     pack_name(self.mxname, off + 2, label_ptrs)
             elif self.type == DNS_TXT or self.type == DNS_HINFO:
                 return b''.join(struct.pack('B', len(x)) + x for x in self.text)
@@ -338,6 +343,9 @@ class DNS(dpkt.Packet):
                 pass  # RFC-6891: OPT is a pseudo-RR not carrying any DNS data
             else:
                 raise dpkt.UnpackError('RR type %s is not supported' % self.type)
+
+            if self.type in (DNS_NS, DNS_CNAME, DNS_PTR, DNS_SOA, DNS_MX):
+                self._decoded_rdata = (self.type, self.rdata)
 
     def pack_q(self, buf, q):
         """Append packed DNS question and return buf."""
@@ -934,3 +942,53 @@ def test_cname():
 def test_invalid_rr():
     buf = define_testdata().invalid_rr
     DNS(buf)
+
+
+def test_repack_compressed_rdata():
+    # Adding a question moves every resource record. Cached wire RDATA cannot
+    # retain compression pointers into the original message.
+    samples = (
+        ('cname_resp', 'cname'), ('ptr_resp', 'ptrname'),
+        ('soa_resp', 'mname'), ('mx_resp', 'mxname'),
+    )
+    for sample, field in samples:
+        dns = DNS(getattr(define_testdata(), sample))
+        expected = getattr(dns.an[0], field)
+        dns.qd.insert(0, DNS.Q(name='unrelated.example.net'))
+        rebuilt = DNS(bytes(dns))
+        assert getattr(rebuilt.an[0], field) == expected
+        if sample == 'ptr_resp':
+            assert [rr.nsname for rr in rebuilt.ns] == [rr.nsname for rr in dns.ns]
+        elif sample == 'soa_resp':
+            assert rebuilt.an[0].rname == dns.an[0].rname
+        elif sample == 'mx_resp':
+            assert rebuilt.an[0].preference == dns.an[0].preference
+
+
+def test_repack_compressed_rdata_raw_override():
+    # Explicit RDATA must still take precedence, including an override on a
+    # previously decoded resource record.
+    rr = DNS.RR(type=DNS_CNAME, rdata=b'\x03raw\x00')
+    assert rr.pack_rdata(100, {}) == b'\x03raw\x00'
+    dns = DNS(define_testdata().cname_resp)
+    rr = dns.an[0]
+    rr.rdata = b'\x03new\x00'
+    assert DNS(bytes(dns)).an[0].cname == 'new'
+
+
+def test_repack_rdata_registers_names():
+    # Repacking must register names from RDATA too. Otherwise a later owner
+    # expands, shifting the target of a subsequent cached compression pointer.
+    original = DNS(qd=[DNS.Q(name='www.example.com')], an=[
+        DNS.RR(name='www.example.com', type=DNS_CNAME, cname='alias.target.net'),
+        DNS.RR(name='alias.target.net', type=DNS_A, ip=b'\x7f\x00\x00\x01'),
+        DNS.RR(name='other.new.test', type=DNS_A, ip=b'\x7f\x00\x00\x02'),
+        DNS.RR(name='foo.example.com', type=DNS_CNAME, cname='other.new.test'),
+    ])
+    raw = bytes(original)
+    decoded = DNS(raw)
+    rebuilt = DNS(bytes(decoded))
+    assert [rr.name for rr in rebuilt.an] == [rr.name for rr in original.an]
+    assert rebuilt.an[0].cname == 'alias.target.net'
+    assert rebuilt.an[3].cname == 'other.new.test'
+    assert bytes(decoded) == raw
