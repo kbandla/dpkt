@@ -43,10 +43,11 @@ class TFTP(dpkt.Packet):
     def unpack(self, buf):
         dpkt.Packet.unpack(self, buf)
         if self.opcode in (OP_RRQ, OP_WRQ):
-            l_ = self.data.split(b'\x00')
+            l_ = self.data.split(b'\x00', 2)
             self.filename = l_[0]
             self.mode = l_[1]
-            self.data = b''
+            # RFC 2347 options follow the NUL-terminated mode.
+            self.data = l_[2] if len(l_) > 2 else b''
         elif self.opcode in (OP_DATA, OP_ACK):
             self.block = struct.unpack('>H', self.data[:2])[0]
             self.data = self.data[2:]
@@ -124,3 +125,22 @@ def test_op_other():
     assert tftp.opcode == 6
     assert bytes(tftp) == buf
     assert tftp.data == unhexlify('abcdef')
+
+
+def test_request_options():
+    for opcode in (OP_RRQ, OP_WRQ):
+        for options in (b'blksize\x001024\x00',
+                        b'blksize\x001024\x00tsize\x000\x00'):
+            buf = struct.pack('>H', opcode) + b'boot.img\x00octet\x00' + options
+            packet = TFTP(buf)
+            assert packet.filename == b'boot.img'
+            assert packet.mode == b'octet'
+            assert packet.data == options
+            assert bytes(packet) == buf
+            assert len(packet) == len(buf)
+
+            # Changing the filename must also retain the requested options.
+            packet.filename = b'kernel.img'
+            assert bytes(packet) == (
+                struct.pack('>H', opcode) + b'kernel.img\x00octet\x00' + options
+            )
