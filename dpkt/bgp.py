@@ -21,6 +21,7 @@ from .compat import compat_ord
 # NOPEER Community - RFC 3765
 # Multiprotocol Extensions - 2858
 # Advertisement of Multiple Paths in BGP - RFC 7911
+# Carrying Label Information in BGP-4 - RFC 3107
 # BGP Support for Four-Octet Autonomous System (AS) Number Spac - RFC 6793
 
 # Message Types
@@ -70,6 +71,7 @@ AFI_L2VPN = 25
 SAFI_UNICAST = 1
 SAFI_MULTICAST = 2
 SAFI_UNICAST_MULTICAST = 3
+SAFI_LABELED_UNICAST = 4
 SAFI_EVPN = 70
 
 # OPEN Message Optional Parameters
@@ -573,9 +575,9 @@ class BGP(dpkt.Packet):
                     self.snpas = l_
 
                     if self.afi == AFI_IPV4:
-                        Route = RouteIPV4
+                        Route = RouteLabeledIPV4 if self.safi == SAFI_LABELED_UNICAST else RouteIPV4
                     elif self.afi == AFI_IPV6:
-                        Route = RouteIPV6
+                        Route = RouteLabeledIPV6 if self.safi == SAFI_LABELED_UNICAST else RouteIPV6
                     elif self.afi == AFI_L2VPN:
                         Route = RouteEVPN
                     else:
@@ -622,9 +624,9 @@ class BGP(dpkt.Packet):
                     dpkt.Packet.unpack(self, buf)
 
                     if self.afi == AFI_IPV4:
-                        Route = RouteIPV4
+                        Route = RouteLabeledIPV4 if self.safi == SAFI_LABELED_UNICAST else RouteIPV4
                     elif self.afi == AFI_IPV6:
-                        Route = RouteIPV6
+                        Route = RouteLabeledIPV6 if self.safi == SAFI_LABELED_UNICAST else RouteIPV6
                     elif self.afi == AFI_L2VPN:
                         Route = RouteEVPN
                     else:
@@ -731,6 +733,57 @@ class RouteIPV6(dpkt.Packet):
 
     def __bytes__(self):
         return self.pack_hdr() + self.prefix[:(self.len + 7) // 8]
+
+
+class _RouteLabeled(dpkt.Packet):
+    """SAFI 4 NLRI, whose wire length includes both labels and prefix bits."""
+
+    __hdr__ = (('len', 'B', 0),)
+
+    def unpack(self, buf):
+        dpkt.Packet.unpack(self, buf)
+        size = (self.len + 7) // 8
+        if len(self.data) < size:
+            raise dpkt.NeedData('truncated labeled NLRI')
+        payload = self.data[:size]
+        offset = 0
+        while True:
+            if offset + 3 > size:
+                raise dpkt.UnpackError('labeled NLRI has no complete label stack')
+            label = payload[offset:offset + 3]
+            offset += 3
+            # RFC 3107's withdrawal label has no bottom-of-stack bit.
+            if compat_ord(label[2]) & 1 or label == b'\x80\x00\x00':
+                break
+        self.mpls_label_stack = payload[:offset]
+        prefix_length = self.len - offset * 8
+        if not 0 <= prefix_length <= self._prefix_size * 8:
+            raise dpkt.UnpackError('invalid labeled NLRI prefix length')
+        self.data = self.prefix = payload[offset:] + b'\x00' * (self._prefix_size - size + offset)
+
+    @property
+    def prefix_length(self):
+        return self.len - len(self.mpls_label_stack) * 8
+
+    def __len__(self):
+        return self.__hdr_len__ + (self.len + 7) // 8
+
+    def __bytes__(self):
+        return self.pack_hdr() + self.mpls_label_stack + self.prefix[:(self.prefix_length + 7) // 8]
+
+    def __repr__(self):
+        cidr = '%s/%d' % (socket.inet_ntop(self._family, self.prefix), self.prefix_length)
+        return '%s(%s)' % (self.__class__.__name__, cidr)
+
+
+class RouteLabeledIPV4(_RouteLabeled):
+    _prefix_size = 4
+    _family = socket.AF_INET
+
+
+class RouteLabeledIPV6(_RouteLabeled):
+    _prefix_size = 16
+    _family = socket.AF_INET6
 
 
 class RouteEVPN(dpkt.Packet):
@@ -1583,3 +1636,80 @@ def test_reservedcommunities():
 
     assert len(communities) == 4
     assert bytes(communities) == buf
+
+
+def test_labeled_unicast_capture():
+    from binascii import unhexlify
+    buf = unhexlify(
+        'ffffffffffffffffffffffffffffffff0042020000002b'
+        '400101004002004003040a01010240050400000064'
+        '800e13000104040a0101020048dbc430dbc421010300'
+    )
+    bgp = BGP(buf)
+    route = bgp.update.attributes[-1].mp_reach_nlri.announced[0]
+    assert socket.inet_ntoa(route.prefix) == '1.3.0.0'
+    assert route.len == 72
+    assert route.prefix_length == 24
+    assert route.mpls_label_stack == unhexlify('dbc430dbc421')
+    assert repr(route) == 'RouteLabeledIPV4(1.3.0.0/24)'
+    assert bytes(bgp) == buf
+
+
+def test_labeled_unicast_routes():
+    from binascii import unhexlify
+    cases = (
+        (AFI_IPV4, '18000101', '0.0.0.0', 0),
+        (AFI_IPV4, '30000101c00002', '192.0.2.0', 24),
+        (AFI_IPV4, '29000101ac1080', '172.16.128.0', 17),
+        (AFI_IPV4, '38000101c0000201', '192.0.2.1', 32),
+        (AFI_IPV4, '60000100000200000301c00002', '192.0.2.0', 24),
+        (AFI_IPV6, '18000101', '::', 0),
+        (AFI_IPV6, '5800010120010db800000001', '2001:db8:0:1::', 64),
+        (AFI_IPV6, '9800010120010db8000000010000000000000001', '2001:db8:0:1::1', 128),
+    )
+    for afi, encoded, address, prefix_length in cases:
+        buf = unhexlify(encoded)
+        cls = RouteLabeledIPV4 if afi == AFI_IPV4 else RouteLabeledIPV6
+        family = socket.AF_INET if afi == AFI_IPV4 else socket.AF_INET6
+        route = cls(buf)
+        assert socket.inet_ntop(family, route.prefix) == address
+        assert route.prefix_length == prefix_length
+        assert len(route) == len(buf)
+        assert bytes(route) == buf
+        assert repr(route) == '%s(%s/%d)' % (cls.__name__, address, prefix_length)
+
+        next_hop = socket.inet_pton(family, '192.0.2.1' if afi == AFI_IPV4 else '2001:db8::1')
+        reach_buf = struct.pack('>HBB', afi, SAFI_LABELED_UNICAST, len(next_hop)) + next_hop + b'\x00' + buf + buf
+        reach = BGP.Update.Attribute.MPReachNLRI(reach_buf)
+        assert len(reach.announced) == 2
+        assert all(isinstance(item, cls) for item in reach.announced)
+        assert bytes(reach) == reach_buf
+        assert len(reach) == len(reach_buf)
+
+        unreach_buf = struct.pack('>HB', afi, SAFI_LABELED_UNICAST) + buf + buf
+        unreach = BGP.Update.Attribute.MPUnreachNLRI(unreach_buf)
+        assert len(unreach.withdrawn) == 2
+        assert all(isinstance(item, cls) for item in unreach.withdrawn)
+        assert bytes(unreach) == unreach_buf
+        assert len(unreach) == len(unreach_buf)
+
+
+def test_labeled_unicast_withdrawal_label():
+    from binascii import unhexlify
+    buf = unhexlify('00010430800000c00002')
+    unreach = BGP.Update.Attribute.MPUnreachNLRI(buf)
+    route = unreach.withdrawn[0]
+    assert route.mpls_label_stack == unhexlify('800000')
+    assert socket.inet_ntoa(route.prefix) == '192.0.2.0'
+    assert route.prefix_length == 24
+    assert bytes(unreach) == buf
+
+
+def test_labeled_unicast_invalid_routes():
+    import pytest
+    from binascii import unhexlify
+    for buf in ('1800', '30000101', '100001', '17000101', '18000100', '40000101c000020100'):
+        with pytest.raises(dpkt.UnpackError):
+            RouteLabeledIPV4(unhexlify(buf))
+    with pytest.raises(dpkt.UnpackError):
+        RouteLabeledIPV6(b'\x99\x00\x01\x01' + b'\x00' * 17)
