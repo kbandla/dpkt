@@ -132,10 +132,7 @@ class Gzip(dpkt.Packet):
             zlib.DEF_MEM_LEVEL,
             zlib.Z_DEFAULT_STRATEGY,
         )
-        c.compress(self.data)
-
-        # .compress will return nothing if len(self.data) < the window size.
-        self.data = c.flush()
+        self.data = c.compress(self.data) + c.flush()
 
     def decompress(self):
         """Return decompressed payload."""
@@ -334,3 +331,29 @@ def test_compress():
     assert bytes(gzip) == buf_header + compressed_text
 
     assert gzip.decompress() == plain_text
+
+
+def test_compress_large_payload():
+    import random
+
+    random_bytes = random.Random(0)
+    payloads = [
+        b'',
+        b'Hello world!\n',
+        b'a' * (128 * 1024),
+        bytes(bytearray(random_bytes.getrandbits(8) for _ in range(32768))),
+        bytes(bytearray(random_bytes.getrandbits(8) for _ in range(128 * 1024))),
+    ]
+    for payload in payloads:
+        gzip = Gzip(data=payload, filename='capture.pcap', comment=b'packet capture')
+        gzip.compress()
+
+        # An independent decoder must receive the complete deflate stream.
+        assert zlib.decompress(gzip.data, -zlib.MAX_WBITS) == payload
+        assert gzip.decompress() == payload
+
+        decoded = Gzip(bytes(gzip))
+        assert decoded.filename == 'capture.pcap'
+        assert decoded.comment == b'packet capture'
+        assert zlib.decompress(decoded.data, -zlib.MAX_WBITS) == payload
+        assert decoded.decompress() == payload
