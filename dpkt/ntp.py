@@ -43,11 +43,11 @@ class NTP(dpkt.Packet):
         ('precision', 'B', 0),
         ('delay', 'I', 0),
         ('dispersion', 'I', 0),
-        ('id', '4s', 0),
-        ('update_time', '8s', 0),
-        ('originate_time', '8s', 0),
-        ('receive_time', '8s', 0),
-        ('transmit_time', '8s', 0)
+        ('id', '4s', b''),
+        ('update_time', '8s', b''),
+        ('originate_time', '8s', b''),
+        ('receive_time', '8s', b''),
+        ('transmit_time', '8s', b'')
     )
     __bit_fields__ = {
         'flags': (
@@ -81,3 +81,41 @@ def test_ntp_unpack():
     assert (n.li == ALARM_CONDITION)
     assert (n.v == 3)
     assert (n.mode == CLIENT)
+
+
+def test_ntp_default_request():
+    request = NTP(v=4, mode=CLIENT)
+    wire = bytes(request)
+    assert wire == b'\x23' + b'\x00' * 47
+    parsed = NTP(wire)
+    assert parsed.v == 4
+    assert parsed.mode == CLIENT
+    assert parsed.id == b'\x00' * 4
+    for field in ('update_time', 'originate_time', 'receive_time', 'transmit_time'):
+        assert getattr(parsed, field) == b'\x00' * 8
+    assert bytes(parsed) == wire
+
+
+def test_ntp_request_in_udp_capture():
+    from io import BytesIO
+    from . import ip, pcap, udp
+
+    timestamp = b'\xed\x12\x34\x56\x78\x9a\xbc\xde'
+    request = NTP(v=4, mode=CLIENT, transmit_time=timestamp)
+    datagram = udp.UDP(sport=49152, dport=123, data=request)
+    datagram.ulen = len(datagram)
+    packet = ip.IP(src=b'\x7f\x00\x00\x01', dst=b'\x7f\x00\x00\x01',
+                   p=ip.IP_PROTO_UDP, data=datagram)
+    packet.len = len(packet)
+    capture = BytesIO()
+    writer = pcap.Writer(capture, linktype=pcap.DLT_RAW)
+    writer.writepkt(bytes(packet), ts=1)
+    capture.seek(0)
+    _, captured = next(iter(pcap.Reader(capture)))
+    received = ip.IP(captured)
+    assert received.udp.dport == 123
+    assert received.udp.ulen == 56
+    assert received.udp.data == b'\x23' + b'\x00' * 39 + timestamp
+    parsed = NTP(received.udp.data)
+    assert parsed.transmit_time == timestamp
+    assert parsed.mode == CLIENT
