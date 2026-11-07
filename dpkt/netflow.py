@@ -33,7 +33,7 @@ class NetflowBase(dpkt.Packet):
     )
 
     def __len__(self):
-        return self.__hdr_len__ + (len(self.data[0]) * self.count)
+        return self.__hdr_len__ + sum(len(record) for record in self.data)
 
     def __bytes__(self):
         # for now, don't try to enforce any size limits
@@ -343,3 +343,52 @@ def test_net_flow_v5_unpack():
     for idx, record in enumerate(nf.data):
         assert bytes(record) == buf_nf5_records[idx]
         assert len(record) == 48
+
+
+def test_netflow_length_before_packing():
+    for cls in (Netflow1, Netflow5, Netflow6, Netflow7):
+        record = cls.NetflowRecord(src_addr=0xc0000201, dst_addr=0xc6336402,
+                                   pkts_sent=3, bytes_sent=180)
+        packet = cls(data=[record])
+        assert len(packet) == packet.__hdr_len__ + len(record)
+        assert packet.count == 0
+        assert len(packet) == len(bytes(packet))
+        assert packet.count == 1
+
+
+def test_netflow_length_after_editing_records():
+    for cls in (Netflow1, Netflow5, Netflow6, Netflow7):
+        packet = cls(bytes(cls(data=[cls.NetflowRecord(src_addr=0xc0000201)])))
+        packet.data.append(cls.NetflowRecord(src_addr=0xc0000202))
+        assert len(packet) == packet.__hdr_len__ + 2 * cls.NetflowRecord.__hdr_len__
+        assert packet.count == 1
+        wire = bytes(packet)
+        assert len(packet) == len(wire)
+        decoded = cls(wire)
+        assert decoded.count == 2
+        assert [record.src_addr for record in decoded.data] == [0xc0000201, 0xc0000202]
+        del packet.data[:]
+        assert len(packet) == packet.__hdr_len__
+        assert len(packet) == len(bytes(packet))
+        assert packet.count == 0
+        assert len(cls()) == packet.__hdr_len__
+
+
+def test_netflow_length_in_ip_udp_packet():
+    from .ip import IP, IP_PROTO_UDP
+    from .udp import UDP
+
+    for cls in (Netflow1, Netflow5, Netflow6, Netflow7):
+        flow = cls(data=[cls.NetflowRecord(src_addr=0xc0000201, dst_addr=0xc6336402)])
+        datagram = UDP(sport=9995, dport=2055, data=flow)
+        datagram.ulen = len(datagram)
+        packet = IP(src=b'\xc0\x00\x02\x01', dst=b'\xc6\x33\x64\x02',
+                    p=IP_PROTO_UDP, data=datagram)
+        wire = bytes(packet)
+        assert packet.len == len(wire)
+        decoded = IP(wire)
+        assert decoded.udp.ulen == len(wire) - packet.__hdr_len__
+        decoded_flow = cls(decoded.udp.data)
+        assert decoded_flow.count == 1
+        assert decoded_flow.data[0].src_addr == 0xc0000201
+        assert decoded_flow.data[0].dst_addr == 0xc6336402
