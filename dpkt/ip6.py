@@ -97,8 +97,14 @@ class IP6(dpkt.Packet):
             self.data = buf
             return
 
+        # Stop decoding once the recursion budget is exhausted. Leave the
+        # payload untouched so callers can still inspect the raw bytes.
+        if self._depth >= dpkt.MAX_RECURSION_DEPTH:
+            self.data = buf
+            return
+
         try:
-            self.data = self._protosw[next_ext_hdr](buf)
+            self.data = self._protosw[next_ext_hdr](buf, _depth=self._depth + 1)
             setattr(self, self.data.__class__.__name__.lower(), self.data)
         except (KeyError, dpkt.UnpackError):
             self.data = buf

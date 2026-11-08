@@ -120,8 +120,15 @@ class IP(dpkt.Packet):
             buf = buf[self.__hdr_len__ + ol:self.len]
         else:  # very likely due to TCP segmentation offload
             buf = buf[self.__hdr_len__ + ol:]
+
+        # Stop decoding once the recursion budget is exhausted. Leave the
+        # payload untouched so callers can still inspect the raw bytes.
+        if self._depth >= dpkt.MAX_RECURSION_DEPTH:
+            self.data = buf
+            return
+
         try:
-            self.data = self._protosw[self.p](buf) if self.offset == 0 else buf
+            self.data = self._protosw[self.p](buf, _depth=self._depth + 1) if self.offset == 0 else buf
             setattr(self, self.data.__class__.__name__.lower(), self.data)
         except (KeyError, dpkt.UnpackError):
             self.data = buf
