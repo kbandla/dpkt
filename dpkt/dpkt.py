@@ -14,6 +14,13 @@ from itertools import chain
 from .compat import compat_ord, compat_izip, iteritems, ntole
 
 
+# Maximum number of nested protocol layers that will be decoded automatically.
+# Encapsulation protocols (Ethernet-in-Ethernet, IP-in-IP, IPv6-in-IPv6) are
+# decoded recursively; without a limit a small, specially crafted packet can
+# exhaust the Python call stack.
+MAX_RECURSION_DEPTH = 64
+
+
 class Error(Exception):
     pass
 
@@ -156,6 +163,10 @@ class Packet(_MetaPacket("Temp", (object,), {})):
         Optional keyword arguments correspond to members to set
         (matching fields in self.__hdr__, or 'data').
         """
+        # Internal recursion depth, threaded through nested protocol
+        # constructors. Not a packet field, so remove it from kwargs before
+        # the generic keyword-to-attribute handling below.
+        self._depth = kwargs.pop('_depth', 0)
         self.data = b''
         if args:
             try:

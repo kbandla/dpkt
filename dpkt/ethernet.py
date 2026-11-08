@@ -88,6 +88,13 @@ class Ethernet(dpkt.Packet):
                 self._unpack_data(self.data)
 
     def _unpack_data(self, buf):
+        # Stop decoding once the recursion budget is exhausted. The remaining
+        # bytes stay available through self.data instead of raising
+        # RecursionError from the Python interpreter.
+        if self._depth >= dpkt.MAX_RECURSION_DEPTH:
+            self.data = buf
+            return
+
         # unpack vlan tag and mpls label stacks
         if self._next_type in _ETH_TYPES_QINQ:
             self.vlan_tags = []
@@ -131,7 +138,7 @@ class Ethernet(dpkt.Packet):
 
         try:
             eth_type = self._next_type or self.type
-            self.data = self._typesw[eth_type](buf)
+            self.data = self._typesw[eth_type](buf, _depth=self._depth + 1)
             setattr(self, self.data.__class__.__name__.lower(), self.data)
         except (KeyError, dpkt.UnpackError):
             self.data = buf
@@ -150,7 +157,14 @@ class Ethernet(dpkt.Packet):
             buf = buf[tag.__hdr_len__:]
             self.vlan_tags = [tag]
             self.vlan = tag.id  # backward compatibility
-            self.unpack(buf)
+            if self._depth >= dpkt.MAX_RECURSION_DEPTH:
+                self.data = buf
+                return
+            self._depth += 1
+            try:
+                self.unpack(buf)
+            finally:
+                self._depth -= 1
 
         elif self.data.startswith(b'\xff\xff'):
             # Novell "raw" 802.3
@@ -847,6 +861,64 @@ def test_eth_8023_llc_trailer():  # https://github.com/kbandla/dpkt/issues/438
     # FCS computation
     eth.fcs = None
     assert bytes(eth) == d
+
+
+def test_recursive_encapsulation_depth_limit():
+    from . import ip
+    from . import ip6
+
+    def count_layers(pkt):
+        count = 0
+        while isinstance(pkt, dpkt.Packet):
+            count += 1
+            pkt = pkt.data
+        return count
+
+    def deepest(pkt):
+        while isinstance(pkt.data, dpkt.Packet):
+            pkt = pkt.data
+        return pkt
+
+    # A payload nested deeper than the recursion budget must stop decoding
+    # instead of exhausting the Python call stack.
+    max_layers = dpkt.MAX_RECURSION_DEPTH + 1
+
+    # Transparent Ethernet Bridging (EtherType 0x6558)
+    ip4 = (b'\x45\x00\x00\x14\x00\x00\x00\x00\x40\x00\x00\x00'
+           b'\x7f\x00\x00\x01\x7f\x00\x00\x02')
+    buf = b'\x00' * 12 + b'\x08\x00' + ip4
+    for _ in range(600):
+        buf = b'\x00' * 12 + b'\x65\x58' + buf
+    eth = Ethernet(buf)
+    assert count_layers(eth) == max_layers
+    assert isinstance(deepest(eth).data, bytes)
+
+    # IPv4-in-IPv4 (protocol 4)
+    buf = ip4
+    for _ in range(600):
+        buf = (b'\x45\x00' + struct.pack('>H', 20 + len(buf)) +
+               b'\x00\x00\x00\x00\x40\x04\x00\x00'
+               b'\x7f\x00\x00\x01\x7f\x00\x00\x02' + buf)
+    pkt = ip.IP(buf)
+    assert count_layers(pkt) == max_layers
+    assert isinstance(deepest(pkt).data, bytes)
+
+    # IPv6-in-IPv6 (next header 41)
+    src = b'\x00' * 15 + b'\x01'
+    dst = b'\x00' * 15 + b'\x02'
+    buf = struct.pack('>IHBB', 0x60000000, 0, 59, 64) + src + dst
+    for _ in range(600):
+        buf = (struct.pack('>IHBB', 0x60000000, len(buf), 41, 64) +
+               src + dst + buf)
+    pkt = ip6.IP6(buf)
+    assert count_layers(pkt) == max_layers
+    assert isinstance(deepest(pkt).data, bytes)
+
+    # Shallow nesting still decodes normally.
+    buf = b'\x00' * 12 + b'\x08\x00' + ip4
+    eth = Ethernet(b'\x00' * 12 + b'\x65\x58' + buf)
+    assert isinstance(eth.data, Ethernet)
+    assert isinstance(eth.data.data, ip.IP)
 
 
 def test_eth_novell():
